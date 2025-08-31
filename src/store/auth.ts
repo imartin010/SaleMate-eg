@@ -1,207 +1,412 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabaseClient';
-import type { User } from '../types';
+import { supabase, sendOTP, verifyOTP } from '../lib/supabase';
+import type { User, Session } from '@supabase/supabase-js';
+import type { AuthUser, Profile, UserRole } from '../types/database';
 
-// Define AuthState interface directly here to avoid import issues
 interface AuthState {
   user: User | null;
-  isAuthenticated: boolean;
+  profile: Profile | null;
+  role: UserRole;
   loading: boolean;
-  login: (user: User) => void;
-  logout: () => Promise<void>;
-  initialize: () => Promise<void>;
+  error: string | null;
+  
+  // Actions
+  init: () => Promise<void>;
+  signInEmail: (email: string, password: string) => Promise<boolean>;
+  signUpEmail: (name: string, email: string, password: string, phone?: string) => Promise<boolean>;
+  sendOTP: (phone: string) => Promise<boolean>;
+  verifyOTP: (phone: string, code: string, email?: string, name?: string) => Promise<boolean>;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updatePassword: (password: string) => Promise<boolean>;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  isAuthenticated: false,
+  profile: null,
+  role: 'user',
   loading: true,
-  
-  login: (user: User) => {
-    set({ user, isAuthenticated: true, loading: false });
-    // Manual localStorage persistence
-    localStorage.setItem('salemate-auth', JSON.stringify({ user, isAuthenticated: true }));
-  },
-  
-  logout: async () => {
-    try {
-      await supabase.auth.signOut();
-      set({ user: null, isAuthenticated: false, loading: false });
-      localStorage.removeItem('salemate-auth');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  },
+  error: null,
 
-  initialize: async () => {
+  init: async () => {
     try {
-      console.log('⚡ Fast auth initialization...');
+      console.log('🔐 Initializing auth...');
+      set({ loading: true, error: null });
+
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      // INSTANT: Check localStorage first (no network delay)
-      const stored = localStorage.getItem('salemate-auth');
-      if (stored) {
-        try {
-          const { user, isAuthenticated } = JSON.parse(stored);
-          if (user && isAuthenticated) {
-            console.log('⚡ INSTANT auth from localStorage:', user.email);
-            set({ user, isAuthenticated, loading: false });
-            
-            // Verify session in background (don't block UI)
-            supabase.auth.getSession().then(({ data: { session } }) => {
-              if (!session?.user) {
-                console.log('🧹 Session expired, clearing auth');
-                localStorage.removeItem('salemate-auth');
-                set({ user: null, isAuthenticated: false, loading: false });
-              }
-            }).catch(() => {
-              // Network error, keep cached auth
-              console.log('📡 Network error, keeping cached auth');
-            });
-            
-            return; // Exit immediately - UI loads instantly!
-          }
-        } catch (error) {
-          console.warn('Invalid cached auth, clearing:', error);
-          localStorage.removeItem('salemate-auth');
-        }
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        set({ user: null, profile: null, role: 'user', loading: false });
+        return;
       }
 
-      // FAST: Only check session if no cache (1 second timeout)
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth timeout - proceeding')), 1000)
-      );
+      if (session?.user) {
+        console.log('✅ Found session for:', session.user.email);
+        await get().loadUserProfile(session.user);
+      } else {
+        console.log('❌ No session found');
+        set({ user: null, profile: null, role: 'user', loading: false });
+      }
 
-      try {
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔄 Auth state changed:', event);
         
-        if (session?.user) {
-          // Create immediate fallback profile (no database call)
-          const fastProfile = {
-            id: session.user.id,
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            phone: session.user.user_metadata?.phone || undefined,
-            role: 'user' as const,
-            createdAt: new Date().toISOString()
-          };
-          
-          console.log('⚡ FAST auth with session:', fastProfile.email);
-          set({ user: fastProfile, isAuthenticated: true, loading: false });
-          localStorage.setItem('salemate-auth', JSON.stringify({ user: fastProfile, isAuthenticated: true }));
-          
-          // Load full profile in background (don't block UI)
-          supabase.from('profiles').select('*').eq('id', session.user.id).single()
-            .then(({ data: profile }) => {
-              if (profile) {
-                const fullProfile = {
-                  id: profile.id,
-                  name: profile.name,
-                  email: profile.email,
-                  phone: profile.phone || undefined,
-                  role: profile.role,
-                  managerId: profile.manager_id || undefined,
-                  createdAt: profile.created_at
-                };
-                set({ user: fullProfile });
-                localStorage.setItem('salemate-auth', JSON.stringify({ user: fullProfile, isAuthenticated: true }));
-              }
-            }).catch(() => {
-              // Keep fallback profile if database fails
-              console.log('📡 Profile fetch failed, keeping fallback');
-            });
-          
-          return;
+        if (event === 'SIGNED_IN' && session?.user) {
+          await get().loadUserProfile(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          set({ user: null, profile: null, role: 'user', loading: false, error: null });
         }
-      } catch (error) {
-        console.log('⚡ Auth timeout, proceeding unauthenticated');
-      }
-      
-      // No session - proceed immediately
-      console.log('⚡ No auth found, proceeding');
-      set({ user: null, isAuthenticated: false, loading: false });
-      
+      });
+
     } catch (error) {
-      console.error('Auth error, proceeding:', error);
-      set({ user: null, isAuthenticated: false, loading: false });
+      console.error('Auth initialization error:', error);
+      set({ user: null, profile: null, role: 'user', loading: false, error: 'Failed to initialize auth' });
     }
+  },
+
+  loadUserProfile: async (user: User) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        // Create fallback profile
+        const fallbackProfile: Profile = {
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          email: user.email || null,
+          phone: user.phone || null,
+          role: 'user',
+          manager_id: null,
+          is_banned: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        set({ 
+          user, 
+          profile: fallbackProfile, 
+          role: 'user', 
+          loading: false 
+        });
+        return;
+      }
+
+      // Check if user is banned
+      if (profile.is_banned) {
+        console.warn('User is banned, signing out');
+        await get().signOut();
+        set({ error: 'Your account has been suspended. Please contact support.' });
+        return;
+      }
+
+      set({ 
+        user, 
+        profile, 
+        role: profile.role, 
+        loading: false,
+        error: null
+      });
+
+    } catch (error) {
+      console.error('Load profile error:', error);
+      set({ loading: false, error: 'Failed to load user profile' });
+    }
+  },
+
+  signInEmail: async (email: string, password: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        let errorMessage = 'Login failed';
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and click the confirmation link';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Too many login attempts. Please try again later';
+        }
+
+        set({ loading: false, error: errorMessage });
+        return false;
+      }
+
+      if (data.user) {
+        await get().loadUserProfile(data.user);
+        return true;
+      }
+
+      set({ loading: false, error: 'Login failed' });
+      return false;
+
+    } catch (error) {
+      console.error('Sign in error:', error);
+      set({ loading: false, error: 'Network error during login' });
+      return false;
+    }
+  },
+
+  signUpEmail: async (name: string, email: string, password: string, phone?: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            phone: phone || null,
+          },
+        },
+      });
+
+      if (error) {
+        let errorMessage = 'Signup failed';
+        
+        if (error.message.includes('User already registered')) {
+          errorMessage = 'An account with this email already exists';
+        } else if (error.message.includes('Password')) {
+          errorMessage = 'Password must be at least 6 characters';
+        } else if (error.message.includes('Email')) {
+          errorMessage = 'Please enter a valid email address';
+        }
+
+        set({ loading: false, error: errorMessage });
+        return false;
+      }
+
+      if (data.user) {
+        // Update profile with additional info
+        if (phone) {
+          await supabase
+            .from('profiles')
+            .update({ name, phone })
+            .eq('id', data.user.id);
+        }
+
+        set({ loading: false, error: null });
+        return true;
+      }
+
+      set({ loading: false, error: 'Signup failed' });
+      return false;
+
+    } catch (error) {
+      console.error('Sign up error:', error);
+      set({ loading: false, error: 'Network error during signup' });
+      return false;
+    }
+  },
+
+  sendOTP: async (phone: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      const result = await sendOTP(phone);
+
+      if (result.success) {
+        set({ loading: false, error: null });
+        return true;
+      } else {
+        set({ loading: false, error: result.error || 'Failed to send verification code' });
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      set({ loading: false, error: 'Network error' });
+      return false;
+    }
+  },
+
+  verifyOTP: async (phone: string, code: string, email?: string, name?: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      const result = await verifyOTP(phone, code, email, name);
+
+      if (result.success && result.session) {
+        // Set session using Supabase
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          set({ loading: false, error: 'Failed to establish session' });
+          return false;
+        }
+
+        // Profile will be loaded automatically via auth state change
+        return true;
+
+      } else {
+        set({ loading: false, error: result.error || 'Invalid verification code' });
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      set({ loading: false, error: 'Network error' });
+      return false;
+    }
+  },
+
+  signOut: async () => {
+    try {
+      set({ loading: true, error: null });
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+      }
+
+      set({ 
+        user: null, 
+        profile: null, 
+        role: 'user', 
+        loading: false, 
+        error: null 
+      });
+
+    } catch (error) {
+      console.error('Sign out error:', error);
+      set({ 
+        user: null, 
+        profile: null, 
+        role: 'user', 
+        loading: false, 
+        error: null 
+      });
+    }
+  },
+
+  refreshProfile: async () => {
+    const { user } = get();
+    if (user) {
+      await get().loadUserProfile(user);
+    }
+  },
+
+  resetPassword: async (email: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
+
+      if (error) {
+        set({ loading: false, error: error.message });
+        return false;
+      }
+
+      set({ loading: false, error: null });
+      return true;
+
+    } catch (error) {
+      console.error('Reset password error:', error);
+      set({ loading: false, error: 'Network error' });
+      return false;
+    }
+  },
+
+  updatePassword: async (password: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        set({ loading: false, error: error.message });
+        return false;
+      }
+
+      set({ loading: false, error: null });
+      return true;
+
+    } catch (error) {
+      console.error('Update password error:', error);
+      set({ loading: false, error: 'Network error' });
+      return false;
+    }
+  },
+
+  clearError: () => {
+    set({ error: null });
   },
 }));
 
-// Listen for auth state changes
-supabase.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth state changed:', event, session?.user?.email);
-  
-  if (event === 'SIGNED_IN' && session?.user) {
-    // User signed in, get their profile
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+// Add loadUserProfile as a separate function for internal use
+(useAuthStore as any).getState().loadUserProfile = async (user: User) => {
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-      if (!profileError && profile) {
-        const userProfile = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          phone: profile.phone,
-          role: profile.role,
-          managerId: profile.manager_id || undefined,
-          createdAt: profile.created_at
-        };
-        
-        console.log('🎉 Auto-login from auth state change:', userProfile);
-        useAuthStore.getState().login(userProfile);
-      }
-    } catch (error) {
-      console.error('Failed to load profile on auth state change:', error);
+    if (error) {
+      console.error('Profile fetch error:', error);
+      // Create fallback profile
+      const fallbackProfile: Profile = {
+        id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        email: user.email || null,
+        phone: user.phone || null,
+        role: 'user',
+        manager_id: null,
+        is_banned: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      useAuthStore.setState({ 
+        user, 
+        profile: fallbackProfile, 
+        role: 'user', 
+        loading: false 
+      });
+      return;
     }
-  } else if (event === 'SIGNED_OUT') {
-    // User signed out
-    useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
-    localStorage.removeItem('salemate-auth');
+
+    // Check if user is banned
+    if (profile.is_banned) {
+      console.warn('User is banned, signing out');
+      await useAuthStore.getState().signOut();
+      useAuthStore.setState({ error: 'Your account has been suspended. Please contact support.' });
+      return;
+    }
+
+    useAuthStore.setState({ 
+      user, 
+      profile, 
+      role: profile.role, 
+      loading: false,
+      error: null
+    });
+
+  } catch (error) {
+    console.error('Load profile error:', error);
+    useAuthStore.setState({ loading: false, error: 'Failed to load user profile' });
   }
-});
-
-// ULTRA-FAST auth initialization
-const initializeAuth = () => {
-  console.log('⚡ Starting ultra-fast auth initialization...');
-  
-  // SUPER SHORT timeout - never wait more than 500ms
-  setTimeout(() => {
-    const { loading } = useAuthStore.getState();
-    if (loading) {
-      console.warn('⚡ Auth timeout (500ms), proceeding unauthenticated');
-      useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
-    }
-  }, 500); // Only 500ms timeout!
-  
-  // Initialize immediately - no waiting
-  useAuthStore.getState().initialize().catch((error) => {
-    console.log('⚡ Auth failed, proceeding:', error);
-    useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
-  });
 };
-
-// Initialize immediately
-initializeAuth();
-
-// Debug helper - available in browser console
-if (typeof window !== 'undefined') {
-  (window as any).clearSaleMateAuth = () => {
-    console.log('🧹 Clearing SaleMate auth state...');
-    localStorage.removeItem('salemate-auth');
-    useAuthStore.setState({ user: null, isAuthenticated: false, loading: false });
-    console.log('✅ Auth state cleared. Refresh the page.');
-  };
-  
-  (window as any).debugSaleMateAuth = () => {
-    const state = useAuthStore.getState();
-    console.log('🔍 Current auth state:', state);
-    console.log('🔍 localStorage:', localStorage.getItem('salemate-auth'));
-  };
-  
-  console.log('🛠️ Debug helpers available: clearSaleMateAuth(), debugSaleMateAuth()');
-}

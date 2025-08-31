@@ -1,42 +1,10 @@
-import React, { useEffect } from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
-import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2 } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
-  const { user, isAuthenticated, loading } = useAuthStore();
-  const location = useLocation();
-
-  // Show loading while auth is initializing
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <Logo variant="full" size="lg" showTagline={true} className="mx-auto mb-2" />
-          <p className="text-muted-foreground">Loading your account...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect to login if not authenticated
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  // Redirect to login if trying to access admin/support routes without proper role
-  if (location.pathname === '/admin' && user.role !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
-
-  if (location.pathname === '/support' && !['admin', 'support'].includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
   return (
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}

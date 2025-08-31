@@ -1,14 +1,18 @@
 import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './layout/AppLayout';
+import { AuthGuard } from '../components/auth/AuthGuard';
+import { RoleGuard } from '../components/auth/RoleGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
-// INSTANT LOADING: Import auth pages immediately (small)
-import UnifiedLogin from '../pages/Auth/UnifiedLogin';
-import UnifiedSignup from '../pages/Auth/UnifiedSignup';
+// AUTH PAGES: Load immediately
+import Login from '../pages/auth/Login';
+import Signup from '../pages/auth/Signup';
+import PhoneLogin from '../pages/auth/PhoneLogin';
+import ResetPassword from '../pages/auth/ResetPassword';
 
-// ULTRA-FAST LAZY LOADING: Load pages with error boundaries
+// APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
 const MyLeads = React.lazy(() => import('../pages/CRM/MyLeads'));
 const Shop = React.lazy(() => import('../pages/Shop/Shop'));
@@ -18,14 +22,14 @@ const SupportPanel = React.lazy(() => import('../pages/Support/SupportPanel'));
 const AdminPanel = React.lazy(() => import('../pages/Admin/AdminPanel'));
 const Settings = React.lazy(() => import('../pages/Settings'));
 
-// ULTRA-FAST loading component (no unnecessary text)
+// Fast loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[200px]">
     <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
   </div>
 );
 
-// Wrapper with error boundary and suspense
+// Safe page wrapper with error boundary and suspense
 const SafePage = ({ children }: { children: React.ReactNode }) => (
   <ErrorBoundary fallback={FastFallback}>
     <Suspense fallback={<PageLoader />}>
@@ -35,57 +39,86 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
-  // Public routes (no layout)
+  // Public auth routes
   {
     path: '/auth/login',
-    element: <UnifiedLogin />,
+    element: <Login />,
   },
   {
-    path: '/auth/signup',
-    element: <UnifiedSignup />,
+    path: '/auth/signup', 
+    element: <Signup />,
   },
-  // Protected routes (with layout)
+  {
+    path: '/auth/phone',
+    element: <PhoneLogin />,
+  },
+  {
+    path: '/auth/reset-password',
+    element: <ResetPassword />,
+  },
+  
+  // Protected routes with AuthGuard
   {
     path: '/',
-    element: <AppLayout />,
+    element: <AuthGuard />,
     children: [
       {
-        index: true,
-        element: <SafePage><Dashboard /></SafePage>,
-      },
-      {
-        path: 'crm',
-        element: <SafePage><MyLeads /></SafePage>,
-      },
-      {
-        path: 'shop',
-        element: <SafePage><Shop /></SafePage>,
-      },
-      {
-        path: 'deals',
-        element: <SafePage><MyDeals /></SafePage>,
-      },
-      {
-        path: 'partners',
-        element: <SafePage><PartnersPage /></SafePage>,
-      },
-      {
-        path: 'support',
-        element: <SafePage><SupportPanel /></SafePage>,
-      },
-      {
-        path: 'admin',
-        element: <SafePage><AdminPanel /></SafePage>,
-      },
-      {
-        path: 'settings',
-        element: <SafePage><Settings /></SafePage>,
+        path: '',
+        element: <AppLayout />,
+        children: [
+          {
+            index: true,
+            element: <SafePage><Dashboard /></SafePage>,
+          },
+          {
+            path: 'dashboard',
+            element: <SafePage><Dashboard /></SafePage>,
+          },
+          {
+            path: 'crm',
+            element: <SafePage><MyLeads /></SafePage>,
+          },
+          {
+            path: 'shop',
+            element: <SafePage><Shop /></SafePage>,
+          },
+          {
+            path: 'deals',
+            element: <SafePage><MyDeals /></SafePage>,
+          },
+          {
+            path: 'partners',
+            element: <SafePage><PartnersPage /></SafePage>,
+          },
+          {
+            path: 'settings',
+            element: <SafePage><Settings /></SafePage>,
+          },
+          // Role-restricted routes
+          {
+            path: 'support',
+            element: (
+              <RoleGuard allowedRoles={['admin', 'support', 'manager']}>
+                <SafePage><SupportPanel /></SafePage>
+              </RoleGuard>
+            ),
+          },
+          {
+            path: 'admin',
+            element: (
+              <RoleGuard allowedRoles={['admin']}>
+                <SafePage><AdminPanel /></SafePage>
+              </RoleGuard>
+            ),
+          },
+        ],
       },
     ],
   },
-  // Catch all - redirect to home
+  
+  // Catch all - redirect to dashboard
   {
     path: '*',
-    element: <Navigate to="/" replace />,
+    element: <Navigate to="/dashboard" replace />,
   },
 ]);
