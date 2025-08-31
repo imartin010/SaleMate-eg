@@ -6,11 +6,30 @@ import { RoleGuard } from '../components/auth/RoleGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
-// AUTH PAGES: Load immediately
-import Login from '../pages/auth/Login';
-import Signup from '../pages/auth/Signup';
-import PhoneLogin from '../pages/auth/PhoneLogin';
-import ResetPassword from '../pages/auth/ResetPassword';
+// AUTH PAGES: Use simple components for now
+const SimpleLogin = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="text-center">
+      <h1 className="text-3xl font-bold text-blue-600 mb-4">SaleMate</h1>
+      <p className="text-gray-600 mb-8">Authentication system under construction</p>
+      <a href="/dashboard" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        Continue to Dashboard
+      </a>
+    </div>
+  </div>
+);
+
+const SimpleSignup = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="text-center">
+      <h1 className="text-3xl font-bold text-blue-600 mb-4">SaleMate</h1>
+      <p className="text-gray-600 mb-8">Sign up coming soon</p>
+      <a href="/auth/login" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        Go to Login
+      </a>
+    </div>
+  </div>
+);
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
@@ -42,19 +61,11 @@ export const router = createBrowserRouter([
   // Public auth routes
   {
     path: '/auth/login',
-    element: <Login />,
+    element: <SimpleLogin />,
   },
   {
     path: '/auth/signup', 
-    element: <Signup />,
-  },
-  {
-    path: '/auth/phone',
-    element: <PhoneLogin />,
-  },
-  {
-    path: '/auth/reset-password',
-    element: <ResetPassword />,
+    element: <SimpleSignup />,
   },
   
   // Protected routes with AuthGuard
