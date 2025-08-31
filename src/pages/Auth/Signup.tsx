@@ -275,12 +275,11 @@ export default function Signup() {
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Creating Account...
               </>
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4" />
-                Create Account
-              </>
-            )}
+                          ) : (
+                <>
+                  ✅ Create Account
+                </>
+              )}
           </button>
         </form>
 

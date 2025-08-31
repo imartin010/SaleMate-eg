@@ -1,12 +1,62 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../../supabase/types/database.types'
+import type { Database } from '../types/database'
 
 // Environment variables (configured for your Supabase project)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wkxbhvckmgrmdkdkhnqo.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGJodmNrbWdybWRrZGtobnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTgzNTQsImV4cCI6MjA3MjA3NDM1NH0.Vg48-ld0anvU4OQJWf5ZlEqTKjXiHBK0A14fz0vGvU8'
 
-// Create Supabase client with TypeScript types
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Create Supabase client with TypeScript types - using new database types
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: { 
+    persistSession: true, 
+    autoRefreshToken: true, 
+    detectSessionInUrl: true 
+  }
+})
+
+// OTP Functions
+export async function sendOTP(phone: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/auth-otp/auth/request-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({ phone }),
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    return { success: false, error: 'Network error' };
+  }
+}
+
+export async function verifyOTP(
+  phone: string, 
+  code: string, 
+  email?: string, 
+  name?: string
+): Promise<{ success: boolean; error?: string; session?: any }> {
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/auth-otp/auth/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({ phone, code, email, name }),
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    return { success: false, error: 'Network error' };
+  }
+}
 
 // Helper functions for common operations
 
