@@ -21,7 +21,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, profile, signOut } = useAuthStore();
 
   if (!user) return null;
 
@@ -124,21 +124,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         <div className="mb-4 rounded-xl bg-white/50 p-4 backdrop-blur-sm">
           <div className="mb-3 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-bg text-white font-bold text-lg">
-              {user.name.charAt(0)}
+              {(profile?.name || user?.email || 'U').charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
+              <p className="text-sm font-semibold text-foreground">{profile?.name || user?.email || 'User'}</p>
+              <p className="text-xs text-muted-foreground">{user?.email || 'No email'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-400"></div>
-            <span className="text-xs font-medium text-muted-foreground capitalize">{user.role}</span>
+            <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
           </div>
         </div>
         
         <button
-          onClick={logout}
+          onClick={signOut}
           className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105"
         >
           <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />

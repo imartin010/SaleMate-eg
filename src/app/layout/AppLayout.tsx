@@ -7,8 +7,8 @@ import { Logo } from '../../components/common/Logo';
 export const AppLayout: React.FC = () => {
   return (
     <div className="flex h-screen bg-background">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      {/* Desktop Sidebar - Always visible when authenticated */}
+      <div className="hidden md:flex">
         <Sidebar />
       </div>
       
@@ -29,7 +29,9 @@ export const AppLayout: React.FC = () => {
       </div>
       
       {/* Mobile Bottom Navigation */}
-      <BottomNav />
+      <div className="md:hidden">
+        <BottomNav />
+      </div>
     </div>
   );
 };

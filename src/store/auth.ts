@@ -35,9 +35,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('🔐 Initializing auth...');
       set({ loading: true, error: null });
 
+      // Set a timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('⚠️ Auth timeout, setting to unauthenticated');
+        set({ user: null, profile: null, role: 'user', loading: false });
+      }, 3000);
+
       // Get current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      clearTimeout(timeoutId);
+
       if (sessionError) {
         console.error('Session error:', sessionError);
         set({ user: null, profile: null, role: 'user', loading: false });
