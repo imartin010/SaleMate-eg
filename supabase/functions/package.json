@@ -1,0 +1,28 @@
+{
+  "name": "salemate-edge-functions",
+  "version": "1.0.0",
+  "description": "Edge Functions for SaleMate platform",
+  "main": "index.ts",
+  "scripts": {
+    "build": "echo 'No build step required for Deno'",
+    "test": "echo 'Add tests here'",
+    "deploy": "supabase functions deploy"
+  },
+  "keywords": [
+    "supabase",
+    "edge-functions",
+    "real-estate",
+    "leads"
+  ],
+  "author": "SaleMate Team",
+  "license": "MIT",
+  "engines": {
+    "deno": ">=1.28.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

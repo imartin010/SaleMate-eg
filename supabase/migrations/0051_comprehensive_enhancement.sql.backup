@@ -1,0 +1,454 @@
+-- =====================================================
+-- SaleMate Comprehensive Enhancement Migration
+-- Features: Bulk Upload, Purchase Workflow, Partner Commissions
+-- =====================================================
+
+BEGIN;
+
+-- =====================================================
+-- 1. EXTEND LEADS TABLE
+-- =====================================================
+
+-- Add additional contact fields and lead metadata
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS client_phone2 VARCHAR;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS client_phone3 VARCHAR;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS client_job_title VARCHAR;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS source VARCHAR DEFAULT 'Manual';
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS batch_id UUID;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS upload_user_id UUID REFERENCES profiles(id);
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS is_sold BOOLEAN DEFAULT FALSE;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS sold_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS cpl_price DECIMAL(10,2);
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_leads_batch_id ON leads(batch_id);
+CREATE INDEX IF NOT EXISTS idx_leads_upload_user_id ON leads(upload_user_id);
+CREATE INDEX IF NOT EXISTS idx_leads_is_sold ON leads(is_sold);
+CREATE INDEX IF NOT EXISTS idx_leads_source ON leads(source);
+
+-- =====================================================
+-- 2. PARTNERS TABLE (already exists from 0001_init.sql)
+-- =====================================================
+
+-- Partners table already exists with different schema:
+-- Uses 'status' (partner_status enum) instead of 'is_active'
+-- Uses 'commission_rate' column
+
+-- Insert sample partners (only if table is empty)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM partners LIMIT 1) THEN
+    INSERT INTO partners (name, description, commission_rate, status) VALUES 
+      ('Bold Routes', 'Leading real estate brokerage', 4.5, 'active'),
+      ('The Address Investments', 'Premium investment consultancy', 4.0, 'active'),
+      ('Nawy', 'Digital real estate platform', 3.5, 'active'),
+      ('Coldwell Banker', 'Global real estate franchise', 4.2, 'active'),
+      ('Engel & Völkers', 'Luxury real estate brand', 5.0, 'active');
+  END IF;
+END $$;
+
+-- =====================================================
+-- 3. CREATE PROJECT PARTNER COMMISSIONS TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS project_partner_commissions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
+  commission_rate DECIMAL(5,2) NOT NULL CHECK (commission_rate >= 0 AND commission_rate <= 100),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(project_id, partner_id)
+);
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_project_partner_commissions_project_id ON project_partner_commissions(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_partner_commissions_partner_id ON project_partner_commissions(partner_id);
+
+-- =====================================================
+-- 4. CREATE LEAD BATCHES TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS lead_batches (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  upload_user_id UUID NOT NULL REFERENCES profiles(id),
+  batch_name VARCHAR NOT NULL,
+  total_leads INTEGER NOT NULL DEFAULT 0,
+  successful_leads INTEGER NOT NULL DEFAULT 0,
+  failed_leads INTEGER NOT NULL DEFAULT 0,
+  cpl_price DECIMAL(10,2) NOT NULL,
+  file_name VARCHAR,
+  file_url VARCHAR,
+  status VARCHAR DEFAULT 'processing' CHECK (status IN ('processing', 'completed', 'failed')),
+  error_details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_lead_batches_project_id ON lead_batches(project_id);
+CREATE INDEX IF NOT EXISTS idx_lead_batches_upload_user_id ON lead_batches(upload_user_id);
+CREATE INDEX IF NOT EXISTS idx_lead_batches_status ON lead_batches(status);
+
+-- =====================================================
+-- 5. CREATE LEAD PURCHASE REQUESTS TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS lead_purchase_requests (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  buyer_user_id UUID NOT NULL REFERENCES profiles(id),
+  project_id UUID NOT NULL REFERENCES projects(id),
+  number_of_leads INTEGER NOT NULL CHECK (number_of_leads > 0),
+  cpl_price DECIMAL(10,2) NOT NULL,
+  total_price DECIMAL(10,2) NOT NULL,
+  receipt_file_url VARCHAR,
+  receipt_file_name VARCHAR,
+  status VARCHAR DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  admin_user_id UUID REFERENCES profiles(id),
+  admin_notes TEXT,
+  approved_at TIMESTAMP WITH TIME ZONE,
+  rejected_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_lead_purchase_requests_buyer_user_id ON lead_purchase_requests(buyer_user_id);
+CREATE INDEX IF NOT EXISTS idx_lead_purchase_requests_project_id ON lead_purchase_requests(project_id);
+CREATE INDEX IF NOT EXISTS idx_lead_purchase_requests_status ON lead_purchase_requests(status);
+CREATE INDEX IF NOT EXISTS idx_lead_purchase_requests_admin_user_id ON lead_purchase_requests(admin_user_id);
+
+-- =====================================================
+-- 6. CREATE LEAD SALES TABLE (for tracking sold leads)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS lead_sales (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  purchase_request_id UUID NOT NULL REFERENCES lead_purchase_requests(id),
+  lead_id UUID NOT NULL REFERENCES leads(id),
+  sale_price DECIMAL(10,2) NOT NULL,
+  sold_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_lead_sales_purchase_request_id ON lead_sales(purchase_request_id);
+CREATE INDEX IF NOT EXISTS idx_lead_sales_lead_id ON lead_sales(lead_id);
+
+-- =====================================================
+-- 7. CREATE DEVELOPERS TABLE (separate from projects)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS developers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name VARCHAR NOT NULL UNIQUE,
+  description TEXT,
+  logo_url VARCHAR,
+  website VARCHAR,
+  contact_email VARCHAR,
+  contact_phone VARCHAR,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add developer_id to projects table
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS developer_id UUID REFERENCES developers(id);
+
+-- Migrate existing developer names to developers table and link projects
+DO $$
+DECLARE
+    dev_record RECORD;
+    new_dev_id UUID;
+BEGIN
+    -- Get unique developers from projects
+    FOR dev_record IN SELECT DISTINCT developer FROM projects WHERE developer IS NOT NULL
+    LOOP
+        -- Insert developer if not exists
+        INSERT INTO developers (name) VALUES (dev_record.developer)
+        ON CONFLICT (name) DO NOTHING;
+        
+        -- Get the developer ID
+        SELECT id INTO new_dev_id FROM developers WHERE name = dev_record.developer;
+        
+        -- Update projects with developer_id
+        UPDATE projects SET developer_id = new_dev_id WHERE developer = dev_record.developer;
+    END LOOP;
+END $$;
+
+-- =====================================================
+-- 8. RLS POLICIES
+-- =====================================================
+
+-- Enable RLS on new tables
+ALTER TABLE partners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_partner_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lead_batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lead_purchase_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lead_sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE developers ENABLE ROW LEVEL SECURITY;
+
+-- Partners policies (public read, admin write)
+CREATE POLICY "Anyone can view active partners" ON partners
+  FOR SELECT USING (status = 'active');
+
+CREATE POLICY "Only admins can manage partners" ON partners
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Project partner commissions policies (public read, admin write)
+CREATE POLICY "Anyone can view active commissions" ON project_partner_commissions
+  FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Only admins can manage commissions" ON project_partner_commissions
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Lead batches policies
+CREATE POLICY "Users can view their own batches" ON lead_batches
+  FOR SELECT USING (
+    upload_user_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'support'))
+  );
+
+CREATE POLICY "Users can create their own batches" ON lead_batches
+  FOR INSERT WITH CHECK (upload_user_id = auth.uid());
+
+CREATE POLICY "Only admins can update batches" ON lead_batches
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'support'))
+  );
+
+-- Purchase requests policies
+CREATE POLICY "Users can view their own purchase requests" ON lead_purchase_requests
+  FOR SELECT USING (
+    buyer_user_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'support'))
+  );
+
+CREATE POLICY "Users can create purchase requests" ON lead_purchase_requests
+  FOR INSERT WITH CHECK (buyer_user_id = auth.uid());
+
+CREATE POLICY "Only admins can update purchase requests" ON lead_purchase_requests
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'support'))
+  );
+
+-- Lead sales policies
+CREATE POLICY "Users can view their lead sales" ON lead_sales
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM lead_purchase_requests lpr 
+      WHERE lpr.id = purchase_request_id 
+      AND (lpr.buyer_user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'support')
+      ))
+    )
+  );
+
+-- Developers policies (public read, admin write)
+CREATE POLICY "Anyone can view active developers" ON developers
+  FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Only admins can manage developers" ON developers
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- =====================================================
+-- 9. SAMPLE DATA FOR COMMISSIONS
+-- =====================================================
+
+-- Insert sample commission data
+DO $$
+DECLARE
+    project_record RECORD;
+    partner_record RECORD;
+    commission_rates DECIMAL[] := ARRAY[3.2, 3.5, 4.0, 4.5, 4.55, 5.0];
+    random_rate DECIMAL;
+BEGIN
+    -- For each project, add random commissions with different partners
+    FOR project_record IN SELECT id FROM projects LIMIT 10
+    LOOP
+        FOR partner_record IN SELECT id FROM partners ORDER BY RANDOM() LIMIT 3
+        LOOP
+            -- Select random commission rate
+            random_rate := commission_rates[1 + floor(random() * array_length(commission_rates, 1))];
+            
+            INSERT INTO project_partner_commissions (project_id, partner_id, commission_rate)
+            VALUES (project_record.id, partner_record.id, random_rate)
+            ON CONFLICT (project_id, partner_id) DO NOTHING;
+        END LOOP;
+    END LOOP;
+END $$;
+
+-- =====================================================
+-- 10. FUNCTIONS FOR AUTOMATION
+-- =====================================================
+
+-- Function to approve purchase request
+CREATE OR REPLACE FUNCTION approve_purchase_request(
+  request_id UUID,
+  admin_id UUID,
+  admin_notes TEXT DEFAULT NULL
+) RETURNS JSONB AS $$
+DECLARE
+  request_record RECORD;
+  lead_record RECORD;
+  leads_assigned INTEGER := 0;
+BEGIN
+  -- Get the purchase request
+  SELECT * INTO request_record FROM lead_purchase_requests 
+  WHERE id = request_id AND status = 'pending';
+  
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Purchase request not found or already processed');
+  END IF;
+  
+  -- Check if enough leads are available
+  IF (SELECT COUNT(*) FROM leads WHERE project_id = request_record.project_id AND is_sold = false) < request_record.number_of_leads THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Not enough leads available');
+  END IF;
+  
+  -- Start transaction
+  BEGIN
+    -- Update purchase request status
+    UPDATE lead_purchase_requests 
+    SET status = 'approved', 
+        admin_user_id = admin_id, 
+        admin_notes = admin_notes,
+        approved_at = NOW(),
+        updated_at = NOW()
+    WHERE id = request_id;
+    
+    -- Select and assign leads
+    FOR lead_record IN 
+      SELECT id FROM leads 
+      WHERE project_id = request_record.project_id 
+        AND is_sold = false 
+      ORDER BY created_at ASC 
+      LIMIT request_record.number_of_leads
+    LOOP
+      -- Transfer lead ownership
+      UPDATE leads 
+      SET buyer_user_id = request_record.buyer_user_id,
+          is_sold = true,
+          sold_at = NOW(),
+          updated_at = NOW()
+      WHERE id = lead_record.id;
+      
+      -- Record the sale
+      INSERT INTO lead_sales (purchase_request_id, lead_id, sale_price)
+      VALUES (request_id, lead_record.id, request_record.cpl_price);
+      
+      leads_assigned := leads_assigned + 1;
+    END LOOP;
+    
+    -- Update project available leads count
+    UPDATE projects 
+    SET available_leads = available_leads - leads_assigned,
+        updated_at = NOW()
+    WHERE id = request_record.project_id;
+    
+    RETURN jsonb_build_object(
+      'success', true, 
+      'leads_assigned', leads_assigned,
+      'message', 'Purchase request approved successfully'
+    );
+    
+  EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+  END;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to reject purchase request
+CREATE OR REPLACE FUNCTION reject_purchase_request(
+  request_id UUID,
+  admin_id UUID,
+  admin_notes TEXT DEFAULT NULL
+) RETURNS JSONB AS $$
+BEGIN
+  UPDATE lead_purchase_requests 
+  SET status = 'rejected', 
+      admin_user_id = admin_id, 
+      admin_notes = admin_notes,
+      rejected_at = NOW(),
+      updated_at = NOW()
+  WHERE id = request_id AND status = 'pending';
+  
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Purchase request not found or already processed');
+  END IF;
+  
+  RETURN jsonb_build_object('success', true, 'message', 'Purchase request rejected');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get marketplace data
+CREATE OR REPLACE FUNCTION get_marketplace_projects()
+RETURNS TABLE(
+  project_id UUID,
+  project_name TEXT,
+  developer_name TEXT,
+  region TEXT,
+  available_leads INTEGER,
+  min_cpl_price DECIMAL,
+  max_cpl_price DECIMAL,
+  avg_cpl_price DECIMAL,
+  description TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    p.id as project_id,
+    p.name as project_name,
+    COALESCE(d.name, p.developer) as developer_name,
+    p.region,
+    COUNT(l.id)::INTEGER as available_leads,
+    MIN(l.cpl_price) as min_cpl_price,
+    MAX(l.cpl_price) as max_cpl_price,
+    AVG(l.cpl_price) as avg_cpl_price,
+    p.description
+  FROM projects p
+  LEFT JOIN developers d ON p.developer_id = d.id
+  LEFT JOIN leads l ON p.id = l.project_id AND l.is_sold = false
+  GROUP BY p.id, p.name, d.name, p.developer, p.region, p.description
+  HAVING COUNT(l.id) > 0
+  ORDER BY available_leads DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get partner commissions for projects
+CREATE OR REPLACE FUNCTION get_project_commissions()
+RETURNS TABLE(
+  project_id UUID,
+  project_name TEXT,
+  developer_name TEXT,
+  partner_id UUID,
+  partner_name TEXT,
+  commission_rate DECIMAL
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    p.id as project_id,
+    p.name as project_name,
+    COALESCE(d.name, p.developer) as developer_name,
+    pt.id as partner_id,
+    pt.name as partner_name,
+    ppc.commission_rate
+  FROM projects p
+  LEFT JOIN developers d ON p.developer_id = d.id
+  INNER JOIN project_partner_commissions ppc ON p.id = ppc.project_id
+  INNER JOIN partners pt ON ppc.partner_id = pt.id
+  WHERE ppc.is_active = true AND pt.status = 'active'
+  ORDER BY p.name, ppc.commission_rate DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMIT;

@@ -1,0 +1,27 @@
+{
+  "name": "auth-otp",
+  "version": "1.0.0",
+  "description": "SaleMate OTP Authentication Edge Function",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "supabase functions serve auth-otp --env-file ../../.env.local",
+    "deploy": "supabase functions deploy auth-otp"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "supabase",
+    "edge-function",
+    "otp",
+    "authentication",
+    "twilio",
+    "sms"
+  ],
+  "author": "SaleMate Team",
+  "license": "MIT"
+}
