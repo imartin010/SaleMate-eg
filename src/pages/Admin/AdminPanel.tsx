@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import LeadUpload from '../../components/admin/LeadUpload';
 import { BulkLeadUpload } from '../../components/admin/BulkLeadUpload';
 import { PurchaseRequestsManager } from '../../components/admin/PurchaseRequestsManager';
-import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 
 import { useProjectStore } from '../../store/projects';
 import { useLeadStore } from '../../store/leads';
