@@ -18,12 +18,16 @@ import {
   ArrowRight,
   Activity,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  BarChart3,
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const { leads, fetchLeads } = useLeadStore();
   const { projects, fetchProjects } = useProjectStore();
   const { orders, fetchOrders } = useOrderStore();
@@ -132,7 +136,8 @@ const Dashboard: React.FC = () => {
       description: 'Leads in your pipeline',
       icon: Users,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
+      borderColor: 'border-blue-200',
       gradient: 'from-blue-500 to-blue-600',
     },
     {
@@ -141,25 +146,28 @@ const Dashboard: React.FC = () => {
       description: 'Ready to close',
       icon: Target,
       color: 'text-red-600',
-      bgColor: 'bg-red-100',
+      bgColor: 'bg-gradient-to-br from-red-50 to-red-100',
+      borderColor: 'border-red-200',
       gradient: 'from-red-500 to-red-600',
     },
     {
       title: 'Total Spent',
       value: formatCurrency(stats.totalSpent),
       description: 'On lead purchases',
-      icon: ShoppingCart,
+      icon: DollarSign,
       color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      bgColor: 'bg-gradient-to-br from-green-50 to-green-100',
+      borderColor: 'border-green-200',
       gradient: 'from-green-500 to-green-600',
     },
     {
       title: 'This Month',
       value: stats.thisMonthOrders.toString(),
       description: 'New orders',
-      icon: Clock,
+      icon: Calendar,
       color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      bgColor: 'bg-gradient-to-br from-purple-50 to-purple-100',
+      borderColor: 'border-purple-200',
       gradient: 'from-purple-500 to-purple-600',
     },
     {
@@ -168,46 +176,63 @@ const Dashboard: React.FC = () => {
       description: 'With leads to buy',
       icon: TrendingUp,
       color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100',
+      bgColor: 'bg-gradient-to-br from-indigo-50 to-indigo-100',
+      borderColor: 'border-indigo-200',
       gradient: 'from-indigo-500 to-indigo-600',
     },
     {
       title: 'Conversion Rate',
       value: `${stats.conversionRate.toFixed(1)}%`,
       description: 'Leads to meetings',
-      icon: CheckCircle,
+      icon: BarChart3,
       color: 'text-emerald-600',
-      bgColor: 'bg-emerald-100',
+      bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
+      borderColor: 'border-emerald-200',
       gradient: 'from-emerald-500 to-emerald-600',
     },
   ];
 
+  // Get user's display name with debugging
+  const displayName = profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+  
+  // Debug logging
+  console.log('Dashboard Debug:', {
+    profile: profile,
+    userMetadata: user.user_metadata,
+    userEmail: user.email,
+    displayName: displayName
+  });
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       {/* Welcome Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold text-gradient">
-          Welcome back, {user.name}!
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
+          <Sparkles className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-700">Dashboard</span>
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
+          Welcome back, {displayName}! 👋
         </h1>
-        <p className="text-lg text-muted-foreground">
-          Here's what's happening with your real estate business today.
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Here's what's happening with your real estate business today. Track your progress and stay ahead of the competition.
         </p>
-        <div className="flex items-center justify-center gap-2 mt-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-xs text-green-600 font-medium">Connected to Supabase Backend</span>
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-sm text-green-600 font-medium">Live data from Supabase</span>
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
           <AlertCircle className="h-5 w-5 text-red-600" />
           <span className="text-red-800">{error}</span>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={loadDashboardData}
-            className="ml-auto text-red-600 hover:text-red-700"
+            className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-100"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry
@@ -221,21 +246,24 @@ const Dashboard: React.FC = () => {
           const Icon = stat.icon;
           return (
             <div key={stat.title} className="group">
-              <div className="card-modern card-hover p-6 h-full">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-2xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className={`h-6 w-6 ${stat.color}`} />
+              <div className={`relative overflow-hidden rounded-2xl border ${stat.borderColor} bg-white shadow-sm hover:shadow-lg transition-all duration-300 p-6 h-full group-hover:scale-[1.02]`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-2xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
+                      <p className="text-sm text-gray-600 font-medium">
+                        {stat.title}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      {stat.title}
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    {stat.description}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {stat.description}
-                </p>
               </div>
             </div>
           );
@@ -243,44 +271,44 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions & Recent Activity */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-8 md:grid-cols-2">
         {/* Quick Actions */}
-        <div className="card-modern card-hover p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300 p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <Activity className="h-5 w-5 text-primary" />
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
+              <Activity className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold">Quick Actions</h3>
-              <p className="text-sm text-muted-foreground">Common tasks to get you started</p>
+              <h3 className="text-xl font-semibold text-gray-900">Quick Actions</h3>
+              <p className="text-sm text-gray-600">Common tasks to get you started</p>
             </div>
           </div>
           
           <div className="space-y-4">
-            <div className="group flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 cursor-pointer">
+            <div className="group flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 cursor-pointer border border-blue-100 hover:border-blue-200">
               <div>
-                <p className="font-semibold text-foreground">Buy New Leads</p>
-                <p className="text-sm text-muted-foreground">Browse available projects</p>
+                <p className="font-semibold text-gray-900">Buy New Leads</p>
+                <p className="text-sm text-gray-600">Browse available projects</p>
               </div>
               <div className="p-2 rounded-full bg-white shadow-sm group-hover:scale-110 transition-transform duration-300">
                 <ShoppingCart className="h-5 w-5 text-blue-600" />
               </div>
             </div>
             
-            <div className="group flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-all duration-300 cursor-pointer">
+            <div className="group flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-all duration-300 cursor-pointer border border-green-100 hover:border-green-200">
               <div>
-                <p className="font-semibold text-foreground">Update Lead Status</p>
-                <p className="text-sm text-muted-foreground">Manage your pipeline</p>
+                <p className="font-semibold text-gray-900">Update Lead Status</p>
+                <p className="text-sm text-gray-600">Manage your pipeline</p>
               </div>
               <div className="p-2 rounded-full bg-white shadow-sm group-hover:scale-110 transition-transform duration-300">
                 <Users className="h-5 w-5 text-green-600" />
               </div>
             </div>
             
-            <div className="group flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 hover:from-purple-100 hover:to-violet-100 transition-all duration-300 cursor-pointer">
+            <div className="group flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 hover:from-purple-100 hover:to-violet-100 transition-all duration-300 cursor-pointer border border-purple-100 hover:border-purple-200">
               <div>
-                <p className="font-semibold text-foreground">Join Community</p>
-                <p className="text-sm text-muted-foreground">Connect with other agents</p>
+                <p className="font-semibold text-gray-900">Join Community</p>
+                <p className="text-sm text-gray-600">Connect with other agents</p>
               </div>
               <div className="p-2 rounded-full bg-white shadow-sm group-hover:scale-110 transition-transform duration-300">
                 <TrendingUp className="h-5 w-5 text-purple-600" />
@@ -290,21 +318,22 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="card-modern card-hover p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-green-100">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Recent Activity</h3>
-                <p className="text-sm text-muted-foreground">Your latest actions and updates</p>
+                <h3 className="text-xl font-semibold text-gray-900">Recent Activity</h3>
+                <p className="text-sm text-gray-600">Your latest actions and updates</p>
               </div>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={loadDashboardData}
+              className="border-gray-200 hover:bg-gray-50"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
@@ -314,11 +343,11 @@ const Dashboard: React.FC = () => {
           <div className="space-y-4">
             {orders.length > 0 ? (
               orders.slice(0, 4).map((order, index) => (
-                <div key={order.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors duration-200">
+                <div key={order.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 border border-transparent hover:border-gray-100">
                   <div className={`w-2 h-2 rounded-full ${index === 0 ? 'bg-green-500' : index === 1 ? 'bg-blue-500' : index === 2 ? 'bg-purple-500' : 'bg-orange-500'}`}></div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Order #{order.id.slice(-8)} - {order.quantity} leads</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium text-gray-900">Order #{order.id.slice(-8)} - {order.quantity} leads</p>
+                    <p className="text-xs text-gray-500">
                       {new Date(order.createdAt).toLocaleDateString()} • {order.status}
                     </p>
                   </div>
@@ -326,11 +355,11 @@ const Dashboard: React.FC = () => {
               ))
             ) : (
               <div className="text-center py-8">
-                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
-                  <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <ShoppingCart className="h-6 w-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-muted-foreground">No recent orders</p>
-                <p className="text-xs text-muted-foreground">Visit the Shop to buy your first leads</p>
+                <p className="text-sm text-gray-600">No recent orders</p>
+                <p className="text-xs text-gray-500">Visit the Shop to buy your first leads</p>
               </div>
             )}
           </div>
