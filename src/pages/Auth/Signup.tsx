@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2, UserPlus, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -85,10 +85,7 @@ export default function Signup() {
     
     if (success) {
       setSignupSuccess(true);
-      // Redirect after showing success message
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // Don't redirect - user needs to verify email first
     }
   };
 
@@ -98,8 +95,14 @@ export default function Signup() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8 text-center">
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h1>
+          <p className="text-gray-600 mb-4">
+            Please check your email and click the verification link to activate your account.
+          </p>
+          <p className="text-sm text-gray-500">
+            You'll be redirected to login once verified.
+          </p>
           <p className="text-gray-600 mb-6">
-            Welcome to SaleMate! You'll be redirected to your dashboard shortly.
+            Welcome to SaleMate! Please verify your email to access your dashboard.
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin" />

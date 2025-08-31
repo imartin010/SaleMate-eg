@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, sendOTP, verifyOTP } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile, UserRole } from '../types/database';
 
@@ -14,8 +14,7 @@ interface AuthState {
   init: () => Promise<void>;
   signInEmail: (email: string, password: string) => Promise<boolean>;
   signUpEmail: (name: string, email: string, password: string, phone?: string) => Promise<boolean>;
-  sendOTP: (phone: string) => Promise<boolean>;
-  verifyOTP: (phone: string, code: string, email?: string, name?: string) => Promise<boolean>;
+
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
@@ -223,60 +222,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  sendOTP: async (phone: string) => {
-    try {
-      set({ loading: true, error: null });
 
-      const result = await sendOTP(phone);
-
-      if (result.success) {
-        set({ loading: false, error: null });
-        return true;
-      } else {
-        set({ loading: false, error: result.error || 'Failed to send verification code' });
-        return false;
-      }
-
-    } catch (error) {
-      console.error('Send OTP error:', error);
-      set({ loading: false, error: 'Network error' });
-      return false;
-    }
-  },
-
-  verifyOTP: async (phone: string, code: string, email?: string, name?: string) => {
-    try {
-      set({ loading: true, error: null });
-
-      const result = await verifyOTP(phone, code, email, name);
-
-      if (result.success && result.session) {
-        // Set session using Supabase
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: result.session.access_token,
-          refresh_token: result.session.refresh_token,
-        });
-
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          set({ loading: false, error: 'Failed to establish session' });
-          return false;
-        }
-
-        // Profile will be loaded automatically via auth state change
-        return true;
-
-      } else {
-        set({ loading: false, error: result.error || 'Invalid verification code' });
-        return false;
-      }
-
-    } catch (error) {
-      console.error('Verify OTP error:', error);
-      set({ loading: false, error: 'Network error' });
-      return false;
-    }
-  },
 
   signOut: async () => {
     try {
