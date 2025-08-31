@@ -28,6 +28,7 @@ export interface Lead {
   id: string;
   projectId: string;
   buyerUserId?: string;
+  assignedToId?: string;
   clientName: string;
   clientPhone: string;
   clientPhone2?: string;

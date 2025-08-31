@@ -83,9 +83,9 @@ export const ImprovedShop: React.FC = () => {
 
         setProjects(formattedProjects);
       } else {
-        // Use fallback mock data
-        console.log('📝 Using fallback mock data');
-        setProjects(getMockProjects());
+        // No projects available
+        console.log('📝 No projects available');
+        setProjects([]);
       }
 
       setLastRefresh(new Date());
@@ -94,57 +94,14 @@ export const ImprovedShop: React.FC = () => {
       console.error('❌ Failed to load projects:', err);
       setError(err.message || 'Failed to load projects');
       
-      // Use mock data as fallback
-      console.log('📝 Using mock data as fallback');
-      setProjects(getMockProjects());
+      // No fallback data - show empty state
+      console.log('📝 No projects available');
+      setProjects([]);
       
     } finally {
       setLoading(false);
     }
   };
-
-  const getMockProjects = (): Project[] => [
-    {
-      id: 'mock-1',
-      name: 'New Capital Towers',
-      developer: 'Capital Group',
-      region: 'New Cairo',
-      availableLeads: 150,
-      description: 'Premium residential towers in New Cairo with modern amenities',
-      createdAt: new Date().toISOString(),
-      pricePerLead: 120
-    },
-    {
-      id: 'mock-2',
-      name: 'Marina Heights',
-      developer: 'Marina Developments',
-      region: 'North Coast',
-      availableLeads: 200,
-      description: 'Luxury beachfront apartments with stunning sea views',
-      createdAt: new Date().toISOString(),
-      pricePerLead: 150
-    },
-    {
-      id: 'mock-3',
-      name: 'Garden City Residences',
-      developer: 'Green Developments',
-      region: 'Sheikh Zayed',
-      availableLeads: 100,
-      description: 'Family-friendly compound with beautiful gardens',
-      createdAt: new Date().toISOString(),
-      pricePerLead: 100
-    },
-    {
-      id: 'mock-4',
-      name: 'Downtown Plaza',
-      developer: 'Urban Developers',
-      region: 'Downtown Cairo',
-      availableLeads: 75,
-      description: 'Modern commercial and residential complex',
-      createdAt: new Date().toISOString(),
-      pricePerLead: 180
-    }
-  ];
 
   const handlePurchaseSuccess = () => {
     // Refresh projects to update available counts

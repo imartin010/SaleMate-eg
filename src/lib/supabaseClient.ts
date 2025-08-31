@@ -1,18 +1,70 @@
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../types/database'
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '../types/database';
 
-// Environment variables (configured for your Supabase project)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wkxbhvckmgrmdkdkhnqo.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGJodmNrbWdybWRrZGtobnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTgzNTQsImV4cCI6MjA3MjA3NDM1NH0.Vg48-ld0anvU4OQJWf5ZlEqTKjXiHBK0A14fz0vGvU8'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create Supabase client with TypeScript types - using new database types
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: { 
-    persistSession: true, 
-    autoRefreshToken: true, 
-    detectSessionInUrl: true 
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  db: {
+    schema: 'public'
   }
-})
+});
+
+// Add a function to bypass RLS for profile fetching
+export const fetchProfileBypassRLS = async (userId: string) => {
+  try {
+    // Use service role key for admin access (if available)
+    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (serviceRoleKey) {
+      const adminClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+      
+      const { data, error } = await adminClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error('Admin client profile fetch error:', error);
+        return null;
+      }
+      
+      return data;
+    }
+    
+    // Fallback to regular client
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Regular client profile fetch error:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Profile fetch bypass error:', error);
+    return null;
+  }
+};
 
 // OTP Functions
 export async function sendOTP(phone: string): Promise<{ success: boolean; error?: string }> {

@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { Logo } from '../../components/common/Logo';
+import { ProfileDebug } from '../../components/common/ProfileDebug';
+import { TestConnection } from '../../components/common/TestConnection';
 
 export const AppLayout: React.FC = () => {
   return (
@@ -32,6 +34,10 @@ export const AppLayout: React.FC = () => {
       <div className="md:hidden">
         <BottomNav />
       </div>
+      
+      {/* Debug Components */}
+      <ProfileDebug />
+      <TestConnection />
     </div>
   );
 };

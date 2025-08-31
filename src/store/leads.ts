@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { Lead, LeadFilters, User } from '../types';
 import { supabase } from '../lib/supabaseClient';
+import type { Database } from '../types/database';
+
+type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
 
 interface LeadState {
   leads: Lead[];
@@ -8,11 +11,13 @@ interface LeadState {
   error: string | null;
   lastFetched: number | null;
   
-  fetchLeads: (userId?: string, forceRefresh?: boolean) => Promise<void>;
+  fetchLeads: (userId?: string, forceRefresh?: boolean, assigneeFilter?: string) => Promise<void>;
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
   assignLeadsToUser: (leadIds: string[], userId: string) => Promise<void>;
+  assignLeadToUser: (leadId: string, assigneeId: string) => Promise<boolean>;
+  unassignLead: (leadId: string) => Promise<boolean>;
   getFilteredLeads: (filters: LeadFilters, user: User) => Lead[];
 }
 
@@ -25,7 +30,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   error: null,
   lastFetched: null,
   
-  fetchLeads: async (userId?: string, forceRefresh: boolean = false) => {
+  fetchLeads: async (userId?: string, forceRefresh: boolean = false, assigneeFilter?: string) => {
     const state = get();
     const now = Date.now();
     
@@ -48,6 +53,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
           id,
           project_id,
           buyer_user_id,
+          assigned_to_id,
           client_name,
           client_phone,
           client_email,
@@ -64,6 +70,18 @@ export const useLeadStore = create<LeadState>((set, get) => ({
         query = query.eq('buyer_user_id', userId);
       }
 
+      // Filter by assignee if specified
+      if (assigneeFilter) {
+        if (assigneeFilter === 'me') {
+          const { data: user } = await supabase.auth.getUser();
+          query = query.eq('assigned_to_id', user?.user?.id);
+        } else if (assigneeFilter === 'unassigned') {
+          query = query.is('assigned_to_id', null);
+        } else {
+          query = query.eq('assigned_to_id', assigneeFilter);
+        }
+      }
+
       const { data: leadsData, error } = await query;
 
       if (error) {
@@ -75,6 +93,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
           id: lead.id,
           projectId: lead.project_id,
           buyerUserId: lead.buyer_user_id || undefined,
+          assignedToId: lead.assigned_to_id || undefined,
           clientName: lead.client_name,
           clientPhone: lead.client_phone,
           clientPhone2: undefined, // Not in database schema
@@ -241,6 +260,69 @@ export const useLeadStore = create<LeadState>((set, get) => ({
     } catch (error) {
       console.error('Error assigning leads:', error);
       set({ error: error instanceof Error ? error.message : 'Failed to assign leads' });
+    }
+  },
+
+  assignLeadToUser: async (leadId: string, assigneeId: string) => {
+    try {
+      set({ error: null });
+      
+      const { data, error } = await supabase.rpc("rpc_assign_lead", { 
+        lead_id: leadId, 
+        assignee_id: assigneeId 
+      });
+      
+      if (error) {
+        throw new Error(`Failed to assign lead: ${error.message}`);
+      }
+
+      // Update local state
+      const currentLeads = get().leads;
+      const newLeads = currentLeads.map(lead => {
+        if (lead.id === leadId) {
+          return { ...lead, assignedToId: assigneeId };
+        }
+        return lead;
+      });
+      
+      set({ leads: newLeads });
+      return true;
+      
+    } catch (error) {
+      console.error('Error assigning lead:', error);
+      set({ error: error instanceof Error ? error.message : 'Failed to assign lead' });
+      return false;
+    }
+  },
+
+  unassignLead: async (leadId: string) => {
+    try {
+      set({ error: null });
+      
+      const { data, error } = await supabase.rpc("rpc_unassign_lead", { 
+        lead_id: leadId 
+      });
+      
+      if (error) {
+        throw new Error(`Failed to unassign lead: ${error.message}`);
+      }
+
+      // Update local state
+      const currentLeads = get().leads;
+      const newLeads = currentLeads.map(lead => {
+        if (lead.id === leadId) {
+          return { ...lead, assignedToId: undefined };
+        }
+        return lead;
+      });
+      
+      set({ leads: newLeads });
+      return true;
+      
+    } catch (error) {
+      console.error('Error unassigning lead:', error);
+      set({ error: error instanceof Error ? error.message : 'Failed to unassign lead' });
+      return false;
     }
   },
   

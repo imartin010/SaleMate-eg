@@ -17,6 +17,7 @@ const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
 const MyLeads = React.lazy(() => import('../pages/CRM/MyLeads'));
 const Shop = React.lazy(() => import('../pages/Shop/Shop'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
+const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
 const PartnersPage = React.lazy(() => import('../pages/Partners/PartnersPage'));
 const SupportPanel = React.lazy(() => import('../pages/Support/SupportPanel'));
 const AdminPanel = React.lazy(() => import('../pages/Admin/AdminPanel'));
@@ -85,6 +86,14 @@ export const router = createBrowserRouter([
           {
             path: 'deals',
             element: <SafePage><MyDeals /></SafePage>,
+          },
+          {
+            path: 'team',
+            element: (
+              <RoleGuard allowedRoles={['admin', 'manager']}>
+                <SafePage><TeamPage /></SafePage>
+              </RoleGuard>
+            ),
           },
           {
             path: 'partners',

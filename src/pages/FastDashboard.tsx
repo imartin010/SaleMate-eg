@@ -8,34 +8,109 @@ import {
   Handshake,
   FileText,
   ShoppingBag,
-  Settings
+  Settings,
+  Sparkles,
+  Activity,
+  CheckCircle,
+  RefreshCw
 } from 'lucide-react';
 
 const FastDashboard: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, profile, refreshProfile } = useAuthStore();
+
+  // Get user's display name
+  const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
 
   const quickStats = [
-    { label: 'Total Leads', value: '0', icon: Users, color: 'text-blue-600' },
-    { label: 'Active Deals', value: '0', icon: Handshake, color: 'text-green-600' },
-    { label: 'Revenue', value: '$0', icon: DollarSign, color: 'text-purple-600' },
-    { label: 'Growth', value: '0%', icon: TrendingUp, color: 'text-orange-600' },
+    { 
+      label: 'Total Leads', 
+      value: '0', 
+      icon: Users, 
+      color: 'text-blue-600',
+      bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
+      borderColor: 'border-blue-200'
+    },
+    { 
+      label: 'Active Deals', 
+      value: '0', 
+      icon: Handshake, 
+      color: 'text-green-600',
+      bgColor: 'bg-gradient-to-br from-green-50 to-green-100',
+      borderColor: 'border-green-200'
+    },
+    { 
+      label: 'Revenue', 
+      value: '$0', 
+      icon: DollarSign, 
+      color: 'text-purple-600',
+      bgColor: 'bg-gradient-to-br from-purple-50 to-purple-100',
+      borderColor: 'border-purple-200'
+    },
+    { 
+      label: 'Growth', 
+      value: '0%', 
+      icon: TrendingUp, 
+      color: 'text-orange-600',
+      bgColor: 'bg-gradient-to-br from-orange-50 to-orange-100',
+      borderColor: 'border-orange-200'
+    },
   ];
 
   const quickActions = [
-    { label: 'View Deals', href: '/deals', icon: Handshake, color: 'bg-blue-600' },
-    { label: 'Browse Shop', href: '/shop', icon: ShoppingBag, color: 'bg-green-600' },
-    { label: 'My Leads', href: '/crm', icon: FileText, color: 'bg-purple-600' },
-    { label: 'Settings', href: '/settings', icon: Settings, color: 'bg-gray-600' },
+    { 
+      label: 'View Deals', 
+      href: '/deals', 
+      icon: Handshake, 
+      color: 'bg-gradient-to-r from-blue-600 to-blue-700',
+      hoverColor: 'hover:from-blue-700 hover:to-blue-800'
+    },
+    { 
+      label: 'Browse Shop', 
+      href: '/shop', 
+      icon: ShoppingBag, 
+      color: 'bg-gradient-to-r from-green-600 to-green-700',
+      hoverColor: 'hover:from-green-700 hover:to-green-800'
+    },
+    { 
+      label: 'My Leads', 
+      href: '/crm', 
+      icon: FileText, 
+      color: 'bg-gradient-to-r from-purple-600 to-purple-700',
+      hoverColor: 'hover:from-purple-700 hover:to-purple-800'
+    },
+    { 
+      label: 'Settings', 
+      href: '/settings', 
+      icon: Settings, 
+      color: 'bg-gradient-to-r from-gray-600 to-gray-700',
+      hoverColor: 'hover:from-gray-700 hover:to-gray-800'
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
       {/* Welcome Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user?.name || 'User'}!
-        </h1>
-        <p className="text-gray-600">Here's what's happening with your real estate business</p>
+      <div className="text-center space-y-4 mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
+          <Sparkles className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-700">Dashboard</span>
+        </div>
+        <div className="flex items-center justify-center gap-4">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
+            Welcome back, {displayName}! 👋
+          </h1>
+          <button
+            onClick={refreshProfile}
+            className="p-2 rounded-full bg-white/80 hover:bg-white shadow-lg border border-gray-200 transition-all duration-200 hover:scale-110"
+            title="Refresh profile"
+          >
+            <RefreshCw className="h-5 w-5 text-blue-600" />
+          </button>
+        </div>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Here's what's happening with your real estate business today. Track your progress and stay ahead of the competition.
+        </p>
+
       </div>
 
       {/* Stats Grid */}
@@ -43,12 +118,19 @@ const FastDashboard: React.FC = () => {
         {quickStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="flex items-center">
-                <Icon className={`h-8 w-8 ${stat.color} mr-3`} />
-                <div>
-                  <p className="text-sm text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <div key={index} className="group">
+              <div className={`relative overflow-hidden rounded-2xl border ${stat.borderColor} bg-white shadow-sm hover:shadow-lg transition-all duration-300 p-6 h-full group-hover:scale-[1.02]`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-2xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
+                      <p className="text-sm text-gray-600 font-medium">{stat.label}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -58,7 +140,15 @@ const FastDashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
+            <Activity className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
+            <p className="text-sm text-gray-600">Common tasks to get you started</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, index) => {
             const Icon = action.icon;
@@ -66,9 +156,11 @@ const FastDashboard: React.FC = () => {
               <a
                 key={index}
                 href={action.href}
-                className={`${action.color} text-white p-4 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-3`}
+                className={`${action.color} ${action.hoverColor} text-white p-4 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-3 group`}
               >
-                <Icon className="h-5 w-5" />
+                <div className="p-2 rounded-lg bg-white/20 group-hover:scale-110 transition-transform duration-300">
+                  <Icon className="h-5 w-5" />
+                </div>
                 <span className="font-medium">{action.label}</span>
               </a>
             );
@@ -76,13 +168,28 @@ const FastDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Recent Activity Placeholder */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+      {/* Recent Activity */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+              <p className="text-sm text-gray-600">Your latest actions and updates</p>
+            </div>
+          </div>
+          <button className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+            <RefreshCw className="h-4 w-4 text-gray-600" />
+          </button>
+        </div>
         <div className="text-center py-8">
-          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No recent activity to display</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <BarChart3 className="h-6 w-6 text-gray-400" />
+          </div>
+          <p className="text-sm text-gray-600">No recent activity to display</p>
+          <p className="text-xs text-gray-500 mt-2">
             Start creating deals and leads to see your activity here
           </p>
         </div>

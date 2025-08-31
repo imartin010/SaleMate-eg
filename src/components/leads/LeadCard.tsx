@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Select } from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Lead, LeadStage, Project } from '../../types';
 import { formatPhone, formatRelativeTime, createTelUrl, createWhatsAppUrl } from '../../lib/format';
 import { useLeadStore } from '../../store/leads';
+import { useTeamStore } from '../../store/team';
+import { useAuthStore } from '../../store/auth';
 import { 
   Phone, 
   MessageCircle, 
@@ -22,7 +24,9 @@ import {
   Globe,
   User,
   Star,
-  TrendingUp
+  TrendingUp,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 
 interface LeadCardProps {
@@ -85,7 +89,9 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingStage, setEditingStage] = useState(lead.stage);
   const [editingFeedback, setEditingFeedback] = useState(lead.feedback || '');
-  const { updateLead } = useLeadStore();
+  const { updateLead, assignLeadToUser, unassignLead } = useLeadStore();
+  const { members } = useTeamStore();
+  const { user, profile } = useAuthStore();
 
   // Use the project data from the lead object
   const project = (lead as any).project;
@@ -102,6 +108,30 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
     setEditingStage(lead.stage);
     setEditingFeedback(lead.feedback || '');
     setIsEditing(false);
+  };
+
+  const handleAssignLead = async (assigneeId: string) => {
+    if (assigneeId === 'unassign') {
+      await unassignLead(lead.id);
+    } else {
+      await assignLeadToUser(lead.id, assigneeId);
+    }
+  };
+
+  const canAssignLead = () => {
+    if (!user || !profile) return false;
+    if (profile.role === 'admin' || profile.role === 'support') return true;
+    if (profile.role === 'manager') {
+      // Manager can assign leads they own or leads owned by their team
+      return lead.buyerUserId === user.id || members.some(m => m.id === lead.buyerUserId);
+    }
+    return false;
+  };
+
+  const getAssigneeName = (assigneeId: string) => {
+    if (assigneeId === user?.id) return 'Me';
+    const member = members.find(m => m.id === assigneeId);
+    return member?.name || 'Unknown';
   };
 
   return (
@@ -203,12 +233,16 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
             {isEditing ? (
               <Select
                 value={editingStage}
-                onChange={(e) => setEditingStage(e.target.value as LeadStage)}
-                className="w-full"
+                onValueChange={(value) => setEditingStage(value as LeadStage)}
               >
-                {LEAD_STAGES.map(stage => (
-                  <option key={stage} value={stage}>{stage}</option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_STAGES.map(stage => (
+                    <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             ) : (
               <Badge className={`${getStageColor(lead.stage)} border px-3 py-1.5 text-sm font-medium flex items-center gap-2 w-fit`}>
@@ -217,6 +251,54 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
               </Badge>
             )}
           </div>
+
+          {/* Assignment Section */}
+          {canAssignLead() && (
+            <div className="mb-4">
+              <span className="text-xs text-muted-foreground block mb-2">Assigned To</span>
+              <Select
+                value={lead.assignedToId || 'unassigned'}
+                onValueChange={handleAssignLead}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">
+                    <div className="flex items-center gap-2">
+                      <UserX className="h-4 w-4" />
+                      Unassigned
+                    </div>
+                  </SelectItem>
+                  <SelectItem value={user?.id}>
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" />
+                      Me
+                    </div>
+                  </SelectItem>
+                  {members.map(member => (
+                    <SelectItem key={member.id} value={member.id}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {member.name || member.email}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Show current assignment if not editing */}
+          {!canAssignLead() && lead.assignedToId && (
+            <div className="mb-4">
+              <span className="text-xs text-muted-foreground block mb-2">Assigned To</span>
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-3 py-1.5 text-sm font-medium flex items-center gap-2 w-fit">
+                <UserCheck className="h-3 w-3" />
+                {getAssigneeName(lead.assignedToId)}
+              </Badge>
+            </div>
+          )}
         </div>
 
         {/* Content */}

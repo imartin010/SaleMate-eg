@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
-import { Select } from '../../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { LeadTable } from '../../components/leads/LeadTable';
 import { LeadCard } from '../../components/leads/LeadCard';
 import { useAuthStore } from '../../store/auth';
+import { useTeamStore } from '../../store/team';
 import { supabase } from '../../lib/supabaseClient';
 import { Lead, LeadFilters, Platform, LeadStage } from '../../types';
 import { 
@@ -37,13 +39,24 @@ const LEAD_STAGES: LeadStage[] = [
 ];
 
 const MyLeads: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
+  const { members } = useTeamStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [projects, setProjects] = useState<{id: string; name: string; developer: string; region: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [filters, setFilters] = useState<LeadFilters>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('');
+
+  // Get assignee filter from URL params
+  useEffect(() => {
+    const assignee = searchParams.get('assignee');
+    if (assignee) {
+      setAssigneeFilter(assignee);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (user) {
@@ -89,6 +102,17 @@ const MyLeads: React.FC = () => {
         // Filter by user ID if not admin/support
         if (!['admin', 'support'].includes(user.role)) {
           query = query.eq('buyer_user_id', user.id);
+        }
+
+        // Apply assignee filter if specified
+        if (assigneeFilter) {
+          if (assigneeFilter === 'me') {
+            query = query.eq('assigned_to_id', user.id);
+          } else if (assigneeFilter === 'unassigned') {
+            query = query.is('assigned_to_id', null);
+          } else {
+            query = query.eq('assigned_to_id', assigneeFilter);
+          }
         }
 
         const { data: leadsData, error: leadsError } = await Promise.race([
@@ -156,17 +180,11 @@ const MyLeads: React.FC = () => {
 
   const loadProjectsFromBackend = async () => {
     try {
-      console.log('📝 Loading mock projects data');
+      console.log('📝 Loading projects data');
       
-      // Use mock projects data
-      const mockProjects = [
-        { id: 'mock-1', name: 'New Capital Towers', developer: 'Capital Group', region: 'New Cairo' },
-        { id: 'mock-2', name: 'Marina Heights', developer: 'Marina Developments', region: 'North Coast' },
-        { id: 'mock-3', name: 'Garden City Residences', developer: 'Green Developments', region: 'Sheikh Zayed' }
-      ];
-      
-      setProjects(mockProjects);
-      console.log(`✅ Loaded ${mockProjects.length} mock projects`);
+      // No mock data - projects will be loaded from database when available
+      setProjects([]);
+      console.log('✅ No projects available');
       
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -454,6 +472,38 @@ const MyLeads: React.FC = () => {
                   ))}
                 </Select>
               </div>
+
+              {/* Assignee Filter - Only show for managers and admins */}
+              {(profile?.role === 'manager' || profile?.role === 'admin') && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Assignee</label>
+                  <Select
+                    value={assigneeFilter}
+                    onValueChange={(value) => {
+                      setAssigneeFilter(value);
+                      if (value) {
+                        setSearchParams({ assignee: value });
+                      } else {
+                        setSearchParams({});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Assignees" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Assignees</SelectItem>
+                      <SelectItem value="me">Assigned to Me</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {members.map(member => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name || member.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
         )}

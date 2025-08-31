@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
-import { Select } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ProjectCard } from '../../components/projects/ProjectCard';
-import { supabase } from '../../lib/supabaseClient';
 import { Project } from '../../types';
 import { 
   Search, 
@@ -43,11 +40,9 @@ const Shop: React.FC = () => {
         setTimeout(() => reject(new Error('Database timeout')), 8000)
       );
 
-      const queryPromise = supabase
-        .from('projects')
-        .select('*')
-        .gt('available_leads', 0)
-        .order('name');
+      // Since projects table doesn't exist in the current schema, we'll use sample data
+      // In a real implementation, this would query the actual projects table
+      const queryPromise = Promise.reject(new Error('Projects table not available'));
 
       try {
         const { data: projectsData, error: projectsError } = await Promise.race([
@@ -82,54 +77,11 @@ const Shop: React.FC = () => {
         }
 
       } catch (dbError: any) {
-        console.warn('🔄 Database failed, using sample projects:', dbError.message);
+        console.warn('🔄 Database failed, no projects available:', dbError.message);
         
-        // Use realistic sample data as fallback
-        const sampleProjects: Project[] = [
-          {
-            id: 'sample-1',
-            name: 'New Capital Towers',
-            developer: 'Capital Group',
-            region: 'New Cairo',
-            availableLeads: 150,
-            description: 'Premium residential towers in New Cairo with modern amenities and facilities',
-            createdAt: new Date().toISOString(),
-            pricePerLead: 120
-          },
-          {
-            id: 'sample-2',
-            name: 'Marina Heights',
-            developer: 'Marina Developments',
-            region: 'North Coast',
-            availableLeads: 200,
-            description: 'Luxury beachfront apartments with stunning sea views and private beaches',
-            createdAt: new Date().toISOString(),
-            pricePerLead: 150
-          },
-          {
-            id: 'sample-3',
-            name: 'Garden City Residences',
-            developer: 'Green Developments',
-            region: 'Sheikh Zayed',
-            availableLeads: 100,
-            description: 'Family-friendly compound with beautiful gardens and recreational facilities',
-            createdAt: new Date().toISOString(),
-            pricePerLead: 100
-          },
-          {
-            id: 'sample-4',
-            name: 'Downtown Plaza',
-            developer: 'Urban Developers',
-            region: 'Downtown Cairo',
-            availableLeads: 75,
-            description: 'Modern commercial and residential complex in the heart of Cairo',
-            createdAt: new Date().toISOString(),
-            pricePerLead: 180
-          }
-        ];
-        
-        setProjects(sampleProjects);
-        console.log(`📝 Using ${sampleProjects.length} sample projects`);
+        // No sample data - show empty state
+        setProjects([]);
+        console.log('📝 No projects available');
       }
       
     } catch (error) {
@@ -369,23 +321,23 @@ const Shop: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Sort By</label>
-                <Select
+                <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'name' | 'leads' | 'region')}
-                  className="w-full"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
                 >
                   <option value="name">Project Name</option>
                   <option value="leads">Available Leads</option>
                   <option value="region">Region</option>
-                </Select>
+                </select>
               </div>
               
               <div>
                 <label className="text-sm font-medium mb-2 block">Region</label>
-                <Select
+                <select
                   value={regionFilter}
                   onChange={(e) => setRegionFilter(e.target.value)}
-                  className="w-full"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
                 >
                   <option value="">All Regions</option>
                   {regions.map(region => (
@@ -393,17 +345,17 @@ const Shop: React.FC = () => {
                       {region}
                     </option>
                   ))}
-                </Select>
+                </select>
               </div>
               
               <div>
                 <label className="text-sm font-medium mb-2 block">Lead Count</label>
-                <Select className="w-full">
+                <select className="w-full p-2 border border-gray-300 rounded-md bg-white">
                   <option value="">Any Amount</option>
                   <option value="50-100">50 - 100</option>
                   <option value="100-250">100 - 250</option>
                   <option value="250+">250+</option>
-                </Select>
+                </select>
               </div>
             </div>
           </div>
@@ -435,17 +387,29 @@ const Shop: React.FC = () => {
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Building className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">No projects found</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {hasActiveFilters ? 'No projects found' : 'No lead packages available'}
+          </h3>
           <p className="text-muted-foreground mb-4">
             {hasActiveFilters 
               ? 'Try adjusting your search criteria or filters.'
-              : 'Check back later for new premium projects.'
+              : 'There are currently no lead packages available for purchase. Please check back later or contact support for assistance.'
             }
           </p>
           {hasActiveFilters && (
             <Button variant="outline" onClick={clearFilters}>
               Clear Filters
             </Button>
+          )}
+          {!hasActiveFilters && (
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button variant="outline" onClick={loadShopProjects}>
+                Refresh
+              </Button>
+              <Button variant="outline">
+                Contact Support
+              </Button>
+            </div>
           )}
         </div>
       )}

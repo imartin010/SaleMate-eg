@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import { useAuthStore } from '../../store/auth';
 import { canAccessSupport, canAccessAdmin } from '../../lib/rbac';
 import { Logo } from '../../components/common/Logo';
+import { clearAllAuthData } from '../../lib/clearAuthData';
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +14,10 @@ import {
   Shield,
   Settings,
   LogOut,
+  FileText,
+  UserCheck,
+  RefreshCw,
+  Trash2,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,7 +26,20 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const location = useLocation();
-  const { user, profile, signOut } = useAuthStore();
+  const { user, profile, signOut, refreshProfile } = useAuthStore();
+  
+  // Debug logging
+  console.log('🔍 Sidebar - User:', user?.email);
+  console.log('🔍 Sidebar - Profile:', profile);
+  console.log('🔍 Sidebar - Profile Role:', profile?.role);
+
+  // Auto-refresh profile when component mounts
+  useEffect(() => {
+    if (user && (!profile || profile.role === 'user')) {
+      console.log('🔄 Auto-refreshing profile in Sidebar...');
+      refreshProfile();
+    }
+  }, [user, profile, refreshProfile]);
 
   if (!user) return null;
 
@@ -47,8 +65,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     {
       name: 'My Deals',
       href: '/deals',
-      icon: Handshake,
+      icon: FileText,
       show: true,
+    },
+    {
+      name: 'My Team',
+      href: '/team',
+      icon: UserCheck,
+      show: profile?.role === 'manager' || profile?.role === 'admin',
     },
     {
       name: 'Partners',
@@ -60,13 +84,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'Support',
       href: '/support',
       icon: HeadphonesIcon,
-      show: canAccessSupport(user.role),
+      show: canAccessSupport(profile?.role || 'user'),
     },
     {
       name: 'Admin',
       href: '/admin',
       icon: Shield,
-      show: canAccessAdmin(user.role),
+      show: canAccessAdmin(profile?.role || 'user'),
     },
     {
       name: 'Settings',
@@ -134,16 +158,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-400"></div>
             <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+            <button
+              onClick={refreshProfile}
+              className="ml-auto p-1 rounded hover:bg-white/20 transition-colors"
+              title="Refresh profile"
+            >
+              <RefreshCw className="h-3 w-3 text-muted-foreground" />
+            </button>
           </div>
         </div>
         
-        <button
-          onClick={signOut}
-          className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105"
-        >
-          <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          Logout
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={signOut}
+            className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105"
+          >
+            <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            Logout
+          </button>
+          
+          <button
+            onClick={clearAllAuthData}
+            className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-red-500 hover:scale-105"
+            title="Clear all authentication data and reload"
+          >
+            <Trash2 className="h-4 w-4 transition-transform group-hover:scale-110" />
+            Clear All Data
+          </button>
+        </div>
       </div>
     </div>
   );

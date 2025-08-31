@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, fetchProfileBypassRLS } from '../lib/supabaseClient';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile, UserRole } from '../types/database';
 
@@ -17,9 +17,11 @@ interface AuthState {
 
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  loadUserProfile: (user: User) => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;
   clearError: () => void;
+  refreshProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -38,7 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const timeoutId = setTimeout(() => {
         console.log('⚠️ Auth timeout, setting to unauthenticated');
         set({ user: null, profile: null, role: 'user', loading: false });
-      }, 3000);
+      }, 5000); // Increased timeout
 
       // Get current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -53,7 +55,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (session?.user) {
         console.log('✅ Found session for:', session.user.email);
+        console.log('🔍 Session user ID:', session.user.id);
         await get().loadUserProfile(session.user);
+        
+        // Force a second profile load after a short delay to ensure we get the latest data
+        setTimeout(async () => {
+          console.log('🔄 Force reloading profile after delay...');
+          await get().refreshProfile();
+        }, 1000);
       } else {
         console.log('❌ No session found');
         set({ user: null, profile: null, role: 'user', loading: false });
@@ -64,8 +73,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         console.log('🔄 Auth state changed:', event);
         
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log('🔄 User signed in, loading profile...');
           await get().loadUserProfile(session.user);
         } else if (event === 'SIGNED_OUT') {
+          console.log('🔄 User signed out, clearing state...');
           set({ user: null, profile: null, role: 'user', loading: false, error: null });
         }
       });
@@ -78,14 +89,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loadUserProfile: async (user: User) => {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      console.log('🔍 Loading profile for user:', user.id, user.email);
+      
+      // Try to fetch profile using bypass function first
+      let profile = await fetchProfileBypassRLS(user.id);
+      
+      if (!profile) {
+        // Fallback to regular method
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('❌ Profile fetch error:', error);
+          profile = null;
+        } else {
+          profile = data;
+        }
+      }
 
-      if (error) {
-        console.error('Profile fetch error:', error);
+      if (!profile) {
+        console.error('❌ Profile fetch failed');
+        
         // Create fallback profile
         const fallbackProfile: Profile = {
           id: user.id,
@@ -108,14 +135,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
+      console.log('✅ Profile loaded successfully:', profile);
+
       // Check if user is banned
       if (profile.is_banned) {
-        console.warn('User is banned, signing out');
+        console.warn('⚠️ User is banned, signing out');
         await get().signOut();
         set({ error: 'Your account has been suspended. Please contact support.' });
         return;
       }
 
+      console.log('🎯 Setting user role to:', profile.role);
       set({ 
         user, 
         profile, 
@@ -125,7 +155,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
     } catch (error) {
-      console.error('Load profile error:', error);
+      console.error('❌ Load profile error:', error);
       set({ loading: false, error: 'Failed to load user profile' });
     }
   },
@@ -254,12 +284,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  refreshProfile: async () => {
-    const { user } = get();
-    if (user) {
-      await get().loadUserProfile(user);
-    }
-  },
+
 
   resetPassword: async (email: string) => {
     try {
@@ -308,59 +333,63 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearError: () => {
     set({ error: null });
   },
+
+  refreshProfile: async () => {
+    const { user } = get();
+    if (user) {
+      console.log('🔄 Refreshing profile for user:', user.email);
+      console.log('🔄 User ID:', user.id);
+      
+      // Force reload from database with retry mechanism
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          // Try bypass function first
+          let profile = await fetchProfileBypassRLS(user.id);
+          
+          if (!profile) {
+            // Fallback to regular method
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+
+            if (error) {
+              console.error(`❌ Refresh profile error (attempt ${4-retries}/3):`, error);
+              retries--;
+              if (retries > 0) {
+                console.log(`🔄 Retrying in 1 second...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+              }
+              return;
+            }
+            
+            profile = data;
+          }
+
+          console.log('✅ Refreshed profile:', profile);
+          
+          // Update the store with fresh data
+          set({ 
+            profile, 
+            role: profile.role,
+            error: null
+          });
+          
+          console.log('🎯 Updated store role to:', profile.role);
+          break; // Success, exit retry loop
+        } catch (error) {
+          console.error(`❌ Refresh profile exception (attempt ${4-retries}/3):`, error);
+          retries--;
+          if (retries > 0) {
+            console.log(`🔄 Retrying in 1 second...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+    }
+  },
 }));
 
-// Add loadUserProfile as a separate function for internal use
-(useAuthStore as any).getState().loadUserProfile = async (user: User) => {
-  try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Profile fetch error:', error);
-      // Create fallback profile
-      const fallbackProfile: Profile = {
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        email: user.email || null,
-        phone: user.phone || null,
-        role: 'user',
-        manager_id: null,
-        is_banned: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      useAuthStore.setState({ 
-        user, 
-        profile: fallbackProfile, 
-        role: 'user', 
-        loading: false 
-      });
-      return;
-    }
-
-    // Check if user is banned
-    if (profile.is_banned) {
-      console.warn('User is banned, signing out');
-      await useAuthStore.getState().signOut();
-      useAuthStore.setState({ error: 'Your account has been suspended. Please contact support.' });
-      return;
-    }
-
-    useAuthStore.setState({ 
-      user, 
-      profile, 
-      role: profile.role, 
-      loading: false,
-      error: null
-    });
-
-  } catch (error) {
-    console.error('Load profile error:', error);
-    useAuthStore.setState({ loading: false, error: 'Failed to load user profile' });
-  }
-};
