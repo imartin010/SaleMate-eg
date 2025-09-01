@@ -22,10 +22,10 @@ export const Logo: React.FC<LogoProps> = ({
   };
 
   const iconSizes = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8',
-    lg: 'w-10 h-10',
-    xl: 'w-12 h-12'
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20'
   };
 
   if (variant === 'icon') {
@@ -70,9 +70,9 @@ export const Logo: React.FC<LogoProps> = ({
     );
   }
 
-  // Full variant (default)
+  // Full variant (default) - now shows only the icon, larger size
   return (
-    <div className={cn('flex items-center gap-3', className)}>
+    <div className={cn('flex items-center justify-center', className)}>
       <img 
         src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png"
         alt="SaleMate Logo"
@@ -90,19 +90,6 @@ export const Logo: React.FC<LogoProps> = ({
           target.parentNode?.appendChild(fallback);
         }}
       />
-      <div className="flex flex-col">
-        <h1 className={cn(
-          'font-bold text-gradient leading-tight',
-          sizeClasses[size]
-        )}>
-          SaleMate
-        </h1>
-        {showTagline && (
-          <p className="text-xs text-muted-foreground font-medium leading-tight">
-            Real Estate Excellence
-          </p>
-        )}
-      </div>
     </div>
   );
 };
