@@ -117,7 +117,7 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
-          <Logo variant="icon" size="xl" className="mx-auto mb-4" />
+          <Logo variant="icon" size="xl" className="mx-auto mb-4 scale-125" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h1>
           <p className="text-gray-600">Join SaleMate to get started</p>
         </div>

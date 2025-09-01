@@ -18,7 +18,7 @@ export const AuthGuard: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <Logo variant="icon" size="xl" className="mx-auto mb-2" />
+          <Logo variant="icon" size="xl" className="mx-auto mb-2 scale-125" />
           <p className="text-gray-600">Loading your account...</p>
         </div>
       </div>

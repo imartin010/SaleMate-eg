@@ -126,9 +126,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         isCollapsed ? 'px-2' : 'px-6'
       )}>
         {isCollapsed ? (
-          <Logo variant="icon" size="lg" className="scale-[1.5]" />
+          <Logo variant="icon" size="sm" className="scale-[1.2]" />
         ) : (
-          <Logo variant="icon" size="xl" className="scale-[2.5]" />
+          <Logo variant="icon" size="md" className="scale-[1.5]" />
         )}
       </div>
       
