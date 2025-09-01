@@ -35,9 +35,9 @@ export const AppLayout: React.FC = () => {
         <BottomNav />
       </div>
       
-      {/* Debug Components */}
-      <ProfileDebug />
-      <TestConnection />
+      {/* Debug Components - Removed for production */}
+      {/* <ProfileDebug />
+      <TestConnection /> */}
     </div>
   );
 };
