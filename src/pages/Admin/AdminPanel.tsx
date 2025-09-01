@@ -4,13 +4,13 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import LeadUpload from '../../components/admin/LeadUpload';
 import { BulkLeadUpload } from '../../components/admin/BulkLeadUpload';
 import { PurchaseRequestsManager } from '../../components/admin/PurchaseRequestsManager';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 
 import { useProjectStore } from '../../store/projects';
 import { useLeadStore } from '../../store/leads';
+import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
 import { User, UserRole } from '../../types';
 import { 
@@ -34,6 +34,7 @@ import {
 const AdminPanel: React.FC = () => {
   const { projects, fetchProjects, addProject, deleteProject } = useProjectStore();
   const { addLead } = useLeadStore();
+  const { user, profile } = useAuthStore();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'projects' | 'leads' | 'requests'>('overview');
   const [users, setUsers] = useState<User[]>([]);
@@ -235,6 +236,23 @@ const AdminPanel: React.FC = () => {
         <div className="text-center">
           <RefreshCw className="h-8 w-8 mx-auto mb-4 animate-spin text-primary" />
           <p className="text-muted-foreground">Loading admin data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user has admin role
+  if (!user || profile?.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h3>
+          <p className="text-gray-600">
+            You need administrator privileges to access the admin panel.
+          </p>
         </div>
       </div>
     );
