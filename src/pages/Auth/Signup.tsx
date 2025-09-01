@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { ReCaptcha } from '../../components/common/ReCaptcha';
 import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 export default function Signup() {
@@ -19,7 +18,6 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [signupSuccess, setSignupSuccess] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -57,10 +55,6 @@ export default function Signup() {
 
     if (formData.phone && !/^\+[1-9]\d{1,14}$/.test(formData.phone)) {
       errors.phone = 'Phone number must be in international format (e.g., +201234567890)';
-    }
-
-    if (!recaptchaToken) {
-      errors.recaptcha = 'Please complete the reCAPTCHA verification';
     }
     
     setValidationErrors(errors);
@@ -273,32 +267,6 @@ export default function Signup() {
               </button>
             </div>
           )}
-
-          {/* reCAPTCHA */}
-          <div className="space-y-2">
-            <ReCaptcha
-              onVerify={(token) => {
-                setRecaptchaToken(token);
-                if (validationErrors.recaptcha) {
-                  setValidationErrors(prev => ({ ...prev, recaptcha: undefined }));
-                }
-              }}
-              onExpired={() => {
-                setRecaptchaToken(null);
-                setValidationErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA expired. Please try again.' }));
-              }}
-              onError={() => {
-                setRecaptchaToken(null);
-                setValidationErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA error. Please try again.' }));
-              }}
-            />
-            {validationErrors.recaptcha && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.recaptcha}
-              </p>
-            )}
-          </div>
 
           <button
             type="submit"
