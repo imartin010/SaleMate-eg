@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
+import { ReCaptcha } from '../../components/common/ReCaptcha';
 import { Loader2, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
@@ -10,7 +11,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({});
+  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string; recaptcha?: string}>({});
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function Login() {
   }, [user, navigate]);
 
   const validateForm = () => {
-    const errors: {email?: string; password?: string} = {};
+    const errors: {email?: string; password?: string; recaptcha?: string} = {};
     
     if (!email) {
       errors.email = 'Email is required';
@@ -32,6 +34,10 @@ export default function Login() {
       errors.password = 'Password is required';
     } else if (password.length < 6) {
       errors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!recaptchaToken) {
+      errors.recaptcha = 'Please complete the reCAPTCHA verification';
     }
     
     setValidationErrors(errors);
@@ -143,6 +149,32 @@ export default function Login() {
               </button>
             </div>
           )}
+
+          {/* reCAPTCHA */}
+          <div className="space-y-2">
+            <ReCaptcha
+              onVerify={(token) => {
+                setRecaptchaToken(token);
+                if (validationErrors.recaptcha) {
+                  setValidationErrors(prev => ({ ...prev, recaptcha: undefined }));
+                }
+              }}
+              onExpired={() => {
+                setRecaptchaToken(null);
+                setValidationErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA expired. Please try again.' }));
+              }}
+              onError={() => {
+                setRecaptchaToken(null);
+                setValidationErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA error. Please try again.' }));
+              }}
+            />
+            {validationErrors.recaptcha && (
+              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {validationErrors.recaptcha}
+              </p>
+            )}
+          </div>
 
           <button
             type="submit"
