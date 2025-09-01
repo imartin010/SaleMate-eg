@@ -4,6 +4,7 @@ import { AppLayout } from './layout/AppLayout';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
+import { ScrollToTop } from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
 // AUTH PAGES: Import the real auth components
@@ -32,30 +33,53 @@ const PageLoader = () => (
 
 // Safe page wrapper with error boundary and suspense
 const SafePage = ({ children }: { children: React.ReactNode }) => (
-  <ErrorBoundary fallback={FastFallback}>
-    <Suspense fallback={<PageLoader />}>
-      {children}
-    </Suspense>
-  </ErrorBoundary>
+  <>
+    <ScrollToTop />
+    <ErrorBoundary fallback={FastFallback}>
+      <Suspense fallback={<PageLoader />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  </>
 );
 
 export const router = createBrowserRouter([
   // Public auth routes
   {
     path: '/auth/login',
-    element: <Login />,
+    element: (
+      <>
+        <ScrollToTop />
+        <Login />
+      </>
+    ),
   },
   {
     path: '/auth/signup', 
-    element: <Signup />,
+    element: (
+      <>
+        <ScrollToTop />
+        <Signup />
+      </>
+    ),
   },
   {
     path: '/auth/phone',
-    element: <PhoneLogin />,
+    element: (
+      <>
+        <ScrollToTop />
+        <PhoneLogin />
+      </>
+    ),
   },
   {
     path: '/auth/reset-password',
-    element: <ResetPassword />,
+    element: (
+      <>
+        <ScrollToTop />
+        <ResetPassword />
+      </>
+    ),
   },
   
   // Protected routes with AuthGuard
