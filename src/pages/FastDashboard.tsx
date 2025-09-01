@@ -88,9 +88,9 @@ const FastDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+    <div className="space-y-8">
       {/* Welcome Header */}
-      <div className="text-center space-y-4 mb-8">
+      <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
           <Sparkles className="h-4 w-4 text-blue-600" />
           <span className="text-sm font-medium text-blue-700">Dashboard</span>
@@ -114,7 +114,7 @@ const FastDashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {quickStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -139,7 +139,7 @@ const FastDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="mb-8">
+      <div>
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
             <Activity className="h-6 w-6 text-blue-600" />
