@@ -56,6 +56,10 @@ const AdminPanel: React.FC = () => {
   });
 
   const [csvData, setCsvData] = useState('');
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState<UserRole>('user');
+  const [updatingRole, setUpdatingRole] = useState(false);
 
   // Fetch real data from Supabase
   const fetchUsers = useCallback(async () => {
@@ -218,6 +222,52 @@ const AdminPanel: React.FC = () => {
     alert(`CSV Upload Complete!\nLeads Added: ${leadsAdded}\nLeads Updated: ${leadsUpdated}`);
     setCsvData('');
     setShowCSVUpload(false);
+  };
+
+  const handleRoleChange = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      setUpdatingRole(true);
+      setError(null);
+      
+      // Call the Supabase function to update user role
+      const { data, error } = await supabase.rpc('update_user_role', {
+        target_user_id: selectedUser.id,
+        new_role: newRole
+      });
+
+      if (error) throw error;
+      
+      const result = data as { success: boolean; error?: string; message?: string };
+      if (result?.success) {
+        // Update local state
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user.id === selectedUser.id 
+              ? { ...user, role: newRole }
+              : user
+          )
+        );
+        
+        setShowRoleDialog(false);
+        setSelectedUser(null);
+        setNewRole('user');
+      } else {
+        throw new Error(result?.error || 'Failed to update role');
+      }
+    } catch (err) {
+      console.error('Error updating user role:', err);
+      setError('Failed to update user role');
+    } finally {
+      setUpdatingRole(false);
+    }
+  };
+
+  const openRoleDialog = (user: User) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setShowRoleDialog(true);
   };
 
   // Calculate admin metrics from real data
@@ -544,6 +594,7 @@ const AdminPanel: React.FC = () => {
                             <Button
                               size="sm"
                               variant="ghost"
+                              onClick={() => openRoleDialog(user)}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
@@ -741,6 +792,63 @@ const AdminPanel: React.FC = () => {
                 </Button>
                 <Button onClick={handleCSVUpload} disabled={!csvData.trim()}>
                   Upload Data
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Role Change Dialog */}
+        <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change User Role</DialogTitle>
+              <DialogDescription>
+                Update the role for {selectedUser?.name} ({selectedUser?.email})
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Current Role</label>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <Badge variant="outline" className="capitalize">
+                    {selectedUser?.role}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">New Role</label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as UserRole)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="user">User</option>
+                  <option value="manager">Manager</option>
+                  <option value="support">Support</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowRoleDialog(false)}
+                  disabled={updatingRole}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleRoleChange} 
+                  disabled={updatingRole || newRole === selectedUser?.role}
+                >
+                  {updatingRole ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Role'
+                  )}
                 </Button>
               </div>
             </div>
