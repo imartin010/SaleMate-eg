@@ -26,6 +26,16 @@ export default function Signup() {
     }
   }, [user, navigate]);
 
+  // Auto redirect to login after signup success
+  useEffect(() => {
+    if (signupSuccess) {
+      const timer = setTimeout(() => {
+        navigate('/auth/login');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [signupSuccess, navigate]);
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     
@@ -98,15 +108,20 @@ export default function Signup() {
           <p className="text-gray-600 mb-4">
             Please check your email and click the verification link to activate your account.
           </p>
-          <p className="text-sm text-gray-500">
-            You'll be redirected to login once verified.
-          </p>
           <p className="text-gray-600 mb-6">
             Welcome to SaleMate! Please verify your email to access your dashboard.
           </p>
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Redirecting...
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Redirecting to login in 3 seconds...
+            </div>
+            <button 
+              onClick={() => navigate('/auth/login')}
+              className="text-blue-600 hover:text-blue-800 text-sm underline"
+            >
+              Go to Login Now
+            </button>
           </div>
         </div>
       </div>

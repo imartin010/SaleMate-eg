@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { supabase, fetchProfileBypassRLS } from '../lib/supabaseClient';
-import type { User, Session } from '@supabase/supabase-js';
-import type { Profile, UserRole } from '../types/database';
+import type { User } from '@supabase/supabase-js';
+import type { Database } from '../types/database';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type UserRole = Database['public']['Enums']['user_role'];
 
 interface AuthState {
   user: User | null;
@@ -21,7 +24,6 @@ interface AuthState {
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;
   clearError: () => void;
-  refreshProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -93,8 +95,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Try to fetch profile using bypass function first
       let profile = await fetchProfileBypassRLS(user.id);
+      console.log('🔍 Bypass RLS result:', profile);
       
       if (!profile) {
+        console.log('🔄 Bypass failed, trying regular method...');
         // Fallback to regular method
         const { data, error } = await supabase
           .from('profiles')
@@ -107,11 +111,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           profile = null;
         } else {
           profile = data;
+          console.log('✅ Regular fetch result:', profile);
         }
       }
 
       if (!profile) {
-        console.error('❌ Profile fetch failed');
+        console.error('❌ Profile fetch failed - creating fallback');
+        
+        // Try to get role from user metadata or create a more intelligent fallback
+        let fallbackRole: UserRole = 'user';
+        
+        // Check if we can determine role from user metadata
+        if (user.user_metadata?.role) {
+          fallbackRole = user.user_metadata.role as UserRole;
+          console.log('🎯 Using role from metadata:', fallbackRole);
+        }
         
         // Create fallback profile
         const fallbackProfile: Profile = {
@@ -119,17 +133,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
           email: user.email || null,
           phone: user.phone || null,
-          role: 'user',
+          role: fallbackRole,
           manager_id: null,
           is_banned: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         
+        console.log('🎯 Setting fallback profile with role:', fallbackRole);
         set({ 
           user, 
           profile: fallbackProfile, 
-          role: 'user', 
+          role: fallbackRole, 
           loading: false 
         });
         return;

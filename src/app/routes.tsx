@@ -17,6 +17,7 @@ import ResetPassword from '../pages/Auth/ResetPassword';
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
 const MyLeads = React.lazy(() => import('../pages/CRM/MyLeads'));
 const Shop = React.lazy(() => import('../pages/Shop/Shop'));
+const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
 const PartnersPage = React.lazy(() => import('../pages/Partners/PartnersPage'));
@@ -106,6 +107,10 @@ export const router = createBrowserRouter([
           {
             path: 'shop',
             element: <SafePage><Shop /></SafePage>,
+          },
+          {
+            path: 'inventory',
+            element: <SafePage><Inventory /></SafePage>,
           },
           {
             path: 'deals',

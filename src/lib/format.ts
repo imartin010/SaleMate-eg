@@ -24,11 +24,17 @@ export const formatPhone = (phone: string): string => {
   return phone;
 };
 
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number, currency: string = 'EGP'): string => {
   return new Intl.NumberFormat('en-EG', {
     style: 'currency',
-    currency: 'EGP',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2, // No decimals for whole numbers, 2 for decimals
   }).format(amount);
+};
+
+export const formatNumber = (num: number): string => {
+  return new Intl.NumberFormat('en-US').format(num);
 };
 
 export const createWhatsAppUrl = (phone: string, message?: string): string => {

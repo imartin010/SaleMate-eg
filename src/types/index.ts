@@ -279,4 +279,97 @@ export interface AdminPurchaseRequest extends LeadPurchaseRequest {
   };
 }
 
+// BRData Properties - Real Estate Inventory
+export interface BRDataProperty {
+  id: string;
+  unit_id?: string;
+  original_unit_id?: string;
+  sale_type?: string;
+  unit_number?: string;
+  unit_area?: number;
+  number_of_bedrooms?: number;
+  number_of_bathrooms?: number;
+  ready_by?: string;
+  finishing?: string;
+  garden_area?: number;
+  roof_area?: number;
+  floor_number?: number;
+  building_number?: string;
+  price_in_egp?: number;
+  price_per_meter?: number;
+  last_inventory_update?: string;
+  image?: string;
+  offers?: string;
+  is_launch?: boolean;
+  payment_plans?: string; // JSON string
+  currency?: string;
+  created_at: string;
+  updated_at: string;
+  
+  // JSON fields
+  compound?: {
+    id?: string;
+    name?: string;
+  };
+  area?: {
+    id?: string;
+    name?: string;
+  };
+  developer?: {
+    id?: string;
+    name?: string;
+  };
+  phase?: {
+    id?: string;
+    name?: string;
+  };
+  property_type?: {
+    id?: string;
+    name?: string;
+  };
+}
+
+// Filters for BRData Properties
+export interface BRDataPropertyFilters {
+  search?: string;
+  compound?: string;
+  area?: string;
+  developer?: string;
+  property_type?: string;
+  min_bedrooms?: number;
+  max_bedrooms?: number;
+  min_bathrooms?: number;
+  max_bathrooms?: number;
+  min_price?: number;
+  max_price?: number;
+  min_area?: number;
+  max_area?: number;
+  min_price_per_meter?: number;
+  max_price_per_meter?: number;
+  finishing?: string;
+  sale_type?: string;
+  is_launch?: boolean;
+  floor_number?: number;
+  unit_number?: string;
+  building_number?: string;
+  ready_by?: number;
+}
+
+// Sort options for BRData Properties
+export type BRDataPropertySortField = 
+  | 'price_in_egp' 
+  | 'unit_area' 
+  | 'number_of_bedrooms' 
+  | 'number_of_bathrooms' 
+  | 'price_per_meter'
+  | 'floor_number'
+  | 'unit_id'
+  | 'ready_by' 
+  | 'created_at';
+
+export interface BRDataPropertySort {
+  field: BRDataPropertySortField;
+  direction: 'asc' | 'desc';
+}
+
 

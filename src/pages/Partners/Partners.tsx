@@ -1,299 +1,397 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { useProjectStore } from '../../store/projects';
+import { supabase } from '../../lib/supabaseClient';
 import { 
   Search, 
-  ExternalLink,
+  Building,
+  MapPin,
+  Users,
+  Percent,
   TrendingUp,
   Award,
-  Users,
-  Target,
-  Shield,
-  CheckCircle,
-  Filter,
+  Home,
+  RefreshCw,
   Eye,
-  BarChart3,
-  Calendar,
-  MapPin,
-  Phone,
-  Mail,
-  Globe as GlobeIcon
+  DollarSign
 } from 'lucide-react';
 
-interface Partner {
+interface CompoundProject {
   id: string;
   name: string;
-  logo: string;
-  commissionRate: number;
+  developer: string;
+  area: string;
+  totalUnits: number;
+  averagePrice: number;
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  propertyTypes: string[];
+  launchStatus: boolean;
+  readyBy: string | null;
   description: string;
-  specialties: string[];
-  website: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  location?: string;
-  established?: string;
-  projectsCount?: number;
-  successRate?: number;
+  image?: string;
 }
 
-// Enhanced partner data with more details
-const PARTNERS: Partner[] = [
+// Partner commission data - this is what you wanted to edit
+const PARTNER_COMMISSIONS = [
   {
-    id: 'nawy',
-    name: 'Nawy',
-    logo: 'partners-logos/nawy-partners.png',
-    commissionRate: 2.8,
-    description: 'Egypt\'s leading proptech platform connecting buyers with verified properties.',
-    specialties: ['Residential', 'Luxury', 'Verified Properties', 'Digital Platform'],
-    website: 'https://nawy.com',
-    contactEmail: 'partners@nawy.com',
-    contactPhone: '+20 2 1234 5678',
-    location: 'Cairo, Egypt',
-    established: '2018',
-    projectsCount: 150,
-    successRate: 94
+    partnerId: '1',
+    partnerName: 'SaleMate',
+    logo: 'partners-logos/sale_mate_logo.png',
+    commissionRates: {
+      'default': 5.0,
+      'premium': 5.5,
+      'luxury': 6.0
+    }
   },
   {
-    id: 'bold-routes',
-    name: 'Bold Routes',
+    partnerId: '2',
+    partnerName: 'Bold Routes',
     logo: 'partners-logos/bold-routes-logo.png',
-    commissionRate: 3.0,
-    description: 'Innovative property solutions focusing on smart investments and modern living.',
-    specialties: ['Smart Investments', 'Modern Living', 'Innovation', 'Premium Service'],
-    website: 'https://boldroutes.com',
-    contactEmail: 'partnerships@boldroutes.com',
-    contactPhone: '+20 2 1234 5679',
-    location: 'New Cairo, Egypt',
-    established: '2020',
-    projectsCount: 89,
-    successRate: 91
+    commissionRates: {
+      'default': 4.5,
+      'premium': 5.0,
+      'luxury': 5.5
+    }
   },
   {
-    id: 'cb-link',
-    name: 'CB Link by Coldwell Banker',
-    logo: 'partners-logos/coldwell-banker-logo.png',
-    commissionRate: 4.0,
-    description: 'CB Link by Coldwell Banker - Global real estate brand with extensive market reach and premium service.',
-    specialties: ['Global Brand', 'Premium Service', 'Market Reach', 'International'],
-    website: 'https://cblink.com',
-    contactEmail: 'egypt@cblink.com',
-    contactPhone: '+20 2 1234 5680',
-    location: 'Multiple Cities, Egypt',
-    established: '2015',
-    projectsCount: 234,
-    successRate: 96
-  },
-  {
-    id: 'the-address',
-    name: 'The Address Investments',
+    partnerId: '3',
+    partnerName: 'The Address Investments',
     logo: 'partners-logos/the-address-investments-logo.png',
-    commissionRate: 3.5,
-    description: 'Leading real estate investment firm specializing in premium properties across Egypt.',
-    specialties: ['Premium Properties', 'Investment', 'Luxury', 'High-End'],
-    website: 'https://address-investments.com',
-    contactEmail: 'partners@address-investments.com',
-    contactPhone: '+20 2 1234 5681',
-    location: 'Cairo & Alexandria, Egypt',
-    established: '2019',
-    projectsCount: 67,
-    successRate: 89
+    commissionRates: {
+      'default': 4.55,
+      'premium': 5.0,
+      'luxury': 5.5
+    }
   },
   {
-    id: 'salemate',
-    name: 'SaleMate',
-    logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png',
-    commissionRate: 5.0,
-    description: 'Leading real estate platform connecting buyers with verified properties and trusted agents across Egypt.',
-    specialties: ['Platform', 'Verified Properties', 'Trusted Agents', 'Nationwide'],
-    website: 'https://salemate.com',
-    contactEmail: 'partnerships@salemate.com',
-    contactPhone: '+20 2 1234 5682',
-    location: 'Egypt Wide',
-    established: '2022',
-    projectsCount: 312,
-    successRate: 98
+    partnerId: '4',
+    partnerName: 'Nawy',
+    logo: 'partners-logos/nawy-partners.png',
+    commissionRates: {
+      'default': 3.2,
+      'premium': 3.8,
+      'digital': 4.0
+    }
+  },
+  {
+    partnerId: '5',
+    partnerName: 'CB Link by Coldwell Banker',
+    logo: 'partners-logos/coldwell-banker-logo.png',
+    commissionRates: {
+      'default': 3.5,
+      'premium': 4.0,
+      'luxury': 4.5
+    }
   }
 ];
 
 export const Partners: React.FC = () => {
-  const { fetchProjects } = useProjectStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'name' | 'commission' | 'success' | 'projects'>('commission');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [projects, setProjects] = useState<CompoundProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+  useEffect(() => {
+    loadCompoundProjects();
+  }, []);
 
-  // Filter and sort partners
-  const filteredAndSortedPartners = PARTNERS
-    .filter(partner => 
-      partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      partner.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      partner.specialties.some(specialty => 
-        specialty.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    )
-    .filter(partner => 
-      selectedSpecialty === '' || partner.specialties.includes(selectedSpecialty)
-    )
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'commission':
-          return b.commissionRate - a.commissionRate;
-        case 'success':
-          return (b.successRate || 0) - (a.successRate || 0);
-        case 'projects':
-          return (b.projectsCount || 0) - (a.projectsCount || 0);
-        default:
-          return 0;
+  const loadCompoundProjects = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🏢 Loading compound projects for Partners page...');
+      
+      // Fetch compound data from inventory
+      const { data, error: queryError } = await (supabase as any)
+        .from('salemate-inventory')
+        .select('compound, developer, area, price_in_egp, property_type, is_launch, ready_by, unit_area, image')
+        .not('compound', 'is', null);
+
+      if (queryError) {
+        throw new Error(`Database error: ${queryError.message}`);
       }
-    });
 
-  const allSpecialties = Array.from(
-    new Set(PARTNERS.flatMap(partner => partner.specialties))
-  ).sort();
+      // Group by compound and aggregate data
+      const compoundMap = new Map<string, CompoundProject>();
+
+      data?.forEach(property => {
+        const compound = property.compound as any;
+        let compoundName = '';
+        
+        if (compound?.name) {
+          compoundName = compound.name;
+        } else if (typeof compound === 'string') {
+          try {
+            const parsed = JSON.parse(compound.replace(/'/g, '"'));
+            compoundName = parsed.name || '';
+          } catch {
+            compoundName = compound;
+          }
+        }
+
+        if (!compoundName) return;
+
+        const developer = property.developer as any;
+        let developerName = '';
+        if (developer?.name) {
+          developerName = developer.name;
+        } else if (typeof developer === 'string') {
+          try {
+            const parsed = JSON.parse(developer.replace(/'/g, '"'));
+            developerName = parsed.name || '';
+          } catch {
+            developerName = developer;
+          }
+        }
+
+        const area = property.area as any;
+        let areaName = '';
+        if (area?.name) {
+          areaName = area.name;
+        } else if (typeof area === 'string') {
+          try {
+            const parsed = JSON.parse(area.replace(/'/g, '"'));
+            areaName = parsed.name || '';
+          } catch {
+            areaName = area;
+          }
+        }
+
+        const propertyType = property.property_type as any;
+        let propertyTypeName = '';
+        if (propertyType?.name) {
+          propertyTypeName = propertyType.name;
+        } else if (typeof propertyType === 'string') {
+          try {
+            const parsed = JSON.parse(propertyType.replace(/'/g, '"'));
+            propertyTypeName = parsed.name || '';
+          } catch {
+            propertyTypeName = propertyType;
+          }
+        }
+
+        if (!compoundMap.has(compoundName)) {
+          compoundMap.set(compoundName, {
+            id: compoundName.toLowerCase().replace(/\s+/g, '-'),
+            name: compoundName,
+            developer: developerName,
+            area: areaName,
+            totalUnits: 0,
+            averagePrice: 0,
+            priceRange: { min: Infinity, max: 0 },
+            propertyTypes: [],
+            launchStatus: false,
+            readyBy: null,
+            description: `Premium residential compound in ${areaName} by ${developerName}`,
+            image: property.image,
+          });
+        }
+
+        const project = compoundMap.get(compoundName)!;
+        project.totalUnits += 1;
+        
+        if (property.price_in_egp) {
+          project.priceRange.min = Math.min(project.priceRange.min, property.price_in_egp);
+          project.priceRange.max = Math.max(project.priceRange.max, property.price_in_egp);
+        }
+        
+        if (property.is_launch) {
+          project.launchStatus = true;
+        }
+        
+        if (property.ready_by && !project.readyBy) {
+          project.readyBy = property.ready_by;
+        }
+        
+        if (propertyTypeName && !project.propertyTypes.includes(propertyTypeName)) {
+          project.propertyTypes.push(propertyTypeName);
+        }
+      });
+
+      // Calculate average prices
+      const projectsArray = Array.from(compoundMap.values()).map(project => {
+        project.averagePrice = project.priceRange.min !== Infinity ? 
+          Math.round((project.priceRange.min + project.priceRange.max) / 2) : 0;
+        return project;
+      });
+
+      console.log(`✅ Loaded ${projectsArray.length} compound projects for Partners page`);
+      setProjects(projectsArray);
+
+    } catch (error: any) {
+      console.error('❌ Error loading compound projects:', error);
+      setError(error.message || 'Failed to load projects');
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter projects based on search
+  const filteredProjects = projects.filter(project => 
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.developer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.area.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Calculate commission for a project based on its characteristics
+  const getCommissionRate = (project: CompoundProject, partner: typeof PARTNER_COMMISSIONS[0]) => {
+    // Determine commission category based on project characteristics
+    if (project.averagePrice > 50000000) { // Over 50M EGP = luxury
+      return partner.commissionRates.luxury || partner.commissionRates.premium || partner.commissionRates.default;
+    } else if (project.averagePrice > 20000000 || project.launchStatus) { // Over 20M EGP or launch project = premium
+      return partner.commissionRates.premium || partner.commissionRates.default;
+    } else if (partner.commissionRates.digital && project.area.toLowerCase().includes('new cairo')) { // Digital for tech-savvy areas
+      return partner.commissionRates.digital;
+    } else {
+      return partner.commissionRates.default;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EGP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <div className="h-10 bg-gray-200 rounded animate-pulse w-1/3"></div>
+          <div className="h-5 bg-gray-200 rounded animate-pulse w-1/2"></div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="card-modern p-6">
+              <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold text-gradient">Partner Commissions</h1>
+          <p className="text-lg text-muted-foreground">
+            Discover commission opportunities with our verified partners
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <RefreshCw className="h-8 w-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Failed to load projects
+          </h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={loadCompoundProjects}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative px-6 py-16 mx-auto max-w-7xl">
-          <div className="text-center text-white">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Strategic Partnerships
-            </h1>
-            <p className="max-w-3xl mx-auto mt-6 text-xl text-blue-100">
-              Connect with Egypt's leading real estate partners. Access premium projects, 
-              earn competitive commissions, and grow your business with trusted collaborators.
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-gradient">Partner Commissions</h1>
+            <p className="text-lg text-muted-foreground">
+              Discover commission opportunities with our verified partners
             </p>
-            <div className="flex flex-wrap justify-center gap-4 mt-8">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm">
-                <Users className="w-5 h-5" />
-                <span className="font-medium">5 Premium Partners</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm">
-                <Target className="w-5 h-5" />
-                <span className="font-medium">Up to 5% Commission</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm">
-                <Shield className="w-5 h-5" />
-                <span className="font-medium">Verified & Trusted</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="px-6 py-8 mx-auto max-w-7xl">
-        <div className="flex flex-col gap-6 p-6 bg-white rounded-2xl shadow-lg border border-gray-100">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  placeholder="Search partners, specialties, or descriptions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              <select
-                value={selectedSpecialty}
-                onChange={(e) => setSelectedSpecialty(e.target.value)}
-                className="px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Specialties</option>
-                {allSpecialties.map(specialty => (
-                  <option key={specialty} value={specialty}>{specialty}</option>
-                ))}
-              </select>
-              
-                             <select
-                 value={sortBy}
-                 onChange={(e) => setSortBy(e.target.value as 'name' | 'commission' | 'success' | 'projects')}
-                 className="px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500"
-               >
-                <option value="commission">Sort by Commission</option>
-                <option value="success">Sort by Success Rate</option>
-                <option value="projects">Sort by Projects</option>
-                <option value="name">Sort by Name</option>
-              </select>
-              
-              <div className="flex border border-gray-200 rounded-lg overflow-hidden">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="rounded-none"
-                >
-                  <div className="grid grid-cols-2 gap-1 w-4 h-4">
-                    <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                    <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                    <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                    <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                  </div>
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="rounded-none"
-                >
-                  <div className="flex flex-col gap-1 w-4 h-4">
-                    <div className="w-full h-1 bg-current rounded-sm"></div>
-                    <div className="w-full h-1 bg-current rounded-sm"></div>
-                    <div className="w-full h-1 bg-current rounded-sm"></div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
           
-          {searchTerm || selectedSpecialty ? (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Filter className="w-4 h-4" />
-              <span>
-                Showing {filteredAndSortedPartners.length} of {PARTNERS.length} partners
-                {searchTerm && ` matching "${searchTerm}"`}
-                {selectedSpecialty && ` in ${selectedSpecialty}`}
-              </span>
+          <Button onClick={loadCompoundProjects} variant="outline" size="sm">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+              </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4 text-center">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 mx-auto mb-2">
+              <Building className="h-5 w-5 text-blue-600" />
+              </div>
+            <div className="text-2xl font-bold text-foreground">{filteredProjects.length}</div>
+            <div className="text-sm text-muted-foreground">Projects</div>
+          </Card>
+          
+          <Card className="p-4 text-center">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 mx-auto mb-2">
+              <Users className="h-5 w-5 text-green-600" />
             </div>
-          ) : null}
+            <div className="text-2xl font-bold text-foreground">{PARTNER_COMMISSIONS.length}</div>
+            <div className="text-sm text-muted-foreground">Partners</div>
+          </Card>
+          
+          <Card className="p-4 text-center">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 mx-auto mb-2">
+              <Percent className="h-5 w-5 text-purple-600" />
+          </div>
+            <div className="text-2xl font-bold text-foreground">4.4%</div>
+            <div className="text-sm text-muted-foreground">Avg Commission</div>
+          </Card>
+          
+          <Card className="p-4 text-center">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 mx-auto mb-2">
+              <Award className="h-5 w-5 text-orange-600" />
+          </div>
+            <div className="text-2xl font-bold text-foreground">6.0%</div>
+            <div className="text-sm text-muted-foreground">Highest Rate</div>
+          </Card>
+        </div>
+
+        {/* Search */}
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects, developers, or areas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Partners Grid/List */}
-      <div className="px-6 pb-16 mx-auto max-w-7xl">
-        {viewMode === 'grid' ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredAndSortedPartners.map((partner) => (
-              <Card 
-                key={partner.id} 
-                className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/80 backdrop-blur-sm"
-              >
+      {/* Project Cards with Commission Rates */}
+      <div className="space-y-6">
+        {filteredProjects.map((project) => (
+          <Card key={project.id} className="overflow-hidden">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="w-16 h-16 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                          {typeof partner.logo === 'string' && (partner.logo.startsWith('partners-logos/') || partner.logo.startsWith('http')) ? (
-                            <img 
-                              src={partner.logo.startsWith('http') ? partner.logo : `https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/${partner.logo}`}
-                              alt={`${partner.name} logo`}
-                              className="w-12 h-12 object-contain"
+                      {project.image ? (
+                        <img 
+                          src={project.image}
+                          alt={`${project.name} image`}
+                          className="w-12 h-12 object-cover rounded"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -307,384 +405,88 @@ export const Partners: React.FC = () => {
                             <div className="w-12 h-12 text-2xl flex items-center justify-center text-blue-600">🏢</div>
                           )}
                         </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-white" />
                         </div>
+                  <div>
+                    <CardTitle className="text-xl">{project.name}</CardTitle>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Building className="w-4 h-4" />
+                        {project.developer}
                       </div>
-                      <div>
-                        <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
-                          {partner.name}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
-                            {partner.commissionRate}% Commission
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {partner.successRate}% Success
-                          </Badge>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {project.area}
                         </div>
+                      <div className="flex items-center gap-1">
+                        <Home className="w-4 h-4" />
+                        {project.totalUnits} Units
                       </div>
                     </div>
                   </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {partner.description}
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Established</span>
-                      <span className="font-medium">{partner.established}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Projects</span>
-                      <span className="font-medium">{partner.projectsCount?.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Location</span>
-                      <span className="font-medium">{partner.location}</span>
-                    </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-green-600">
+                    {project.averagePrice > 0 ? formatCurrency(project.averagePrice) : 'On Request'}
                   </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {partner.specialties.slice(0, 3).map((specialty) => (
-                      <Badge key={specialty} variant="outline" className="text-xs">
-                        {specialty}
-                      </Badge>
-                    ))}
-                    {partner.specialties.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{partner.specialties.length - 3} more
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 group-hover:border-blue-500 group-hover:text-blue-600"
-                      onClick={() => setSelectedPartner(partner)}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
-                    </Button>
-                                         <a 
-                       href={partner.website} 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium inline-flex items-center justify-center transition-colors"
-                     >
-                       <ExternalLink className="w-4 h-4 mr-2" />
-                       Visit Website
-                     </a>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredAndSortedPartners.map((partner) => (
-              <Card 
-                key={partner.id} 
-                className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                        {typeof partner.logo === 'string' && (partner.logo.startsWith('partners-logos/') || partner.logo.startsWith('http')) ? (
-                          <img 
-                            src={partner.logo.startsWith('http') ? partner.logo : `https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/${partner.logo}`}
-                            alt={`${partner.name} logo`}
-                            className="w-16 h-16 object-contain"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const fallback = document.createElement('div');
-                              fallback.className = 'w-16 h-16 text-2xl flex items-center justify-center text-blue-600';
-                              fallback.innerHTML = '🏢';
-                              target.parentNode?.appendChild(fallback);
-                            }}
-                          />
-                        ) : (
-                          <div className="w-16 h-16 text-2xl flex items-center justify-center text-blue-600">🏢</div>
-                        )}
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-white" />
+                  <div className="text-sm text-gray-500">Average Price</div>
                       </div>
                     </div>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-gray-600">{project.description}</p>
                     
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
+                {/* Partner Commission Rates */}
                         <div>
-                          <h3 className="text-xl font-semibold group-hover:text-blue-600 transition-colors">
-                            {partner.name}
-                          </h3>
-                          <p className="text-gray-600 mt-1">{partner.description}</p>
+                  <h4 className="font-semibold text-gray-900 mb-3">Commission Rates by Partner:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {PARTNER_COMMISSIONS.map((partner) => {
+                      const commissionRate = getCommissionRate(project, partner);
+                      return (
+                        <div key={partner.partnerId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                              {partner.partnerName.charAt(0)}
+                            </div>
+                            <span className="font-medium text-sm">{partner.partnerName}</span>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {partner.commissionRate}%
+                            <div className="font-bold text-green-600">{commissionRate}%</div>
+                            <div className="text-xs text-gray-500">commission</div>
                           </div>
-                          <div className="text-sm text-gray-500">Commission</div>
+                        </div>
+                      );
+                    })}
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {partner.location}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          Est. {partner.established}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <BarChart3 className="w-4 h-4" />
-                          {partner.projectsCount} projects
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Target className="w-4 h-4" />
-                          {partner.successRate}% success
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {partner.specialties.map((specialty) => (
-                          <Badge key={specialty} variant="outline" className="text-xs">
-                            {specialty}
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setSelectedPartner(partner)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
-                                                 <a 
-                           href={partner.website} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium inline-flex items-center justify-center transition-colors"
-                         >
-                           <ExternalLink className="w-4 h-4 mr-2" />
-                           Visit Website
-                         </a>
-                         {partner.contactEmail && (
-                           <a 
-                             href={`mailto:${partner.contactEmail}`}
-                             className="px-4 py-2 rounded-md text-sm font-medium inline-flex items-center justify-center transition-colors hover:bg-gray-100"
-                           >
-                             <Mail className="w-4 h-4 mr-2" />
-                             Contact
-                           </a>
-                         )}
+                {/* Best Commission Highlight */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-green-600" />
+                    <span className="font-semibold text-green-800">
+                      Best Commission: {Math.max(...PARTNER_COMMISSIONS.map(p => getCommissionRate(project, p)))}% 
+                      with {PARTNER_COMMISSIONS.find(p => getCommissionRate(project, p) === Math.max(...PARTNER_COMMISSIONS.map(p => getCommissionRate(project, p))))?.partnerName}
+                    </span>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
-          </div>
-        )}
         
-        {filteredAndSortedPartners.length === 0 && (
+        {filteredProjects.length === 0 && (
           <div className="text-center py-16">
             <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
               <Search className="w-12 h-12 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No partners found</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No projects found</h3>
             <p className="text-gray-600 max-w-md mx-auto">
-              Try adjusting your search terms or filters to find the right partner for your needs.
+              Try adjusting your search terms to find the right project for your needs.
             </p>
           </div>
         )}
-      </div>
-
-      {/* Partner Detail Modal */}
-      {selectedPartner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                    {typeof selectedPartner.logo === 'string' && (selectedPartner.logo.startsWith('partners-logos/') || selectedPartner.logo.startsWith('http')) ? (
-                      <img 
-                        src={selectedPartner.logo.startsWith('http') ? selectedPartner.logo : `https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/${selectedPartner.logo}`}
-                        alt={`${selectedPartner.name} logo`}
-                        className="w-16 h-16 object-contain"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const fallback = document.createElement('div');
-                          fallback.className = 'w-16 h-16 text-2xl flex items-center justify-center text-blue-600';
-                          fallback.innerHTML = '🏢';
-                          target.parentNode?.appendChild(fallback);
-                        }}
-                      />
-                    ) : (
-                      <div className="w-16 h-16 text-2xl flex items-center justify-center text-blue-600">🏢</div>
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedPartner.name}</h2>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                        {selectedPartner.commissionRate}% Commission
-                      </Badge>
-                      <Badge variant="outline">{selectedPartner.successRate}% Success Rate</Badge>
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedPartner(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </Button>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">About</h3>
-                  <p className="text-gray-600 leading-relaxed">{selectedPartner.description}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">Established</div>
-                    <div className="font-semibold">{selectedPartner.established}</div>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">Projects</div>
-                    <div className="font-semibold">{selectedPartner.projectsCount?.toLocaleString()}</div>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">Location</div>
-                    <div className="font-semibold">{selectedPartner.location}</div>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">Success Rate</div>
-                    <div className="font-semibold text-green-600">{selectedPartner.successRate}%</div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Specialties</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedPartner.specialties.map((specialty) => (
-                      <Badge key={specialty} variant="outline" className="px-3 py-1">
-                        {specialty}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
-                  <div className="space-y-3">
-                    {selectedPartner.contactEmail && (
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-5 h-5 text-gray-400" />
-                        <a href={`mailto:${selectedPartner.contactEmail}`} className="text-blue-600 hover:underline">
-                          {selectedPartner.contactEmail}
-                        </a>
-                      </div>
-                    )}
-                    {selectedPartner.contactPhone && (
-                      <div className="flex items-center gap-3">
-                        <Phone className="w-5 h-5 text-gray-400" />
-                        <a href={`tel:${selectedPartner.contactPhone}`} className="text-blue-600 hover:underline">
-                          {selectedPartner.contactPhone}
-                        </a>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3">
-                      <GlobeIcon className="w-5 h-5 text-gray-400" />
-                      <a href={selectedPartner.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {selectedPartner.website}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex gap-3 pt-4">
-                                     <a 
-                     href={selectedPartner.website} 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium inline-flex items-center justify-center transition-colors"
-                   >
-                     <ExternalLink className="w-4 h-4 mr-2" />
-                     Visit Website
-                   </a>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => setSelectedPartner(null)}
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Section */}
-      <div className="px-6 py-16 mx-auto max-w-7xl">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Partner With Us?</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Join a network of successful real estate professionals and unlock new opportunities
-          </p>
-        </div>
-        
-        <div className="grid gap-8 md:grid-cols-3">
-          <div className="text-center group">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-10 h-10 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Higher Commissions</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Earn up to 5% commission on premium projects with our exclusive partner network
-            </p>
-          </div>
-          
-          <div className="text-center group">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <Target className="w-10 h-10 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Premium Projects</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Access to exclusive, high-value real estate projects across Egypt's top locations
-            </p>
-          </div>
-          
-          <div className="text-center group">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <Award className="w-10 h-10 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Recognition</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Build your reputation with top-tier partners and gain industry recognition
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
