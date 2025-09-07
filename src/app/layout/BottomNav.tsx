@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import { useAuthStore } from '../../store/auth';
@@ -14,11 +14,15 @@ import {
   UserCheck,
   HeadphonesIcon,
   Shield,
+  ChevronRight,
 } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { profile } = useAuthStore();
+  const navRef = useRef<HTMLElement>(null);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   const navigation = [
     {
@@ -90,10 +94,89 @@ export const BottomNav: React.FC = () => {
     return location.pathname.startsWith(href);
   };
 
+  // Check if navigation is scrollable
+  useEffect(() => {
+    const checkScrollable = () => {
+      if (navRef.current) {
+        const isScrollable = navRef.current.scrollWidth > navRef.current.clientWidth;
+        setShowScrollHint(isScrollable && !hasScrolled);
+      }
+    };
+
+    checkScrollable();
+    window.addEventListener('resize', checkScrollable);
+    return () => window.removeEventListener('resize', checkScrollable);
+  }, [navigation.length, hasScrolled]);
+
+  // Auto-scroll animation to show more options
+  useEffect(() => {
+    if (showScrollHint && navRef.current) {
+      const nav = navRef.current;
+      const scrollToRight = () => {
+        nav.scrollTo({
+          left: nav.scrollWidth - nav.clientWidth,
+          behavior: 'smooth'
+        });
+      };
+
+      const scrollToLeft = () => {
+        nav.scrollTo({
+          left: 0,
+          behavior: 'smooth'
+        });
+      };
+
+      // Start auto-scroll after a delay
+      const timer1 = setTimeout(() => {
+        scrollToRight();
+      }, 2000);
+
+      // Return to start after showing right side
+      const timer2 = setTimeout(() => {
+        scrollToLeft();
+      }, 4000);
+
+      // Hide hint after animation
+      const timer3 = setTimeout(() => {
+        setShowScrollHint(false);
+        setHasScrolled(true);
+      }, 6000);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
+  }, [showScrollHint]);
+
+  // Reset scroll hint when navigation changes
+  useEffect(() => {
+    setHasScrolled(false);
+  }, [navigation.length]);
+
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
-      <div className="glass rounded-2xl border border-white/20">
-        <nav className="flex overflow-x-auto scrollbar-hide p-2 gap-1">
+      <div className="glass rounded-2xl border border-white/20 relative">
+        {/* Scroll hint indicator */}
+        {showScrollHint && (
+          <div className="absolute -top-8 right-2 flex items-center gap-1 bg-primary/90 text-white px-2 py-1 rounded-full text-xs font-medium animate-pulse">
+            <span>More options</span>
+            <ChevronRight className="h-3 w-3" />
+          </div>
+        )}
+        
+        <nav 
+          ref={navRef}
+          className="flex overflow-x-auto scrollbar-hide p-2 gap-1"
+          onScroll={() => {
+            // Mark as scrolled when user manually scrolls
+            if (!hasScrolled) {
+              setHasScrolled(true);
+              setShowScrollHint(false);
+            }
+          }}
+        >
           {navigation.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
