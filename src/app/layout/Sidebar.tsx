@@ -40,6 +40,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     }
   }, [user, profile, refreshProfile]);
 
+  // Force refresh button for debugging
+  const handleForceRefresh = () => {
+    console.log('🔄 Force refreshing profile...');
+    refreshProfile();
+    // Also clear any cached data
+    localStorage.removeItem('auth-storage');
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
+
   if (!user) return null;
 
   const handleMouseEnter = () => setIsCollapsed(false);
@@ -189,9 +200,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             )}
           </div>
           {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-400"></div>
-              <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-400"></div>
+                <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+              </div>
+              <button
+                onClick={handleForceRefresh}
+                className="p-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-white/20 transition-colors"
+                title="Refresh Profile"
+              >
+                🔄
+              </button>
             </div>
           )}
         </div>
