@@ -43,72 +43,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   console.log('🎯 Effective Role:', effectiveProfile?.role);
   console.log('🔍 Is Admin Email:', isAdminEmail);
 
-  // Auto-refresh profile when component mounts
+  // Auto-refresh profile when component mounts (non-aggressive version)
   useEffect(() => {
-    if (user && (!profile || profile.role === 'user')) {
+    if (user && (!profile || (profile.role === 'user' && !isAdminEmail))) {
       console.log('🔄 Auto-refreshing profile in Sidebar...');
       refreshProfile();
-      
-      // If still showing as user after 3 seconds, force a more aggressive refresh
-      const timeoutId = setTimeout(() => {
-        const currentProfile = useAuthStore.getState().profile;
-        if (currentProfile && currentProfile.role === 'user') {
-          console.log('🚨 Still showing as user, forcing aggressive refresh...');
-          // Clear all possible auth storage
-          const keysToRemove = [
-            'sb-wkxbhvckmgrmdkdkhnqo-auth-token',
-            'sb-wkxbhvckmgrmdkdkhnqo-refresh-token',
-            'supabase.auth.token',
-            'supabase.auth.refreshToken',
-            'salemate-auth',
-            'auth-storage'
-          ];
-          
-          keysToRemove.forEach(key => {
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-          });
-          
-          window.location.reload();
-        }
-      }, 3000);
-      
-      return () => clearTimeout(timeoutId);
     }
-  }, [user, profile, refreshProfile]);
+  }, [user, profile, refreshProfile, isAdminEmail]);
 
-  // Force refresh button for debugging
+  // Force refresh button for debugging (non-destructive)
   const handleForceRefresh = () => {
     console.log('🔄 Force refreshing profile...');
     
-    // Clear all possible auth storage
-    const keysToRemove = [
-      'sb-wkxbhvckmgrmdkdkhnqo-auth-token',
-      'sb-wkxbhvckmgrmdkdkhnqo-refresh-token',
-      'supabase.auth.token',
-      'supabase.auth.refreshToken',
-      'salemate-auth',
-      'auth-storage',
-      'supabase.auth.expires_at',
-      'supabase.auth.expires_in',
-      'supabase.auth.token_type',
-      'supabase.auth.user',
-      'supabase.auth.session'
-    ];
+    // Only refresh the profile, don't clear auth storage
+    refreshProfile();
     
-    keysToRemove.forEach(key => {
+    // Optional: Clear only profile-specific cache (not auth tokens)
+    const profileCacheKeys = ['profile-cache', 'user-role-cache'];
+    profileCacheKeys.forEach(key => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
     
-    // Force refresh profile first
-    refreshProfile();
-    
-    // Then reload the page after a short delay
-    setTimeout(() => {
-      console.log('🔄 Reloading page to clear all cache...');
-      window.location.href = window.location.href;
-    }, 1000);
+    console.log('✅ Profile refresh completed');
   };
 
   if (!user) return null;
