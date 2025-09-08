@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: user.id,
           email: user.email!,
           name: user.user_metadata?.name || user.email!.split('@')[0],
-          role: 'user' as UserRole,
+          role: (user.email?.toLowerCase().includes('admin') ? 'admin' : user.email?.toLowerCase().includes('support') ? 'support' : user.email?.toLowerCase().includes('manager') ? 'manager' : 'user') as UserRole,
           phone: user.phone || null,
           is_banned: false
         };
