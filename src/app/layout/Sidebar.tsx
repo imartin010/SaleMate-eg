@@ -37,18 +37,67 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     if (user && (!profile || profile.role === 'user')) {
       console.log('🔄 Auto-refreshing profile in Sidebar...');
       refreshProfile();
+      
+      // If still showing as user after 3 seconds, force a more aggressive refresh
+      const timeoutId = setTimeout(() => {
+        const currentProfile = useAuthStore.getState().profile;
+        if (currentProfile && currentProfile.role === 'user') {
+          console.log('🚨 Still showing as user, forcing aggressive refresh...');
+          // Clear all possible auth storage
+          const keysToRemove = [
+            'sb-wkxbhvckmgrmdkdkhnqo-auth-token',
+            'sb-wkxbhvckmgrmdkdkhnqo-refresh-token',
+            'supabase.auth.token',
+            'supabase.auth.refreshToken',
+            'salemate-auth',
+            'auth-storage'
+          ];
+          
+          keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+          });
+          
+          window.location.reload();
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user, profile, refreshProfile]);
 
   // Force refresh button for debugging
   const handleForceRefresh = () => {
     console.log('🔄 Force refreshing profile...');
+    
+    // Clear all possible auth storage
+    const keysToRemove = [
+      'sb-wkxbhvckmgrmdkdkhnqo-auth-token',
+      'sb-wkxbhvckmgrmdkdkhnqo-refresh-token',
+      'supabase.auth.token',
+      'supabase.auth.refreshToken',
+      'salemate-auth',
+      'auth-storage',
+      'supabase.auth.expires_at',
+      'supabase.auth.expires_in',
+      'supabase.auth.token_type',
+      'supabase.auth.user',
+      'supabase.auth.session'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+    
+    // Force refresh profile first
     refreshProfile();
-    // Also clear any cached data
-    localStorage.removeItem('auth-storage');
+    
+    // Then reload the page after a short delay
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
+      console.log('🔄 Reloading page to clear all cache...');
+      window.location.href = window.location.href;
+    }, 1000);
   };
 
   if (!user) return null;
