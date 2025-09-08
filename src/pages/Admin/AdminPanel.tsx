@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { BulkLeadUpload } from '../../components/admin/BulkLeadUpload';
 import { PurchaseRequestsManager } from '../../components/admin/PurchaseRequestsManager';
 import { ErrorBoundary } from '../../components/common/ErrorBoundary';
+import { PageTitle } from '../../components/common/PageTitle';
 
 import { useProjectStore } from '../../store/projects';
 import { useLeadStore } from '../../store/leads';
@@ -312,13 +313,13 @@ const AdminPanel: React.FC = () => {
     <div className="space-y-8">
       {/* Header Section - Mobile First */}
       <div className="space-y-4">
+        <PageTitle
+          title="Admin Panel"
+          subtitle="System administration and data management"
+          icon={Shield}
+          color="red"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient">Admin Panel</h1>
-            <p className="text-lg text-muted-foreground">
-              System administration and data management
-            </p>
-          </div>
           <Button onClick={fetchAllData} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Data
@@ -482,7 +483,7 @@ const AdminPanel: React.FC = () => {
               <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
                 <h3 className="font-semibold text-foreground mb-1">Database</h3>
-                <p className="text-sm text-green-600">Connected to Supabase</p>
+                <p className="text-sm text-green-600">Operational</p>
               </div>
               
               <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">

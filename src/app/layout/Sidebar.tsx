@@ -16,7 +16,6 @@ import {
   LogOut,
   FileText,
   UserCheck,
-  RefreshCw,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -193,13 +192,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-green-400"></div>
               <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
-              <button
-                onClick={refreshProfile}
-                className="ml-auto p-1 rounded hover:bg-white/20 transition-colors"
-                title="Refresh profile"
-              >
-                <RefreshCw className="h-3 w-3 text-muted-foreground" />
-              </button>
             </div>
           )}
         </div>

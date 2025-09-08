@@ -23,6 +23,7 @@ export const BottomNav: React.FC = () => {
   const navRef = useRef<HTMLElement>(null);
   const [showScrollHint, setShowScrollHint] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   const navigation = [
     {
@@ -38,15 +39,21 @@ export const BottomNav: React.FC = () => {
       show: true,
     },
     {
-      name: 'Inventory',
-      href: '/inventory',
-      icon: Home,
-      show: true,
-    },
-    {
       name: 'CRM',
       href: '/crm',
       icon: Users,
+      show: true,
+    },
+    {
+      name: 'Partners',
+      href: '/partners',
+      icon: Handshake,
+      show: true,
+    },
+    {
+      name: 'Inventory',
+      href: '/inventory',
+      icon: Home,
       show: true,
     },
     {
@@ -60,12 +67,6 @@ export const BottomNav: React.FC = () => {
       href: '/team',
       icon: UserCheck,
       show: profile?.role === 'manager' || profile?.role === 'admin',
-    },
-    {
-      name: 'Partners',
-      href: '/partners',
-      icon: Handshake,
-      show: true,
     },
     {
       name: 'Support',
@@ -94,12 +95,16 @@ export const BottomNav: React.FC = () => {
     return location.pathname.startsWith(href);
   };
 
-  // Check if navigation is scrollable
+  // Check if navigation is scrollable and show demo scroll
   useEffect(() => {
     const checkScrollable = () => {
       if (navRef.current) {
         const isScrollable = navRef.current.scrollWidth > navRef.current.clientWidth;
-        setShowScrollHint(isScrollable && !hasScrolled);
+        setShowScrollHint(isScrollable);
+        
+        if (isScrollable && !hasScrolled) {
+          startDemoScroll();
+        }
       }
     };
 
@@ -108,49 +113,39 @@ export const BottomNav: React.FC = () => {
     return () => window.removeEventListener('resize', checkScrollable);
   }, [navigation.length, hasScrolled]);
 
-  // Auto-scroll animation to show more options
-  useEffect(() => {
-    if (showScrollHint && navRef.current) {
-      const nav = navRef.current;
-      const scrollToRight = () => {
-        nav.scrollTo({
-          left: nav.scrollWidth - nav.clientWidth,
-          behavior: 'smooth'
-        });
-      };
-
-      const scrollToLeft = () => {
+  // Demo scroll function - goes right once then back to left
+  const startDemoScroll = () => {
+    if (!navRef.current || isScrolling) return;
+    
+    setIsScrolling(true);
+    const nav = navRef.current;
+    const maxScroll = nav.scrollWidth - nav.clientWidth;
+    
+    // Scroll to the right
+    nav.scrollTo({
+      left: maxScroll,
+      behavior: 'smooth'
+    });
+    
+    // After a brief pause, scroll back to the left
+    setTimeout(() => {
+      if (navRef.current) {
         nav.scrollTo({
           left: 0,
           behavior: 'smooth'
         });
-      };
+        
+        // Mark as scrolled and hide hint after animation
+        setTimeout(() => {
+          setHasScrolled(true);
+          setIsScrolling(false);
+          setShowScrollHint(false);
+        }, 1000);
+      }
+    }, 1500);
+  };
 
-      // Start auto-scroll after a delay
-      const timer1 = setTimeout(() => {
-        scrollToRight();
-      }, 2000);
-
-      // Return to start after showing right side
-      const timer2 = setTimeout(() => {
-        scrollToLeft();
-      }, 4000);
-
-      // Hide hint after animation
-      const timer3 = setTimeout(() => {
-        setShowScrollHint(false);
-        setHasScrolled(true);
-      }, 6000);
-
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-        clearTimeout(timer3);
-      };
-    }
-  }, [showScrollHint]);
-
-  // Reset scroll hint when navigation changes
+  // Reset scroll when navigation changes
   useEffect(() => {
     setHasScrolled(false);
   }, [navigation.length]);
@@ -159,7 +154,7 @@ export const BottomNav: React.FC = () => {
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
       <div className="glass rounded-2xl border border-white/20 relative">
         {/* Scroll hint indicator */}
-        {showScrollHint && (
+        {showScrollHint && isScrolling && (
           <div className="absolute -top-8 right-2 flex items-center gap-1 bg-primary/90 text-white px-2 py-1 rounded-full text-xs font-medium animate-pulse">
             <span>More options</span>
             <ChevronRight className="h-3 w-3" />

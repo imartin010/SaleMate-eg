@@ -120,3 +120,5 @@ SELECT 'Partners table created successfully' as status;
 SELECT COUNT(*) as total_compounds FROM public.partners;
 
 
+
+

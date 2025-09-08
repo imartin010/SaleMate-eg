@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
+import { PageTitle } from '../components/common/PageTitle';
 import { useAuthStore } from '../store/auth';
 import { supabase } from '../lib/supabaseClient';
 import { formatDate } from '../lib/format';
@@ -25,7 +26,8 @@ import {
   Trash2,
   Phone,
   X,
-  Loader2
+  Loader2,
+  Settings as SettingsIcon
 } from 'lucide-react';
 
 const Settings: React.FC = () => {
@@ -222,14 +224,13 @@ const Settings: React.FC = () => {
 
       {/* Header Section - Mobile First */}
       <div className="space-y-4">
+        <PageTitle
+          title="Settings"
+          subtitle="Manage your account preferences and application settings"
+          icon={SettingsIcon}
+          color="gray"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient">Settings</h1>
-            <p className="text-lg text-muted-foreground">
-              Manage your account preferences and application settings
-            </p>
-          </div>
-          
           {/* Mobile Actions */}
           <div className="flex items-center gap-2 sm:hidden">
             {isEditing && (

@@ -6,6 +6,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { Select } from '../../components/ui/select';
 import { Badge } from '../../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { PageTitle } from '../../components/common/PageTitle';
 
 import { useSupportStore } from '../../store/support';
 import { useAuthStore } from '../../store/auth';
@@ -140,14 +141,13 @@ const SupportPanel: React.FC = () => {
 
       {/* Header Section - Mobile First */}
       <div className="space-y-4">
+        <PageTitle
+          title="Support Panel"
+          subtitle="Manage support cases and user administration"
+          icon={Headphones}
+          color="yellow"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient">Support Panel</h1>
-            <p className="text-lg text-muted-foreground">
-              Manage support cases and user administration
-            </p>
-          </div>
-          
           {/* Mobile Actions */}
           <div className="flex items-center gap-2 sm:hidden">
             <Button

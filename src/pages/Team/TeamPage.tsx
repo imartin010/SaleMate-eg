@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTeamStore } from '../../store/team';
 import { useAuthStore } from '../../store/auth';
 import { useNavigate } from 'react-router-dom';
+import { PageTitle } from '../../components/common/PageTitle';
 import { 
   Plus, 
   Users, 
@@ -107,16 +108,12 @@ const TeamPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center space-y-4 mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700">Team Management</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
-            My Team
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Manage your team members and assign leads to maximize productivity.
-          </p>
+          <PageTitle
+            title="My Team"
+            subtitle="Manage your team members and assign leads to maximize productivity."
+            icon={Users}
+            color="pink"
+          />
         </div>
 
         {/* Stats */}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { PageTitle } from '../../components/common/PageTitle';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   Search, 
@@ -14,7 +15,8 @@ import {
   Phone,
   MessageCircle,
   Eye,
-  Star
+  Star,
+  Handshake
 } from 'lucide-react';
 
 interface PartnerProject {
@@ -230,14 +232,16 @@ const PartnersPage: React.FC = () => {
       {/* Compact Header */}
       <div className="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="text-center space-y-4 mb-4">
+            <PageTitle
+              title="Partner Commissions"
+              subtitle={`Calculate earnings • ${filteredProjects.length} compounds`}
+              icon={Handshake}
+              color="indigo"
+            />
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Partner Commissions
-              </h1>
-              <p className="text-gray-600 text-sm">Calculate earnings • {filteredProjects.length} compounds</p>
-            </div>
-        <div className="relative">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
                 placeholder="Search compounds..."

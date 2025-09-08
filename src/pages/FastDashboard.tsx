@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuthStore } from '../store/auth';
+import { PageTitle } from '../components/common/PageTitle';
 import { 
   BarChart3, 
   Users, 
@@ -11,12 +12,11 @@ import {
   Settings,
   Sparkles,
   Activity,
-  CheckCircle,
-  RefreshCw
+  CheckCircle
 } from 'lucide-react';
 
 const FastDashboard: React.FC = () => {
-  const { user, profile, refreshProfile } = useAuthStore();
+  const { user, profile } = useAuthStore();
 
   // Get user's display name
   const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
@@ -91,26 +91,12 @@ const FastDashboard: React.FC = () => {
     <div className="space-y-8">
       {/* Welcome Header */}
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
-          <Sparkles className="h-4 w-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700">Dashboard</span>
-        </div>
-        <div className="flex items-center justify-center gap-4">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
-            Welcome back, {displayName}! 👋
-          </h1>
-          <button
-            onClick={refreshProfile}
-            className="p-2 rounded-full bg-white/80 hover:bg-white shadow-lg border border-gray-200 transition-all duration-200 hover:scale-110"
-            title="Refresh profile"
-          >
-            <RefreshCw className="h-5 w-5 text-blue-600" />
-          </button>
-        </div>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Here's what's happening with your real estate business today. Track your progress and stay ahead of the competition.
-        </p>
-
+        <PageTitle
+          title={`Dashboard`}
+          subtitle={` Hello ${displayName}! 👋`}
+          icon={Sparkles}
+          color="blue"
+        />
       </div>
 
       {/* Stats Grid */}
@@ -180,9 +166,6 @@ const FastDashboard: React.FC = () => {
               <p className="text-sm text-gray-600">Your latest actions and updates</p>
             </div>
           </div>
-          <button className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-            <RefreshCw className="h-4 w-4 text-gray-600" />
-          </button>
         </div>
         <div className="text-center py-8">
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">

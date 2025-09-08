@@ -239,3 +239,5 @@ SELECT 'All compounds fetched and populated successfully' as status;
 SELECT COUNT(*) as total_compounds_created FROM public.partners;
 
 
+
+

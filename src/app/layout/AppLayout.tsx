@@ -17,9 +17,9 @@ export const AppLayout: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header with Logo */}
-        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-4">
-          <div className="flex items-center justify-center">
-            <Logo variant="icon" size="xl" className="scale-125" />
+        <div className="md:hidden bg-white border-b border-gray-200 px-4">
+          <div className="flex items-center justify-center py-0">
+            <Logo variant="icon" size="md" className="scale-100" />
           </div>
         </div>
         

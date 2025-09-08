@@ -9,8 +9,10 @@ import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Progress } from '../ui/progress';
 import { useProjectStore } from '../../store/projects';
+import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
-import type { Project, BulkUploadRequest, BulkUploadResponse } from '../../types';
+import type { Project, BulkUploadResponse } from '../../types';
+import type { Database } from '../../types/database';
 import { 
   Upload, 
   FileText, 
@@ -29,6 +31,7 @@ interface UploadStatus {
 
 export const BulkLeadUpload: React.FC = () => {
   const { projects, fetchProjects } = useProjectStore();
+  const { user } = useAuthStore();
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ status: 'idle' });
   const [formData, setFormData] = useState({
     projectId: '',
@@ -95,13 +98,15 @@ export const BulkLeadUpload: React.FC = () => {
 
       const leads = [];
       const errors = [];
-      let successCount = 0;
       let failedCount = 0;
 
       // Process each row
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        const leadData: any = {};
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+        
+        const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, '')); // Remove quotes
+        const leadData: Record<string, string> = {};
         
         // Map values to lead fields
         headers.forEach((header, index) => {
@@ -118,18 +123,39 @@ export const BulkLeadUpload: React.FC = () => {
           continue;
         }
 
-        // Set defaults
-        leadData.platform = leadData.platform || 'Other';
-        leadData.stage = leadData.stage || 'New Lead';
-        leadData.source = leadData.source || 'Bulk Upload';
+        // Validate and normalize enum values
+        const validPlatforms = ['Facebook', 'Google', 'TikTok', 'Other'];
+        const validStages = ['New Lead', 'Potential', 'Hot Lead', 'Non Potential'];
+        
+        const platform = validPlatforms.includes(leadData.platform) ? leadData.platform : 'Other';
+        const stage = validStages.includes(leadData.stage) ? leadData.stage : 'New Lead';
 
-        leads.push({
-          ...leadData,
-          project_id: formData.projectId,
-          cpl_price: parseFloat(formData.cplPrice),
-          created_at: new Date().toISOString()
-        });
-        successCount++;
+        // Set defaults and ensure required fields are properly typed
+        // Start with minimal required fields only
+        const processedLead: Partial<Database["public"]["Tables"]["leads"]["Insert"]> = {
+          client_name: leadData.client_name,
+          client_phone: leadData.client_phone,
+          platform: platform as Database["public"]["Enums"]["platform_type"],
+          project_id: formData.projectId
+        };
+
+        // Add optional fields only if they exist in the data
+        if (leadData.client_phone2) processedLead.client_phone2 = leadData.client_phone2;
+        if (leadData.client_phone3) processedLead.client_phone3 = leadData.client_phone3;
+        if (leadData.client_email) processedLead.client_email = leadData.client_email;
+        if (leadData.client_job_title) processedLead.client_job_title = leadData.client_job_title;
+        if (leadData.source) processedLead.source = leadData.source;
+        if (leadData.feedback) processedLead.feedback = leadData.feedback;
+        
+        // Add system fields
+        processedLead.stage = stage as Database["public"]["Enums"]["lead_stage"];
+        processedLead.cpl_price = parseFloat(formData.cplPrice) || null;
+        processedLead.is_sold = false;
+        
+        // Add user ID if available
+        if (user?.id) processedLead.upload_user_id = user.id;
+
+        leads.push(processedLead);
       }
 
       // Insert leads in batches
@@ -138,6 +164,13 @@ export const BulkLeadUpload: React.FC = () => {
 
       for (let i = 0; i < leads.length; i += batchSize) {
         const batch = leads.slice(i, i + batchSize);
+        
+        // Debug logging
+        console.log('Attempting to insert batch:', {
+          batchSize: batch.length,
+          sampleLead: batch[0],
+          allFields: Object.keys(batch[0] || {})
+        });
 
         const { data: insertedBatch, error: insertError } = await supabase
           .from('leads')
@@ -146,22 +179,35 @@ export const BulkLeadUpload: React.FC = () => {
 
         if (insertError) {
           console.error('Insert error:', insertError);
+          console.error('Error details:', insertError.details);
+          console.error('Error hint:', insertError.hint);
           failedCount += batch.length;
-          errors.push(`Batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}`);
+          errors.push(`Batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}${insertError.details ? ` - ${insertError.details}` : ''}`);
         } else {
           insertedLeads.push(...(insertedBatch || []));
+          console.log(`Successfully inserted batch of ${insertedBatch?.length || 0} leads`);
         }
       }
 
       // Update project available leads count
       if (insertedLeads.length > 0) {
-        await supabase
+        // First get the current count
+        const { data: projectData } = await supabase
           .from('projects')
-          .update({ 
-            available_leads: supabase.sql`available_leads + ${insertedLeads.length}`,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', formData.projectId);
+          .select('available_leads')
+          .eq('id', formData.projectId)
+          .single();
+
+        if (projectData) {
+          const newCount = (projectData.available_leads || 0) + insertedLeads.length;
+          await supabase
+            .from('projects')
+            .update({ 
+              available_leads: newCount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', formData.projectId);
+        }
       }
 
       setUploadStatus({

@@ -4,6 +4,7 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card } from '../../components/ui/card';
+import { PageTitle } from '../../components/common/PageTitle';
 import { supabase } from '../../lib/supabaseClient';
 import { BRDataProperty, BRDataPropertyFilters, BRDataPropertySort } from '../../types';
 import { formatCurrency, formatNumber } from '../../lib/format';
@@ -847,14 +848,13 @@ const Inventory: React.FC = () => {
     <div className="space-y-8">
       {/* Header Section */}
       <div className="space-y-4">
+        <PageTitle
+          title="Property Inventory"
+          subtitle="Browse and manage real estate properties from Our Data Science Department"
+          icon={Home}
+          color="teal"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient">Property Inventory</h1>
-            <p className="text-lg text-muted-foreground">
-              Browse and manage real estate properties from Our Data Science Department
-            </p>
-          </div>
-          
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={refreshData}>
               <RefreshCw className="h-4 w-4 mr-2" />

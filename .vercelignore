@@ -1,0 +1,13 @@
+node_modules
+brdata_properties_rows.csv
+brdata_split_files/
+*.csv
+*.sql
+*.py
+*.md
+*.sh
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

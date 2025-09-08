@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { PageTitle } from '../../components/common/PageTitle';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   Search, 
@@ -15,7 +16,8 @@ import {
   Home,
   RefreshCw,
   Eye,
-  DollarSign
+  DollarSign,
+  Handshake
 } from 'lucide-react';
 
 interface CompoundProject {
@@ -313,19 +315,18 @@ export const Partners: React.FC = () => {
     <div className="space-y-8">
       {/* Header Section */}
       <div className="space-y-4">
+        <PageTitle
+          title="Partner Commissions"
+          subtitle="Discover commission opportunities with our verified partners"
+          icon={Handshake}
+          color="indigo"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient">Partner Commissions</h1>
-            <p className="text-lg text-muted-foreground">
-              Discover commission opportunities with our verified partners
-            </p>
-              </div>
-          
           <Button onClick={loadCompoundProjects} variant="outline" size="sm">
             <TrendingUp className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-              </div>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

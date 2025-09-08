@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
+import { PageTitle } from '../../components/common/PageTitle';
 import { 
   Plus, 
   FileText, 
@@ -254,11 +255,15 @@ const FastMyDeals: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Deals</h1>
-            <p className="text-gray-600">Manage and track your real estate deals</p>
-          </div>
+        <div className="text-center space-y-4 mb-6">
+          <PageTitle
+            title="My Deals"
+            subtitle="Manage and track your real estate deals"
+            icon={FileText}
+            color="orange"
+          />
+        </div>
+        <div className="flex items-center justify-center">
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"

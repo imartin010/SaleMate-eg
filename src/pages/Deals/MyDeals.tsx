@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-
+import { PageTitle } from '../../components/common/PageTitle';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { 
   Plus, 
@@ -151,16 +151,12 @@ const MyDeals: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center space-y-4 mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700">Deals</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
-            My Deals
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Track and manage your real estate deals with comprehensive tools and insights.
-          </p>
+          <PageTitle
+            title="My Deals"
+            subtitle="Track and manage your real estate deals with comprehensive tools and insights."
+            icon={FileText}
+            color="orange"
+          />
         </div>
 
         {/* Stats Cards */}

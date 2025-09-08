@@ -3,6 +3,7 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ProjectCard } from '../../components/projects/ProjectCard';
+import { PageTitle } from '../../components/common/PageTitle';
 import { Project } from '../../types';
 import { 
   Search, 
@@ -177,14 +178,13 @@ const Shop: React.FC = () => {
     <div className="space-y-8">
       {/* Header Section - Mobile First */}
       <div className="space-y-4">
+        <PageTitle
+          title="Leads Shop"
+          subtitle="Purchase high-quality leads from premium real estate projects"
+          icon={ShoppingCart}
+          color="green"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient">Leads Shop</h1>
-            <p className="text-lg text-muted-foreground">
-              Purchase high-quality leads from premium real estate projects
-            </p>
-          </div>
-          
           {/* Mobile Actions */}
           <div className="flex items-center gap-2 sm:hidden">
             <Button

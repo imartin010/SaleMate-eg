@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { LeadTable } from '../../components/leads/LeadTable';
 import { LeadCard } from '../../components/leads/LeadCard';
+import { PageTitle } from '../../components/common/PageTitle';
 import { useAuthStore } from '../../store/auth';
 import { useTeamStore } from '../../store/team';
 import { supabase } from '../../lib/supabaseClient';
@@ -275,18 +276,13 @@ const MyLeads: React.FC = () => {
     <div className="space-y-6">
       {/* Header Section - Mobile First */}
       <div className="space-y-4">
+        <PageTitle
+          title="My Leads"
+          subtitle="Manage your lead pipeline and drive conversions"
+          icon={Users}
+          color="purple"
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gradient">My Leads</h1>
-            <p className="text-muted-foreground">
-              Manage your lead pipeline and drive conversions
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-green-600 font-medium">Connected to Supabase Backend</span>
-            </div>
-          </div>
-          
           {/* Mobile Actions */}
           <div className="flex items-center gap-2 sm:hidden">
             <Button
