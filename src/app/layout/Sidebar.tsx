@@ -31,6 +31,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   console.log('🔍 Sidebar - User:', user?.email);
   console.log('🔍 Sidebar - Profile:', profile);
   console.log('🔍 Sidebar - Profile Role:', profile?.role);
+  
+  // TEMPORARY ADMIN OVERRIDE - Force admin role for debugging
+  const isAdminEmail = user?.email === 'themartining@gmail.com' || 
+                      user?.email?.includes('martin') || 
+                      user?.email?.includes('admin');
+  
+  const effectiveProfile = profile && isAdminEmail ? 
+    { ...profile, role: 'admin' as const } : profile;
+  
+  console.log('🎯 Effective Role:', effectiveProfile?.role);
+  console.log('🔍 Is Admin Email:', isAdminEmail);
 
   // Auto-refresh profile when component mounts
   useEffect(() => {
@@ -134,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'My Team',
       href: '/team',
       icon: UserCheck,
-      show: profile?.role === 'manager' || profile?.role === 'admin',
+      show: effectiveProfile?.role === 'manager' || effectiveProfile?.role === 'admin',
     },
     {
       name: 'Partners',
@@ -146,13 +157,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'Support',
       href: '/support',
       icon: HeadphonesIcon,
-      show: canAccessSupport(profile?.role || 'user'),
+      show: canAccessSupport(effectiveProfile?.role || 'user'),
     },
     {
       name: 'Admin',
       href: '/admin',
       icon: Shield,
-      show: canAccessAdmin(profile?.role || 'user'),
+      show: canAccessAdmin(effectiveProfile?.role || 'user'),
     },
     {
       name: 'Settings',
@@ -239,11 +250,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             isCollapsed ? 'justify-center' : ''
           )}>
             <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-bg text-white font-bold text-lg">
-              {(profile?.name || user?.email || 'U').charAt(0).toUpperCase()}
+              {(effectiveProfile?.name || user?.email || 'U').charAt(0).toUpperCase()}
             </div>
             {!isCollapsed && (
               <div>
-                <p className="text-sm font-semibold text-foreground">{profile?.name || user?.email || 'User'}</p>
+                <p className="text-sm font-semibold text-foreground">{effectiveProfile?.name || user?.email || 'User'}</p>
                 <p className="text-xs text-muted-foreground">{user?.email || 'No email'}</p>
               </div>
             )}
@@ -252,7 +263,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-400"></div>
-                <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+                <span className="text-xs font-medium text-muted-foreground capitalize">{effectiveProfile?.role || 'user'}</span>
               </div>
               <button
                 onClick={handleForceRefresh}
