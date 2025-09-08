@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -7,29 +8,62 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       comments: {
         Row: {
+          author_id: string
+          content: string
+          created_at: string | null
           id: string
           post_id: string
-          author_id: string
-          content: string
-          created_at: string
+          updated_at: string | null
         }
         Insert: {
-          id?: string
-          post_id: string
           author_id: string
           content: string
-          created_at?: string
+          created_at?: string | null
+          id?: string
+          post_id: string
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          post_id?: string
           author_id?: string
           content?: string
-          created_at?: string
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -45,156 +79,151 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
-      deals: {
+      lead_batches: {
         Row: {
+          batch_name: string
+          cpl_price: number | null
+          created_at: string | null
+          failed_leads: number | null
           id: string
-          user_id: string
-          deal_type: "EOI" | "Reservation" | "Contract"
-          project_name: string
-          developer_name: string
-          client_name: string
-          unit_code: string
-          developer_sales_name: string
-          developer_sales_phone: string
-          deal_value: number
-          downpayment_percentage: number
-          payment_plan_years: number
-          deal_stage: "Reservation" | "Contracted" | "Collected" | "Ready to payout"
-          status: "pending" | "approved" | "rejected"
-          admin_notes: string | null
-          created_at: string
-          updated_at: string
+          project_id: string
+          status: string | null
+          successful_leads: number | null
+          total_leads: number | null
+          updated_at: string | null
+          upload_user_id: string
         }
         Insert: {
+          batch_name: string
+          cpl_price?: number | null
+          created_at?: string | null
+          failed_leads?: number | null
           id?: string
-          user_id: string
-          deal_type: "EOI" | "Reservation" | "Contract"
-          project_name: string
-          developer_name: string
-          client_name: string
-          unit_code: string
-          developer_sales_name: string
-          developer_sales_phone: string
-          deal_value: number
-          downpayment_percentage: number
-          payment_plan_years: number
-          deal_stage?: "Reservation" | "Contracted" | "Collected" | "Ready to payout"
-          status?: "pending" | "approved" | "rejected"
-          admin_notes?: string | null
-          created_at?: string
-          updated_at?: string
+          project_id: string
+          status?: string | null
+          successful_leads?: number | null
+          total_leads?: number | null
+          updated_at?: string | null
+          upload_user_id: string
         }
         Update: {
+          batch_name?: string
+          cpl_price?: number | null
+          created_at?: string | null
+          failed_leads?: number | null
           id?: string
-          user_id?: string
-          deal_type?: "EOI" | "Reservation" | "Contract"
-          project_name?: string
-          developer_name?: string
-          client_name?: string
-          unit_code?: string
-          developer_sales_name?: string
-          developer_sales_phone?: string
-          deal_value?: number
-          downpayment_percentage?: number
-          payment_plan_years?: number
-          deal_stage?: "Reservation" | "Contracted" | "Collected" | "Ready to payout"
-          status?: "pending" | "approved" | "rejected"
-          admin_notes?: string | null
-          created_at?: string
-          updated_at?: string
+          project_id?: string
+          status?: string | null
+          successful_leads?: number | null
+          total_leads?: number | null
+          updated_at?: string | null
+          upload_user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "deals_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "lead_batches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "lead_analytics_mv"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "lead_batches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_batches_upload_user_id_fkey"
+            columns: ["upload_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      deal_attachments: {
-        Row: {
-          id: string
-          deal_id: string
-          file_name: string
-          file_path: string
-          file_size: number
-          mime_type: string
-          uploaded_at: string
-        }
-        Insert: {
-          id?: string
-          deal_id: string
-          file_name: string
-          file_path: string
-          file_size: number
-          mime_type: string
-          uploaded_at?: string
-        }
-        Update: {
-          id?: string
-          deal_id?: string
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          mime_type?: string
-          uploaded_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deal_attachments_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          }
+          },
         ]
       }
       leads: {
         Row: {
-          id: string
-          project_id: string
+          assigned_to_id: string | null
+          batch_id: string | null
           buyer_user_id: string | null
+          client_email: string | null
+          client_job_title: string | null
           client_name: string
           client_phone: string
-          client_email: string | null
-          platform: "Facebook" | "Google" | "TikTok" | "Other"
-          stage: "New Lead" | "Potential" | "Hot Case" | "Meeting Done" | "No Answer" | "Call Back" | "Whatsapp" | "Wrong Number" | "Non Potential"
+          client_phone2: string | null
+          client_phone3: string | null
+          cpl_price: number | null
+          created_at: string | null
           feedback: string | null
-          created_at: string
-          updated_at: string
+          id: string
+          is_sold: boolean | null
+          platform: Database["public"]["Enums"]["platform_type"]
+          project_id: string
+          sold_at: string | null
+          source: string | null
+          stage: Database["public"]["Enums"]["lead_stage"] | null
+          updated_at: string | null
+          upload_user_id: string | null
         }
         Insert: {
-          id?: string
-          project_id: string
+          assigned_to_id?: string | null
+          batch_id?: string | null
           buyer_user_id?: string | null
+          client_email?: string | null
+          client_job_title?: string | null
           client_name: string
           client_phone: string
-          client_email?: string | null
-          platform: "Facebook" | "Google" | "TikTok" | "Other"
-          stage?: "New Lead" | "Potential" | "Hot Case" | "Meeting Done" | "No Answer" | "Call Back" | "Whatsapp" | "Wrong Number" | "Non Potential"
+          client_phone2?: string | null
+          client_phone3?: string | null
+          cpl_price?: number | null
+          created_at?: string | null
           feedback?: string | null
-          created_at?: string
-          updated_at?: string
+          id?: string
+          is_sold?: boolean | null
+          platform: Database["public"]["Enums"]["platform_type"]
+          project_id: string
+          sold_at?: string | null
+          source?: string | null
+          stage?: Database["public"]["Enums"]["lead_stage"] | null
+          updated_at?: string | null
+          upload_user_id?: string | null
         }
         Update: {
-          id?: string
-          project_id?: string
+          assigned_to_id?: string | null
+          batch_id?: string | null
           buyer_user_id?: string | null
+          client_email?: string | null
+          client_job_title?: string | null
           client_name?: string
           client_phone?: string
-          client_email?: string | null
-          platform?: "Facebook" | "Google" | "TikTok" | "Other"
-          stage?: "New Lead" | "Potential" | "Hot Case" | "Meeting Done" | "No Answer" | "Call Back" | "Whatsapp" | "Wrong Number" | "Non Potential"
+          client_phone2?: string | null
+          client_phone3?: string | null
+          cpl_price?: number | null
+          created_at?: string | null
           feedback?: string | null
-          created_at?: string
-          updated_at?: string
+          id?: string
+          is_sold?: boolean | null
+          platform?: Database["public"]["Enums"]["platform_type"]
+          project_id?: string
+          sold_at?: string | null
+          source?: string | null
+          stage?: Database["public"]["Enums"]["lead_stage"] | null
+          updated_at?: string | null
+          upload_user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_buyer_user_id_fkey"
             columns: ["buyer_user_id"]
@@ -206,112 +235,70 @@ export type Database = {
             foreignKeyName: "leads_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "lead_analytics_mv"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "leads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "leads_upload_user_id_fkey"
+            columns: ["upload_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
-      }
-      lead_analytics_mv: {
-        Row: {
-          user_id: string
-          name: string
-          role: "admin" | "manager" | "support" | "user"
-          manager_id: string | null
-          total_leads: number
-          new_leads: number
-          potential_leads: number
-          hot_leads: number
-          meeting_done: number
-          no_answer: number
-          call_back: number
-          whatsapp: number
-          wrong_number: number
-          non_potential: number
-          conversion_rate: number
-          total_orders: number
-          total_spent: number
-          joined_at: string
-          last_updated: string
-        }
-        Insert: {
-          user_id: string
-          name: string
-          role: "admin" | "manager" | "support" | "user"
-          manager_id?: string | null
-          total_leads: number
-          new_leads: number
-          potential_leads: number
-          hot_leads: number
-          meeting_done: number
-          no_answer: number
-          call_back: number
-          whatsapp: number
-          wrong_number: number
-          non_potential: number
-          conversion_rate: number
-          total_orders: number
-          total_spent: number
-          joined_at: string
-          last_updated: string
-        }
-        Update: {
-          user_id?: string
-          name?: string
-          role?: "admin" | "manager" | "support" | "user"
-          manager_id?: string | null
-          total_leads?: number
-          new_leads?: number
-          potential_leads?: number
-          hot_leads?: number
-          meeting_done?: number
-          no_answer?: number
-          call_back?: number
-          whatsapp?: number
-          wrong_number?: number
-          non_potential?: number
-          conversion_rate?: number
-          total_orders?: number
-          total_spent?: number
-          joined_at?: string
-          last_updated?: string
-        }
-        Relationships: []
       }
       orders: {
         Row: {
+          created_at: string | null
           id: string
-          user_id: string
+          payment_method: Database["public"]["Enums"]["payment_method_type"]
+          payment_reference: string | null
           project_id: string
           quantity: number
-          payment_method: "Instapay" | "VodafoneCash" | "BankTransfer"
-          status: "pending" | "confirmed" | "failed"
+          status: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
-          payment_reference: string | null
-          created_at: string
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
+          created_at?: string | null
           id?: string
-          user_id: string
+          payment_method: Database["public"]["Enums"]["payment_method_type"]
+          payment_reference?: string | null
           project_id: string
           quantity: number
-          payment_method: "Instapay" | "VodafoneCash" | "BankTransfer"
-          status?: "pending" | "confirmed" | "failed"
+          status?: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
-          payment_reference?: string | null
-          created_at?: string
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
+          created_at?: string | null
           id?: string
-          user_id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method_type"]
+          payment_reference?: string | null
           project_id?: string
           quantity?: number
-          payment_method?: "Instapay" | "VodafoneCash" | "BankTransfer"
-          status?: "pending" | "confirmed" | "failed"
+          status?: Database["public"]["Enums"]["order_status"] | null
           total_amount?: number
-          payment_reference?: string | null
-          created_at?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "lead_analytics_mv"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "orders_project_id_fkey"
             columns: ["project_id"]
@@ -325,60 +312,66 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       partners: {
         Row: {
-          id: string
-          name: string
+          commission_rate: number | null
+          created_at: string | null
           description: string | null
-          commission_rate: number
+          id: string
           logo_path: string | null
+          name: string
+          status: Database["public"]["Enums"]["partner_status"] | null
+          updated_at: string | null
           website: string | null
-          status: "active" | "inactive"
-          created_at: string
         }
         Insert: {
-          id?: string
-          name: string
+          commission_rate?: number | null
+          created_at?: string | null
           description?: string | null
-          commission_rate: number
+          id?: string
           logo_path?: string | null
+          name: string
+          status?: Database["public"]["Enums"]["partner_status"] | null
+          updated_at?: string | null
           website?: string | null
-          status?: "active" | "inactive"
-          created_at?: string
         }
         Update: {
-          id?: string
-          name?: string
+          commission_rate?: number | null
+          created_at?: string | null
           description?: string | null
-          commission_rate?: number
+          id?: string
           logo_path?: string | null
+          name?: string
+          status?: Database["public"]["Enums"]["partner_status"] | null
+          updated_at?: string | null
           website?: string | null
-          status?: "active" | "inactive"
-          created_at?: string
         }
         Relationships: []
       }
       posts: {
         Row: {
-          id: string
           author_id: string
           content: string
-          created_at: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
         }
         Insert: {
-          id?: string
           author_id: string
           content: string
-          created_at?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
         }
         Update: {
-          id?: string
           author_id?: string
           content?: string
-          created_at?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -387,114 +380,110 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       profiles: {
         Row: {
-          id: string
-          name: string
+          created_at: string | null
           email: string
-          role: "admin" | "manager" | "support" | "user"
+          id: string
+          is_banned: boolean | null
           manager_id: string | null
-          is_banned: boolean
-          created_at: string
-          updated_at: string
+          name: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
         }
         Insert: {
-          id: string
-          name: string
+          created_at?: string | null
           email: string
-          role?: "admin" | "manager" | "support" | "user"
+          id: string
+          is_banned?: boolean | null
           manager_id?: string | null
-          is_banned?: boolean
-          created_at?: string
-          updated_at?: string
+          name: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          name?: string
+          created_at?: string | null
           email?: string
-          role?: "admin" | "manager" | "support" | "user"
+          id?: string
+          is_banned?: boolean | null
           manager_id?: string | null
-          is_banned?: boolean
-          created_at?: string
-          updated_at?: string
+          name?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       projects: {
         Row: {
+          available_leads: number | null
+          created_at: string | null
+          description: string | null
+          developer: string
           id: string
           name: string
-          developer: string
-          region: string
-          available_leads: number
           price_per_lead: number
-          description: string | null
-          created_at: string
-          updated_at: string
+          region: string
+          updated_at: string | null
         }
         Insert: {
+          available_leads?: number | null
+          created_at?: string | null
+          description?: string | null
+          developer: string
           id?: string
           name: string
-          developer: string
-          region: string
-          available_leads?: number
           price_per_lead: number
-          description?: string | null
-          created_at?: string
-          updated_at?: string
+          region: string
+          updated_at?: string | null
         }
         Update: {
+          available_leads?: number | null
+          created_at?: string | null
+          description?: string | null
+          developer?: string
           id?: string
           name?: string
-          developer?: string
-          region?: string
-          available_leads?: number
           price_per_lead?: number
-          description?: string | null
-          created_at?: string
-          updated_at?: string
+          region?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
       recent_activity: {
         Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
           id: string
           user_id: string
-          action: string
-          details: Json | null
-          created_at: string
         }
         Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
           id?: string
           user_id: string
-          action: string
-          details?: Json | null
-          created_at?: string
         }
         Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
           id?: string
           user_id?: string
-          action?: string
-          details?: Json | null
-          created_at?: string
         }
         Relationships: [
           {
@@ -503,42 +492,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       support_cases: {
         Row: {
-          id: string
-          created_by: string
           assigned_to: string | null
-          subject: string
+          created_at: string | null
+          created_by: string
           description: string
-          status: "open" | "in_progress" | "resolved"
-          priority: "low" | "medium" | "high"
-          created_at: string
-          updated_at: string
+          id: string
+          priority: Database["public"]["Enums"]["support_case_priority"] | null
+          status: Database["public"]["Enums"]["support_case_status"] | null
+          subject: string
+          updated_at: string | null
         }
         Insert: {
-          id?: string
-          created_by: string
           assigned_to?: string | null
-          subject: string
+          created_at?: string | null
+          created_by: string
           description: string
-          status?: "open" | "in_progress" | "resolved"
-          priority?: "low" | "medium" | "high"
-          created_at?: string
-          updated_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["support_case_priority"] | null
+          status?: Database["public"]["Enums"]["support_case_status"] | null
+          subject: string
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          created_by?: string
           assigned_to?: string | null
-          subject?: string
+          created_at?: string | null
+          created_by?: string
           description?: string
-          status?: "open" | "in_progress" | "resolved"
-          priority?: "low" | "medium" | "high"
-          created_at?: string
-          updated_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["support_case_priority"] | null
+          status?: Database["public"]["Enums"]["support_case_status"] | null
+          subject?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -554,7 +543,323 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+    }
+    Views: {
+      lead_analytics_mv: {
+        Row: {
+          available_leads: number | null
+          avg_cpl_price: number | null
+          project_id: string | null
+          project_name: string | null
+          region: string | null
+          sold_leads: number | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      lead_stage:
+        | "New Lead"
+        | "Potential"
+        | "Hot Case"
+        | "Meeting Done"
+        | "No Answer"
+        | "Call Back"
+        | "Whatsapp"
+        | "Wrong Number"
+        | "Non Potential"
+      order_status: "pending" | "confirmed" | "failed" | "cancelled"
+      partner_status: "active" | "inactive" | "pending"
+      payment_method_type: "Instapay" | "VodafoneCash" | "BankTransfer"
+      platform_type: "Facebook" | "Google" | "TikTok" | "Other"
+      support_case_priority: "low" | "medium" | "high" | "urgent"
+      support_case_status: "open" | "in_progress" | "resolved" | "closed"
+      user_role: "admin" | "support" | "manager" | "user"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  storage: {
+    Tables: {
+      buckets: {
+        Row: {
+          allowed_mime_types: string[] | null
+          avif_autodetection: boolean | null
+          created_at: string | null
+          file_size_limit: number | null
+          id: string
+          name: string
+          owner: string | null
+          owner_id: string | null
+          public: boolean | null
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_mime_types?: string[] | null
+          avif_autodetection?: boolean | null
+          created_at?: string | null
+          file_size_limit?: number | null
+          id: string
+          name: string
+          owner?: string | null
+          owner_id?: string | null
+          public?: boolean | null
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_mime_types?: string[] | null
+          avif_autodetection?: boolean | null
+          created_at?: string | null
+          file_size_limit?: number | null
+          id?: string
+          name?: string
+          owner?: string | null
+          owner_id?: string | null
+          public?: boolean | null
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      buckets_analytics: {
+        Row: {
+          created_at: string
+          format: string
+          id: string
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          format?: string
+          id: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          format?: string
+          id?: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      migrations: {
+        Row: {
+          executed_at: string | null
+          hash: string
+          id: number
+          name: string
+        }
+        Insert: {
+          executed_at?: string | null
+          hash: string
+          id: number
+          name: string
+        }
+        Update: {
+          executed_at?: string | null
+          hash?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      objects: {
+        Row: {
+          bucket_id: string | null
+          created_at: string | null
+          id: string
+          last_accessed_at: string | null
+          level: number | null
+          metadata: Json | null
+          name: string | null
+          owner: string | null
+          owner_id: string | null
+          path_tokens: string[] | null
+          updated_at: string | null
+          user_metadata: Json | null
+          version: string | null
+        }
+        Insert: {
+          bucket_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          level?: number | null
+          metadata?: Json | null
+          name?: string | null
+          owner?: string | null
+          owner_id?: string | null
+          path_tokens?: string[] | null
+          updated_at?: string | null
+          user_metadata?: Json | null
+          version?: string | null
+        }
+        Update: {
+          bucket_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          level?: number | null
+          metadata?: Json | null
+          name?: string | null
+          owner?: string | null
+          owner_id?: string | null
+          path_tokens?: string[] | null
+          updated_at?: string | null
+          user_metadata?: Json | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objects_bucketId_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prefixes: {
+        Row: {
+          bucket_id: string
+          created_at: string | null
+          level: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string | null
+          level?: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string | null
+          level?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prefixes_bucketId_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      s3_multipart_uploads: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          id: string
+          in_progress_size: number
+          key: string
+          owner_id: string | null
+          upload_signature: string
+          user_metadata: Json | null
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          id: string
+          in_progress_size?: number
+          key: string
+          owner_id?: string | null
+          upload_signature: string
+          user_metadata?: Json | null
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          id?: string
+          in_progress_size?: number
+          key?: string
+          owner_id?: string | null
+          upload_signature?: string
+          user_metadata?: Json | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      s3_multipart_uploads_parts: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          etag: string
+          id: string
+          key: string
+          owner_id: string | null
+          part_number: number
+          size: number
+          upload_id: string
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          etag: string
+          id?: string
+          key: string
+          owner_id?: string | null
+          part_number: number
+          size?: number
+          upload_id: string
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          etag?: string
+          id?: string
+          key?: string
+          owner_id?: string | null
+          part_number?: number
+          size?: number
+          upload_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "s3_multipart_uploads"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -562,70 +867,164 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      rpc_assign_leads: {
-        Args: {
-          action: string
-          lead_ids?: string[]
-          project_id?: string
-          to_user_id?: string
-          from_user_id?: string
-          quantity?: number
-          filters?: Json
-        }
-        Returns: Json
+      add_prefixes: {
+        Args: { _bucket_id: string; _name: string }
+        Returns: undefined
       }
-      rpc_confirm_order: {
-        Args: {
-          order_id: string
-          payment_reference: string
-        }
-        Returns: Json
+      can_insert_object: {
+        Args: { bucketid: string; metadata: Json; name: string; owner: string }
+        Returns: undefined
       }
-      rpc_fail_order: {
-        Args: {
-          order_id: string
-          reason: string
-        }
-        Returns: Json
+      delete_prefix: {
+        Args: { _bucket_id: string; _name: string }
+        Returns: boolean
       }
-      rpc_leads_stats: {
-        Args: {
-          for_user: string
-        }
-        Returns: Json
+      extension: {
+        Args: { name: string }
+        Returns: string
       }
-      rpc_reassign_lead: {
-        Args: {
-          lead_id: string
-          to_user_id: string
-        }
-        Returns: Json
+      filename: {
+        Args: { name: string }
+        Returns: string
       }
-      rpc_start_order: {
-        Args: {
-          user_id: string
-          project_id: string
-          quantity: number
-          payment_method: string
-        }
-        Returns: Json
-      }
-      rpc_team_user_ids: {
-        Args: {
-          manager_id: string
-        }
+      foldername: {
+        Args: { name: string }
         Returns: string[]
+      }
+      get_level: {
+        Args: { name: string }
+        Returns: number
+      }
+      get_prefix: {
+        Args: { name: string }
+        Returns: string
+      }
+      get_prefixes: {
+        Args: { name: string }
+        Returns: string[]
+      }
+      get_size_by_bucket: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bucket_id: string
+          size: number
+        }[]
+      }
+      list_multipart_uploads_with_delimiter: {
+        Args: {
+          bucket_id: string
+          delimiter_param: string
+          max_keys?: number
+          next_key_token?: string
+          next_upload_token?: string
+          prefix_param: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+        }[]
+      }
+      list_objects_with_delimiter: {
+        Args: {
+          bucket_id: string
+          delimiter_param: string
+          max_keys?: number
+          next_token?: string
+          prefix_param: string
+          start_after?: string
+        }
+        Returns: {
+          id: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      operation: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      search: {
+        Args: {
+          bucketname: string
+          levels?: number
+          limits?: number
+          offsets?: number
+          prefix: string
+          search?: string
+          sortcolumn?: string
+          sortorder?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_legacy_v1: {
+        Args: {
+          bucketname: string
+          levels?: number
+          limits?: number
+          offsets?: number
+          prefix: string
+          search?: string
+          sortcolumn?: string
+          sortorder?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_v1_optimised: {
+        Args: {
+          bucketname: string
+          levels?: number
+          limits?: number
+          offsets?: number
+          prefix: string
+          search?: string
+          sortcolumn?: string
+          sortorder?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_v2: {
+        Args: {
+          bucket_name: string
+          levels?: number
+          limits?: number
+          prefix: string
+          start_after?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
       }
     }
     Enums: {
-      lead_stage: "New Lead" | "Potential" | "Hot Case" | "Meeting Done" | "No Answer" | "Call Back" | "Whatsapp" | "Wrong Number" | "Non Potential"
-      order_status: "pending" | "confirmed" | "failed"
-      partner_status: "active" | "inactive"
-      payment_method_type: "Instapay" | "VodafoneCash" | "BankTransfer"
-      platform_type: "Facebook" | "Google" | "TikTok" | "Other"
-      priority_level: "low" | "medium" | "high"
-      support_status: "open" | "in_progress" | "resolved"
-      user_role: "admin" | "manager" | "support" | "user"
+      buckettype: "STANDARD" | "ANALYTICS"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -633,102 +1032,152 @@ export type Database = {
   }
 }
 
-// Helper types for common operations
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type Inserts<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type Updates<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-// Specific table types
-export type Profile = Tables<'profiles'>
-export type Project = Tables<'projects'>
-export type Lead = Tables<'leads'>
-export type Order = Tables<'orders'>
-export type SupportCase = Tables<'support_cases'>
-export type Partner = Tables<'partners'>
-export type Post = Tables<'posts'>
-export type Comment = Tables<'comments'>
-export type RecentActivity = Tables<'recent_activity'>
-export type LeadAnalytics = Tables<'lead_analytics_mv'>
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-// Enum types
-export type UserRole = Database['public']['Enums']['user_role']
-export type LeadStage = Database['public']['Enums']['lead_stage']
-export type OrderStatus = Database['public']['Enums']['order_status']
-export type PaymentMethod = Database['public']['Enums']['payment_method_type']
-export type Platform = Database['public']['Enums']['platform_type']
-export type SupportStatus = Database['public']['Enums']['support_status']
-export type PriorityLevel = Database['public']['Enums']['priority_level']
-export type PartnerStatus = Database['public']['Enums']['partner_status']
-
-// RPC function types
-export type RpcStartOrderArgs = {
-  user_id: string
-  project_id: string
-  quantity: number
-  payment_method: string
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
-export type RpcConfirmOrderArgs = {
-  order_id: string
-  payment_reference: string
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
-export type RpcFailOrderArgs = {
-  order_id: string
-  reason: string
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
-export type RpcReassignLeadArgs = {
-  lead_id: string
-  to_user_id: string
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
-export type RpcLeadsStatsArgs = {
-  for_user: string
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
-export type RpcTeamUserIdsArgs = {
-  manager_id: string
-}
-
-// Response types for RPC functions
-export type RpcStartOrderResponse = {
-  order_id: string
-  total_amount: number
-  status: string
-}
-
-export type RpcConfirmOrderResponse = {
-  order_id: string
-  status: string
-  leads_assigned: number
-  payment_reference: string
-}
-
-export type RpcFailOrderResponse = {
-  order_id: string
-  status: string
-  reason: string
-}
-
-export type RpcReassignLeadResponse = {
-  lead_id: string
-  new_owner_id: string
-  status: string
-}
-
-export type RpcLeadsStatsResponse = {
-  total_leads: number
-  new_leads: number
-  potential_leads: number
-  hot_leads: number
-  meeting_done: number
-  no_answer: number
-  call_back: number
-  whatsapp: number
-  wrong_number: number
-  non_potential: number
-  conversion_rate: number
-}
-
-export type RpcTeamUserIdsResponse = string[]
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      lead_stage: [
+        "New Lead",
+        "Potential",
+        "Hot Case",
+        "Meeting Done",
+        "No Answer",
+        "Call Back",
+        "Whatsapp",
+        "Wrong Number",
+        "Non Potential",
+      ],
+      order_status: ["pending", "confirmed", "failed", "cancelled"],
+      partner_status: ["active", "inactive", "pending"],
+      payment_method_type: ["Instapay", "VodafoneCash", "BankTransfer"],
+      platform_type: ["Facebook", "Google", "TikTok", "Other"],
+      support_case_priority: ["low", "medium", "high", "urgent"],
+      support_case_status: ["open", "in_progress", "resolved", "closed"],
+      user_role: ["admin", "support", "manager", "user"],
+    },
+  },
+  storage: {
+    Enums: {
+      buckettype: ["STANDARD", "ANALYTICS"],
+    },
+  },
+} as const
