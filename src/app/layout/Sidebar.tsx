@@ -16,6 +16,7 @@ import {
   LogOut,
   FileText,
   UserCheck,
+  RefreshCw,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,14 +33,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   console.log('🔍 Sidebar - Profile:', profile);
   console.log('🔍 Sidebar - Profile Role:', profile?.role);
 
-  // Auto-refresh profile when component mounts (non-aggressive version)
+  // Auto-refresh profile when component mounts
   useEffect(() => {
-    if (user && !profile) {
+    if (user && (!profile || profile.role === 'user')) {
       console.log('🔄 Auto-refreshing profile in Sidebar...');
       refreshProfile();
     }
   }, [user, profile, refreshProfile]);
-
 
   if (!user) return null;
 
@@ -193,6 +193,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-green-400"></div>
               <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+              <button
+                onClick={refreshProfile}
+                className="ml-auto p-1 rounded hover:bg-white/20 transition-colors"
+                title="Refresh profile"
+              >
+                <RefreshCw className="h-3 w-3 text-muted-foreground" />
+              </button>
             </div>
           )}
         </div>
