@@ -1,5 +1,4 @@
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
 interface MarketingSEOProps {
   title?: string;
@@ -116,56 +115,69 @@ export function MarketingSEO({
     ]
   };
 
-  return (
-    <Helmet>
-      {/* Primary Meta Tags */}
-      <title>{title}</title>
-      <meta name="title" content={title} />
-      <meta name="description" content={description} />
-      <meta name="keywords" content={keywords} />
-      <meta name="robots" content="index, follow" />
-      <meta name="language" content="English" />
-      <meta name="author" content="SaleMate" />
-      <link rel="canonical" href={canonicalUrl} />
+  useEffect(() => {
+    // Set document title
+    document.title = title;
 
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:site_name" content="SaleMate" />
-      <meta property="og:locale" content="en_US" />
+    // Create or update meta tags
+    const setMetaTag = (name: string, content: string, property = false) => {
+      const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let meta = document.querySelector(selector) as HTMLMetaElement;
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (property) {
+          meta.setAttribute('property', name);
+        } else {
+          meta.setAttribute('name', name);
+        }
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
 
-      {/* Twitter */}
-      <meta property="twitter:card" content="summary_large_image" />
-      <meta property="twitter:url" content={canonicalUrl} />
-      <meta property="twitter:title" content={title} />
-      <meta property="twitter:description" content={description} />
-      <meta property="twitter:image" content={ogImage} />
-      <meta property="twitter:site" content="@salemate" />
-      <meta property="twitter:creator" content="@salemate" />
+    // Set all meta tags
+    setMetaTag('title', title);
+    setMetaTag('description', description);
+    setMetaTag('keywords', keywords);
+    setMetaTag('robots', 'index, follow');
+    setMetaTag('language', 'English');
+    setMetaTag('author', 'SaleMate');
+    setMetaTag('theme-color', '#3b82f6');
 
-      {/* Additional SEO Meta Tags */}
-      <meta name="theme-color" content="#3b82f6" />
-      <meta name="msapplication-TileColor" content="#3b82f6" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <meta name="format-detection" content="telephone=no" />
+    // Open Graph tags
+    setMetaTag('og:type', 'website', true);
+    setMetaTag('og:url', canonicalUrl, true);
+    setMetaTag('og:title', title, true);
+    setMetaTag('og:description', description, true);
+    setMetaTag('og:image', ogImage, true);
+    setMetaTag('og:site_name', 'SaleMate', true);
 
-      {/* Geo Tags */}
-      <meta name="geo.region" content="EG" />
-      <meta name="geo.placename" content="Egypt" />
-      <meta name="ICBM" content="30.0444, 31.2357" />
+    // Twitter tags
+    setMetaTag('twitter:card', 'summary_large_image', true);
+    setMetaTag('twitter:title', title, true);
+    setMetaTag('twitter:description', description, true);
+    setMetaTag('twitter:image', ogImage, true);
 
-      {/* Structured Data */}
-      <script type="application/ld+json">
-        {JSON.stringify(structuredData, null, 2)}
-      </script>
-    </Helmet>
-  );
+    // Set canonical URL
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+
+    // Add structured data
+    let script = document.querySelector('script[type="application/ld+json"]');
+    if (!script) {
+      script = document.createElement('script');
+      script.setAttribute('type', 'application/ld+json');
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(structuredData, null, 2);
+  }, [title, description, keywords, canonicalUrl, ogImage]);
+
+  return null;
 }
 
 export default MarketingSEO;

@@ -13,6 +13,9 @@ import Signup from '../pages/Auth/Signup';
 import PhoneLogin from '../pages/Auth/PhoneLogin';
 import ResetPassword from '../pages/Auth/ResetPassword';
 
+// MARKETING PAGES: Direct import for better SEO
+import Home from '../pages/marketing/Home';
+
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
 const MyLeads = React.lazy(() => import('../pages/CRM/MyLeads'));
@@ -45,6 +48,17 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
+  // Public marketing home page
+  {
+    path: '/',
+    element: (
+      <>
+        <ScrollToTop />
+        <Home />
+      </>
+    ),
+  },
+  
   // Public auth routes
   {
     path: '/auth/login',
@@ -85,7 +99,7 @@ export const router = createBrowserRouter([
   
   // Protected routes with AuthGuard
   {
-    path: '/',
+    path: '/app',
     element: <AuthGuard />,
     children: [
       {
@@ -154,9 +168,9 @@ export const router = createBrowserRouter([
     ],
   },
   
-  // Catch all - redirect to dashboard
+  // Catch all - redirect to home
   {
     path: '*',
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);

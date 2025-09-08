@@ -110,7 +110,7 @@ const HowItWorks = () => {
           <div className="hidden lg:block">
             <div className="relative">
               {/* Timeline line */}
-              <div className="absolute top-24 left-0 w-full h-1 bg-gradient-to-r from-blue-200 via-green-200 via-purple-200 to-orange-200 rounded-full" />
+              <div className="absolute top-24 left-0 w-full h-1 bg-gradient-to-r from-blue-200 via-green-200 to-orange-200 rounded-full" />
               
               <div className="grid grid-cols-4 gap-8">
                 {steps.map((step, index) => {
