@@ -5,7 +5,7 @@ import { Select } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ImprovedProjectCard } from '../../components/projects/ImprovedProjectCard';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import { Project } from '../../types';
 import { 
   Search, 

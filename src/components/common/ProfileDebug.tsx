@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 
 export const ProfileDebug: React.FC = () => {
   const { user, profile, refreshProfile } = useAuthStore();

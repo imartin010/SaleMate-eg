@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card } from '../../components/ui/card';
 import { PageTitle } from '../../components/common/PageTitle';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import { BRDataProperty, BRDataPropertyFilters, BRDataPropertySort } from '../../types';
 import { formatCurrency, formatNumber } from '../../lib/format';
 import { PropertyDetailsModal } from '../../components/inventory/PropertyDetailsModal';

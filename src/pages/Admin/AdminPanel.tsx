@@ -12,7 +12,7 @@ import { PageTitle } from '../../components/common/PageTitle';
 import { useProjectStore } from '../../store/projects';
 import { useLeadStore } from '../../store/leads';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import { User, UserRole } from '../../types';
 import { 
   Plus, 

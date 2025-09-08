@@ -10,7 +10,7 @@ import { getPaymentMethodIcon, calculateTotalAmount } from '../../lib/payments';
 import { formatCurrency } from '../../lib/format';
 import { useOrderStore } from '../../store/orders';
 import { useAuthStore } from '../../store/auth';
-import { startOrder, supabase } from '../../lib/supabaseClient';
+import { startOrder, supabase } from "../../lib/supabaseClient"
 import { MapPin, Building, Users, ShoppingCart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

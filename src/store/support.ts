@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { SupportCase, User } from '../types';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from "../lib/supabaseClient"
 
 interface SupportState {
   cases: SupportCase[];

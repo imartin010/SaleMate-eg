@@ -21,6 +21,7 @@ export type Database = {
           created_at: string | null
           id: string
           post_id: string
+          updated_at: string | null
         }
         Insert: {
           author_id: string
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           post_id: string
+          updated_at?: string | null
         }
         Update: {
           author_id?: string
@@ -35,15 +37,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           post_id?: string
+          updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "comments_author_id_fkey"
             columns: ["author_id"]
@@ -60,193 +56,54 @@ export type Database = {
           },
         ]
       }
-      deal_attachments: {
-        Row: {
-          deal_id: string
-          file_name: string
-          file_path: string
-          file_size: number
-          id: string
-          mime_type: string
-          uploaded_at: string | null
-        }
-        Insert: {
-          deal_id: string
-          file_name: string
-          file_path: string
-          file_size: number
-          id?: string
-          mime_type: string
-          uploaded_at?: string | null
-        }
-        Update: {
-          deal_id?: string
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          id?: string
-          mime_type?: string
-          uploaded_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deal_attachments_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      deals: {
-        Row: {
-          admin_notes: string | null
-          client_name: string
-          created_at: string | null
-          deal_stage: string | null
-          deal_type: string
-          deal_value: number
-          developer_name: string
-          developer_sales_name: string
-          developer_sales_phone: string
-          downpayment_percentage: number
-          id: string
-          payment_plan_years: number
-          project_name: string
-          status: string | null
-          unit_code: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          client_name: string
-          created_at?: string | null
-          deal_stage?: string | null
-          deal_type: string
-          deal_value: number
-          developer_name: string
-          developer_sales_name: string
-          developer_sales_phone: string
-          downpayment_percentage: number
-          id?: string
-          payment_plan_years: number
-          project_name: string
-          status?: string | null
-          unit_code: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          admin_notes?: string | null
-          client_name?: string
-          created_at?: string | null
-          deal_stage?: string | null
-          deal_type?: string
-          deal_value?: number
-          developer_name?: string
-          developer_sales_name?: string
-          developer_sales_phone?: string
-          downpayment_percentage?: number
-          id?: string
-          payment_plan_years?: number
-          project_name?: string
-          status?: string | null
-          unit_code?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      developers: {
-        Row: {
-          contact_email: string | null
-          contact_phone: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          logo_url: string | null
-          name: string
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          contact_email?: string | null
-          contact_phone?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          logo_url?: string | null
-          name: string
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          contact_email?: string | null
-          contact_phone?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          logo_url?: string | null
-          name?: string
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
       lead_batches: {
         Row: {
           batch_name: string
-          cpl_price: number
+          cpl_price: number | null
           created_at: string | null
-          error_details: Json | null
-          failed_leads: number
-          file_name: string | null
-          file_url: string | null
+          failed_leads: number | null
           id: string
           project_id: string
           status: string | null
-          successful_leads: number
-          total_leads: number
+          successful_leads: number | null
+          total_leads: number | null
           updated_at: string | null
           upload_user_id: string
         }
         Insert: {
           batch_name: string
-          cpl_price: number
+          cpl_price?: number | null
           created_at?: string | null
-          error_details?: Json | null
-          failed_leads?: number
-          file_name?: string | null
-          file_url?: string | null
+          failed_leads?: number | null
           id?: string
           project_id: string
           status?: string | null
-          successful_leads?: number
-          total_leads?: number
+          successful_leads?: number | null
+          total_leads?: number | null
           updated_at?: string | null
           upload_user_id: string
         }
         Update: {
           batch_name?: string
-          cpl_price?: number
+          cpl_price?: number | null
           created_at?: string | null
-          error_details?: Json | null
-          failed_leads?: number
-          file_name?: string | null
-          file_url?: string | null
+          failed_leads?: number | null
           id?: string
           project_id?: string
           status?: string | null
-          successful_leads?: number
-          total_leads?: number
+          successful_leads?: number | null
+          total_leads?: number | null
           updated_at?: string | null
           upload_user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_batches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "lead_analytics_mv"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "lead_batches_project_id_fkey"
             columns: ["project_id"]
@@ -258,146 +115,7 @@ export type Database = {
             foreignKeyName: "lead_batches_upload_user_id_fkey"
             columns: ["upload_user_id"]
             isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "lead_batches_upload_user_id_fkey"
-            columns: ["upload_user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lead_purchase_requests: {
-        Row: {
-          admin_notes: string | null
-          admin_user_id: string | null
-          approved_at: string | null
-          buyer_user_id: string
-          cpl_price: number
-          created_at: string | null
-          id: string
-          number_of_leads: number
-          project_id: string
-          receipt_file_name: string | null
-          receipt_file_url: string | null
-          rejected_at: string | null
-          status: string | null
-          total_price: number
-          updated_at: string | null
-        }
-        Insert: {
-          admin_notes?: string | null
-          admin_user_id?: string | null
-          approved_at?: string | null
-          buyer_user_id: string
-          cpl_price: number
-          created_at?: string | null
-          id?: string
-          number_of_leads: number
-          project_id: string
-          receipt_file_name?: string | null
-          receipt_file_url?: string | null
-          rejected_at?: string | null
-          status?: string | null
-          total_price: number
-          updated_at?: string | null
-        }
-        Update: {
-          admin_notes?: string | null
-          admin_user_id?: string | null
-          approved_at?: string | null
-          buyer_user_id?: string
-          cpl_price?: number
-          created_at?: string | null
-          id?: string
-          number_of_leads?: number
-          project_id?: string
-          receipt_file_name?: string | null
-          receipt_file_url?: string | null
-          rejected_at?: string | null
-          status?: string | null
-          total_price?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lead_purchase_requests_admin_user_id_fkey"
-            columns: ["admin_user_id"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "lead_purchase_requests_admin_user_id_fkey"
-            columns: ["admin_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_purchase_requests_buyer_user_id_fkey"
-            columns: ["buyer_user_id"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "lead_purchase_requests_buyer_user_id_fkey"
-            columns: ["buyer_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_purchase_requests_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lead_sales: {
-        Row: {
-          created_at: string | null
-          id: string
-          lead_id: string
-          purchase_request_id: string
-          sale_price: number
-          sold_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          lead_id: string
-          purchase_request_id: string
-          sale_price: number
-          sold_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          lead_id?: string
-          purchase_request_id?: string
-          sale_price?: number
-          sold_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lead_sales_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_sales_purchase_request_id_fkey"
-            columns: ["purchase_request_id"]
-            isOneToOne: false
-            referencedRelation: "lead_purchase_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -422,7 +140,7 @@ export type Database = {
           project_id: string
           sold_at: string | null
           source: string | null
-          stage: Database["public"]["Enums"]["lead_stage"]
+          stage: Database["public"]["Enums"]["lead_stage"] | null
           updated_at: string | null
           upload_user_id: string | null
         }
@@ -445,7 +163,7 @@ export type Database = {
           project_id: string
           sold_at?: string | null
           source?: string | null
-          stage?: Database["public"]["Enums"]["lead_stage"]
+          stage?: Database["public"]["Enums"]["lead_stage"] | null
           updated_at?: string | null
           upload_user_id?: string | null
         }
@@ -468,7 +186,7 @@ export type Database = {
           project_id?: string
           sold_at?: string | null
           source?: string | null
-          stage?: Database["public"]["Enums"]["lead_stage"]
+          stage?: Database["public"]["Enums"]["lead_stage"] | null
           updated_at?: string | null
           upload_user_id?: string | null
         }
@@ -477,12 +195,12 @@ export type Database = {
             foreignKeyName: "leads_assigned_to_id_fkey"
             columns: ["assigned_to_id"]
             isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "leads_assigned_to_id_fkey"
-            columns: ["assigned_to_id"]
+            foreignKeyName: "leads_buyer_user_id_fkey"
+            columns: ["buyer_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -491,15 +209,15 @@ export type Database = {
             foreignKeyName: "leads_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
+            referencedRelation: "lead_analytics_mv"
+            referencedColumns: ["project_id"]
           },
           {
-            foreignKeyName: "leads_upload_user_id_fkey"
-            columns: ["upload_user_id"]
+            foreignKeyName: "leads_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "leads_upload_user_id_fkey"
@@ -518,8 +236,9 @@ export type Database = {
           payment_reference: string | null
           project_id: string
           quantity: number
-          status: Database["public"]["Enums"]["order_status"]
+          status: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -529,8 +248,9 @@ export type Database = {
           payment_reference?: string | null
           project_id: string
           quantity: number
-          status?: Database["public"]["Enums"]["order_status"]
+          status?: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -540,8 +260,9 @@ export type Database = {
           payment_reference?: string | null
           project_id?: string
           quantity?: number
-          status?: Database["public"]["Enums"]["order_status"]
+          status?: Database["public"]["Enums"]["order_status"] | null
           total_amount?: number
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -549,79 +270,57 @@ export type Database = {
             foreignKeyName: "orders_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "lead_analytics_mv"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      otp_codes: {
-        Row: {
-          attempts: number | null
-          code_hash: string
-          created_at: string | null
-          expires_at: string
-          id: string
-          is_signup: boolean | null
-          max_attempts: number | null
-          phone: string
-          signup_data: Json | null
-          used_at: string | null
-        }
-        Insert: {
-          attempts?: number | null
-          code_hash: string
-          created_at?: string | null
-          expires_at: string
-          id?: string
-          is_signup?: boolean | null
-          max_attempts?: number | null
-          phone: string
-          signup_data?: Json | null
-          used_at?: string | null
-        }
-        Update: {
-          attempts?: number | null
-          code_hash?: string
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          is_signup?: boolean | null
-          max_attempts?: number | null
-          phone?: string
-          signup_data?: Json | null
-          used_at?: string | null
-        }
-        Relationships: []
-      }
       partners: {
         Row: {
-          commission_rate: number
+          commission_rate: number | null
           created_at: string | null
           description: string | null
           id: string
           logo_path: string | null
           name: string
           status: Database["public"]["Enums"]["partner_status"] | null
+          updated_at: string | null
           website: string | null
         }
         Insert: {
-          commission_rate: number
+          commission_rate?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           logo_path?: string | null
           name: string
           status?: Database["public"]["Enums"]["partner_status"] | null
+          updated_at?: string | null
           website?: string | null
         }
         Update: {
-          commission_rate?: number
+          commission_rate?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           logo_path?: string | null
           name?: string
           status?: Database["public"]["Enums"]["partner_status"] | null
+          updated_at?: string | null
           website?: string | null
         }
         Relationships: []
@@ -632,27 +331,23 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          updated_at: string | null
         }
         Insert: {
           author_id: string
           content: string
           created_at?: string | null
           id?: string
+          updated_at?: string | null
         }
         Update: {
           author_id?: string
           content?: string
           created_at?: string | null
           id?: string
+          updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "posts_author_id_fkey"
             columns: ["author_id"]
@@ -665,95 +360,43 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
-          email: string | null
+          email: string
           id: string
           is_banned: boolean | null
           manager_id: string | null
           name: string
           phone: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          email?: string | null
+          email: string
           id: string
           is_banned?: boolean | null
           manager_id?: string | null
           name: string
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          email?: string | null
+          email?: string
           id?: string
           is_banned?: boolean | null
           manager_id?: string | null
           name?: string
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "profiles_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_partner_commissions: {
-        Row: {
-          commission_rate: number
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          partner_id: string
-          project_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          commission_rate: number
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          partner_id: string
-          project_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          commission_rate?: number
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          partner_id?: string
-          project_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_partner_commissions_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_partner_commissions_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -764,7 +407,6 @@ export type Database = {
           created_at: string | null
           description: string | null
           developer: string
-          developer_id: string | null
           id: string
           name: string
           price_per_lead: number
@@ -776,7 +418,6 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           developer: string
-          developer_id?: string | null
           id?: string
           name: string
           price_per_lead: number
@@ -788,22 +429,13 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           developer?: string
-          developer_id?: string | null
           id?: string
           name?: string
           price_per_lead?: number
           region?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "projects_developer_id_fkey"
-            columns: ["developer_id"]
-            isOneToOne: false
-            referencedRelation: "developers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       recent_activity: {
         Row: {
@@ -827,16 +459,24 @@ export type Database = {
           id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recent_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      sale_mate_inventory: {
+      "salemate-inventory": {
         Row: {
           area: string | null
           building_number: string | null
-          compound: Json | null
+          compound: string | null
           created_at: string | null
           currency: string | null
-          developer: Json | null
+          developer: string | null
           finishing: string | null
           floor_number: number | null
           garden_area: number | null
@@ -849,10 +489,10 @@ export type Database = {
           offers: string | null
           original_unit_id: string | null
           payment_plans: string | null
-          phase: Json | null
+          phase: string | null
           price_in_egp: number | null
           price_per_meter: number | null
-          property_type: Json | null
+          property_type: string | null
           ready_by: string | null
           roof_area: number | null
           sale_type: string | null
@@ -864,10 +504,10 @@ export type Database = {
         Insert: {
           area?: string | null
           building_number?: string | null
-          compound?: Json | null
+          compound?: string | null
           created_at?: string | null
           currency?: string | null
-          developer?: Json | null
+          developer?: string | null
           finishing?: string | null
           floor_number?: number | null
           garden_area?: number | null
@@ -880,10 +520,10 @@ export type Database = {
           offers?: string | null
           original_unit_id?: string | null
           payment_plans?: string | null
-          phase?: Json | null
+          phase?: string | null
           price_in_egp?: number | null
           price_per_meter?: number | null
-          property_type?: Json | null
+          property_type?: string | null
           ready_by?: string | null
           roof_area?: number | null
           sale_type?: string | null
@@ -895,10 +535,10 @@ export type Database = {
         Update: {
           area?: string | null
           building_number?: string | null
-          compound?: Json | null
+          compound?: string | null
           created_at?: string | null
           currency?: string | null
-          developer?: Json | null
+          developer?: string | null
           finishing?: string | null
           floor_number?: number | null
           garden_area?: number | null
@@ -911,10 +551,10 @@ export type Database = {
           offers?: string | null
           original_unit_id?: string | null
           payment_plans?: string | null
-          phase?: Json | null
+          phase?: string | null
           price_in_egp?: number | null
           price_per_meter?: number | null
-          property_type?: Json | null
+          property_type?: string | null
           ready_by?: string | null
           roof_area?: number | null
           sale_type?: string | null
@@ -932,8 +572,8 @@ export type Database = {
           created_by: string
           description: string
           id: string
-          priority: Database["public"]["Enums"]["priority_level"] | null
-          status: Database["public"]["Enums"]["support_status"]
+          priority: Database["public"]["Enums"]["support_case_priority"] | null
+          status: Database["public"]["Enums"]["support_case_status"] | null
           subject: string
           updated_at: string | null
         }
@@ -943,8 +583,8 @@ export type Database = {
           created_by: string
           description: string
           id?: string
-          priority?: Database["public"]["Enums"]["priority_level"] | null
-          status?: Database["public"]["Enums"]["support_status"]
+          priority?: Database["public"]["Enums"]["support_case_priority"] | null
+          status?: Database["public"]["Enums"]["support_case_status"] | null
           subject: string
           updated_at?: string | null
         }
@@ -954,8 +594,8 @@ export type Database = {
           created_by?: string
           description?: string
           id?: string
-          priority?: Database["public"]["Enums"]["priority_level"] | null
-          status?: Database["public"]["Enums"]["support_status"]
+          priority?: Database["public"]["Enums"]["support_case_priority"] | null
+          status?: Database["public"]["Enums"]["support_case_status"] | null
           subject?: string
           updated_at?: string | null
         }
@@ -964,22 +604,8 @@ export type Database = {
             foreignKeyName: "support_cases_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "support_cases_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "support_cases_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "support_cases_created_by_fkey"
@@ -994,200 +620,20 @@ export type Database = {
     Views: {
       lead_analytics_mv: {
         Row: {
-          call_back: number | null
-          conversion_rate: number | null
-          hot_leads: number | null
-          joined_at: string | null
-          last_updated: string | null
-          manager_id: string | null
-          meeting_done: number | null
-          name: string | null
-          new_leads: number | null
-          no_answer: number | null
-          non_potential: number | null
-          potential_leads: number | null
-          role: Database["public"]["Enums"]["user_role"] | null
+          available_leads: number | null
+          avg_cpl_price: number | null
+          project_id: string | null
+          project_name: string | null
+          region: string | null
+          sold_leads: number | null
           total_leads: number | null
-          total_orders: number | null
-          total_spent: number | null
-          user_id: string | null
-          whatsapp: number | null
-          wrong_number: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "lead_analytics_mv"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "profiles_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
-      approve_purchase_request: {
-        Args: { admin_id: string; admin_notes?: string; request_id: string }
-        Returns: Json
-      }
-      bulk_upload_leads_with_cpl: {
-        Args: {
-          batch_name?: string
-          cpl_price: number
-          leads_data: Json
-          project_id_param: string
-          upload_user_id: string
-        }
-        Returns: Json
-      }
-      cleanup_expired_otps: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      create_otp: {
-        Args: { is_signup?: boolean; phone_number: string; signup_data?: Json }
-        Returns: Json
-      }
-      generate_otp_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_marketplace_projects: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          available_leads: number
-          avg_cpl_price: number
-          description: string
-          developer_name: string
-          max_cpl_price: number
-          min_cpl_price: number
-          project_id: string
-          project_name: string
-          region: string
-        }[]
-      }
-      get_project_commissions: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          commission_rate: number
-          developer_name: string
-          partner_id: string
-          partner_name: string
-          project_id: string
-          project_name: string
-        }[]
-      }
-      hash_otp_code: {
-        Args: { code: string }
-        Returns: string
-      }
-      make_user_admin: {
-        Args: { user_email: string }
-        Returns: Json
-      }
-      reject_purchase_request: {
-        Args: { admin_id: string; admin_notes?: string; request_id: string }
-        Returns: Json
-      }
-      rpc_add_user_to_team: {
-        Args: { target_user_id: string }
-        Returns: boolean
-      }
-      rpc_assign_lead: {
-        Args: { assignee_id: string; lead_id: string }
-        Returns: boolean
-      }
-      rpc_calculate_order_total: {
-        Args: { project_id: string; quantity: number }
-        Returns: Json
-      }
-      rpc_confirm_order: {
-        Args: { order_id: string; payment_reference: string }
-        Returns: Json
-      }
-      rpc_fail_order: {
-        Args: { order_id: string; reason: string }
-        Returns: Json
-      }
-      rpc_get_project_availability: {
-        Args: { project_id: string }
-        Returns: Json
-      }
-      rpc_get_shop_projects: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          available_leads: number | null
-          created_at: string | null
-          description: string | null
-          developer: string
-          developer_id: string | null
-          id: string
-          name: string
-          price_per_lead: number
-          region: string
-          updated_at: string | null
-        }[]
-      }
-      rpc_leads_stats: {
-        Args: { for_user: string }
-        Returns: Json
-      }
-      rpc_project_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      rpc_reassign_lead: {
-        Args: { lead_id: string; to_user_id: string }
-        Returns: Json
-      }
-      rpc_start_order: {
-        Args: {
-          payment_method: string
-          project_id: string
-          quantity: number
-          user_id: string
-        }
-        Returns: Json
-      }
-      rpc_team_user_ids: {
-        Args: { root: string }
-        Returns: {
-          user_id: string
-        }[]
-      }
-      rpc_unassign_lead: {
-        Args: { lead_id: string }
-        Returns: boolean
-      }
-      rpc_update_project_cpl: {
-        Args: { new_price_per_lead: number; project_id: string }
-        Returns: Json
-      }
-      rpc_update_project_leads: {
-        Args: { new_available_leads: number; project_id: string }
-        Returns: Json
-      }
-      rpc_upload_leads: {
-        Args: { leads_data: Json[]; project_id: string }
-        Returns: Json
-      }
-      update_project_cpl_price: {
-        Args: { new_cpl_price: number; project_id_param: string }
-        Returns: undefined
-      }
-      update_user_role: {
-        Args: { new_role: string; target_user_id: string }
-        Returns: Json
-      }
-      verify_otp: {
-        Args: { input_code: string; phone_number: string }
+      convert_python_dict_to_json: {
+        Args: { input_text: string }
         Returns: Json
       }
     }
@@ -1202,13 +648,13 @@ export type Database = {
         | "Whatsapp"
         | "Wrong Number"
         | "Non Potential"
-      order_status: "pending" | "confirmed" | "failed"
-      partner_status: "active" | "inactive"
+      order_status: "pending" | "confirmed" | "failed" | "cancelled"
+      partner_status: "active" | "inactive" | "pending"
       payment_method_type: "Instapay" | "VodafoneCash" | "BankTransfer"
       platform_type: "Facebook" | "Google" | "TikTok" | "Other"
-      priority_level: "low" | "medium" | "high"
-      support_status: "open" | "in_progress" | "resolved"
-      user_role: "admin" | "manager" | "support" | "user"
+      support_case_priority: "low" | "medium" | "high" | "urgent"
+      support_case_status: "open" | "in_progress" | "resolved" | "closed"
+      user_role: "admin" | "support" | "manager" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1347,13 +793,13 @@ export const Constants = {
         "Wrong Number",
         "Non Potential",
       ],
-      order_status: ["pending", "confirmed", "failed"],
-      partner_status: ["active", "inactive"],
+      order_status: ["pending", "confirmed", "failed", "cancelled"],
+      partner_status: ["active", "inactive", "pending"],
       payment_method_type: ["Instapay", "VodafoneCash", "BankTransfer"],
       platform_type: ["Facebook", "Google", "TikTok", "Other"],
-      priority_level: ["low", "medium", "high"],
-      support_status: ["open", "in_progress", "resolved"],
-      user_role: ["admin", "manager", "support", "user"],
+      support_case_priority: ["low", "medium", "high", "urgent"],
+      support_case_status: ["open", "in_progress", "resolved", "closed"],
+      user_role: ["admin", "support", "manager", "user"],
     },
   },
 } as const

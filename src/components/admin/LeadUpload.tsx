@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Select } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { uploadLeads, getAllProjects, getProjectStats, updateProjectCPL, supabase } from '../../lib/supabaseClient';
+import { uploadLeads, getAllProjects, getProjectStats, updateProjectCPL, supabase } from "../../lib/supabaseClient"
 import { getAllProjectsAdmin, uploadLeadsAdmin, getProjectStatsAdmin, updateProjectCPLAdmin } from '../../lib/supabaseAdminClient';
 import { useAuthStore } from '../../store/auth';
 import { 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from "../lib/supabaseClient"
 import type { Lead, LeadFilters } from '../types';
 
 interface LeadsState {

@@ -8,8 +8,8 @@ import { ScrollToTop } from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
 // AUTH PAGES: Import the real auth components
-import Login from '../pages/Auth/Login';
-import Signup from '../pages/Auth/Signup';
+import Login from '../pages/auth/Login';
+import Signup from '../pages/auth/Signup';
 import PhoneLogin from '../pages/Auth/PhoneLogin';
 import ResetPassword from '../pages/Auth/ResetPassword';
 

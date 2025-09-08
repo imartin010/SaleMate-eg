@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient"
 import type { Database } from "../types/database";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];

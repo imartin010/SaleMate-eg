@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import { PageTitle } from '../../components/common/PageTitle';
 import { 
   Plus, 

@@ -6,7 +6,7 @@ import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import type { AdminPurchaseRequest } from '../../types';
 import { 
   Clock, 

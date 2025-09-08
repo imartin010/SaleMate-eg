@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Order, PurchaseRequest } from '../types';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from "../lib/supabaseClient"
 import { processPayment, calculateTotalAmount } from '../lib/payments';
 
 interface OrderState {

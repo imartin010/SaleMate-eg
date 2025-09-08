@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Progress } from '../ui/progress';
 import { useProjectStore } from '../../store/projects';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import type { Project, BulkUploadResponse } from '../../types';
 import type { Database } from '../../types/database';
 import { 

@@ -4,7 +4,7 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { PageTitle } from '../components/common/PageTitle';
 import { useAuthStore } from '../store/auth';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from "../lib/supabaseClient"
 import { formatDate } from '../lib/format';
 import { 
   User, 

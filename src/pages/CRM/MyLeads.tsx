@@ -10,7 +10,7 @@ import { LeadCard } from '../../components/leads/LeadCard';
 import { PageTitle } from '../../components/common/PageTitle';
 import { useAuthStore } from '../../store/auth';
 import { useTeamStore } from '../../store/team';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import { Lead, LeadFilters, Platform, LeadStage } from '../../types';
 import { 
   Search, 

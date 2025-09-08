@@ -9,7 +9,7 @@ import { Project, PaymentMethod } from '../../types';
 import { getPaymentMethodIcon, calculateTotalAmount } from '../../lib/payments';
 import { formatCurrency } from '../../lib/format';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from "../../lib/supabaseClient"
 import { 
   MapPin, 
   Building, 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Lead, LeadFilters, User } from '../types';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from "../lib/supabaseClient"
 import type { Database } from '../types/database';
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
