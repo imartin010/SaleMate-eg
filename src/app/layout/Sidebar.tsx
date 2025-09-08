@@ -51,22 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     }
   }, [user, profile, refreshProfile, isAdminEmail]);
 
-  // Force refresh button for debugging (non-destructive)
-  const handleForceRefresh = () => {
-    console.log('🔄 Force refreshing profile...');
-    
-    // Only refresh the profile, don't clear auth storage
-    refreshProfile();
-    
-    // Optional: Clear only profile-specific cache (not auth tokens)
-    const profileCacheKeys = ['profile-cache', 'user-role-cache'];
-    profileCacheKeys.forEach(key => {
-      localStorage.removeItem(key);
-      sessionStorage.removeItem(key);
-    });
-    
-    console.log('✅ Profile refresh completed');
-  };
 
   if (!user) return null;
 
@@ -217,18 +201,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             )}
           </div>
           {!isCollapsed && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-400"></div>
-                <span className="text-xs font-medium text-muted-foreground capitalize">{effectiveProfile?.role || 'user'}</span>
-              </div>
-              <button
-                onClick={handleForceRefresh}
-                className="p-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-white/20 transition-colors"
-                title="Refresh Profile"
-              >
-                🔄
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-400"></div>
+              <span className="text-xs font-medium text-muted-foreground capitalize">{effectiveProfile?.role || 'user'}</span>
             </div>
           )}
         </div>
