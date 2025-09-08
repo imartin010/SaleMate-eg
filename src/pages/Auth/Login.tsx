@@ -1,52 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
 import { Loader2, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+
 export default function Login() {
   const navigate = useNavigate();
-  const { user, signInEmail, loading, error, clearError } = useAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({});
+  const { signInEmail, loading, error, clearError } = useAuthStore();
+  const [showPassword, setShowPassword] = React.useState(false);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const validateForm = () => {
-    const errors: {email?: string; password?: string} = {};
-    
-    if (!email) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-    
-    if (!password) {
-      errors.password = 'Password is required';
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: LoginForm) => {
     clearError();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    const success = await signInEmail(email, password);
+    const success = await signInEmail(values.email, values.password);
     if (success) {
       navigate('/dashboard');
     }
@@ -60,146 +43,80 @@ export default function Login() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to your SaleMate account</p>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <span className="text-red-700 text-sm">{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
             </label>
             <input
+              {...register('email')}
               type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (validationErrors.email) {
-                  setValidationErrors(prev => ({ ...prev, email: undefined }));
-                }
-              }}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                validationErrors.email ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="Enter your email"
-              disabled={loading}
             />
-            {validationErrors.email && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.email}
-              </p>
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
             )}
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <Link to="/auth/reset-password" className="text-xs text-blue-600 hover:underline">
-                Forgot password?
-              </Link>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
             <div className="relative">
               <input
+                {...register('password')}
                 type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (validationErrors.password) {
-                    setValidationErrors(prev => ({ ...prev, password: undefined }));
-                  }
-                }}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
-                  validationErrors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-12"
                 placeholder="Enter your password"
-                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            {validationErrors.password && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.password}
-              </p>
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
             )}
           </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-              <span className="text-sm text-red-600">{error}</span>
-              <button
-                type="button"
-                onClick={clearError}
-                className="ml-auto text-red-400 hover:text-red-600"
-              >
-                ×
-              </button>
-            </div>
-          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Signing In...
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Signing in...
               </>
             ) : (
               <>
-                <LogIn className="h-4 w-4" />
+                <LogIn className="h-5 w-5" />
                 Sign In
               </>
             )}
           </button>
         </form>
 
-        <div className="mt-6 space-y-4">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or</span>
-            </div>
-          </div>
-
-          <Link
-            to="/auth/phone"
-            className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-          >
-            📱 Sign in with Phone (OTP)
-          </Link>
-        </div>
-
-        <div className="text-center mt-6">
-          <span className="text-gray-600">Don't have an account? </span>
-          <Link to="/auth/signup" className="text-blue-600 hover:underline font-medium">
-            Sign up
-          </Link>
-        </div>
-
-        {/* Temporary bypass for testing */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.setItem('salemate-bypass-auth', 'true');
-              window.location.href = '/dashboard';
-            }}
-            className="w-full text-xs text-gray-400 hover:text-gray-600 py-2"
-          >
-            Continue as Test User (dev only)
-          </button>
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/auth/signup" className="text-blue-600 hover:text-blue-700 font-semibold">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

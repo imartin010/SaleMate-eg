@@ -10,6 +10,11 @@ import { Loader2 } from 'lucide-react';
 // AUTH PAGES: Import the real auth components
 import Login from '../pages/Auth/Login';
 import Signup from '../pages/Auth/Signup';
+// import PhoneLogin from '../pages/Auth/PhoneLogin';
+// import ResetPassword from '../pages/Auth/ResetPassword';
+
+// MARKETING PAGES: Direct import for better SEO
+import Home from '../pages/marketing/Home';
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
@@ -30,10 +35,11 @@ const PageLoader = () => (
   </div>
 );
 
-// Safe page wrapper with error boundary
+// Safe page wrapper with error boundary and suspense
 const SafePage = ({ children }: { children: React.ReactNode }) => (
   <>
-    <ErrorBoundary fallback={<FastFallback />}>
+    <ScrollToTop />
+    <ErrorBoundary fallback={FastFallback}>
       <Suspense fallback={<PageLoader />}>
         {children}
       </Suspense>
@@ -42,6 +48,17 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
+  // Public marketing home page
+  {
+    path: '/',
+    element: (
+      <>
+        <ScrollToTop />
+        <Home />
+      </>
+    ),
+  },
+  
   // Public auth routes
   {
     path: '/auth/login',
@@ -61,10 +78,28 @@ export const router = createBrowserRouter([
       </>
     ),
   },
+  {
+//     path: '/auth/phone',
+//     element: (
+//       <>
+//         <ScrollToTop />
+//         <PhoneLogin />
+//       </>
+//     ),
+//   },
+  {
+//     path: '/auth/reset-password',
+//     element: (
+//       <>
+//         <ScrollToTop />
+//         <ResetPassword />
+//       </>
+//     ),
+//   },
   
   // Protected routes with AuthGuard
   {
-    path: '/',
+    path: '/app',
     element: <AuthGuard />,
     children: [
       {
@@ -108,9 +143,14 @@ export const router = createBrowserRouter([
             element: <SafePage><PartnersPage /></SafePage>,
           },
           {
+            path: 'settings',
+            element: <SafePage><Settings /></SafePage>,
+          },
+          // Role-restricted routes
+          {
             path: 'support',
             element: (
-              <RoleGuard allowedRoles={['admin', 'support']}>
+              <RoleGuard allowedRoles={['admin', 'support', 'manager']}>
                 <SafePage><SupportPanel /></SafePage>
               </RoleGuard>
             ),
@@ -123,22 +163,14 @@ export const router = createBrowserRouter([
               </RoleGuard>
             ),
           },
-          {
-            path: 'settings',
-            element: <SafePage><Settings /></SafePage>,
-          },
-          {
-            path: '*',
-            element: <Navigate to="/dashboard" replace />,
-          },
         ],
       },
     ],
   },
   
-  // Catch-all redirect
+  // Catch all - redirect to home
   {
     path: '*',
-    element: <Navigate to="/auth/login" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);

@@ -1,101 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle, UserPlus } from 'lucide-react';
+
+const signupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  phone: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type SignupForm = z.infer<typeof signupSchema>;
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { user, signUpEmail, loading, error, clearError } = useAuthStore();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
+  const { signUpEmail, loading, error, clearError } = useAuthStore();
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [signupSuccess, setSignupSuccess] = React.useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [signupSuccess, setSignupSuccess] = useState(false);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
-
-  // Auto redirect to login after signup success
-  useEffect(() => {
-    if (signupSuccess) {
-      const timer = setTimeout(() => {
-        navigate('/auth/login');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [signupSuccess, navigate]);
-
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) {
-      errors.name = 'Full name is required';
-    } else if (formData.name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters';
-    }
-    
-    if (!formData.email) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-    
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-    
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
-
-    if (formData.phone && !/^\+[1-9]\d{1,14}$/.test(formData.phone)) {
-      errors.phone = 'Phone number must be in international format (e.g., +201234567890)';
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: SignupForm) => {
     clearError();
-    
-    if (!validateForm()) {
-      return;
-    }
-
     const success = await signUpEmail(
-      formData.name.trim(),
-      formData.email,
-      formData.password,
-      formData.phone || undefined
+      values.name,
+      values.email,
+      values.password,
+      values.phone
     );
     
     if (success) {
       setSignupSuccess(true);
-      // Don't redirect - user needs to verify email first
+      setTimeout(() => {
+        navigate('/auth/login');
+      }, 2000);
     }
   };
 
@@ -105,24 +58,8 @@ export default function Signup() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8 text-center">
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h1>
-          <p className="text-gray-600 mb-4">
-            Please check your email and click the verification link to activate your account.
-          </p>
-          <p className="text-gray-600 mb-6">
-            Welcome to SaleMate! Please verify your email to access your dashboard.
-          </p>
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Redirecting to login in 3 seconds...
-            </div>
-            <button 
-              onClick={() => navigate('/auth/login')}
-              className="text-blue-600 hover:text-blue-800 text-sm underline"
-            >
-              Go to Login Now
-            </button>
-          </div>
+          <p className="text-gray-600 mb-4">Please check your email to verify your account.</p>
+          <p className="text-sm text-gray-500">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -134,196 +71,97 @@ export default function Signup() {
         <div className="text-center mb-8">
           <Logo variant="icon" size="xl" className="mx-auto mb-4 scale-125" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join SaleMate to get started</p>
+          <p className="text-gray-600">Join SaleMate today</p>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <span className="text-red-700 text-sm">{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
             <input
+              {...register('name')}
               type="text"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                validationErrors.name ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="Enter your full name"
-              disabled={loading}
             />
-            {validationErrors.name && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.name}
-              </p>
-            )}
+            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
             <input
+              {...register('email')}
               type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                validationErrors.email ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="Enter your email"
-              disabled={loading}
             />
-            {validationErrors.email && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.email}
-              </p>
-            )}
+            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number (Optional)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone (Optional)</label>
             <input
+              {...register('phone')}
               type="tel"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                validationErrors.phone ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="+201234567890"
-              disabled={loading}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder="Enter your phone number"
             />
-            {validationErrors.phone && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.phone}
-              </p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Use international format with country code
-            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password *
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
-                  validationErrors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Create a password"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {validationErrors.password && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.password}
-              </p>
-            )}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <input
+              {...register('password')}
+              type="password"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder="Create a password"
+            />
+            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password *
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
-                  validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Confirm your password"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {validationErrors.confirmPassword && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {validationErrors.confirmPassword}
-              </p>
-            )}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+            <input
+              {...register('confirmPassword')}
+              type="password"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder="Confirm your password"
+            />
+            {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>}
           </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-              <span className="text-sm text-red-600">{error}</span>
-              <button
-                type="button"
-                onClick={clearError}
-                className="ml-auto text-red-400 hover:text-red-600"
-              >
-                ×
-              </button>
-            </div>
-          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
                 Creating Account...
               </>
-                          ) : (
-                <>
-                  ✅ Create Account
-                </>
-              )}
+            ) : (
+              <>
+                <UserPlus className="h-5 w-5" />
+                Create Account
+              </>
+            )}
           </button>
         </form>
 
-        <div className="mt-6 space-y-4">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or</span>
-            </div>
-          </div>
-
-          <Link
-            to="/auth/phone"
-            className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-          >
-            📱 Sign up with Phone (OTP)
-          </Link>
-        </div>
-
-        <div className="text-center mt-6">
-          <span className="text-gray-600">Already have an account? </span>
-          <Link to="/auth/login" className="text-blue-600 hover:underline font-medium">
-            Sign in
-          </Link>
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <Link to="/auth/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
     </div>
