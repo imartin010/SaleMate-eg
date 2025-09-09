@@ -316,10 +316,14 @@ Ahmed Ali,+201234567894,+201234567895,,ahmed.ali@email.com,Business Owner,TikTok
               onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a project" />
+                <SelectValue placeholder={projects.length === 0 ? "Loading projects..." : "Select a project"} />
               </SelectTrigger>
               <SelectContent>
-                {projects.map((project: Project) => (
+                {projects.length === 0 && (
+                  <SelectItem value="" disabled>
+                    No projects available - Run the projects SQL first
+                  </SelectItem>
+                )}                {projects.map((project: Project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name} - {project.developer} ({project.region})
                   </SelectItem>
