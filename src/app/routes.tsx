@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 // AUTH PAGES: Import the real auth components
 import Login from '../pages/Auth/Login';
 import Signup from '../pages/Auth/Signup';
+import ResetPassword from '../pages/Auth/ResetPassword';
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
@@ -58,6 +59,15 @@ export const router = createBrowserRouter([
       <>
         <ScrollToTop />
         <Signup />
+      </>
+    ),
+  },
+  {
+    path: '/auth/reset-password',
+    element: (
+      <>
+        <ScrollToTop />
+        <ResetPassword />
       </>
     ),
   },
