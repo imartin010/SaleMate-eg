@@ -41,13 +41,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
@@ -109,13 +102,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_batches_upload_user_id_fkey"
-            columns: ["upload_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -192,20 +178,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "leads_assigned_to_id_fkey"
-            columns: ["assigned_to_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_buyer_user_id_fkey"
-            columns: ["buyer_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "leads_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -217,13 +189,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_upload_user_id_fkey"
-            columns: ["upload_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -278,13 +243,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -347,59 +305,43 @@ export type Database = {
           id?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
-          created_at: string | null
-          email: string
+          created_at: string
+          email: string | null
           id: string
-          is_banned: boolean | null
+          is_banned: boolean
           manager_id: string | null
-          name: string
+          name: string | null
           phone: string | null
-          role: Database["public"]["Enums"]["user_role"] | null
-          updated_at: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
-          email: string
+          created_at?: string
+          email?: string | null
           id: string
-          is_banned?: boolean | null
+          is_banned?: boolean
           manager_id?: string | null
-          name: string
+          name?: string | null
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
-          updated_at?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
-          email?: string
+          created_at?: string
+          email?: string | null
           id?: string
-          is_banned?: boolean | null
+          is_banned?: boolean
           manager_id?: string | null
-          name?: string
+          name?: string | null
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
-          updated_at?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       projects: {
         Row: {
@@ -459,15 +401,7 @@ export type Database = {
           id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "recent_activity_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       "salemate-inventory": {
         Row: {
@@ -599,22 +533,7 @@ export type Database = {
           subject?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "support_cases_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "support_cases_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -632,9 +551,27 @@ export type Database = {
       }
     }
     Functions: {
+      assign_leads_to_user: {
+        Args: { project_id: string; quantity: number; user_id: string }
+        Returns: Json
+      }
+      backfill_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       convert_python_dict_to_json: {
         Args: { input_text: string }
         Returns: Json
+      }
+      rpc_team_user_ids: {
+        Args: { root_user_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
+      update_project_lead_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
