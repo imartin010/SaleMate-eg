@@ -34,7 +34,7 @@ const PageLoader = () => (
 // Safe page wrapper with error boundary
 const SafePage = ({ children }: { children: React.ReactNode }) => (
   <>
-    <ErrorBoundary fallback={<FastFallback />}>
+    <ErrorBoundary fallback={FastFallback}>
       <Suspense fallback={<PageLoader />}>
         {children}
       </Suspense>
