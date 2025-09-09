@@ -387,9 +387,9 @@ const Settings: React.FC = () => {
               )}
               <div className="flex items-center gap-2 mt-2">
                 <Shield className="h-4 w-4 text-muted-foreground" />
-                <Badge className={`${getRoleColor(role)} border px-3 py-1.5 text-sm font-medium flex items-center gap-2 w-fit`}>
-                  {getRoleIcon(role)}
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                <Badge className={`${getRoleColor(role || "user")} border px-3 py-1.5 text-sm font-medium flex items-center gap-2 w-fit`}>
+                  {getRoleIcon(role || "user")}
+                  {(role || "user").charAt(0).toUpperCase() + (role || "user").slice(1)}
                 </Badge>
               </div>
             </div>
