@@ -8,117 +8,133 @@ import {
   Building,
   BarChart3,
   Target,
-  Zap
+  Zap,
+  AlertTriangle
 } from 'lucide-react';
 
 interface TeamMember {
   name: string;
   startDate: string;
   salary: number;
-  may: number;
   june: number;
   july: number;
   august: number;
+  september: number;
   ytd: number;
 }
 
-interface MonthlyData {
+interface MonthlyPnL {
   month: string;
-  salaries: number;
-  rent: number;
-  total: number;
-  sales: number;
-  profit: number;
-  profitMargin: number;
-}
-
-interface SalesData {
-  month: string;
-  sales: number;
-  growth?: number;
+  salesVolume: number; // USD sales volume
+  grossRevenue: number; // EGP commission earned
+  totalExpenses: number; // EGP expenses
+  netProfit: number; // EGP profit
+  profitMargin: number; // %
+  growth?: number; // % growth in sales volume
 }
 
 const TeamPNL: React.FC = () => {
-  // Sales volume data
-  const salesData: SalesData[] = [
-    { month: 'June', sales: 28711980 },
-    { month: 'July', sales: 76798190, growth: 267.48 },
-    { month: 'August', sales: 151093390, growth: 196.74 },
-    { month: 'September', sales: 104885519, growth: -30.58 } // Calculated decline
-  ];
+  // Commission rates
+  const COMMISSION_RATE_REGULAR = 2500; // EGP per $1M
+  const COMMISSION_RATE_RETRO = 7000; // EGP per $1M with retroactive
 
-  // Team expense data
+  // Calculate revenue from sales volume
+  const calculateRevenue = (salesVolumeUSD: number, isRetroactive: boolean = false) => {
+    const millionsInSales = salesVolumeUSD / 1000000;
+    const commissionRate = isRetroactive ? COMMISSION_RATE_RETRO : COMMISSION_RATE_REGULAR;
+    return millionsInSales * commissionRate;
+  };
+
+  // Team expense data (updated with September)
   const teamMembers: TeamMember[] = [
-    { name: 'Ali', startDate: '6/1/2025', salary: 20000, may: 20000, june: 20000, july: 20000, august: 20000, ytd: 60000 },
-    { name: 'Yara', startDate: '15/6/2025', salary: 20000, may: 0, june: 10000, july: 20000, august: 20000, ytd: 50000 },
-    { name: 'Omar', startDate: '7/7/2025', salary: 25000, may: 0, june: 0, july: 25000, august: 20000, ytd: 45000 },
-    { name: 'Aya', startDate: '15/7/2025', salary: 20000, may: 0, june: 0, july: 10000, august: 20000, ytd: 30000 },
-    { name: 'Mohanad', startDate: '15/5/2025', salary: 50000, may: 25000, june: 50000, july: 50000, august: 50000, ytd: 175000 }
+    { name: 'Ali', startDate: '6/1/2025', salary: 20000, june: 20000, july: 20000, august: 20000, september: 20000, ytd: 80000 },
+    { name: 'Yara', startDate: '15/6/2025', salary: 20000, june: 10000, july: 20000, august: 20000, september: 20000, ytd: 70000 },
+    { name: 'Omar', startDate: '7/7/2025', salary: 25000, june: 0, july: 25000, august: 20000, september: 25000, ytd: 70000 },
+    { name: 'Aya', startDate: '15/7/2025', salary: 20000, june: 0, july: 10000, august: 20000, september: 20000, ytd: 50000 },
+    { name: 'Mohanad', startDate: '15/5/2025', salary: 50000, june: 50000, july: 50000, august: 50000, september: 50000, ytd: 200000 }
   ];
 
-  // Combined P&L data with sales and expenses
-  const monthlyPnL: MonthlyData[] = [
-    { 
-      month: 'June', 
-      salaries: 80000, 
-      rent: 12000, 
-      total: 92000, 
-      sales: 28711980,
-      profit: 28711980 - 92000,
-      profitMargin: ((28711980 - 92000) / 28711980) * 100
+  // Monthly P&L with correct commission calculations
+  const monthlyPnL: MonthlyPnL[] = [
+    {
+      month: 'June',
+      salesVolume: 28711980, // $28.7M
+      grossRevenue: calculateRevenue(28711980), // 28.7 * 2500 = 71,780 EGP
+      totalExpenses: 92000, // EGP 92K
+      netProfit: calculateRevenue(28711980) - 92000, // -20,220 EGP (LOSS)
+      profitMargin: ((calculateRevenue(28711980) - 92000) / calculateRevenue(28711980)) * 100,
+      growth: 0
     },
-    { 
+    {
       month: 'July', 
-      salaries: 125000, 
-      rent: 20000, 
-      total: 145000, 
-      sales: 76798190,
-      profit: 76798190 - 145000,
-      profitMargin: ((76798190 - 145000) / 76798190) * 100
+      salesVolume: 76798190, // $76.8M
+      grossRevenue: calculateRevenue(76798190), // 76.8 * 2500 = 191,995 EGP
+      totalExpenses: 145000, // EGP 145K
+      netProfit: calculateRevenue(76798190) - 145000, // 46,995 EGP profit
+      profitMargin: ((calculateRevenue(76798190) - 145000) / calculateRevenue(76798190)) * 100,
+      growth: 267.48
     },
-    { 
-      month: 'August', 
-      salaries: 130000, 
-      rent: 20000, 
-      total: 150000, 
-      sales: 151093390,
-      profit: 151093390 - 150000,
-      profitMargin: ((151093390 - 150000) / 151093390) * 100
+    {
+      month: 'August',
+      salesVolume: 151093390, // $151.1M  
+      grossRevenue: calculateRevenue(151093390), // 151.1 * 2500 = 377,734 EGP
+      totalExpenses: 150000, // EGP 150K
+      netProfit: calculateRevenue(151093390) - 150000, // 227,734 EGP profit
+      profitMargin: ((calculateRevenue(151093390) - 150000) / calculateRevenue(151093390)) * 100,
+      growth: 196.74
     },
-    { 
-      month: 'September', 
-      salaries: 130000, 
-      rent: 20000, 
-      total: 150000, 
-      sales: 104885519,
-      profit: 104885519 - 150000,
-      profitMargin: ((104885519 - 150000) / 104885519) * 100
+    {
+      month: 'September',
+      salesVolume: 104885519, // $104.9M
+      grossRevenue: calculateRevenue(104885519), // 104.9 * 2500 = 262,214 EGP
+      totalExpenses: 150000, // EGP 150K
+      netProfit: calculateRevenue(104885519) - 150000, // 112,214 EGP profit
+      profitMargin: ((calculateRevenue(104885519) - 150000) / calculateRevenue(104885519)) * 100,
+      growth: -30.58
     }
   ];
 
   const totalYTD = {
-    salaries: 465000, // Updated with September
-    rent: 72000,
-    expenses: 537000,
-    sales: 361489079, // Total sales June-September
-    profit: 361489079 - 537000,
-    profitMargin: ((361489079 - 537000) / 361489079) * 100
+    salesVolume: monthlyPnL.reduce((sum, m) => sum + m.salesVolume, 0),
+    grossRevenue: monthlyPnL.reduce((sum, m) => sum + m.grossRevenue, 0),
+    totalExpenses: monthlyPnL.reduce((sum, m) => sum + m.totalExpenses, 0),
+    netProfit: monthlyPnL.reduce((sum, m) => sum + m.netProfit, 0)
   };
 
-  // Forecast next 3 months based on trends
-  const forecastMonths = [
-    { month: 'October', projectedSales: 110000000, projectedExpenses: 160000 },
-    { month: 'November', projectedSales: 125000000, projectedExpenses: 170000 },
-    { month: 'December', projectedSales: 140000000, projectedExpenses: 180000 }
-  ];
+  totalYTD.profitMargin = (totalYTD.netProfit / totalYTD.grossRevenue) * 100;
 
-  const formatCurrency = (amount: number) => {
+  const formatUSD = (amount: number) => {
     return `$${(amount / 1000000).toFixed(1)}M`;
   };
 
   const formatEGP = (amount: number) => {
     return `EGP ${amount.toLocaleString()}`;
   };
+
+  // Forecast next 3 months
+  const forecastMonths = [
+    { 
+      month: 'October', 
+      projectedSalesVolume: 120000000, // $120M
+      projectedRevenue: calculateRevenue(120000000),
+      projectedExpenses: 160000,
+      isRetroactive: false
+    },
+    { 
+      month: 'November', 
+      projectedSalesVolume: 140000000, // $140M
+      projectedRevenue: calculateRevenue(140000000),
+      projectedExpenses: 170000,
+      isRetroactive: false
+    },
+    { 
+      month: 'December', 
+      projectedSalesVolume: 160000000, // $160M
+      projectedRevenue: calculateRevenue(160000000, true), // Assuming retroactive bonus
+      projectedExpenses: 180000,
+      isRetroactive: true
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -130,7 +146,19 @@ const TeamPNL: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Team P&L Dashboard</h1>
-            <p className="text-gray-600">Revenue, Expenses & Profit Analysis</p>
+            <p className="text-gray-600">Sales Commission Analysis & Profit Tracking</p>
+          </div>
+        </div>
+        
+        {/* Commission Rate Info */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <span className="font-medium text-yellow-800">Commission Structure</span>
+          </div>
+          <div className="text-sm text-yellow-700 space-y-1">
+            <div>• <strong>Regular Commission:</strong> {COMMISSION_RATE_REGULAR.toLocaleString()} EGP per $1M sales</div>
+            <div>• <strong>Retroactive Bonus:</strong> {COMMISSION_RATE_RETRO.toLocaleString()} EGP per $1M sales</div>
           </div>
         </div>
       </div>
@@ -140,10 +168,20 @@ const TeamPNL: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Revenue YTD</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(totalYTD.sales)}</p>
+              <p className="text-sm font-medium text-gray-600">Sales Volume YTD</p>
+              <p className="text-2xl font-bold text-green-600">{formatUSD(totalYTD.salesVolume)}</p>
             </div>
             <Target className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Gross Revenue YTD</p>
+              <p className="text-2xl font-bold text-blue-600">{formatEGP(totalYTD.grossRevenue)}</p>
+            </div>
+            <DollarSign className="h-8 w-8 text-blue-600" />
           </div>
         </div>
 
@@ -151,50 +189,48 @@ const TeamPNL: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Expenses YTD</p>
-              <p className="text-2xl font-bold text-red-600">{formatEGP(totalYTD.expenses)}</p>
+              <p className="text-2xl font-bold text-red-600">{formatEGP(totalYTD.totalExpenses)}</p>
             </div>
-            <DollarSign className="h-8 w-8 text-red-600" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Net Profit YTD</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totalYTD.profit)}</p>
-            </div>
-            <Zap className="h-8 w-8 text-blue-600" />
+            <Building className="h-8 w-8 text-red-600" />
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-purple-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Profit Margin</p>
-              <p className="text-2xl font-bold text-purple-600">{totalYTD.profitMargin.toFixed(1)}%</p>
+              <p className="text-sm font-medium text-gray-600">Net Profit YTD</p>
+              <p className={`text-2xl font-bold ${totalYTD.netProfit > 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                {formatEGP(totalYTD.netProfit)}
+              </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-purple-600" />
+            {totalYTD.netProfit > 0 ? (
+              <TrendingUp className="h-8 w-8 text-purple-600" />
+            ) : (
+              <TrendingDown className="h-8 w-8 text-red-600" />
+            )}
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-orange-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Team Size</p>
-              <p className="text-2xl font-bold text-orange-600">{teamMembers.length}</p>
+              <p className="text-sm font-medium text-gray-600">Profit Margin</p>
+              <p className={`text-2xl font-bold ${totalYTD.profitMargin > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                {totalYTD.profitMargin.toFixed(1)}%
+              </p>
             </div>
-            <Users className="h-8 w-8 text-orange-600" />
+            <Zap className="h-8 w-8 text-orange-600" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Monthly P&L Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Monthly P&L Performance
+              Monthly P&L Performance (Correct Commission Calculation)
             </h2>
           </div>
           
@@ -204,9 +240,11 @@ const TeamPNL: React.FC = () => {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="text-left p-3 font-medium text-gray-700">Month</th>
-                    <th className="text-right p-3 font-medium text-gray-700">Sales Revenue</th>
-                    <th className="text-right p-3 font-medium text-gray-700">Total Expenses</th>
-                    <th className="text-right p-3 font-medium text-gray-700">Net Profit</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Sales Volume (USD)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Commission Rate</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Gross Revenue (EGP)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Total Expenses (EGP)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Net Profit (EGP)</th>
                     <th className="text-right p-3 font-medium text-gray-700">Margin %</th>
                     <th className="text-right p-3 font-medium text-gray-700">Growth %</th>
                   </tr>
@@ -215,47 +253,69 @@ const TeamPNL: React.FC = () => {
                   {monthlyPnL.map((month, index) => (
                     <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="p-3 font-medium">{month.month}</td>
-                      <td className="p-3 text-right font-bold text-green-600">{formatCurrency(month.sales)}</td>
-                      <td className="p-3 text-right text-red-600">{formatEGP(month.total)}</td>
-                      <td className="p-3 text-right font-bold text-blue-600">{formatCurrency(month.profit)}</td>
+                      <td className="p-3 text-right font-bold text-blue-600">{formatUSD(month.salesVolume)}</td>
+                      <td className="p-3 text-right text-sm text-gray-600">2,500/1M</td>
+                      <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(month.grossRevenue))}</td>
+                      <td className="p-3 text-right text-red-600">{formatEGP(month.totalExpenses)}</td>
+                      <td className="p-3 text-right font-bold">
+                        <span className={month.netProfit > 0 ? 'text-green-600' : 'text-red-600'}>
+                          {formatEGP(Math.round(month.netProfit))}
+                        </span>
+                      </td>
                       <td className="p-3 text-right font-medium">
-                        <span className={month.profitMargin > 95 ? 'text-green-600' : month.profitMargin > 90 ? 'text-yellow-600' : 'text-red-600'}>
+                        <span className={month.profitMargin > 0 ? 'text-green-600' : 'text-red-600'}>
                           {month.profitMargin.toFixed(1)}%
                         </span>
                       </td>
                       <td className="p-3 text-right">
-                        {index > 0 && (
-                          <span className={salesData[index]?.growth && salesData[index].growth! > 0 ? 'text-green-600' : 'text-red-600'}>
-                            {salesData[index]?.growth ? `${salesData[index].growth!.toFixed(1)}%` : '-'}
+                        {month.growth !== undefined && (
+                          <span className={month.growth > 0 ? 'text-green-600' : 'text-red-600'}>
+                            {month.growth > 0 ? '+' : ''}{month.growth.toFixed(1)}%
                           </span>
                         )}
                       </td>
                     </tr>
                   ))}
+                  <tr className="border-t-2 border-gray-400 bg-blue-50 font-bold text-lg">
+                    <td className="p-3">YTD TOTAL</td>
+                    <td className="p-3 text-right text-blue-700">{formatUSD(totalYTD.salesVolume)}</td>
+                    <td className="p-3 text-right text-sm">Avg 2,500</td>
+                    <td className="p-3 text-right text-green-700">{formatEGP(Math.round(totalYTD.grossRevenue))}</td>
+                    <td className="p-3 text-right text-red-700">{formatEGP(totalYTD.totalExpenses)}</td>
+                    <td className="p-3 text-right">
+                      <span className={totalYTD.netProfit > 0 ? 'text-green-700' : 'text-red-700'}>
+                        {formatEGP(Math.round(totalYTD.netProfit))}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <span className={totalYTD.profitMargin > 0 ? 'text-green-700' : 'text-red-700'}>
+                        {totalYTD.profitMargin.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="p-3"></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Sales Growth Analysis */}
-            <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-medium text-green-800 mb-2">Sales Growth Analysis</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-green-700">June → July: </span>
-                  <span className="font-bold text-green-600">+267.48%</span>
-                </div>
-                <div>
-                  <span className="text-green-700">July → August: </span>
-                  <span className="font-bold text-green-600">+196.74%</span>
-                </div>
-                <div>
-                  <span className="text-red-700">August → September: </span>
-                  <span className="font-bold text-red-600">-30.58%</span>
-                </div>
-                <div>
-                  <span className="text-blue-700">Avg Monthly Growth: </span>
-                  <span className="font-bold text-blue-600">+144.55%</span>
-                </div>
+            {/* Key Insights */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Best Month</h4>
+                <p className="text-2xl font-bold text-green-600">August</p>
+                <p className="text-sm text-green-700">{formatEGP(Math.round(monthlyPnL[2].netProfit))} profit</p>
+              </div>
+              
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-800 mb-2">Worst Month</h4>
+                <p className="text-2xl font-bold text-red-600">June</p>
+                <p className="text-sm text-red-700">{formatEGP(Math.round(monthlyPnL[0].netProfit))} loss</p>
+              </div>
+              
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-2">Avg Monthly Profit</h4>
+                <p className="text-2xl font-bold text-blue-600">{formatEGP(Math.round(totalYTD.netProfit / 4))}</p>
+                <p className="text-sm text-blue-700">4-month average</p>
               </div>
             </div>
           </div>
@@ -292,8 +352,8 @@ const TeamPNL: React.FC = () => {
                       <td className="p-3 text-right">{member.june.toLocaleString()}</td>
                       <td className="p-3 text-right">{member.july.toLocaleString()}</td>
                       <td className="p-3 text-right">{member.august.toLocaleString()}</td>
-                      <td className="p-3 text-right">{member.salary.toLocaleString()}</td>
-                      <td className="p-3 text-right font-bold text-blue-600">{(member.ytd + member.salary).toLocaleString()}</td>
+                      <td className="p-3 text-right">{member.september.toLocaleString()}</td>
+                      <td className="p-3 text-right font-bold text-blue-600">{member.ytd.toLocaleString()}</td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
@@ -328,139 +388,48 @@ const TeamPNL: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Sales vs Expenses Chart */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-blue-600" />
-          Sales vs Expenses Trend
-        </h3>
-        
-        <div className="relative">
-          <div className="flex items-end gap-6 h-64">
-            {monthlyPnL.map((month, index) => {
-              const maxSales = Math.max(...monthlyPnL.map(m => m.sales));
-              const salesHeight = (month.sales / maxSales) * 200;
-              const expenseHeight = (month.total / maxSales) * 200;
-              
-              return (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="flex items-end gap-1 w-full">
-                    {/* Sales Bar */}
-                    <div className="flex-1 bg-gradient-to-t from-green-600 to-green-400 rounded-t-lg relative group"
-                         style={{ height: `${salesHeight}px` }}>
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        Sales: {formatCurrency(month.sales)}
-                      </div>
-                    </div>
-                    {/* Expenses Bar */}
-                    <div className="w-4 bg-gradient-to-t from-red-600 to-red-400 rounded-t-lg relative group"
-                         style={{ height: `${expenseHeight}px` }}>
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        Exp: {formatEGP(month.total)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-center">
-                    <p className="text-sm font-medium text-gray-700">{month.month}</p>
-                    <p className="text-xs text-green-600">{formatCurrency(month.profit)} profit</p>
-                    <p className="text-xs text-gray-500">{month.profitMargin.toFixed(1)}% margin</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-center gap-4 mt-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span>Sales Revenue</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span>Expenses</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Forecast */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-green-600" />
-          3-Month Forecast (Oct-Dec 2024)
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {forecastMonths.map((forecast, index) => (
-            <div key={index} className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
-              <div className="text-center">
-                <h4 className="font-semibold text-gray-800 mb-2">{forecast.month}</h4>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm text-gray-600">Projected Sales</p>
-                    <p className="text-xl font-bold text-green-600">{formatCurrency(forecast.projectedSales)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Projected Expenses</p>
-                    <p className="text-lg font-medium text-red-600">{formatEGP(forecast.projectedExpenses)}</p>
-                  </div>
-                  <div className="pt-2 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">Net Profit</p>
-                    <p className="text-xl font-bold text-blue-600">
-                      {formatCurrency(forecast.projectedSales - (forecast.projectedExpenses * 5.7))}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        {/* Forecast */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Target className="h-5 w-5 text-blue-600" />
-            Key Performance Indicators
+          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-green-600" />
+            3-Month Forecast (Oct-Dec 2024)
           </h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <span className="font-medium">Revenue per Employee (Monthly Avg)</span>
-              <span className="font-bold text-green-600">{formatCurrency(totalYTD.sales / 4 / teamMembers.length)}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <span className="font-medium">Cost per Employee (Monthly Avg)</span>
-              <span className="font-bold text-red-600">{formatEGP(totalYTD.salaries / 4 / teamMembers.length)}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <span className="font-medium">Profit per Employee (Monthly Avg)</span>
-              <span className="font-bold text-blue-600">{formatCurrency(totalYTD.profit / 4 / teamMembers.length)}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <span className="font-medium">Revenue Growth Rate</span>
-              <span className="font-bold text-green-600">+144.55%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-purple-600" />
-            Monthly Sales Performance
-          </h3>
-          <div className="space-y-3">
-            {salesData.map((sales, index) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                <span className="font-medium">{sales.month} 2024</span>
-                <div className="text-right">
-                  <div className="font-bold text-green-600">{formatCurrency(sales.sales)}</div>
-                  {sales.growth && (
-                    <div className={`text-sm ${sales.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {sales.growth > 0 ? '+' : ''}{sales.growth.toFixed(1)}%
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {forecastMonths.map((forecast, index) => (
+              <div key={index} className={`rounded-lg p-4 border ${forecast.isRetroactive ? 'bg-gradient-to-r from-yellow-50 to-green-50 border-yellow-200' : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'}`}>
+                <div className="text-center">
+                  <h4 className="font-semibold text-gray-800 mb-2">{forecast.month}</h4>
+                  {forecast.isRetroactive && (
+                    <div className="mb-2">
+                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">RETROACTIVE BONUS</span>
                     </div>
                   )}
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-600">Sales Volume</p>
+                      <p className="text-lg font-bold text-blue-600">{formatUSD(forecast.projectedSalesVolume)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Commission Rate</p>
+                      <p className="text-sm font-medium">{forecast.isRetroactive ? '7,000' : '2,500'} EGP/1M</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Gross Revenue</p>
+                      <p className="text-lg font-bold text-green-600">{formatEGP(Math.round(forecast.projectedRevenue))}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Projected Expenses</p>
+                      <p className="text-lg font-medium text-red-600">{formatEGP(forecast.projectedExpenses)}</p>
+                    </div>
+                    <div className="pt-2 border-t border-gray-200">
+                      <p className="text-sm text-gray-600">Net Profit</p>
+                      <p className="text-xl font-bold text-purple-600">
+                        {formatEGP(Math.round(forecast.projectedRevenue - forecast.projectedExpenses))}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -484,22 +453,22 @@ const TeamPNL: React.FC = () => {
         </button>
         <button 
           onClick={() => {
-            // Export complete P&L data as CSV
-            const headers = 'Month,Sales Revenue,Total Expenses,Net Profit,Profit Margin %,Growth %';
+            // Export complete P&L data with correct calculations
+            const headers = 'Month,Sales Volume USD,Gross Revenue EGP,Total Expenses EGP,Net Profit EGP,Profit Margin %,Growth %';
             const csvData = monthlyPnL.map(m => 
-              `${m.month},${m.sales},${m.total},${m.profit},${m.profitMargin.toFixed(1)},${salesData.find(s => s.month === m.month)?.growth?.toFixed(1) || ''}`
+              `${m.month},${m.salesVolume},${Math.round(m.grossRevenue)},${m.totalExpenses},${Math.round(m.netProfit)},${m.profitMargin.toFixed(1)},${m.growth?.toFixed(1) || ''}`
             ).join('\n');
             const blob = new Blob([`${headers}\n${csvData}`], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'team_pnl_complete_report.csv';
+            a.download = 'team_pnl_correct_commission_report.csv';
             a.click();
             URL.revokeObjectURL(url);
           }}
           className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
-          Export Complete P&L
+          Export Corrected P&L
         </button>
       </div>
     </div>
