@@ -913,24 +913,23 @@ const TeamPNL: React.FC = () => {
                       <td className="p-3 text-right text-green-600">{(((calculateRevenue(226640085) - 150000) / calculateRevenue(226640085)) * 100).toFixed(1)}%</td>
                       <td className="p-3 text-right text-green-600">+116%</td>
                     </tr>
-                    {forecastMonths.map((forecast, index) => {
-                      const previousVolume = index === 0 ? 226640085 : forecastMonths[index - 1].projectedSalesVolume;
-                      const growthRate = ((forecast.projectedSalesVolume - previousVolume) / previousVolume) * 100;
-                      const netProfit = forecast.projectedRevenue - forecast.projectedExpenses;
-                      const profitMargin = (netProfit / forecast.projectedRevenue) * 100;
+                    {combinedPnL.slice(1).map((month, index) => {
+                      const growthRate = month.growth || 0;
+                      const netProfit = month.netProfit;
+                      const profitMargin = month.profitMargin;
                       
                       return (
-                        <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50 ${forecast.isRetroactive ? 'bg-yellow-50' : ''}`}>
+                        <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50 ${month.month === 'December' ? 'bg-yellow-50' : ''}`}>
                           <td className="p-3 font-medium">
-                            {forecast.month}
-                            {forecast.isRetroactive && (
+                            {month.month}
+                            {month.month === 'December' && (
                               <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">RETRO</span>
                             )}
                           </td>
-                          <td className="p-3 text-right font-bold text-blue-600">{formatUSD(forecast.projectedSalesVolume)}</td>
-                          <td className="p-3 text-right text-sm font-medium">{forecast.isRetroactive ? '7,000/1M' : '2,500/1M'}</td>
-                          <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(forecast.projectedRevenue))}</td>
-                          <td className="p-3 text-right text-red-600">{formatEGP(forecast.projectedExpenses)}</td>
+                          <td className="p-3 text-right font-bold text-blue-600">{formatUSD(month.salesVolume)}</td>
+                          <td className="p-3 text-right text-sm font-medium">{month.month === 'December' ? '7,000/1M' : '2,500/1M'}</td>
+                          <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(month.grossRevenue))}</td>
+                          <td className="p-3 text-right text-red-600">{formatEGP(month.totalExpenses)}</td>
                           <td className="p-3 text-right font-bold text-purple-600">{formatEGP(Math.round(netProfit))}</td>
                           <td className="p-3 text-right text-green-600">{profitMargin.toFixed(1)}%</td>
                           <td className="p-3 text-right">
@@ -942,10 +941,11 @@ const TeamPNL: React.FC = () => {
                       );
                     })}
                     {(() => {
-                      const totalForecastRevenue = forecastMonths.reduce((sum, f) => sum + f.projectedRevenue, 0);
-                      const totalForecastExpenses = forecastMonths.reduce((sum, f) => sum + f.projectedExpenses, 0);
-                      const totalForecastProfit = totalForecastRevenue - totalForecastExpenses;
-                      const totalForecastSales = forecastMonths.reduce((sum, f) => sum + f.projectedSalesVolume, 0);
+                      const q4Data = combinedPnL.slice(1); // Oct, Nov, Dec
+                      const totalForecastRevenue = q4Data.reduce((sum, m) => sum + m.grossRevenue, 0);
+                      const totalForecastExpenses = q4Data.reduce((sum, m) => sum + m.totalExpenses, 0);
+                      const totalForecastProfit = q4Data.reduce((sum, m) => sum + m.netProfit, 0);
+                      const totalForecastSales = q4Data.reduce((sum, m) => sum + m.salesVolume, 0);
                       
                       return (
                         <tr className="border-t-2 border-purple-400 bg-purple-50 font-bold text-lg">
@@ -969,19 +969,19 @@ const TeamPNL: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-800 mb-2">Q4 Sales Volume</h4>
-                <p className="text-2xl font-bold text-blue-600">{formatUSD(forecastMonths.reduce((sum, f) => sum + f.projectedSalesVolume, 0))}</p>
-                <p className="text-sm text-blue-700">$1.125 Billion projected</p>
+                <p className="text-2xl font-bold text-blue-600">{formatUSD(combinedPnL.slice(1).reduce((sum, m) => sum + m.salesVolume, 0))}</p>
+                <p className="text-sm text-blue-700">$1.79 Billion projected</p>
               </div>
               
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <h4 className="font-medium text-green-800 mb-2">Q4 Revenue</h4>
-                <p className="text-2xl font-bold text-green-600">{formatEGP(Math.round(forecastMonths.reduce((sum, f) => sum + f.projectedRevenue, 0)))}</p>
+                <p className="text-2xl font-bold text-green-600">{formatEGP(Math.round(combinedPnL.slice(1).reduce((sum, m) => sum + m.grossRevenue, 0)))}</p>
                 <p className="text-sm text-green-700">Commission earnings</p>
               </div>
               
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <h4 className="font-medium text-purple-800 mb-2">Q4 Net Profit</h4>
-                <p className="text-2xl font-bold text-purple-600">{formatEGP(Math.round(forecastMonths.reduce((sum, f) => sum + f.projectedRevenue - f.projectedExpenses, 0)))}</p>
+                <p className="text-2xl font-bold text-purple-600">{formatEGP(Math.round(combinedPnL.slice(1).reduce((sum, m) => sum + m.netProfit, 0)))}</p>
                 <p className="text-sm text-purple-700">After all expenses</p>
               </div>
               
@@ -1009,9 +1009,9 @@ const TeamPNL: React.FC = () => {
                   <h5 className="font-medium text-purple-700 mb-2">Profit Acceleration</h5>
                   <ul className="space-y-1 text-gray-700">
                     <li>• Q3 YTD Profit: {formatEGP(Math.round(totalYTD.netProfit + calculateRevenue(226640085) - 150000))}</li>
-                    <li>• Q4 Projected Profit: {formatEGP(Math.round(forecastMonths.reduce((sum, f) => sum + f.projectedRevenue - f.projectedExpenses, 0)))}</li>
-                    <li>• December alone: {formatEGP(Math.round(calculateRevenue(411351754, true) - 180000))} (Retro)</li>
-                    <li>• 2024 Total: {formatEGP(Math.round(totalYTD.netProfit + calculateRevenue(226640085) - 150000 + forecastMonths.reduce((sum, f) => sum + f.projectedRevenue - f.projectedExpenses, 0)))}</li>
+                    <li>• Q4 Projected Profit: {formatEGP(Math.round(combinedPnL.slice(1).reduce((sum, m) => sum + m.netProfit, 0)))}</li>
+                    <li>• December alone: {formatEGP(Math.round(combinedPnL[3].netProfit))} (3-Team Retro)</li>
+                    <li>• 2024 Total: {formatEGP(Math.round(totalCombinedYTD.netProfit))}</li>
                   </ul>
                 </div>
               </div>
