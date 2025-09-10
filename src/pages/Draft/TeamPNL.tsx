@@ -186,9 +186,16 @@ const TeamPNL: React.FC = () => {
 
   const totalMonthlyCosts = {
     sep: 150000, // Only current team in Sep
-    oct: 375000, // All 3 teams (150k + 112.5k + 112.5k)
-    nov: 375000,
-    dec: 375000
+    oct: 425000, // All 3 teams (150k + 112.5k + 112.5k) + Marketing 50k
+    nov: 425000, // All 3 teams + Marketing 50k
+    dec: 425000  // All 3 teams + Marketing 50k
+  };
+
+  // Marketing budget breakdown: 150K total / 3 months = 50K per month
+  const marketingBudget = {
+    total: 150000, // EGP 150K for Q4
+    monthly: 50000, // EGP 50K per month (Oct, Nov, Dec)
+    description: "Marketing & advertising budget for 3-team expansion"
   };
 
   // Calculate combined P&L for all teams
@@ -262,6 +269,19 @@ const TeamPNL: React.FC = () => {
           <div className="text-sm text-yellow-700 space-y-1">
             <div>• <strong>Regular Commission:</strong> {COMMISSION_RATE_REGULAR.toLocaleString()} EGP per $1M sales</div>
             <div>• <strong>Retroactive Bonus:</strong> {COMMISSION_RATE_RETRO.toLocaleString()} EGP per $1M sales</div>
+          </div>
+        </div>
+
+        {/* Marketing Budget Info */}
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="h-4 w-4 text-purple-600" />
+            <span className="font-medium text-purple-800">Marketing Budget (Q4 2024)</span>
+          </div>
+          <div className="text-sm text-purple-700 space-y-1">
+            <div>• <strong>Total Q4 Marketing:</strong> {formatEGP(marketingBudget.total)} (3 months)</div>
+            <div>• <strong>Monthly Marketing:</strong> {formatEGP(marketingBudget.monthly)} per month</div>
+            <div>• <strong>Purpose:</strong> {marketingBudget.description}</div>
           </div>
         </div>
       </div>
@@ -472,7 +492,7 @@ const TeamPNL: React.FC = () => {
             </div>
 
             {/* Key Expansion Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-800 mb-2">Expansion Impact</h4>
                 <p className="text-2xl font-bold text-blue-600">3x</p>
@@ -488,7 +508,13 @@ const TeamPNL: React.FC = () => {
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <h4 className="font-medium text-purple-800 mb-2">Q4 Combined Profit</h4>
                 <p className="text-2xl font-bold text-purple-600">{formatEGP(Math.round(combinedPnL.slice(1).reduce((sum, m) => sum + m.netProfit, 0)))}</p>
-                <p className="text-sm text-purple-700">Oct-Dec total</p>
+                <p className="text-sm text-purple-700">After marketing costs</p>
+              </div>
+              
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <h4 className="font-medium text-orange-800 mb-2">Marketing Investment</h4>
+                <p className="text-2xl font-bold text-orange-600">{formatEGP(marketingBudget.total)}</p>
+                <p className="text-sm text-orange-700">Q4 total budget</p>
               </div>
               
               <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -508,7 +534,8 @@ const TeamPNL: React.FC = () => {
                     <li>• Current Team: EGP 150K/month (Proven performance)</li>
                     <li>• New Team 1: EGP 112.5K/month (Same trajectory)</li>
                     <li>• New Team 2: EGP 112.5K/month (Same trajectory)</li>
-                    <li>• Total Cost: EGP 375K/month (Oct-Dec)</li>
+                    <li>• Marketing Budget: EGP 50K/month (Oct-Dec)</li>
+                    <li>• Total Cost: EGP 425K/month (Oct-Dec)</li>
                   </ul>
                 </div>
                 <div>
@@ -825,14 +852,23 @@ const TeamPNL: React.FC = () => {
                     <td className="p-3 text-right">20,000</td>
                     <td className="p-3 text-right text-red-600">72,000</td>
                   </tr>
+                  <tr className="border-b border-gray-200 bg-purple-50">
+                    <td className="p-3 font-medium text-purple-800">Marketing Budget</td>
+                    <td className="p-3 text-purple-600 text-xs">3-Team Expansion</td>
+                    <td className="p-3 text-right">0</td>
+                    <td className="p-3 text-right text-purple-600">50,000</td>
+                    <td className="p-3 text-right text-purple-600">50,000</td>
+                    <td className="p-3 text-right text-purple-600">50,000</td>
+                    <td className="p-3 text-right font-bold text-purple-600">150,000</td>
+                  </tr>
                   <tr className="border-b-2 border-gray-400 bg-red-50 font-bold text-lg">
                     <td className="p-3">Total Expenses</td>
                     <td className="p-3"></td>
                     <td className="p-3 text-right text-red-700">92,000</td>
-                    <td className="p-3 text-right text-red-700">145,000</td>
-                    <td className="p-3 text-right text-red-700">150,000</td>
-                    <td className="p-3 text-right text-red-700">150,000</td>
-                    <td className="p-3 text-right text-red-700">537,000</td>
+                    <td className="p-3 text-right text-red-700">195,000</td>
+                    <td className="p-3 text-right text-red-700">200,000</td>
+                    <td className="p-3 text-right text-red-700">200,000</td>
+                    <td className="p-3 text-right text-red-700">687,000</td>
                   </tr>
                 </tbody>
               </table>
