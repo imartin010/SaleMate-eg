@@ -8,7 +8,7 @@ import { ScrollToTop } from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
 // AUTH PAGES: Import the real auth components
-import Login from '../pages/Auth/Login';
+import TeamPNL from '../pages/Draft/TeamPNL';import Login from '../pages/Auth/Login';
 import Signup from '../pages/Auth/Signup';
 import ResetPassword from '../pages/Auth/ResetPassword';
 
@@ -64,7 +64,10 @@ export const router = createBrowserRouter([
   },
   {
     path: '/auth/reset-password',
-    element: (
+  },
+  {
+    path: '/draft/team-pnl',
+    element: <TeamPNL />,    element: (
       <>
         <ScrollToTop />
         <ResetPassword />
