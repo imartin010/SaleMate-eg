@@ -225,12 +225,12 @@ const TeamPNL: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        {/* Monthly P&L Table */}
+        {/* Monthly P&L Table - Regular Commission */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Monthly P&L Performance (Correct Commission Calculation)
+              Monthly P&L Performance - Regular Commission (2,500 EGP per $1M)
             </h2>
           </div>
           
@@ -316,6 +316,157 @@ const TeamPNL: React.FC = () => {
                 <h4 className="font-medium text-blue-800 mb-2">Avg Monthly Profit</h4>
                 <p className="text-2xl font-bold text-blue-600">{formatEGP(Math.round(totalYTD.netProfit / 4))}</p>
                 <p className="text-sm text-blue-700">4-month average</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Monthly P&L Table - Retroactive Commission */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-yellow-600 to-orange-600 p-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Monthly P&L Performance - Retroactive Commission (7,000 EGP per $1M)
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-yellow-50">
+                    <th className="text-left p-3 font-medium text-gray-700">Month</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Sales Volume (USD)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Commission Rate</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Gross Revenue (EGP)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Total Expenses (EGP)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Net Profit (EGP)</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Margin %</th>
+                    <th className="text-right p-3 font-medium text-gray-700">Difference vs Regular</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyPnL.map((month, index) => {
+                    const retroRevenue = calculateRevenue(month.salesVolume, true);
+                    const retroProfit = retroRevenue - month.totalExpenses;
+                    const retroMargin = (retroProfit / retroRevenue) * 100;
+                    const profitDifference = retroProfit - month.netProfit;
+                    
+                    return (
+                      <tr key={index} className="border-b border-gray-100 hover:bg-yellow-50">
+                        <td className="p-3 font-medium">{month.month}</td>
+                        <td className="p-3 text-right font-bold text-blue-600">{formatUSD(month.salesVolume)}</td>
+                        <td className="p-3 text-right text-sm text-yellow-700 font-medium">7,000/1M</td>
+                        <td className="p-3 text-right font-bold text-yellow-600">{formatEGP(Math.round(retroRevenue))}</td>
+                        <td className="p-3 text-right text-red-600">{formatEGP(month.totalExpenses)}</td>
+                        <td className="p-3 text-right font-bold">
+                          <span className={retroProfit > 0 ? 'text-green-600' : 'text-red-600'}>
+                            {formatEGP(Math.round(retroProfit))}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-medium">
+                          <span className={retroMargin > 0 ? 'text-green-600' : 'text-red-600'}>
+                            {retroMargin.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-bold">
+                          <span className="text-green-600">
+                            +{formatEGP(Math.round(profitDifference))}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(() => {
+                    const totalRetroRevenue = monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0);
+                    const totalRetroProfit = totalRetroRevenue - totalYTD.totalExpenses;
+                    const totalRetroMargin = (totalRetroProfit / totalRetroRevenue) * 100;
+                    const totalDifference = totalRetroProfit - totalYTD.netProfit;
+                    
+                    return (
+                      <tr className="border-t-2 border-yellow-400 bg-yellow-50 font-bold text-lg">
+                        <td className="p-3">YTD TOTAL</td>
+                        <td className="p-3 text-right text-blue-700">{formatUSD(totalYTD.salesVolume)}</td>
+                        <td className="p-3 text-right text-sm text-yellow-700">Avg 7,000</td>
+                        <td className="p-3 text-right text-yellow-700">{formatEGP(Math.round(totalRetroRevenue))}</td>
+                        <td className="p-3 text-right text-red-700">{formatEGP(totalYTD.totalExpenses)}</td>
+                        <td className="p-3 text-right">
+                          <span className={totalRetroProfit > 0 ? 'text-green-700' : 'text-red-700'}>
+                            {formatEGP(Math.round(totalRetroProfit))}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <span className={totalRetroMargin > 0 ? 'text-green-700' : 'text-red-700'}>
+                            {totalRetroMargin.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="p-3 text-right text-green-700">
+                          +{formatEGP(Math.round(totalDifference))}
+                        </td>
+                      </tr>
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Retroactive Commission Insights */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-medium text-yellow-800 mb-2">Total Revenue Boost</h4>
+                <p className="text-2xl font-bold text-yellow-600">
+                  +{formatEGP(Math.round(monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0) - totalYTD.grossRevenue))}
+                </p>
+                <p className="text-sm text-yellow-700">vs Regular Commission</p>
+              </div>
+              
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Extra Profit YTD</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  +{formatEGP(Math.round((monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0) - totalYTD.totalExpenses) - totalYTD.netProfit))}
+                </p>
+                <p className="text-sm text-green-700">Additional profit</p>
+              </div>
+              
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-2">Improved Margin</h4>
+                <p className="text-2xl font-bold text-blue-600">
+                  {(((monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0) - totalYTD.totalExpenses) / monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0)) * 100).toFixed(1)}%
+                </p>
+                <p className="text-sm text-blue-700">vs {totalYTD.profitMargin.toFixed(1)}% regular</p>
+              </div>
+              
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-medium text-purple-800 mb-2">Commission Multiplier</h4>
+                <p className="text-2xl font-bold text-purple-600">2.8x</p>
+                <p className="text-sm text-purple-700">7,000 vs 2,500 EGP</p>
+              </div>
+            </div>
+
+            {/* Comparison Chart */}
+            <div className="mt-6">
+              <h4 className="font-semibold text-gray-800 mb-4">Commission Structure Impact</h4>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <h5 className="font-medium text-blue-600 mb-2">Regular Commission (Current)</h5>
+                    <ul className="space-y-1 text-gray-700">
+                      <li>• 2,500 EGP per $1M sales</li>
+                      <li>• YTD Revenue: {formatEGP(Math.round(totalYTD.grossRevenue))}</li>
+                      <li>• YTD Profit: {formatEGP(Math.round(totalYTD.netProfit))}</li>
+                      <li>• Profit Margin: {totalYTD.profitMargin.toFixed(1)}%</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-yellow-600 mb-2">Retroactive Commission (Potential)</h5>
+                    <ul className="space-y-1 text-gray-700">
+                      <li>• 7,000 EGP per $1M sales</li>
+                      <li>• YTD Revenue: {formatEGP(Math.round(monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0)))}</li>
+                      <li>• YTD Profit: {formatEGP(Math.round((monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0) - totalYTD.totalExpenses)))}</li>
+                      <li>• Profit Margin: {(((monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0) - totalYTD.totalExpenses) / monthlyPnL.reduce((sum, m) => sum + calculateRevenue(m.salesVolume, true), 0)) * 100).toFixed(1)}%</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
