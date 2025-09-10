@@ -191,11 +191,11 @@ const TeamPNL: React.FC = () => {
     dec: 425000  // All 3 teams + Marketing 50k
   };
 
-  // Marketing budget breakdown: 150K total / 3 months = 50K per month
+  // Marketing budget breakdown: 150K total / 3 months = 50K per month (Q4 only)
   const marketingBudget = {
-    total: 150000, // EGP 150K for Q4
-    monthly: 50000, // EGP 50K per month (Oct, Nov, Dec)
-    description: "Marketing & advertising budget for 3-team expansion"
+    total: 150000, // EGP 150K for Q4 (Oct-Dec)
+    monthly: 50000, // EGP 50K per month (Oct, Nov, Dec only)
+    description: "Marketing & advertising budget for 3-team expansion (Q4 2024 only)"
   };
 
   // Calculate combined P&L for all teams
@@ -279,9 +279,9 @@ const TeamPNL: React.FC = () => {
             <span className="font-medium text-purple-800">Marketing Budget (Q4 2024)</span>
           </div>
           <div className="text-sm text-purple-700 space-y-1">
-            <div>• <strong>Total Q4 Marketing:</strong> {formatEGP(marketingBudget.total)} (3 months)</div>
-            <div>• <strong>Monthly Marketing:</strong> {formatEGP(marketingBudget.monthly)} per month</div>
-            <div>• <strong>Purpose:</strong> {marketingBudget.description}</div>
+            <div>• <strong>Total Q4 Marketing:</strong> {formatEGP(marketingBudget.total)} (Oct-Dec only)</div>
+            <div>• <strong>Monthly Marketing:</strong> {formatEGP(marketingBudget.monthly)} per month (Q4)</div>
+            <div>• <strong>Historical Months:</strong> EGP 0 (Jun-Sep had no marketing budget)</div>
           </div>
         </div>
       </div>
@@ -855,19 +855,19 @@ const TeamPNL: React.FC = () => {
                     <td className="p-3 font-medium text-purple-800">Marketing Budget</td>
                     <td className="p-3 text-purple-600 text-xs">3-Team Expansion</td>
                     <td className="p-3 text-right">0</td>
-                    <td className="p-3 text-right text-purple-600">50,000</td>
-                    <td className="p-3 text-right text-purple-600">50,000</td>
-                    <td className="p-3 text-right text-purple-600">50,000</td>
-                    <td className="p-3 text-right font-bold text-purple-600">150,000</td>
+                    <td className="p-3 text-right">0</td>
+                    <td className="p-3 text-right">0</td>
+                    <td className="p-3 text-right">0</td>
+                    <td className="p-3 text-right text-purple-600">0</td>
                   </tr>
                   <tr className="border-b-2 border-gray-400 bg-red-50 font-bold text-lg">
                     <td className="p-3">Total Expenses</td>
                     <td className="p-3"></td>
                     <td className="p-3 text-right text-red-700">92,000</td>
-                    <td className="p-3 text-right text-red-700">195,000</td>
-                    <td className="p-3 text-right text-red-700">200,000</td>
-                    <td className="p-3 text-right text-red-700">200,000</td>
-                    <td className="p-3 text-right text-red-700">687,000</td>
+                    <td className="p-3 text-right text-red-700">145,000</td>
+                    <td className="p-3 text-right text-red-700">150,000</td>
+                    <td className="p-3 text-right text-red-700">150,000</td>
+                    <td className="p-3 text-right text-red-700">537,000</td>
                   </tr>
                 </tbody>
               </table>
