@@ -230,10 +230,10 @@ const TeamPNL: React.FC = () => {
     {
       month: 'December',
       salesVolume: combinedTotals.dec,
-      grossRevenue: calculateRevenue(combinedTotals.dec, true), // Retroactive
+      grossRevenue: calculateRevenue(combinedTotals.dec), // Normal commission (2,500)
       totalExpenses: totalMonthlyCosts.dec,
-      netProfit: calculateRevenue(combinedTotals.dec, true) - totalMonthlyCosts.dec,
-      profitMargin: ((calculateRevenue(combinedTotals.dec, true) - totalMonthlyCosts.dec) / calculateRevenue(combinedTotals.dec, true)) * 100,
+      netProfit: calculateRevenue(combinedTotals.dec) - totalMonthlyCosts.dec,
+      profitMargin: ((calculateRevenue(combinedTotals.dec) - totalMonthlyCosts.dec) / calculateRevenue(combinedTotals.dec)) * 100,
       growth: ((combinedTotals.dec - combinedTotals.nov) / combinedTotals.nov) * 100
     }
   ];
@@ -446,15 +446,14 @@ const TeamPNL: React.FC = () => {
                   </thead>
                   <tbody>
                     {combinedPnL.map((month, index) => (
-                      <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50 ${month.month === 'December' ? 'bg-yellow-50' : ''}`}>
+                      <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50`}>
                         <td className="p-3 font-medium">
                           {month.month}
                           {month.month === 'September' && <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">1 TEAM</span>}
                           {month.month !== 'September' && <span className="ml-2 text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded">3 TEAMS</span>}
-                          {month.month === 'December' && <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">RETRO</span>}
                         </td>
                         <td className="p-3 text-right font-bold text-blue-600">{formatUSD(month.salesVolume)}</td>
-                        <td className="p-3 text-right text-sm font-medium">{month.month === 'December' ? '7,000/1M' : '2,500/1M'}</td>
+                        <td className="p-3 text-right text-sm font-medium">2,500/1M</td>
                         <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(month.grossRevenue))}</td>
                         <td className="p-3 text-right text-red-600">{formatEGP(month.totalExpenses)}</td>
                         <td className="p-3 text-right font-bold">
@@ -479,7 +478,7 @@ const TeamPNL: React.FC = () => {
                     <tr className="border-t-2 border-purple-400 bg-purple-50 font-bold text-lg">
                       <td className="p-3">TOTAL (Sep-Dec)</td>
                       <td className="p-3 text-right text-blue-700">{formatUSD(totalCombinedYTD.salesVolume)}</td>
-                      <td className="p-3 text-right text-sm">Mixed</td>
+                      <td className="p-3 text-right text-sm">2,500/1M</td>
                       <td className="p-3 text-right text-green-700">{formatEGP(Math.round(totalCombinedYTD.grossRevenue))}</td>
                       <td className="p-3 text-right text-red-700">{formatEGP(totalCombinedYTD.totalExpenses)}</td>
                       <td className="p-3 text-right text-purple-700">{formatEGP(Math.round(totalCombinedYTD.netProfit))}</td>
@@ -518,9 +517,9 @@ const TeamPNL: React.FC = () => {
               </div>
               
               <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <h4 className="font-medium text-yellow-800 mb-2">Dec Retro Boost</h4>
-                <p className="text-2xl font-bold text-yellow-600">{formatEGP(Math.round(calculateRevenue(combinedTotals.dec, true) - calculateRevenue(combinedTotals.dec)))}</p>
-                <p className="text-sm text-yellow-700">Extra revenue</p>
+                <h4 className="font-medium text-yellow-800 mb-2">Dec Sales Volume</h4>
+                <p className="text-2xl font-bold text-yellow-600">{formatUSD(combinedTotals.dec)}</p>
+                <p className="text-sm text-yellow-700">Normal commission</p>
               </div>
             </div>
 
@@ -544,7 +543,7 @@ const TeamPNL: React.FC = () => {
                     <li>• Sep: $284M (1 team active)</li>
                     <li>• Oct: $494M (+74% with 3 teams)</li>
                     <li>• Nov: $676M (+37% growth)</li>
-                    <li>• Dec: $621M (-8% but +2.8x commission)</li>
+                    <li>• Dec: $621M (-8% normal commission)</li>
                   </ul>
                 </div>
               </div>
@@ -1046,7 +1045,7 @@ const TeamPNL: React.FC = () => {
                   <ul className="space-y-1 text-gray-700">
                     <li>• Q3 YTD Profit: {formatEGP(Math.round(totalYTD.netProfit + calculateRevenue(226640085) - 150000))}</li>
                     <li>• Q4 Projected Profit: {formatEGP(Math.round(combinedPnL.slice(1).reduce((sum, m) => sum + m.netProfit, 0)))}</li>
-                    <li>• December alone: {formatEGP(Math.round(combinedPnL[3].netProfit))} (3-Team Retro)</li>
+                    <li>• December alone: {formatEGP(Math.round(combinedPnL[3].netProfit))} (3-Team Normal)</li>
                     <li>• 2024 Total: {formatEGP(Math.round(totalCombinedYTD.netProfit))}</li>
                   </ul>
                 </div>
