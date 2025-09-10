@@ -111,28 +111,42 @@ const TeamPNL: React.FC = () => {
     return `EGP ${amount.toLocaleString()}`;
   };
 
-  // Forecast next 3 months
+  // Actual forecast data provided by user
   const forecastMonths = [
     { 
       month: 'October', 
-      projectedSalesVolume: 120000000, // $120M
-      projectedRevenue: calculateRevenue(120000000),
+      projectedSalesVolume: 339960128, // $339.96M
+      projectedRevenue: calculateRevenue(339960128),
       projectedExpenses: 160000,
       isRetroactive: false
     },
     { 
       month: 'November', 
-      projectedSalesVolume: 140000000, // $140M
-      projectedRevenue: calculateRevenue(140000000),
+      projectedSalesVolume: 373956140, // $373.96M
+      projectedRevenue: calculateRevenue(373956140),
       projectedExpenses: 170000,
       isRetroactive: false
     },
     { 
       month: 'December', 
-      projectedSalesVolume: 160000000, // $160M
-      projectedRevenue: calculateRevenue(160000000, true), // Assuming retroactive bonus
+      projectedSalesVolume: 411351754, // $411.35M
+      projectedRevenue: calculateRevenue(411351754, true), // Assuming retroactive bonus
       projectedExpenses: 180000,
       isRetroactive: true
+    }
+  ];
+
+  // Add September actual data to monthly P&L if not already included
+  const updatedMonthlyPnL = [
+    ...monthlyPnL,
+    {
+      month: 'September (Actual)',
+      salesVolume: 226640085, // $226.64M - September actual
+      grossRevenue: calculateRevenue(226640085),
+      totalExpenses: 150000,
+      netProfit: calculateRevenue(226640085) - 150000,
+      profitMargin: ((calculateRevenue(226640085) - 150000) / calculateRevenue(226640085)) * 100,
+      growth: 115.97 // vs previous September estimate
     }
   ];
 
@@ -540,50 +554,182 @@ const TeamPNL: React.FC = () => {
           </div>
         </div>
 
-        {/* Forecast */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            3-Month Forecast (Oct-Dec 2024)
-          </h3>
+        {/* Updated September Actual + Future Forecast */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              September Actual + Q4 2024 Forecast
+            </h2>
+            <p className="text-purple-100 text-sm mt-1">Updated projections with massive growth trajectory</p>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {forecastMonths.map((forecast, index) => (
-              <div key={index} className={`rounded-lg p-4 border ${forecast.isRetroactive ? 'bg-gradient-to-r from-yellow-50 to-green-50 border-yellow-200' : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'}`}>
+          <div className="p-6">
+            {/* September Actual Update */}
+            <div className="mb-8 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                September 2024 - Actual Performance Update
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <h4 className="font-semibold text-gray-800 mb-2">{forecast.month}</h4>
-                  {forecast.isRetroactive && (
-                    <div className="mb-2">
-                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">RETROACTIVE BONUS</span>
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-sm text-gray-600">Sales Volume</p>
-                      <p className="text-lg font-bold text-blue-600">{formatUSD(forecast.projectedSalesVolume)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Commission Rate</p>
-                      <p className="text-sm font-medium">{forecast.isRetroactive ? '7,000' : '2,500'} EGP/1M</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Gross Revenue</p>
-                      <p className="text-lg font-bold text-green-600">{formatEGP(Math.round(forecast.projectedRevenue))}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Projected Expenses</p>
-                      <p className="text-lg font-medium text-red-600">{formatEGP(forecast.projectedExpenses)}</p>
-                    </div>
-                    <div className="pt-2 border-t border-gray-200">
-                      <p className="text-sm text-gray-600">Net Profit</p>
-                      <p className="text-xl font-bold text-purple-600">
-                        {formatEGP(Math.round(forecast.projectedRevenue - forecast.projectedExpenses))}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-600">Actual Sales Volume</p>
+                  <p className="text-2xl font-bold text-blue-600">{formatUSD(226640085)}</p>
+                  <p className="text-xs text-green-600">vs $104.9M estimated</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Actual Revenue</p>
+                  <p className="text-2xl font-bold text-green-600">{formatEGP(Math.round(calculateRevenue(226640085)))}</p>
+                  <p className="text-xs text-green-600">+116% vs estimate</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Actual Profit</p>
+                  <p className="text-2xl font-bold text-purple-600">{formatEGP(Math.round(calculateRevenue(226640085) - 150000))}</p>
+                  <p className="text-xs text-green-600">+{Math.round(((calculateRevenue(226640085) - 150000) / (calculateRevenue(104885519) - 150000) - 1) * 100)}% vs estimate</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Growth Rate</p>
+                  <p className="text-2xl font-bold text-orange-600">+116%</p>
+                  <p className="text-xs text-gray-600">vs original projection</p>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Q4 Forecast Table */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Target className="h-5 w-5 text-purple-600" />
+                Q4 2024 Forecast - Exponential Growth Trajectory
+              </h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-purple-50">
+                      <th className="text-left p-3 font-medium text-gray-700">Month</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Projected Sales (USD)</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Commission Rate</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Gross Revenue (EGP)</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Expenses (EGP)</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Net Profit (EGP)</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Profit Margin</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Growth MoM</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-gray-100 bg-green-50">
+                      <td className="p-3 font-medium text-green-800">Sep (Actual)</td>
+                      <td className="p-3 text-right font-bold text-blue-600">{formatUSD(226640085)}</td>
+                      <td className="p-3 text-right text-sm text-gray-600">2,500/1M</td>
+                      <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(calculateRevenue(226640085)))}</td>
+                      <td className="p-3 text-right text-red-600">EGP 150,000</td>
+                      <td className="p-3 text-right font-bold text-purple-600">{formatEGP(Math.round(calculateRevenue(226640085) - 150000))}</td>
+                      <td className="p-3 text-right text-green-600">{(((calculateRevenue(226640085) - 150000) / calculateRevenue(226640085)) * 100).toFixed(1)}%</td>
+                      <td className="p-3 text-right text-green-600">+116%</td>
+                    </tr>
+                    {forecastMonths.map((forecast, index) => {
+                      const previousVolume = index === 0 ? 226640085 : forecastMonths[index - 1].projectedSalesVolume;
+                      const growthRate = ((forecast.projectedSalesVolume - previousVolume) / previousVolume) * 100;
+                      const netProfit = forecast.projectedRevenue - forecast.projectedExpenses;
+                      const profitMargin = (netProfit / forecast.projectedRevenue) * 100;
+                      
+                      return (
+                        <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50 ${forecast.isRetroactive ? 'bg-yellow-50' : ''}`}>
+                          <td className="p-3 font-medium">
+                            {forecast.month}
+                            {forecast.isRetroactive && (
+                              <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">RETRO</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-right font-bold text-blue-600">{formatUSD(forecast.projectedSalesVolume)}</td>
+                          <td className="p-3 text-right text-sm font-medium">{forecast.isRetroactive ? '7,000/1M' : '2,500/1M'}</td>
+                          <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(forecast.projectedRevenue))}</td>
+                          <td className="p-3 text-right text-red-600">{formatEGP(forecast.projectedExpenses)}</td>
+                          <td className="p-3 text-right font-bold text-purple-600">{formatEGP(Math.round(netProfit))}</td>
+                          <td className="p-3 text-right text-green-600">{profitMargin.toFixed(1)}%</td>
+                          <td className="p-3 text-right">
+                            <span className={growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {growthRate > 0 ? '+' : ''}{growthRate.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {(() => {
+                      const totalForecastRevenue = forecastMonths.reduce((sum, f) => sum + f.projectedRevenue, 0);
+                      const totalForecastExpenses = forecastMonths.reduce((sum, f) => sum + f.projectedExpenses, 0);
+                      const totalForecastProfit = totalForecastRevenue - totalForecastExpenses;
+                      const totalForecastSales = forecastMonths.reduce((sum, f) => sum + f.projectedSalesVolume, 0);
+                      
+                      return (
+                        <tr className="border-t-2 border-purple-400 bg-purple-50 font-bold text-lg">
+                          <td className="p-3">Q4 TOTAL</td>
+                          <td className="p-3 text-right text-blue-700">{formatUSD(totalForecastSales)}</td>
+                          <td className="p-3 text-right text-sm">Mixed</td>
+                          <td className="p-3 text-right text-green-700">{formatEGP(Math.round(totalForecastRevenue))}</td>
+                          <td className="p-3 text-right text-red-700">{formatEGP(totalForecastExpenses)}</td>
+                          <td className="p-3 text-right text-purple-700">{formatEGP(Math.round(totalForecastProfit))}</td>
+                          <td className="p-3 text-right text-green-700">{((totalForecastProfit / totalForecastRevenue) * 100).toFixed(1)}%</td>
+                          <td className="p-3 text-right text-green-700">Explosive</td>
+                        </tr>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Q4 Forecast Insights */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-2">Q4 Sales Volume</h4>
+                <p className="text-2xl font-bold text-blue-600">{formatUSD(forecastMonths.reduce((sum, f) => sum + f.projectedSalesVolume, 0))}</p>
+                <p className="text-sm text-blue-700">$1.125 Billion projected</p>
+              </div>
+              
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Q4 Revenue</h4>
+                <p className="text-2xl font-bold text-green-600">{formatEGP(Math.round(forecastMonths.reduce((sum, f) => sum + f.projectedRevenue, 0)))}</p>
+                <p className="text-sm text-green-700">Commission earnings</p>
+              </div>
+              
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-medium text-purple-800 mb-2">Q4 Net Profit</h4>
+                <p className="text-2xl font-bold text-purple-600">{formatEGP(Math.round(forecastMonths.reduce((sum, f) => sum + f.projectedRevenue - f.projectedExpenses, 0)))}</p>
+                <p className="text-sm text-purple-700">After all expenses</p>
+              </div>
+              
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-medium text-yellow-800 mb-2">December Boost</h4>
+                <p className="text-2xl font-bold text-yellow-600">2.8x</p>
+                <p className="text-sm text-yellow-700">Retroactive commission</p>
+              </div>
+            </div>
+
+            {/* Growth Trajectory Summary */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg">
+              <h4 className="font-semibold text-purple-800 mb-3">🚀 Growth Trajectory Analysis</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h5 className="font-medium text-purple-700 mb-2">Sales Volume Progression</h5>
+                  <ul className="space-y-1 text-gray-700">
+                    <li>• Sep: $226.6M (Actual - 116% above estimate)</li>
+                    <li>• Oct: $340.0M (+50% MoM growth)</li>
+                    <li>• Nov: $374.0M (+10% MoM growth)</li>
+                    <li>• Dec: $411.4M (+10% MoM growth)</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5 className="font-medium text-purple-700 mb-2">Profit Acceleration</h5>
+                  <ul className="space-y-1 text-gray-700">
+                    <li>• Q3 YTD Profit: {formatEGP(Math.round(totalYTD.netProfit + calculateRevenue(226640085) - 150000))}</li>
+                    <li>• Q4 Projected Profit: {formatEGP(Math.round(forecastMonths.reduce((sum, f) => sum + f.projectedRevenue - f.projectedExpenses, 0)))}</li>
+                    <li>• December alone: {formatEGP(Math.round(calculateRevenue(411351754, true) - 180000))} (Retro)</li>
+                    <li>• 2024 Total: {formatEGP(Math.round(totalYTD.netProfit + calculateRevenue(226640085) - 150000 + forecastMonths.reduce((sum, f) => sum + f.projectedRevenue - f.projectedExpenses, 0)))}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
