@@ -33,6 +33,22 @@ interface MonthlyPnL {
   growth?: number; // % growth in sales volume
 }
 
+interface TeamForecast {
+  teamName: string;
+  monthlyCost: number;
+  salesData: {
+    sep: number;
+    oct: number;
+    nov: number;
+    dec: number;
+  };
+  growthRates: {
+    oct: number;
+    nov: number;
+    dec: number;
+  };
+}
+
 const TeamPNL: React.FC = () => {
   // Commission rates
   const COMMISSION_RATE_REGULAR = 2500; // EGP per $1M
@@ -111,44 +127,117 @@ const TeamPNL: React.FC = () => {
     return `EGP ${amount.toLocaleString()}`;
   };
 
-  // Actual forecast data provided by user
-  const forecastMonths = [
-    { 
-      month: 'October', 
-      projectedSalesVolume: 339960128, // $339.96M
-      projectedRevenue: calculateRevenue(339960128),
-      projectedExpenses: 160000,
-      isRetroactive: false
+  // 3-Team Expansion Forecast Data
+  const teamForecasts: TeamForecast[] = [
+    {
+      teamName: 'Current Team',
+      monthlyCost: 150000, // Current team expenses
+      salesData: {
+        sep: 226640085,
+        oct: 339960128,
+        nov: 373956140,
+        dec: 411351754
+      },
+      growthRates: {
+        oct: 50.0,
+        nov: 10.0,
+        dec: 10.0
+      }
     },
-    { 
-      month: 'November', 
-      projectedSalesVolume: 373956140, // $373.96M
-      projectedRevenue: calculateRevenue(373956140),
-      projectedExpenses: 170000,
-      isRetroactive: false
+    {
+      teamName: 'New Team 1',
+      monthlyCost: 112500,
+      salesData: {
+        sep: 28711980,
+        oct: 76798190,
+        nov: 151093390,
+        dec: 104885519
+      },
+      growthRates: {
+        oct: 267.48,
+        nov: 196.74,
+        dec: -30.58
+      }
     },
-    { 
-      month: 'December', 
-      projectedSalesVolume: 411351754, // $411.35M
-      projectedRevenue: calculateRevenue(411351754, true), // Assuming retroactive bonus
-      projectedExpenses: 180000,
-      isRetroactive: true
+    {
+      teamName: 'New Team 2',
+      monthlyCost: 112500,
+      salesData: {
+        sep: 28711980,
+        oct: 76798190,
+        nov: 151093390,
+        dec: 104885519
+      },
+      growthRates: {
+        oct: 267.48,
+        nov: 196.74,
+        dec: -30.58
+      }
     }
   ];
 
-  // Add September actual data to monthly P&L if not already included
-  const updatedMonthlyPnL = [
-    ...monthlyPnL,
+  // Combined totals for all 3 teams
+  const combinedTotals = {
+    sep: 284064045, // $284.06M
+    oct: 493556508, // $493.56M
+    nov: 676142920, // $676.14M
+    dec: 621122792  // $621.12M
+  };
+
+  const totalMonthlyCosts = {
+    sep: 150000, // Only current team in Sep
+    oct: 375000, // All 3 teams (150k + 112.5k + 112.5k)
+    nov: 375000,
+    dec: 375000
+  };
+
+  // Calculate combined P&L for all teams
+  const combinedPnL = [
     {
-      month: 'September (Actual)',
-      salesVolume: 226640085, // $226.64M - September actual
-      grossRevenue: calculateRevenue(226640085),
-      totalExpenses: 150000,
-      netProfit: calculateRevenue(226640085) - 150000,
-      profitMargin: ((calculateRevenue(226640085) - 150000) / calculateRevenue(226640085)) * 100,
-      growth: 115.97 // vs previous September estimate
+      month: 'September',
+      salesVolume: combinedTotals.sep,
+      grossRevenue: calculateRevenue(combinedTotals.sep),
+      totalExpenses: totalMonthlyCosts.sep,
+      netProfit: calculateRevenue(combinedTotals.sep) - totalMonthlyCosts.sep,
+      profitMargin: ((calculateRevenue(combinedTotals.sep) - totalMonthlyCosts.sep) / calculateRevenue(combinedTotals.sep)) * 100,
+      growth: 0
+    },
+    {
+      month: 'October',
+      salesVolume: combinedTotals.oct,
+      grossRevenue: calculateRevenue(combinedTotals.oct),
+      totalExpenses: totalMonthlyCosts.oct,
+      netProfit: calculateRevenue(combinedTotals.oct) - totalMonthlyCosts.oct,
+      profitMargin: ((calculateRevenue(combinedTotals.oct) - totalMonthlyCosts.oct) / calculateRevenue(combinedTotals.oct)) * 100,
+      growth: ((combinedTotals.oct - combinedTotals.sep) / combinedTotals.sep) * 100
+    },
+    {
+      month: 'November',
+      salesVolume: combinedTotals.nov,
+      grossRevenue: calculateRevenue(combinedTotals.nov),
+      totalExpenses: totalMonthlyCosts.nov,
+      netProfit: calculateRevenue(combinedTotals.nov) - totalMonthlyCosts.nov,
+      profitMargin: ((calculateRevenue(combinedTotals.nov) - totalMonthlyCosts.nov) / calculateRevenue(combinedTotals.nov)) * 100,
+      growth: ((combinedTotals.nov - combinedTotals.oct) / combinedTotals.oct) * 100
+    },
+    {
+      month: 'December',
+      salesVolume: combinedTotals.dec,
+      grossRevenue: calculateRevenue(combinedTotals.dec, true), // Retroactive
+      totalExpenses: totalMonthlyCosts.dec,
+      netProfit: calculateRevenue(combinedTotals.dec, true) - totalMonthlyCosts.dec,
+      profitMargin: ((calculateRevenue(combinedTotals.dec, true) - totalMonthlyCosts.dec) / calculateRevenue(combinedTotals.dec, true)) * 100,
+      growth: ((combinedTotals.dec - combinedTotals.nov) / combinedTotals.nov) * 100
     }
   ];
+
+  const totalCombinedYTD = {
+    salesVolume: combinedPnL.reduce((sum, m) => sum + m.salesVolume, 0),
+    grossRevenue: combinedPnL.reduce((sum, m) => sum + m.grossRevenue, 0),
+    totalExpenses: combinedPnL.reduce((sum, m) => sum + m.totalExpenses, 0),
+    netProfit: combinedPnL.reduce((sum, m) => sum + m.netProfit, 0)
+  };
+  totalCombinedYTD.profitMargin = (totalCombinedYTD.netProfit / totalCombinedYTD.grossRevenue) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -159,8 +248,8 @@ const TeamPNL: React.FC = () => {
             <BarChart3 className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Team P&L Dashboard</h1>
-            <p className="text-gray-600">Sales Commission Analysis & Profit Tracking</p>
+            <h1 className="text-3xl font-bold text-gray-900">3-Team Expansion P&L Dashboard</h1>
+            <p className="text-gray-600">Complete Sales Forecasting & Profit Analysis - Multi-Team Structure</p>
           </div>
         </div>
         
@@ -177,13 +266,14 @@ const TeamPNL: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+      {/* 3-Team Expansion Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Sales Volume YTD</p>
-              <p className="text-2xl font-bold text-green-600">{formatUSD(totalYTD.salesVolume)}</p>
+              <p className="text-sm font-medium text-gray-600">Combined Sales Volume</p>
+              <p className="text-2xl font-bold text-green-600">{formatUSD(totalCombinedYTD.salesVolume)}</p>
+              <p className="text-xs text-gray-500">3 Teams Total</p>
             </div>
             <Target className="h-8 w-8 text-green-600" />
           </div>
@@ -192,8 +282,9 @@ const TeamPNL: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Gross Revenue YTD</p>
-              <p className="text-2xl font-bold text-blue-600">{formatEGP(totalYTD.grossRevenue)}</p>
+              <p className="text-sm font-medium text-gray-600">Combined Revenue</p>
+              <p className="text-2xl font-bold text-blue-600">{formatEGP(Math.round(totalCombinedYTD.grossRevenue))}</p>
+              <p className="text-xs text-gray-500">Commission Earnings</p>
             </div>
             <DollarSign className="h-8 w-8 text-blue-600" />
           </div>
@@ -202,8 +293,9 @@ const TeamPNL: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-red-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Expenses YTD</p>
-              <p className="text-2xl font-bold text-red-600">{formatEGP(totalYTD.totalExpenses)}</p>
+              <p className="text-sm font-medium text-gray-600">Total Expenses</p>
+              <p className="text-2xl font-bold text-red-600">{formatEGP(totalCombinedYTD.totalExpenses)}</p>
+              <p className="text-xs text-gray-500">All Teams</p>
             </div>
             <Building className="h-8 w-8 text-red-600" />
           </div>
@@ -212,12 +304,13 @@ const TeamPNL: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-purple-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Net Profit YTD</p>
-              <p className={`text-2xl font-bold ${totalYTD.netProfit > 0 ? 'text-purple-600' : 'text-red-600'}`}>
-                {formatEGP(totalYTD.netProfit)}
+              <p className="text-sm font-medium text-gray-600">Combined Net Profit</p>
+              <p className={`text-2xl font-bold ${totalCombinedYTD.netProfit > 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                {formatEGP(Math.round(totalCombinedYTD.netProfit))}
               </p>
+              <p className="text-xs text-gray-500">After All Costs</p>
             </div>
-            {totalYTD.netProfit > 0 ? (
+            {totalCombinedYTD.netProfit > 0 ? (
               <TrendingUp className="h-8 w-8 text-purple-600" />
             ) : (
               <TrendingDown className="h-8 w-8 text-red-600" />
@@ -229,16 +322,209 @@ const TeamPNL: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Profit Margin</p>
-              <p className={`text-2xl font-bold ${totalYTD.profitMargin > 0 ? 'text-orange-600' : 'text-red-600'}`}>
-                {totalYTD.profitMargin.toFixed(1)}%
+              <p className={`text-2xl font-bold ${totalCombinedYTD.profitMargin > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                {totalCombinedYTD.profitMargin.toFixed(1)}%
               </p>
+              <p className="text-xs text-gray-500">Combined</p>
             </div>
             <Zap className="h-8 w-8 text-orange-600" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-l-indigo-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Team Count</p>
+              <p className="text-2xl font-bold text-indigo-600">3</p>
+              <p className="text-xs text-gray-500">Active Teams</p>
+            </div>
+            <Users className="h-8 w-8 text-indigo-600" />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8">
+        {/* 3-Team Expansion Overview */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              3-Team Expansion Sales Forecast & P&L Analysis
+            </h2>
+            <p className="text-indigo-100 text-sm mt-1">Complete breakdown by team with combined totals</p>
+          </div>
+          
+          <div className="p-6">
+            {/* Individual Team Breakdown */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Individual Team Performance</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-indigo-50">
+                      <th className="text-left p-3 font-medium text-gray-700">Team</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Monthly Cost</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Sep Sales</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Oct Sales</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Nov Sales</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Dec Sales</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Q4 Total</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Q4 Revenue</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Q4 Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamForecasts.map((team, index) => {
+                      const q4Sales = team.salesData.oct + team.salesData.nov + team.salesData.dec;
+                      const q4Revenue = calculateRevenue(team.salesData.oct) + calculateRevenue(team.salesData.nov) + calculateRevenue(team.salesData.dec, team.teamName === 'Current Team');
+                      const q4Costs = team.monthlyCost * 3; // Oct, Nov, Dec
+                      const q4Profit = q4Revenue - q4Costs;
+                      
+                      return (
+                        <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50 ${index === 0 ? 'bg-blue-50' : ''}`}>
+                          <td className="p-3 font-medium">
+                            {team.teamName}
+                            {index === 0 && <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">EXISTING</span>}
+                            {index > 0 && <span className="ml-2 text-xs bg-green-200 text-green-800 px-2 py-1 rounded">NEW</span>}
+                          </td>
+                          <td className="p-3 text-right font-medium text-red-600">{formatEGP(team.monthlyCost)}</td>
+                          <td className="p-3 text-right text-blue-600">{formatUSD(team.salesData.sep)}</td>
+                          <td className="p-3 text-right text-blue-600">{formatUSD(team.salesData.oct)}</td>
+                          <td className="p-3 text-right text-blue-600">{formatUSD(team.salesData.nov)}</td>
+                          <td className="p-3 text-right text-blue-600">{formatUSD(team.salesData.dec)}</td>
+                          <td className="p-3 text-right font-bold text-green-600">{formatUSD(q4Sales)}</td>
+                          <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(q4Revenue))}</td>
+                          <td className="p-3 text-right font-bold">
+                            <span className={q4Profit > 0 ? 'text-purple-600' : 'text-red-600'}>
+                              {formatEGP(Math.round(q4Profit))}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Combined P&L Table */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Combined 3-Team P&L</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-purple-50">
+                      <th className="text-left p-3 font-medium text-gray-700">Month</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Combined Sales</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Commission Rate</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Gross Revenue</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Total Expenses</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Net Profit</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Margin %</th>
+                      <th className="text-right p-3 font-medium text-gray-700">Growth MoM</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {combinedPnL.map((month, index) => (
+                      <tr key={index} className={`border-b border-gray-100 hover:bg-gray-50 ${month.month === 'December' ? 'bg-yellow-50' : ''}`}>
+                        <td className="p-3 font-medium">
+                          {month.month}
+                          {month.month === 'September' && <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">1 TEAM</span>}
+                          {month.month !== 'September' && <span className="ml-2 text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded">3 TEAMS</span>}
+                          {month.month === 'December' && <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">RETRO</span>}
+                        </td>
+                        <td className="p-3 text-right font-bold text-blue-600">{formatUSD(month.salesVolume)}</td>
+                        <td className="p-3 text-right text-sm font-medium">{month.month === 'December' ? '7,000/1M' : '2,500/1M'}</td>
+                        <td className="p-3 text-right font-bold text-green-600">{formatEGP(Math.round(month.grossRevenue))}</td>
+                        <td className="p-3 text-right text-red-600">{formatEGP(month.totalExpenses)}</td>
+                        <td className="p-3 text-right font-bold">
+                          <span className={month.netProfit > 0 ? 'text-purple-600' : 'text-red-600'}>
+                            {formatEGP(Math.round(month.netProfit))}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-medium">
+                          <span className={month.profitMargin > 0 ? 'text-green-600' : 'text-red-600'}>
+                            {month.profitMargin.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          {month.growth !== 0 && (
+                            <span className={month.growth > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {month.growth > 0 ? '+' : ''}{month.growth.toFixed(1)}%
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-purple-400 bg-purple-50 font-bold text-lg">
+                      <td className="p-3">TOTAL (Sep-Dec)</td>
+                      <td className="p-3 text-right text-blue-700">{formatUSD(totalCombinedYTD.salesVolume)}</td>
+                      <td className="p-3 text-right text-sm">Mixed</td>
+                      <td className="p-3 text-right text-green-700">{formatEGP(Math.round(totalCombinedYTD.grossRevenue))}</td>
+                      <td className="p-3 text-right text-red-700">{formatEGP(totalCombinedYTD.totalExpenses)}</td>
+                      <td className="p-3 text-right text-purple-700">{formatEGP(Math.round(totalCombinedYTD.netProfit))}</td>
+                      <td className="p-3 text-right text-green-700">{totalCombinedYTD.profitMargin.toFixed(1)}%</td>
+                      <td className="p-3 text-right text-green-700">Massive</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Key Expansion Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-2">Expansion Impact</h4>
+                <p className="text-2xl font-bold text-blue-600">3x</p>
+                <p className="text-sm text-blue-700">Team multiplication</p>
+              </div>
+              
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Q4 Combined Sales</h4>
+                <p className="text-2xl font-bold text-green-600">{formatUSD(combinedTotals.oct + combinedTotals.nov + combinedTotals.dec)}</p>
+                <p className="text-sm text-green-700">$1.79 Billion</p>
+              </div>
+              
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-medium text-purple-800 mb-2">Q4 Combined Profit</h4>
+                <p className="text-2xl font-bold text-purple-600">{formatEGP(Math.round(combinedPnL.slice(1).reduce((sum, m) => sum + m.netProfit, 0)))}</p>
+                <p className="text-sm text-purple-700">Oct-Dec total</p>
+              </div>
+              
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-medium text-yellow-800 mb-2">Dec Retro Boost</h4>
+                <p className="text-2xl font-bold text-yellow-600">{formatEGP(Math.round(calculateRevenue(combinedTotals.dec, true) - calculateRevenue(combinedTotals.dec)))}</p>
+                <p className="text-sm text-yellow-700">Extra revenue</p>
+              </div>
+            </div>
+
+            {/* Growth Analysis */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+              <h4 className="font-semibold text-indigo-800 mb-3">🚀 3-Team Expansion Analysis</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h5 className="font-medium text-indigo-700 mb-2">Team Structure</h5>
+                  <ul className="space-y-1 text-gray-700">
+                    <li>• Current Team: EGP 150K/month (Proven performance)</li>
+                    <li>• New Team 1: EGP 112.5K/month (Same trajectory)</li>
+                    <li>• New Team 2: EGP 112.5K/month (Same trajectory)</li>
+                    <li>• Total Cost: EGP 375K/month (Oct-Dec)</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5 className="font-medium text-indigo-700 mb-2">Revenue Scaling</h5>
+                  <ul className="space-y-1 text-gray-700">
+                    <li>• Sep: $284M (1 team active)</li>
+                    <li>• Oct: $494M (+74% with 3 teams)</li>
+                    <li>• Nov: $676M (+37% growth)</li>
+                    <li>• Dec: $621M (-8% but +2.8x commission)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Monthly P&L Table - Regular Commission */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
