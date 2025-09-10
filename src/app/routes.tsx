@@ -8,9 +8,12 @@ import { ScrollToTop } from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
 // AUTH PAGES: Import the real auth components
-import TeamPNL from '../pages/Draft/TeamPNL';import Login from '../pages/Auth/Login';
+import Login from '../pages/Auth/Login';
 import Signup from '../pages/Auth/Signup';
 import ResetPassword from '../pages/Auth/ResetPassword';
+
+// DRAFT PAGES: No sidebar
+import TeamPNL from '../pages/Draft/TeamPNL';
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
@@ -64,13 +67,21 @@ export const router = createBrowserRouter([
   },
   {
     path: '/auth/reset-password',
-  },
-  {
-    path: '/draft/team-pnl',
-    element: <TeamPNL />,    element: (
+    element: (
       <>
         <ScrollToTop />
         <ResetPassword />
+      </>
+    ),
+  },
+  
+  // Draft pages (no sidebar)
+  {
+    path: '/draft/team-pnl',
+    element: (
+      <>
+        <ScrollToTop />
+        <TeamPNL />
       </>
     ),
   },
