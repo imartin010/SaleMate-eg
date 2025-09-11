@@ -9,11 +9,11 @@ interface MarketingSEOProps {
 }
 
 export function MarketingSEO({
-  title = "SaleMate — Daily Fresh Real-Estate Leads in Egypt",
-  description = "Buy verified, high-intent real estate leads and manage them with our free CRM. Close under The Address Investments, Bold Routes, Nawy, or Coldwell Banker to unlock higher commissions.",
-  keywords = "real estate leads, egypt property, crm, real estate agents, property leads, cairo real estate, alexandria property, new capital leads",
-  canonicalUrl = "https://salemate.com",
-  ogImage = "https://salemate.com/og-image.jpg"
+  title = "SaleMate - Where Brokers Meet Daily Opportunities | Real Estate Lead Platform Egypt",
+  description = "Next-generation real estate lead marketplace and CRM platform connecting brokers with daily fresh leads in Egypt. Trusted partnerships with top brokerages through data-driven insights.",
+  keywords = "real estate leads Egypt, property leads, real estate CRM, broker platform, lead generation, New Cairo, Mostakbal City, Sidi Abdelrahman, real estate marketplace, broker partnerships, data-driven insights",
+  canonicalUrl = "https://salemate-eg.com",
+  ogImage = "https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png"
 }: MarketingSEOProps) {
   const structuredData = {
     "@context": "https://schema.org",
@@ -25,7 +25,7 @@ export function MarketingSEO({
         "url": canonicalUrl,
         "logo": {
           "@type": "ImageObject",
-          "url": `${canonicalUrl}/logo.png`,
+          "url": "https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png",
           "width": 512,
           "height": 512
         },
