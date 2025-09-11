@@ -104,8 +104,8 @@ const FinalCTA = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Get instant access to qualified leads and our complete CRM system. 
-              No contracts, no setup fees, pay only for what you need.
+              Join our next-generation platform and transform your real estate business through trusted partnerships and data-driven insights. 
+              No contracts, no setup fees, start your journey today.
             </motion.p>
 
             {/* Feature highlights */}

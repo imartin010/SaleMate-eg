@@ -12,6 +12,9 @@ import Login from '../pages/Auth/Login';
 import Signup from '../pages/Auth/Signup';
 import ResetPassword from '../pages/Auth/ResetPassword';
 
+// MARKETING PAGES: Direct import for better SEO
+import Home from '../pages/marketing/Home';
+
 // DRAFT PAGES: No sidebar
 import TeamPNL from '../pages/Draft/TeamPNL';
 
@@ -46,6 +49,17 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
+  // Public marketing home page
+  {
+    path: '/',
+    element: (
+      <>
+        <ScrollToTop />
+        <Home />
+      </>
+    ),
+  },
+  
   // Public auth routes
   {
     path: '/auth/login',
@@ -88,7 +102,7 @@ export const router = createBrowserRouter([
   
   // Protected routes with AuthGuard
   {
-    path: '/',
+    path: '/app',
     element: <AuthGuard />,
     children: [
       {
@@ -153,16 +167,16 @@ export const router = createBrowserRouter([
           },
           {
             path: '*',
-            element: <Navigate to="/dashboard" replace />,
+            element: <Navigate to="/app/dashboard" replace />,
           },
         ],
       },
     ],
   },
   
-  // Catch-all redirect
+  // Catch-all redirect to home
   {
     path: '*',
-    element: <Navigate to="/auth/login" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);

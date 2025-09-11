@@ -14,8 +14,8 @@ const ValueGrid = () => {
   const values = [
     {
       icon: ShoppingCart,
-      title: 'Buy Qualified Leads',
-      description: 'Project-tagged, compliant, duplicate-checked leads ready to convert.',
+      title: 'Fresh Lead Marketplace',
+      description: 'Connect with daily fresh, verified leads through our trusted marketplace platform.',
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
@@ -23,8 +23,8 @@ const ValueGrid = () => {
     },
     {
       icon: Smartphone,
-      title: 'Free CRM Included',
-      description: 'Complete pipeline management with stages, notes, WhatsApp and phone actions.',
+      title: 'Integrated CRM Platform',
+      description: 'Complete pipeline management with data-driven insights and seamless communication tools.',
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
@@ -32,8 +32,8 @@ const ValueGrid = () => {
     },
     {
       icon: TrendingUp,
-      title: 'Higher Commissions with Partners',
-      description: 'Close under our partner brands to earn 15-25% higher commissions.',
+      title: 'Trusted Partnerships',
+      description: 'Join our network of top brokerages and unlock higher earning potential through partnerships.',
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-200',
@@ -125,7 +125,7 @@ const ValueGrid = () => {
             </span>
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Everything you need to generate, manage, and close more real estate deals in Egypt
+            A comprehensive platform that connects brokers with fresh leads and empowers partnerships through data-driven insights
           </p>
         </motion.div>
 

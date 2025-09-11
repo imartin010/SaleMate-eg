@@ -3,59 +3,74 @@ import { motion } from 'framer-motion';
 import Marquee from 'react-fast-marquee';
 
 const PartnerStrip = () => {
-  // Partner data with placeholder logos
+  // Partner data with correct Supabase storage logos
   const partners = [
     {
       name: 'The Address Investments',
-      logo: '/partners/address-investments.svg',
+      logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/the-address-investments-logo.png',
       fallbackBg: 'from-blue-600 to-blue-700'
     },
     {
       name: 'Bold Routes',
-      logo: '/partners/bold-routes.svg',
+      logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/bold-routes-logo.png',
       fallbackBg: 'from-purple-600 to-purple-700'
     },
     {
       name: 'Nawy',
-      logo: '/partners/nawy.svg',
+      logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/nawy-partners.png',
       fallbackBg: 'from-green-600 to-green-700'
     },
     {
       name: 'Coldwell Banker',
-      logo: '/partners/coldwell-banker.svg',
+      logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png',
       fallbackBg: 'from-orange-600 to-orange-700'
     },
     {
-      name: 'The Address Investments',
-      logo: '/partners/address-investments.svg',
-      fallbackBg: 'from-blue-600 to-blue-700'
-    },
-    {
-      name: 'Bold Routes',
-      logo: '/partners/bold-routes.svg',
-      fallbackBg: 'from-purple-600 to-purple-700'
+      name: 'SaleMate',
+      logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png',
+      fallbackBg: 'from-slate-600 to-slate-700'
     }
   ];
 
   const PartnerLogo = ({ partner, index }: { partner: typeof partners[0], index: number }) => (
     <motion.div
-      className="flex items-center justify-center mx-8 grayscale hover:grayscale-0 transition-all duration-300"
+      className="flex items-center justify-center mx-12 hover:scale-105 transition-all duration-300"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 }}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.1 }}
     >
       <div className="relative group">
-        {/* Fallback gradient logo if image doesn't load */}
-        <div className={`w-32 h-16 bg-gradient-to-r ${partner.fallbackBg} rounded-lg flex items-center justify-center relative overflow-hidden`}>
-          {/* Placeholder logo with company initial */}
-          <span className="text-white font-bold text-xl">
-            {partner.name.charAt(0)}
-          </span>
+        <div className="w-32 h-16 bg-white rounded-lg flex items-center justify-center relative overflow-hidden shadow-md border border-gray-200">
+          {/* Actual partner logo */}
+          <img 
+            src={partner.logo}
+            alt={`${partner.name} logo`}
+            className="max-w-full max-h-full object-contain p-2"
+            onError={(e) => {
+              // Fallback to gradient logo if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) {
+                fallback.style.display = 'flex';
+              }
+            }}
+          />
+          
+          {/* Fallback gradient logo (hidden by default) */}
+          <div 
+            className={`absolute inset-0 bg-gradient-to-r ${partner.fallbackBg} rounded-lg flex items-center justify-center`}
+            style={{ display: 'none' }}
+          >
+            <span className="text-white font-bold text-xl">
+              {partner.name.charAt(0)}
+            </span>
+          </div>
           
           {/* Company name overlay on hover */}
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg">
             <span className="text-white text-xs font-medium text-center px-2">
               {partner.name}
             </span>
@@ -91,13 +106,19 @@ const PartnerStrip = () => {
           <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
           
           <Marquee
-            speed={30}
+            speed={40}
             pauseOnHover={true}
             gradient={false}
             className="py-4"
           >
+            {/* First set of partners */}
             {partners.map((partner, index) => (
               <PartnerLogo key={`${partner.name}-${index}`} partner={partner} index={index} />
+            ))}
+            {/* Duplicate set for seamless loop with spacing */}
+            <div className="w-24"></div>
+            {partners.map((partner, index) => (
+              <PartnerLogo key={`${partner.name}-duplicate-${index}`} partner={partner} index={index} />
             ))}
           </Marquee>
         </div>
