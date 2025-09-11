@@ -48,6 +48,10 @@ const PartnerStrip = () => {
             src={partner.logo}
             alt={`${partner.name} logo`}
             className="max-w-full max-h-full object-contain p-2"
+            loading="lazy"
+            width="120"
+            height="60"
+            decoding="async"
             onError={(e) => {
               // Fallback to gradient logo if image fails to load
               const target = e.target as HTMLImageElement;

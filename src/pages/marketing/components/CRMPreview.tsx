@@ -68,17 +68,17 @@ const CRMPreview = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.05
       }
     }
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 10 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.6 }
+      transition: { duration: 0.3 }
     }
   };
 
@@ -160,8 +160,8 @@ const CRMPreview = () => {
                     <motion.div
                       key={lead.id}
                       variants={cardVariants}
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
+                      whileHover={{ y: -1 }}
+                      transition={{ duration: 0.2 }}
                     >
                       <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all duration-300">
                         <div className="flex items-start justify-between">

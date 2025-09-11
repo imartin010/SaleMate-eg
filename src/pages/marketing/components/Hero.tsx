@@ -51,9 +51,9 @@ const Hero = () => {
       <GradientOrb size="xl" position="top-left" opacity="low" />
       <GradientOrb size="lg" position="bottom-right" opacity="low" />
 
-      {/* Animated particles */}
+      {/* Animated particles - Reduced count for performance */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-blue-400/20 rounded-full"
@@ -66,9 +66,9 @@ const Hero = () => {
               opacity: [0, 1, 0],
             }}
             transition={{
-              duration: 4,
+              duration: 6,
               repeat: Infinity,
-              delay: Math.random() * 4,
+              delay: i * 0.5,
               ease: "easeInOut"
             }}
           />

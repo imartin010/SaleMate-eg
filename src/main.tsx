@@ -7,7 +7,10 @@ import { QueryProvider } from './app/providers/QueryProvider';
 import { AuthProvider } from './components/common/AuthProvider';
 import './index.css';
 
-console.log('🚀 SaleMate app starting with complete auth system...');
+// Production build - minimal logging
+if (import.meta.env.DEV) {
+  console.log('🚀 SaleMate app starting with complete auth system...');
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,7 +18,9 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
-console.log('✅ Root element found, creating React app...');
+if (import.meta.env.DEV) {
+  console.log('✅ Root element found, creating React app...');
+}
 
 // Simple error boundary for debugging
 class DebugErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean; error?: Error}> {
@@ -66,4 +71,6 @@ ReactDOM.createRoot(rootElement).render(
   </React.StrictMode>
 );
 
-console.log('✅ SaleMate app rendered successfully');
+if (import.meta.env.DEV) {
+  console.log('✅ SaleMate app rendered successfully');
+}
