@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - SaleMate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .step-active {
+            @apply bg-blue-600 text-white;
+        }
+        .step-completed {
+            @apply bg-green-600 text-white;
+        }
+        .step-pending {
+            @apply bg-gray-200 text-gray-600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <button onclick="goBack()" class="flex items-center text-gray-600 hover:text-gray-900">
+                    <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
+                    Back to Shop
+                </button>
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="credit-card" class="h-5 w-5 text-blue-600"></i>
+                    <span class="text-lg font-semibold text-gray-900">Checkout</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2">
+                <!-- Progress Steps -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div id="step-1" class="step-active flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium">
+                                1
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-blue-600">Buyer Information</p>
+                                <p class="text-xs text-gray-500">Enter your details</p>
+                            </div>
+                        </div>
+                        <div class="w-16 h-0.5 bg-gray-200 mx-4"></div>
+                        <div class="flex items-center">
+                            <div id="step-2" class="step-pending flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium">
+                                2
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">Payment Method</p>
+                                <p class="text-xs text-gray-500">Choose payment option</p>
+                            </div>
+                        </div>
+                        <div class="w-16 h-0.5 bg-gray-200 mx-4"></div>
+                        <div class="flex items-center">
+                            <div id="step-3" class="step-pending flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium">
+                                3
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">Payment</p>
+                                <p class="text-xs text-gray-500">Complete your purchase</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Buyer Information -->
+                <div id="step1-content" class="step-content">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center">
+                            <i data-lucide="user" class="h-5 w-5 mr-2"></i>
+                            Buyer Information
+                        </h2>
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                                    <input type="text" id="buyer-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your full name" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                                    <input type="email" id="buyer-email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your email" required>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                                    <input type="tel" id="buyer-phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="+20 100 XXX XXXX" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                                    <input type="text" id="buyer-company" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your company name">
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-900 mb-2">Why do we need this information?</h4>
+                                <ul class="text-sm text-blue-800 space-y-1">
+                                    <li>• To deliver leads directly to your account</li>
+                                    <li>• To send order confirmations and receipts</li>
+                                    <li>• To provide customer support when needed</li>
+                                    <li>• To comply with Egyptian business regulations</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Payment Method -->
+                <div id="step2-content" class="step-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center">
+                            <i data-lucide="credit-card" class="h-5 w-5 mr-2"></i>
+                            Choose Payment Method
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="payment-method p-4 border-2 border-blue-500 bg-blue-50 rounded-lg cursor-pointer" data-method="paymob">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="credit-card" class="h-5 w-5 text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Paymob</h3>
+                                        <p class="text-sm text-gray-600">Credit/Debit Cards, Fawry, Valu</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="payment-method p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300" data-method="instapay">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="smartphone" class="h-5 w-5 text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Instapay</h3>
+                                        <p class="text-sm text-gray-600">Mobile wallet payment</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="payment-method p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300" data-method="bank_transfer">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="building" class="h-5 w-5 text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Bank Transfer</h3>
+                                        <p class="text-sm text-gray-600">Direct bank transfer</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="payment-method p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300" data-method="cash_on_delivery">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="map-pin" class="h-5 w-5 text-orange-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Cash on Delivery</h3>
+                                        <p class="text-sm text-gray-600">Pay when leads are delivered</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 p-4 rounded-lg mt-6">
+                            <h4 class="font-semibold text-green-900 mb-2">Secure Payment</h4>
+                            <p class="text-sm text-green-800">
+                                All payments are processed securely through certified payment gateways. 
+                                Your financial information is encrypted and protected.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Payment Processing -->
+                <div id="step3-content" class="step-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center">
+                            <i data-lucide="shield" class="h-5 w-5 mr-2"></i>
+                            Complete Payment
+                        </h2>
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="credit-card" class="h-8 w-8 text-blue-600"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Ready to Pay</h3>
+                            <p class="text-gray-600 mb-6" id="payment-method-text">
+                                You will be redirected to Paymob to complete your payment securely.
+                            </p>
+                            
+                            <button onclick="processPayment()" id="pay-button" class="w-full max-w-md bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i data-lucide="credit-card" class="h-4 w-4 inline mr-2"></i>
+                                Pay <span id="total-amount">25</span> EGP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between mt-6">
+                    <button onclick="previousStep()" id="prev-btn" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Back to Shop
+                    </button>
+                    <button onclick="nextStep()" id="next-btn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Continue to Payment
+                    </button>
+                </div>
+            </div>
+
+            <!-- Order Summary Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm p-6 sticky top-8">
+                    <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
+                    
+                    <!-- Project Info -->
+                    <div class="flex space-x-4 mb-4">
+                        <img id="project-image" src="/api/placeholder/400/300" alt="Project" class="w-16 h-16 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-sm" id="project-name">New Capital City</h4>
+                            <p class="text-xs text-gray-600" id="project-developer">Talaat Moustafa Group</p>
+                            <p class="text-xs text-gray-500" id="project-region">New Administrative Capital</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 my-4"></div>
+
+                    <!-- Order Details -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span>Quantity:</span>
+                            <span id="order-quantity">1 leads</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Price per lead:</span>
+                            <span id="price-per-lead">25 EGP</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">25 EGP</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>VAT (14%):</span>
+                            <span id="vat">4 EGP</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 my-4"></div>
+
+                    <div class="flex justify-between font-semibold">
+                        <span>Total:</span>
+                        <span id="total-price">29 EGP</span>
+                    </div>
+
+                    <!-- Security Badges -->
+                    <div class="pt-4 space-y-2">
+                        <div class="flex items-center space-x-2 text-xs text-gray-600">
+                            <i data-lucide="shield" class="h-3 w-3"></i>
+                            <span>SSL Encrypted</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs text-gray-600">
+                            <i data-lucide="check-circle" class="h-3 w-3"></i>
+                            <span>Instant Delivery</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs text-gray-600">
+                            <i data-lucide="clock" class="h-3 w-3"></i>
+                            <span>24/7 Support</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let selectedPaymentMethod = 'paymob';
+        let orderData = {};
+
+        // Initialize from URL parameters
+        function initializeFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            orderData = {
+                projectId: urlParams.get('projectId') || '1',
+                projectName: urlParams.get('projectName') || 'New Capital City',
+                developer: urlParams.get('developer') || 'Talaat Moustafa Group',
+                region: urlParams.get('region') || 'New Administrative Capital',
+                availableLeads: parseInt(urlParams.get('availableLeads') || '150'),
+                pricePerLead: parseInt(urlParams.get('pricePerLead') || '25'),
+                image: urlParams.get('image') || '/api/placeholder/400/300',
+                quantity: parseInt(urlParams.get('quantity') || '1'),
+                totalPrice: parseInt(urlParams.get('totalPrice') || '25')
+            };
+
+            // Update order summary
+            document.getElementById('project-name').textContent = orderData.projectName;
+            document.getElementById('project-developer').textContent = orderData.developer;
+            document.getElementById('project-region').textContent = orderData.region;
+            document.getElementById('project-image').src = orderData.image;
+            document.getElementById('order-quantity').textContent = orderData.quantity + ' leads';
+            document.getElementById('price-per-lead').textContent = orderData.pricePerLead + ' EGP';
+            
+            const subtotal = orderData.quantity * orderData.pricePerLead;
+            const vat = Math.round(subtotal * 0.14);
+            const total = subtotal + vat;
+            
+            document.getElementById('subtotal').textContent = subtotal + ' EGP';
+            document.getElementById('vat').textContent = vat + ' EGP';
+            document.getElementById('total-price').textContent = total + ' EGP';
+            document.getElementById('total-amount').textContent = total;
+        }
+
+        function nextStep() {
+            if (currentStep === 1) {
+                // Validate buyer information
+                const name = document.getElementById('buyer-name').value;
+                const email = document.getElementById('buyer-email').value;
+                const phone = document.getElementById('buyer-phone').value;
+                
+                if (!name || !email || !phone) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                orderData.buyerInfo = {
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    company: document.getElementById('buyer-company').value
+                };
+            }
+            
+            if (currentStep < 3) {
+                currentStep++;
+                updateStepDisplay();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepDisplay();
+            } else {
+                goBack();
+            }
+        }
+
+        function updateStepDisplay() {
+            // Hide all step content
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show current step content
+            document.getElementById(`step${currentStep}-content`).classList.remove('hidden');
+            
+            // Update step indicators
+            for (let i = 1; i <= 3; i++) {
+                const stepEl = document.getElementById(`step-${i}`);
+                stepEl.className = 'flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium';
+                
+                if (i < currentStep) {
+                    stepEl.classList.add('step-completed');
+                    stepEl.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4"></i>';
+                } else if (i === currentStep) {
+                    stepEl.classList.add('step-active');
+                    stepEl.textContent = i;
+                } else {
+                    stepEl.classList.add('step-pending');
+                    stepEl.textContent = i;
+                }
+            }
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            if (currentStep === 1) {
+                prevBtn.textContent = 'Back to Shop';
+            } else {
+                prevBtn.textContent = 'Previous';
+            }
+            
+            if (currentStep === 3) {
+                nextBtn.textContent = 'Complete Order';
+                nextBtn.style.display = 'none';
+            } else if (currentStep === 2) {
+                nextBtn.textContent = 'Proceed to Payment';
+            } else {
+                nextBtn.textContent = 'Continue to Payment';
+            }
+        }
+
+        function processPayment() {
+            const payButton = document.getElementById('pay-button');
+            payButton.innerHTML = '<i data-lucide="clock" class="h-4 w-4 inline mr-2 animate-spin"></i>Processing Payment...';
+            payButton.disabled = true;
+            
+            // Simulate payment processing
+            setTimeout(() => {
+                alert('Payment successful! This is where Paymob integration would be implemented.');
+                // In real implementation, redirect to success page or back to main app
+                window.location.href = '/';
+            }, 2000);
+        }
+
+        function goBack() {
+            // Go back to the main SaleMate app
+            window.location.href = '/';
+        }
+
+        // Payment method selection
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.payment-method')) {
+                // Remove selection from all methods
+                document.querySelectorAll('.payment-method').forEach(method => {
+                    method.classList.remove('border-blue-500', 'bg-blue-50');
+                    method.classList.add('border-gray-200');
+                });
+                
+                // Select clicked method
+                const method = e.target.closest('.payment-method');
+                method.classList.add('border-blue-500', 'bg-blue-50');
+                method.classList.remove('border-gray-200');
+                
+                selectedPaymentMethod = method.dataset.method;
+                
+                // Update payment method text
+                const methodNames = {
+                    'paymob': 'Paymob',
+                    'instapay': 'Instapay',
+                    'bank_transfer': 'Bank Transfer',
+                    'cash_on_delivery': 'Cash on Delivery'
+                };
+                document.getElementById('payment-method-text').textContent = 
+                    `You will be redirected to ${methodNames[selectedPaymentMethod]} to complete your payment securely.`;
+            }
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFromURL();
+            updateStepDisplay();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

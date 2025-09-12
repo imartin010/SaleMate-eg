@@ -107,8 +107,8 @@ export const TempLanding: React.FC = () => {
   };
 
   const handlePurchase = async () => {
-    // Redirect to checkout page with project data
-    const checkoutUrl = `/checkout?projectId=${selectedProject.id}&projectName=${encodeURIComponent(selectedProject.name)}&developer=${encodeURIComponent(selectedProject.developer)}&region=${encodeURIComponent(selectedProject.region)}&availableLeads=${selectedProject.availableLeads}&pricePerLead=${selectedProject.pricePerLead}&image=${encodeURIComponent(selectedProject.image)}&quantity=${purchaseForm.quantity}&totalPrice=${selectedProject.pricePerLead * purchaseForm.quantity}`;
+    // Redirect to external checkout page with project data
+    const checkoutUrl = `/checkout.html?projectId=${selectedProject.id}&projectName=${encodeURIComponent(selectedProject.name)}&developer=${encodeURIComponent(selectedProject.developer)}&region=${encodeURIComponent(selectedProject.region)}&availableLeads=${selectedProject.availableLeads}&pricePerLead=${selectedProject.pricePerLead}&image=${encodeURIComponent(selectedProject.image)}&quantity=${purchaseForm.quantity}&totalPrice=${selectedProject.pricePerLead * purchaseForm.quantity}`;
     window.location.href = checkoutUrl;
   };
 
