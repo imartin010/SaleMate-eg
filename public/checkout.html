@@ -250,10 +250,6 @@
                             <span>Subtotal:</span>
                             <span id="subtotal">25 EGP</span>
                         </div>
-                        <div class="flex justify-between text-sm">
-                            <span>VAT (14%):</span>
-                            <span id="vat">4 EGP</span>
-                        </div>
                     </div>
 
                     <div class="border-t border-gray-200 my-4"></div>
@@ -312,11 +308,9 @@
             document.getElementById('price-per-lead').textContent = orderData.pricePerLead + ' EGP';
             
             const subtotal = orderData.quantity * orderData.pricePerLead;
-            const vat = Math.round(subtotal * 0.14);
-            const total = subtotal + vat;
+            const total = subtotal;
             
             document.getElementById('subtotal').textContent = subtotal + ' EGP';
-            document.getElementById('vat').textContent = vat + ' EGP';
             document.getElementById('total-price').textContent = total + ' EGP';
             document.getElementById('total-amount').textContent = total;
         }
