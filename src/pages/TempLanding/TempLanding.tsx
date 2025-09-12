@@ -242,11 +242,11 @@ export const TempLanding: React.FC = () => {
                   </div>
                   
                   <Button 
-                    onClick={() => openPurchaseDialog(project)}
+                    onClick={() => handlePurchase(project)}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Purchase Leads
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Pay EGP {project.pricePerLead}
                   </Button>
                 </CardContent>
               </Card>
