@@ -41,14 +41,22 @@ export default function ResetPassword() {
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
           <p className="text-gray-600 mb-6">
-            We've sent you a password reset link. Check your email and follow the instructions.
+            We've sent you a password reset link. Please check your email and follow the instructions to reset your password.
           </p>
-          <Link
-            to="/auth/login"
-            className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-          >
-            Back to Login
-          </Link>
+          <div className="space-y-4">
+            <Link
+              to="/auth/login"
+              className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Back to Login
+            </Link>
+            <button
+              onClick={() => setResetSuccess(false)}
+              className="block w-full text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              Send Another Email
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -60,7 +68,7 @@ export default function ResetPassword() {
         <div className="text-center mb-8">
           <Logo variant="icon" size="xl" className="mx-auto mb-4 scale-125" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h1>
-          <p className="text-gray-600">Enter your email to receive a reset link</p>
+          <p className="text-gray-600">Enter your email to receive a password reset link</p>
         </div>
 
         {error && (
@@ -72,13 +80,15 @@ export default function ResetPassword() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
             </label>
             <input
               {...register('email')}
               type="email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+              }`}
               placeholder="Enter your email address"
             />
             {errors.email && (
@@ -89,7 +99,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

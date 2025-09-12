@@ -58,8 +58,12 @@ export default function Signup() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8 text-center">
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h1>
-          <p className="text-gray-600 mb-4">Please check your email to verify your account.</p>
-          <p className="text-sm text-gray-500">Redirecting to login...</p>
+          <p className="text-gray-600 mb-4">
+            Please check your email to verify your account.
+          </p>
+          <p className="text-sm text-gray-500">
+            Redirecting to login...
+          </p>
         </div>
       </div>
     );
@@ -81,31 +85,45 @@ export default function Signup() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name
+            </label>
             <input
               {...register('name')}
               type="text"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+              }`}
               placeholder="Enter your full name"
             />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
             <input
               {...register('email')}
               type="email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+              }`}
               placeholder="Enter your email"
             />
-            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone (Optional)</label>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number (Optional)
+            </label>
             <input
               {...register('phone')}
               type="tel"
@@ -115,31 +133,61 @@ export default function Signup() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <input
-              {...register('password')}
-              type="password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder="Create a password"
-            />
-            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                {...register('password')}
+                type={showPassword ? 'text' : 'password'}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-12 ${
+                  errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
+                placeholder="Create a password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-            <input
-              {...register('confirmPassword')}
-              type="password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder="Confirm your password"
-            />
-            {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>}
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                {...register('confirmPassword')}
+                type={showConfirmPassword ? 'text' : 'password'}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-12 ${
+                  errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
