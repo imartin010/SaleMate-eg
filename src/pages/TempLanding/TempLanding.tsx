@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { 
   Zap, 
   Users, 
@@ -18,480 +21,422 @@ import {
   Globe,
   Award,
   BarChart3,
-  MessageCircle
+  MessageCircle,
+  ShoppingCart,
+  MapPin,
+  Phone,
+  Mail,
+  Eye,
+  Filter,
+  Search
 } from 'lucide-react';
 
 export const TempLanding: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [testPayment, setTestPayment] = useState({
-    amount: 100,
-    email: '',
-    name: ''
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [purchaseForm, setPurchaseForm] = useState({
+    quantity: 1,
+    paymentMethod: 'card',
+    buyerName: '',
+    buyerEmail: '',
+    buyerPhone: ''
   });
 
-  const handleSubscribe = async () => {
-    if (email) {
-      setIsSubscribed(true);
-      // Here you can add newsletter signup logic
+  // Mock premium projects data
+  const projects = [
+    {
+      id: '1',
+      name: 'Hacienda Bay',
+      developer: 'Palm Hills Developments',
+      region: 'North Coast',
+      description: 'Luxury beachfront resort community with world-class amenities and stunning Mediterranean views.',
+      availableLeads: 245,
+      pricePerLead: 150,
+      image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=400&h=250&fit=crop',
+      rating: 4.9,
+      totalSold: 1250
+    },
+    {
+      id: '2', 
+      name: 'New Administrative Capital',
+      developer: 'SODIC',
+      region: 'New Capital',
+      description: 'Modern smart city development with premium residential and commercial opportunities.',
+      availableLeads: 180,
+      pricePerLead: 200,
+      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop',
+      rating: 4.8,
+      totalSold: 890
+    },
+    {
+      id: '3',
+      name: 'Marassi',
+      developer: 'Emaar Misr',
+      region: 'North Coast', 
+      description: 'Exclusive Mediterranean lifestyle destination with luxury villas and premium amenities.',
+      availableLeads: 320,
+      pricePerLead: 175,
+      image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=250&fit=crop',
+      rating: 4.9,
+      totalSold: 2100
+    },
+    {
+      id: '4',
+      name: 'Mostakbal City',
+      developer: 'City Edge Developments',
+      region: 'New Cairo',
+      description: 'Integrated smart city with residential, commercial, and entertainment facilities.',
+      availableLeads: 156,
+      pricePerLead: 125,
+      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop',
+      rating: 4.7,
+      totalSold: 670
     }
+  ];
+
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.developer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.region.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const openPurchaseDialog = (project: any) => {
+    setSelectedProject(project);
+    setShowPurchaseDialog(true);
   };
 
-  const handleTestPayment = async () => {
+  const handlePurchase = async () => {
     // This is where Paymob integration will go
-    console.log('Test payment:', testPayment);
-    alert('Paymob integration will be configured here!');
+    console.log('Purchase with Paymob:', {
+      project: selectedProject,
+      form: purchaseForm,
+      total: selectedProject.pricePerLead * purchaseForm.quantity
+    });
+    alert(`Paymob payment integration will be configured here!\n\nOrder Details:\nProject: ${selectedProject.name}\nQuantity: ${purchaseForm.quantity} leads\nTotal: EGP ${selectedProject.pricePerLead * purchaseForm.quantity}`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center space-y-8">
-            {/* Logo & Brand */}
-            <div className="flex items-center justify-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Zap className="h-8 w-8 text-white" />
-              </div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                SaleMate
-              </h1>
-            </div>
-
-            {/* Tagline */}
-            <div className="space-y-4">
-              <h2 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
-                The Future of
-                <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Real Estate Leads
-                </span>
-              </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Premium lead marketplace connecting real estate professionals with high-quality, verified prospects. 
-                Powered by AI-driven matching and instant CRM integration.
-              </p>
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                size="lg" 
-                className="px-8 py-4 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-              >
-                <Zap className="h-5 w-5 mr-2" />
-                Start Free Trial
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="px-8 py-4 text-lg border-2 hover:bg-gray-50"
-              >
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Book Demo
-              </Button>
-            </div>
-
-            {/* Social Proof */}
-            <div className="flex items-center justify-center space-x-8 text-gray-500">
-              <div className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-yellow-500" />
-                <span className="font-medium">4.9/5 Rating</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-blue-500" />
-                <span className="font-medium">1000+ Agents</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Building2 className="h-5 w-5 text-green-500" />
-                <span className="font-medium">500+ Projects</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="py-20 bg-white">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose SaleMate?
-            </h3>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Built specifically for the Egyptian real estate market with cutting-edge technology
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
-              <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Target className="h-8 w-8 text-white" />
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Premium Quality Leads</h4>
-              <p className="text-gray-600 leading-relaxed">
-                Verified, high-intent prospects from Egypt's top real estate projects. 
-                Each lead is validated and ready for conversion.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
-              <div className="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Clock className="h-8 w-8 text-white" />
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Instant Delivery</h4>
-              <p className="text-gray-600 leading-relaxed">
-                Leads appear in your CRM immediately after purchase. 
-                No waiting, no delays - start calling within minutes.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
-              <div className="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Secure & Reliable</h4>
-              <p className="text-gray-600 leading-relaxed">
-                Bank-level security, encrypted data, and 99.9% uptime. 
-                Your business and client data is always protected.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Paymob Test Section */}
-      <div className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
-            <div className="text-center mb-8">
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                🚀 Paymob Integration Test
-              </h3>
-              <p className="text-lg text-gray-600">
-                Testing payment gateway integration for seamless transactions
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Test Payment Form */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-semibold text-gray-900">Test Payment</h4>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name
-                    </label>
-                    <Input
-                      placeholder="Enter your full name"
-                      value={testPayment.name}
-                      onChange={(e) => setTestPayment(prev => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <Input
-                      type="email"
-                      placeholder="Enter your email"
-                      value={testPayment.email}
-                      onChange={(e) => setTestPayment(prev => ({ ...prev, email: e.target.value }))}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Amount (EGP)
-                    </label>
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="Enter amount"
-                      value={testPayment.amount}
-                      onChange={(e) => setTestPayment(prev => ({ ...prev, amount: parseInt(e.target.value) || 100 }))}
-                    />
-                  </div>
-
-                  <Button 
-                    onClick={handleTestPayment}
-                    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                    size="lg"
-                  >
-                    <CreditCard className="h-5 w-5 mr-2" />
-                    Test Paymob Payment
-                  </Button>
-                </div>
-              </div>
-
-              {/* Integration Info */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-semibold text-gray-900">Integration Features</h4>
-                
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                    <div>
-                      <h5 className="font-medium text-gray-900">Multiple Payment Methods</h5>
-                      <p className="text-sm text-gray-600">Credit cards, mobile wallets, bank transfers</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                    <div>
-                      <h5 className="font-medium text-gray-900">Instant Processing</h5>
-                      <p className="text-sm text-gray-600">Real-time payment confirmation and lead delivery</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                    <div>
-                      <h5 className="font-medium text-gray-900">Secure Transactions</h5>
-                      <p className="text-sm text-gray-600">PCI-compliant with fraud protection</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                    <div>
-                      <h5 className="font-medium text-gray-900">Egyptian Market Focus</h5>
-                      <p className="text-sm text-gray-600">Optimized for local payment preferences</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h5 className="font-medium text-blue-900 mb-2">Payment Methods Supported:</h5>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Visa</span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Mastercard</span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Vodafone Cash</span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Orange Money</span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Bank Transfer</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="py-20 bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Trusted by Egypt's Top Real Estate Professionals
-            </h3>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Join thousands of successful agents who have transformed their business with SaleMate
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">1000+</div>
-              <div className="text-gray-300">Active Agents</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">50K+</div>
-              <div className="text-gray-300">Leads Delivered</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">500+</div>
-              <div className="text-gray-300">Projects Listed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">99.9%</div>
-              <div className="text-gray-300">Uptime</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Newsletter Section */}
-      <div className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Stay Updated
-          </h3>
-          <p className="text-xl text-gray-600 mb-8">
-            Get notified when we launch new features and premium projects
-          </p>
-
-          {!isSubscribed ? (
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleSubscribe}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                Subscribe
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center space-x-2 text-green-600">
-              <CheckCircle className="h-6 w-6" />
-              <span className="text-lg font-medium">Thank you for subscribing!</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Pricing Preview */}
-      <div className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
-            </h3>
-            <p className="text-xl text-gray-600">
-              Pay only for the leads you need. No hidden fees, no commitments.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Starter Plan */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-              <div className="text-center">
-                <h4 className="text-2xl font-bold text-gray-900 mb-2">Starter</h4>
-                <div className="text-4xl font-bold text-blue-600 mb-4">
-                  EGP 25<span className="text-lg text-gray-500">/lead</span>
-                </div>
-                <p className="text-gray-600 mb-6">Perfect for individual agents</p>
-                
-                <ul className="space-y-3 text-left mb-8">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Verified contact information</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Basic CRM integration</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Email support</span>
-                  </li>
-                </ul>
-
-                <Button className="w-full" variant="outline">
-                  Get Started
-                </Button>
-              </div>
-            </div>
-
-            {/* Professional Plan */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-blue-500 relative">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium">
-                  Most Popular
-                </span>
-              </div>
-              
-              <div className="text-center">
-                <h4 className="text-2xl font-bold text-gray-900 mb-2">Professional</h4>
-                <div className="text-4xl font-bold text-blue-600 mb-4">
-                  EGP 20<span className="text-lg text-gray-500">/lead</span>
-                </div>
-                <p className="text-gray-600 mb-6">For growing teams</p>
-                
-                <ul className="space-y-3 text-left mb-8">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Everything in Starter</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Advanced analytics</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Priority support</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Team management</span>
-                  </li>
-                </ul>
-
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Start Free Trial
-                </Button>
-              </div>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-              <div className="text-center">
-                <h4 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h4>
-                <div className="text-4xl font-bold text-blue-600 mb-4">
-                  Custom<span className="text-lg text-gray-500"> pricing</span>
-                </div>
-                <p className="text-gray-600 mb-6">For large organizations</p>
-                
-                <ul className="space-y-3 text-left mb-8">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Everything in Professional</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Custom integrations</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Dedicated account manager</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>24/7 phone support</span>
-                  </li>
-                </ul>
-
-                <Button className="w-full" variant="outline">
-                  Contact Sales
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="bg-gray-900 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-4 mb-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                 <Zap className="h-5 w-5 text-white" />
               </div>
-              <span className="text-2xl font-bold text-white">SaleMate</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                SaleMate
+              </span>
             </div>
-            <p className="text-gray-400 mb-6">
-              Empowering real estate professionals across Egypt
+            <div className="flex items-center space-x-4">
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Users className="h-3 w-3 mr-1" />
+                Live Marketplace
+              </Badge>
+              <Button size="sm">
+                <Phone className="h-4 w-4 mr-2" />
+                Contact Sales
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl md:text-5xl font-bold">
+              Premium Real Estate Leads
+            </h1>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              Purchase high-quality, verified leads from Egypt's top real estate projects. 
+              Instant delivery to your CRM.
             </p>
-            <div className="flex justify-center space-x-6 text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Contact</a>
+            <div className="flex items-center justify-center space-x-8 mt-8">
+              <div className="text-center">
+                <div className="text-2xl font-bold">901</div>
+                <div className="text-blue-200 text-sm">Available Leads</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">4</div>
+                <div className="text-blue-200 text-sm">Premium Projects</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">4.8★</div>
+                <div className="text-blue-200 text-sm">Average Rating</div>
+              </div>
             </div>
-            <div className="mt-6 pt-6 border-t border-gray-800 text-gray-500 text-sm">
-              © 2025 SaleMate. All rights reserved.
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="bg-white py-6 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search projects by name, developer, or region..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                All Regions
+              </Button>
+              <Button variant="outline" size="sm">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Price Range
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Projects Marketplace */}
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProjects.map((project) => (
+              <Card key={project.id} className="hover:shadow-lg transition-shadow duration-300">
+                <div className="relative">
+                  <img 
+                    src={project.image} 
+                    alt={project.name}
+                    className="w-full h-48 object-cover rounded-t-lg"
+                  />
+                  <div className="absolute top-3 right-3">
+                    <Badge className="bg-green-500 text-white">
+                      <Eye className="h-3 w-3 mr-1" />
+                      Hot
+                    </Badge>
+                  </div>
+                  <div className="absolute bottom-3 left-3">
+                    <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                      <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                      {project.rating}
+                    </Badge>
+                  </div>
+                </div>
+
+                <CardHeader className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg font-bold">{project.name}</CardTitle>
+                      <p className="text-sm text-gray-600">{project.developer}</p>
+                    </div>
+                    <Badge variant="outline">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {project.region}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <Badge className="bg-blue-100 text-blue-800">
+                      <Users className="h-3 w-3 mr-1" />
+                      {project.availableLeads} leads
+                    </Badge>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-green-600">
+                        EGP {project.pricePerLead}/lead
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {project.description}
+                  </p>
+                  
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>{project.totalSold} leads sold</span>
+                    <span className="flex items-center">
+                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                      Verified
+                    </span>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => openPurchaseDialog(project)}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Purchase Leads
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Purchase Dialog with Paymob Integration */}
+      <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Purchase Leads
+            </DialogTitle>
+            <DialogDescription>
+              {selectedProject?.name} - {selectedProject?.developer}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedProject && (
+            <div className="space-y-6">
+              {/* Project Info */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-blue-900">Available Leads</span>
+                  <span className="text-lg font-bold text-blue-600">{selectedProject.availableLeads}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-700">Price per lead</span>
+                  <span className="text-sm font-bold text-blue-800">EGP {selectedProject.pricePerLead}</span>
+                </div>
+              </div>
+
+              {/* Buyer Information */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-gray-900">Buyer Information</h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <Input
+                      placeholder="Your name"
+                      value={purchaseForm.buyerName}
+                      onChange={(e) => setPurchaseForm(prev => ({ ...prev, buyerName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <Input
+                      placeholder="+20 1XX XXX XXXX"
+                      value={purchaseForm.buyerPhone}
+                      onChange={(e) => setPurchaseForm(prev => ({ ...prev, buyerPhone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                  <Input
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={purchaseForm.buyerEmail}
+                    onChange={(e) => setPurchaseForm(prev => ({ ...prev, buyerEmail: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Quantity Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Leads (1 - {selectedProject.availableLeads})
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max={selectedProject.availableLeads}
+                  value={purchaseForm.quantity}
+                  onChange={(e) => setPurchaseForm(prev => ({ 
+                    ...prev, 
+                    quantity: Math.min(parseInt(e.target.value) || 1, selectedProject.availableLeads)
+                  }))}
+                />
+              </div>
+
+              {/* Order Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <h4 className="font-medium text-gray-900">Order Summary</h4>
+                <div className="flex justify-between text-sm">
+                  <span>Project:</span>
+                  <span className="font-medium">{selectedProject.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Quantity:</span>
+                  <span className="font-medium">{purchaseForm.quantity} leads</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Price per lead:</span>
+                  <span className="font-medium">EGP {selectedProject.pricePerLead}</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between font-semibold">
+                  <span>Total Amount:</span>
+                  <span className="text-lg text-green-600">
+                    EGP {(selectedProject.pricePerLead * purchaseForm.quantity).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Button - Paymob Integration Point */}
+              <div className="space-y-3">
+                <Button 
+                  onClick={handlePurchase}
+                  className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-lg font-semibold"
+                  disabled={!purchaseForm.buyerName || !purchaseForm.buyerEmail || !purchaseForm.buyerPhone}
+                >
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Pay EGP {(selectedProject.pricePerLead * purchaseForm.quantity).toLocaleString()}
+                </Button>
+                
+                <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                  <div className="flex items-center">
+                    <Shield className="h-3 w-3 mr-1" />
+                    <span>Secure Payment</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>Instant Delivery</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div className="text-xs text-gray-500 space-y-1">
+                <p>• Leads will be delivered instantly to your email</p>
+                <p>• All sales are final - no refunds</p>
+                <p>• Contact support for any issues</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Trust Indicators */}
+      <div className="bg-white py-12 border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Trusted by 1000+ Real Estate Professionals
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl font-bold text-blue-600 mb-2">50K+</div>
+              <div className="text-gray-600">Leads Delivered</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-green-600 mb-2">99.9%</div>
+              <div className="text-gray-600">Uptime</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-purple-600 mb-2">4.8★</div>
+              <div className="text-gray-600">Customer Rating</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-orange-600 mb-2">24/7</div>
+              <div className="text-gray-600">Support</div>
             </div>
           </div>
         </div>
