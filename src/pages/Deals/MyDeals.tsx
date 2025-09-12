@@ -17,7 +17,6 @@ import {
   Calendar,
   Building,
   User,
-  Sparkles,
   Activity
 } from 'lucide-react';
 
@@ -40,9 +39,9 @@ const MyDeals: React.FC = () => {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    deal_type: '' as DealType | '',
-    deal_stage: '' as DealStage | '',
-    status: '' as DealStatus | ''
+    deal_type: 'all' as DealType | 'all',
+    deal_stage: 'all' as DealStage | 'all',
+    status: 'all' as DealStatus | 'all'
   });
 
   useEffect(() => {
@@ -108,12 +107,11 @@ const MyDeals: React.FC = () => {
   };
 
   const filteredDeals = filterDeals({
-    ...filters,
     project_name: searchTerm || undefined,
     developer_name: searchTerm || undefined,
-    deal_type: filters.deal_type || undefined,
-    deal_stage: filters.deal_stage || undefined,
-    status: filters.status || undefined,
+    deal_type: filters.deal_type === 'all' ? undefined : filters.deal_type,
+    deal_stage: filters.deal_stage === 'all' ? undefined : filters.deal_stage,
+    status: filters.status === 'all' ? undefined : filters.status,
   });
 
   const getStatusColor = (status: DealStatus) => {
@@ -262,24 +260,24 @@ const MyDeals: React.FC = () => {
             </div>
 
             <div className="flex gap-2">
-              <Select value={filters.deal_type} onValueChange={(value) => setFilters(prev => ({ ...prev, deal_type: value as DealType | '' }))}>
+              <Select value={filters.deal_type} onValueChange={(value) => setFilters(prev => ({ ...prev, deal_type: value as DealType | 'all' }))}>
                 <SelectTrigger className="w-40 rounded-xl border-gray-200">
                   <SelectValue placeholder="Deal Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="EOI">EOI</SelectItem>
                   <SelectItem value="Reservation">Reservation</SelectItem>
                   <SelectItem value="Contract">Contract</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Select value={filters.deal_stage} onValueChange={(value) => setFilters(prev => ({ ...prev, deal_stage: value as DealStage | '' }))}>
+              <Select value={filters.deal_stage} onValueChange={(value) => setFilters(prev => ({ ...prev, deal_stage: value as DealStage | 'all' }))}>
                 <SelectTrigger className="w-40 rounded-xl border-gray-200">
                   <SelectValue placeholder="Deal Stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Stages</SelectItem>
+                  <SelectItem value="all">All Stages</SelectItem>
                   <SelectItem value="Reservation">Reservation</SelectItem>
                   <SelectItem value="Contracted">Contracted</SelectItem>
                   <SelectItem value="Collected">Collected</SelectItem>
@@ -287,12 +285,12 @@ const MyDeals: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as DealStatus | '' }))}>
+              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as DealStatus | 'all' }))}>
                 <SelectTrigger className="w-40 rounded-xl border-gray-200">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>

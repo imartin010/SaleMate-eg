@@ -254,7 +254,7 @@ Mohamed Ali,+201234567892,mohamed@example.com,Business Owner,TikTok`;
               </SelectTrigger>
               <SelectContent>
                 {projects.length === 0 ? (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="none" disabled>
                     No projects available - Create projects first
                   </SelectItem>
                 ) : (

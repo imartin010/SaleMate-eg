@@ -49,63 +49,63 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const navigation = [
     {
       name: 'Dashboard',
-      href: '/',
+      href: '/app',
       icon: LayoutDashboard,
       show: true,
     },
     {
       name: 'Shop',
-      href: '/shop',
+      href: '/app/shop',
       icon: ShoppingCart,
       show: true,
     },
     {
       name: 'My Leads',
-      href: '/crm',
+      href: '/app/crm',
       icon: Users,
       show: true,
     },
     {
       name: 'My Deals',
-      href: '/deals',
+      href: '/app/deals',
       icon: FileText,
       show: true,
     },
     {
       name: 'My Team',
-      href: '/team',
+      href: '/app/team',
       icon: UserCheck,
       show: profile?.role === 'manager' || profile?.role === 'admin',
     },
     {
       name: 'Partners',
-      href: '/partners',
+      href: '/app/partners',
       icon: Handshake,
       show: true,
     },
     {
       name: 'Support',
-      href: '/support',
+      href: '/app/support',
       icon: HeadphonesIcon,
       show: canAccessSupport(profile?.role || 'user'),
     },
     {
       name: 'Admin',
-      href: '/admin',
+      href: '/app/admin',
       icon: Shield,
       show: canAccessAdmin(profile?.role || 'user'),
     },
     {
       name: 'Settings',
-      href: '/settings',
+      href: '/app/settings',
       icon: Settings,
       show: true,
     },
   ];
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return location.pathname === '/';
+    if (href === '/app') {
+      return location.pathname === '/app' || location.pathname === '/app/';
     }
     return location.pathname.startsWith(href);
   };

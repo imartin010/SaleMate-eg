@@ -4,6 +4,7 @@ import { AppLayout } from './layout/AppLayout';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
+import { PageErrorBoundary } from '../components/common/PageErrorBoundary';
 import { ScrollToTop } from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
@@ -14,14 +15,15 @@ import ResetPassword from '../pages/Auth/ResetPassword';
 
 // MARKETING PAGES: Direct import for better SEO
 import Home from '../pages/marketing/Home';
+import HomeArabic from '../pages/marketing/HomeArabic';
 
 // DRAFT PAGES: No sidebar
 import TeamPNL from '../pages/Draft/TeamPNL';
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
-const MyLeads = React.lazy(() => import('../pages/CRM/MyLeads'));
-const Shop = React.lazy(() => import('../pages/Shop/Shop'));
+const MyLeads = React.lazy(() => import('../pages/CRM/WebsiteStyleCRM'));
+const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
@@ -40,11 +42,13 @@ const PageLoader = () => (
 // Safe page wrapper with error boundary
 const SafePage = ({ children }: { children: React.ReactNode }) => (
   <>
-    <ErrorBoundary fallback={FastFallback}>
-      <Suspense fallback={<PageLoader />}>
-        {children}
-      </Suspense>
-    </ErrorBoundary>
+    <PageErrorBoundary>
+      <ErrorBoundary fallback={FastFallback}>
+        <Suspense fallback={<PageLoader />}>
+          {children}
+        </Suspense>
+      </ErrorBoundary>
+    </PageErrorBoundary>
   </>
 );
 
@@ -56,6 +60,17 @@ export const router = createBrowserRouter([
       <>
         <ScrollToTop />
         <Home />
+      </>
+    ),
+  },
+  
+  // Arabic marketing home page
+  {
+    path: '/ar',
+    element: (
+      <>
+        <ScrollToTop />
+        <HomeArabic />
       </>
     ),
   },

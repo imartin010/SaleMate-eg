@@ -1,16 +1,16 @@
 import React, { useEffect } from 'react';
-import MarketingSEO from './seo';
-import Hero from './components/Hero';
-import PartnerStrip from './components/PartnerStrip';
-import ValueGrid from './components/ValueGrid';
-import HowItWorks from './components/HowItWorks';
-import LiveMetrics from './components/LiveMetrics';
-import CRMPreview from './components/CRMPreview';
-import FinalCTA from './components/FinalCTA';
-import Footer from './components/Footer';
+import MarketingSEOArabic from './seoArabic';
+import HeroArabic from './components/HeroArabic';
+import PartnerStripArabic from './components/PartnerStripArabic';
+import ValueGridArabic from './components/ValueGridArabic';
+import HowItWorksArabic from './components/HowItWorksArabic';
+import LiveMetricsArabic from './components/LiveMetricsArabic';
+import CRMPreviewArabic from './components/CRMPreviewArabic';
+import FinalCTAArabic from './components/FinalCTAArabic';
+import FooterArabic from './components/FooterArabic';
 import { SectionDivider } from './components/Decor';
 
-const Home = () => {
+const HomeArabic = () => {
   // Enable smooth scrolling for anchor links
   useEffect(() => {
     const handleSmoothScroll = (e: Event) => {
@@ -49,41 +49,50 @@ const Home = () => {
     }
   }, []);
 
+  // Set RTL direction
+  useEffect(() => {
+    document.documentElement.setAttribute('dir', 'rtl');
+    document.documentElement.setAttribute('lang', 'ar');
+    
+    return () => {
+      document.documentElement.setAttribute('dir', 'ltr');
+      document.documentElement.setAttribute('lang', 'en');
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white" dir="rtl">
       {/* SEO Meta Tags */}
-      <MarketingSEO />
+      <MarketingSEOArabic />
 
         {/* Hero Section */}
-        <Hero />
+        <HeroArabic />
 
         {/* Partner Strip */}
-        <PartnerStrip />
+        <PartnerStripArabic />
         <SectionDivider variant="wave" />
 
         {/* Value Propositions */}
-        <ValueGrid />
+        <ValueGridArabic />
 
         {/* How It Works */}
-        <HowItWorks />
+        <HowItWorksArabic />
         <SectionDivider variant="curve" />
 
         {/* Live Metrics */}
-        <LiveMetrics />
+        <LiveMetricsArabic />
 
         {/* CRM Preview */}
-        <CRMPreview />
+        <CRMPreviewArabic />
         <SectionDivider variant="zigzag" />
 
-
-
         {/* Final CTA */}
-        <FinalCTA />
+        <FinalCTAArabic />
 
       {/* Footer */}
-      <Footer />
+      <FooterArabic />
     </div>
   );
 };
 
-export default Home;
+export default HomeArabic;

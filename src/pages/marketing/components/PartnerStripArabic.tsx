@@ -9,46 +9,46 @@ import {
   Zap 
 } from 'lucide-react';
 
-const PartnerStrip = () => {
-  // Partner data with correct Supabase storage logos, labels and icons
+const PartnerStripArabic = () => {
+  // Partner data with correct Supabase storage logos, labels and icons in Arabic
   const partners = [
     {
-      name: 'The Address Investments',
+      name: 'ذا أدرس إنفستمنتس',
       logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/the-address-investments-logo.png',
       fallbackBg: 'from-blue-600 to-blue-700',
-      label: 'Highest in Mountain View',
+      label: 'الأعلى في ماونتن فيو',
       icon: Mountain,
       iconColor: 'text-blue-600'
     },
     {
-      name: 'Bold Routes',
+      name: 'بولد روتس',
       logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/bold-routes-logo.png',
       fallbackBg: 'from-purple-600 to-purple-700',
-      label: 'Highest in Several Projects',
+      label: 'الأعلى في عدة مشاريع',
       icon: TrendingUp,
       iconColor: 'text-purple-600'
     },
     {
-      name: 'Nawy',
+      name: 'نوي',
       logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/nawy-partners.png',
       fallbackBg: 'from-green-600 to-green-700',
-      label: 'Trusted Brand',
+      label: 'علامة موثوقة',
       icon: Shield,
       iconColor: 'text-green-600'
     },
     {
-      name: 'Coldwell Banker',
+      name: 'كولدويل بانكر',
       logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png',
       fallbackBg: 'from-orange-600 to-orange-700',
-      label: '60 days commissions',
+      label: 'عمولات 60 يوم',
       icon: Clock,
       iconColor: 'text-orange-600'
     },
     {
-      name: 'SaleMate',
+      name: 'سيل ميت',
       logo: 'https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png',
       fallbackBg: 'from-slate-600 to-slate-700',
-      label: 'Advanced Commissions',
+      label: 'عمولات متقدمة',
       icon: Zap,
       iconColor: 'text-slate-600'
     }
@@ -115,7 +115,7 @@ const PartnerStrip = () => {
   );
 
   return (
-    <section className="py-12 bg-white border-y border-gray-100">
+    <section className="py-12 bg-white border-y border-gray-100" dir="rtl">
       <div className="container mx-auto px-4">
         {/* Section header */}
         <motion.div 
@@ -126,24 +126,25 @@ const PartnerStrip = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">
-            Trusted Partner Network
+            شبكة الشركاء الموثوقة
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Close deals under established brands and earn higher commissions
+            اغلق الصفقات تحت علامات تجارية راسخة واكسب عمولات أعلى
           </p>
         </motion.div>
 
         {/* Partner logos marquee */}
         <div className="relative overflow-hidden">
           {/* Gradient overlays for smooth fade effect */}
-          <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
           <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
           
           <Marquee
             speed={40}
             pauseOnHover={true}
             gradient={false}
             className="py-12"
+            direction="right"
           >
             {/* First set of partners */}
             {partners.map((partner, index) => (
@@ -171,8 +172,8 @@ const PartnerStrip = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-slate-800 mb-2">Higher Commissions</h3>
-            <p className="text-sm text-slate-600">Earn up to 15% more when closing under partner brands</p>
+            <h3 className="font-semibold text-slate-800 mb-2">عمولات أعلى</h3>
+            <p className="text-sm text-slate-600">اكسب حتى 15% أكثر عند الإغلاق تحت علامات الشركاء</p>
           </div>
 
           <div className="text-center">
@@ -181,8 +182,8 @@ const PartnerStrip = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-slate-800 mb-2">Instant Recognition</h3>
-            <p className="text-sm text-slate-600">Leverage established brand trust and reputation</p>
+            <h3 className="font-semibold text-slate-800 mb-2">اعتراف فوري</h3>
+            <p className="text-sm text-slate-600">استفد من ثقة العلامة التجارية الراسخة والسمعة</p>
           </div>
 
           <div className="text-center">
@@ -191,8 +192,8 @@ const PartnerStrip = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-slate-800 mb-2">Marketing Support</h3>
-            <p className="text-sm text-slate-600">Access to partner marketing materials and campaigns</p>
+            <h3 className="font-semibold text-slate-800 mb-2">دعم تسويقي</h3>
+            <p className="text-sm text-slate-600">الوصول إلى المواد التسويقية والحملات للشركاء</p>
           </div>
         </motion.div>
 
@@ -205,15 +206,15 @@ const PartnerStrip = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <p className="text-sm text-slate-500 mb-4">
-            Partner commission rates shown per project in our shop
+            معدلات عمولة الشركاء معروضة لكل مشروع في متجرنا
           </p>
           <motion.button
             className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm"
-            whileHover={{ x: 5 }}
+            whileHover={{ x: -5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            View Partner Projects
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            عرض مشاريع الشركاء
+            <svg className="w-4 h-4 mr-1 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </motion.button>
@@ -223,4 +224,4 @@ const PartnerStrip = () => {
   );
 };
 
-export default PartnerStrip;
+export default PartnerStripArabic;

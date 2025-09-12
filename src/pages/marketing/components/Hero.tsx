@@ -46,6 +46,17 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Language Switcher */}
+      <div className="absolute top-4 right-4 z-20">
+        <Link 
+          to="/ar" 
+          className="inline-flex items-center gap-2 px-3 py-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg hover:bg-white transition-all duration-200 text-sm font-medium text-slate-700 hover:text-blue-600"
+        >
+          <span>🇪🇬</span>
+          <span>العربية</span>
+        </Link>
+      </div>
+      
       {/* Background decorations */}
       <BackgroundDecor />
       <GradientOrb size="xl" position="top-left" opacity="low" />
@@ -143,7 +154,7 @@ const Hero = () => {
                 <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 shadow-2xl">
                   <div className="text-center mb-4">
                     <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Transform Your Business?</h3>
-                    <p className="text-sm text-slate-600">Join thousands of brokers already using SaleMate</p>
+                    <p className="text-sm text-slate-600">Join hundreds of brokers already using SaleMate</p>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-3">

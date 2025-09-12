@@ -8,36 +8,36 @@ import {
   Phone, 
   MessageCircle, 
   MapPin,
-  ArrowRight,
+  ArrowLeft,
   FileText
 } from 'lucide-react';
 
-const CRMPreview = () => {
-  // Mock lead data for demonstration - matching the realistic design
+const CRMPreviewArabic = () => {
+  // Mock lead data for demonstration - Arabic names
   const mockLeads = [
     {
       id: 1,
-      name: 'Ahmed Hassan',
-      project: 'New Cairo',
-      status: 'Potential',
+      name: 'أحمد حسن',
+      project: 'القاهرة الجديدة',
+      status: 'محتمل',
       phone: '+201234567890',
-      avatar: 'AH'
+      avatar: 'أح'
     },
     {
       id: 2,
-      name: 'Fatima Al-Rashid', 
-      project: 'Sidi Abdelrahman',
-      status: 'Hot Case',
+      name: 'فاطمة الراشد', 
+      project: 'سيدي عبدالرحمن',
+      status: 'عميل مهم',
       phone: '+201987654321',
-      avatar: 'FA'
+      avatar: 'فا'
     },
     {
       id: 3,
-      name: 'Omar Mahmoud',
-      project: 'Mostakbal City', 
-      status: 'Meeting Done',
+      name: 'عمر محمود',
+      project: 'مدينة المستقبل', 
+      status: 'تم الاجتماع',
       phone: '+201555123456',
-      avatar: 'OM'
+      avatar: 'عم'
     }
   ];
 
@@ -45,23 +45,22 @@ const CRMPreview = () => {
   const metrics = {
     costPerLead: 125,
     leadsDelivered: 2340,
-    period: 'This month'
+    period: 'هذا الشهر'
   };
 
   // Get badge color based on status
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'Potential':
+      case 'محتمل':
         return 'bg-blue-100 text-blue-700 border border-blue-200';
-      case 'Hot Case':
+      case 'عميل مهم':
         return 'bg-red-100 text-red-700 border border-red-200';
-      case 'Meeting Done':
+      case 'تم الاجتماع':
         return 'bg-green-100 text-green-700 border border-green-200';
       default:
         return 'bg-gray-100 text-gray-700 border border-gray-200';
     }
   };
-
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -83,7 +82,7 @@ const CRMPreview = () => {
   };
 
   return (
-    <section className="py-12 md:py-20 bg-white">
+    <section className="py-12 md:py-20 bg-white" dir="rtl">
       <div className="container mx-auto px-4">
         {/* Section header */}
         <motion.div 
@@ -94,27 +93,27 @@ const CRMPreview = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 mb-4">
-            Integrated{' '}
+            منصة{' '}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              CRM Platform
+              CRM متكاملة
             </span>
           </h2>
           <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-6 px-4">
-            Manage your leads, track progress, and close more deals through our next-generation CRM platform with data-driven insights
+            أدر عملاءك المحتملين، تتبع التقدم، واغلق المزيد من الصفقات من خلال منصة CRM الجيل القادم مع رؤى مدفوعة بالبيانات
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-sm text-slate-500">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span>Lead marketplace</span>
+              <span>متجر العملاء المحتملين</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <span>Data-driven insights</span>
+              <span>رؤى مدفوعة بالبيانات</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-              <span>Trusted partnerships</span>
+              <span>شراكات موثوقة</span>
             </div>
           </div>
         </motion.div>
@@ -136,12 +135,12 @@ const CRMPreview = () => {
                   <div className="text-center">
                     <div className="text-xs md:text-sm text-slate-500 mb-2">{metrics.period}</div>
                     <div className="text-2xl md:text-3xl font-bold text-green-600 mb-1">+{metrics.leadsDelivered.toLocaleString()}</div>
-                    <div className="text-xs md:text-sm text-slate-600 mb-4 md:mb-6">leads delivered</div>
+                    <div className="text-xs md:text-sm text-slate-600 mb-4 md:mb-6">عميل محتمل تم تسليمه</div>
                     
                     <div className="border-t border-slate-100 pt-3 md:pt-4">
-                      <div className="text-xs md:text-sm text-slate-500 mb-1">Avg. CPL</div>
-                      <div className="text-xl md:text-2xl font-bold text-slate-800">EGP {metrics.costPerLead}</div>
-                      <div className="text-xs md:text-sm text-slate-500">per lead</div>
+                      <div className="text-xs md:text-sm text-slate-500 mb-1">متوسط التكلفة</div>
+                      <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.costPerLead} ج.م</div>
+                      <div className="text-xs md:text-sm text-slate-500">لكل عميل</div>
                     </div>
                   </div>
                 </div>
@@ -190,20 +189,20 @@ const CRMPreview = () => {
                                 <Button 
                                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl shadow-md hover:shadow-lg transition-all text-xs flex-shrink-0"
                                 >
-                                  <Phone className="w-3 h-3 mr-1" />
-                                  Call
+                                  <Phone className="w-3 h-3 ml-1" />
+                                  اتصال
                                 </Button>
                                 <Button 
                                   className="bg-green-500 hover:bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl shadow-md hover:shadow-lg transition-all text-xs flex-shrink-0"
                                 >
-                                  <MessageCircle className="w-3 h-3 mr-1" />
-                                  WhatsApp
+                                  <MessageCircle className="w-3 h-3 ml-1" />
+                                  واتساب
                                 </Button>
                                 <Button 
                                   className="bg-purple-500 hover:bg-purple-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl shadow-md hover:shadow-lg transition-all text-xs flex-shrink-0"
                                 >
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  Send Offer
+                                  <FileText className="w-3 h-3 ml-1" />
+                                  إرسال عرض
                                 </Button>
                               </div>
                             </div>
@@ -227,24 +226,24 @@ const CRMPreview = () => {
           >
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl md:rounded-2xl p-6 md:p-8 border border-blue-100">
               <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4">
-                Ready to transform your real estate business?
+                جاهز لتطوير أعمالك العقارية؟
               </h3>
               <p className="text-sm md:text-base text-slate-600 mb-6 max-w-2xl mx-auto px-4">
-                Join our next-generation platform and connect with daily fresh leads through trusted, data-driven partnerships. 
-                No credit card required, no setup fees.
+                انضم إلى منصة الجيل القادم وتواصل مع عملاء محتملين جدد يومياً من خلال شراكات موثوقة ومدفوعة بالبيانات. 
+                بدون بطاقة ائتمان مطلوبة، بدون رسوم إعداد.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
                 <Link to="/app/crm">
                   <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white group w-full sm:w-auto">
-                    <Users className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                    Explore Platform
-                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <Users className="w-4 h-4 md:w-5 md:h-5 ml-2" />
+                    استكشف المنصة
+                    <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link to="/auth/signup">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Join Partnership
+                    انضم للشراكة
                   </Button>
                 </Link>
               </div>
@@ -256,4 +255,4 @@ const CRMPreview = () => {
   );
 };
 
-export default CRMPreview;
+export default CRMPreviewArabic;

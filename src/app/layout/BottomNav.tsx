@@ -28,69 +28,69 @@ export const BottomNav: React.FC = () => {
   const navigation = [
     {
       name: 'Dashboard',
-      href: '/',
+      href: '/app',
       icon: LayoutDashboard,
       show: true,
     },
     {
       name: 'Shop',
-      href: '/shop',
+      href: '/app/shop',
       icon: ShoppingCart,
       show: true,
     },
     {
       name: 'CRM',
-      href: '/crm',
+      href: '/app/crm',
       icon: Users,
       show: true,
     },
     {
       name: 'Partners',
-      href: '/partners',
+      href: '/app/partners',
       icon: Handshake,
       show: true,
     },
     {
       name: 'Inventory',
-      href: '/inventory',
+      href: '/app/inventory',
       icon: Home,
       show: true,
     },
     {
       name: 'Deals',
-      href: '/deals',
+      href: '/app/deals',
       icon: FileText,
       show: true,
     },
     {
       name: 'Team',
-      href: '/team',
+      href: '/app/team',
       icon: UserCheck,
       show: profile?.role === 'manager' || profile?.role === 'admin',
     },
     {
       name: 'Support',
-      href: '/support',
+      href: '/app/support',
       icon: HeadphonesIcon,
       show: canAccessSupport(profile?.role || 'user'),
     },
     {
       name: 'Admin',
-      href: '/admin',
+      href: '/app/admin',
       icon: Shield,
       show: canAccessAdmin(profile?.role || 'user'),
     },
     {
       name: 'Settings',
-      href: '/settings',
+      href: '/app/settings',
       icon: Settings,
       show: true,
     },
   ].filter(item => item.show);
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return location.pathname === '/';
+    if (href === '/app') {
+      return location.pathname === '/app' || location.pathname === '/app/';
     }
     return location.pathname.startsWith(href);
   };

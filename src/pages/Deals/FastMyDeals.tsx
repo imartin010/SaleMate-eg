@@ -86,10 +86,17 @@ const FastMyDeals: React.FC = () => {
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setDeals(data || []);
+      if (error) {
+        console.error('Error fetching deals:', error);
+        // Set empty array as fallback
+        setDeals([]);
+      } else {
+        setDeals(data || []);
+      }
     } catch (error) {
       console.error('Error fetching deals:', error);
+      // Set empty array as fallback
+      setDeals([]);
     } finally {
       setLoading(false);
     }

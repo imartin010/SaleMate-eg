@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
 import { PageTitle } from '../../components/common/PageTitle';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
@@ -16,7 +16,9 @@ import {
   Building,
   Calendar,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  CheckCircle,
+  ShoppingCart
 } from 'lucide-react';
 import type { Database } from '../../types/database';
 
@@ -43,7 +45,7 @@ const MyLeads: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [stageFilter, setStageFilter] = useState<LeadStage | ''>('');
+  const [stageFilter, setStageFilter] = useState<LeadStage | 'all'>('all');
   const [updatingLead, setUpdatingLead] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,10 +68,17 @@ const MyLeads: React.FC = () => {
         .eq('buyer_user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setLeads(data || []);
+      if (error) {
+        console.error('Error loading leads:', error);
+        // Set empty array as fallback
+        setLeads([]);
+      } else {
+        setLeads(data || []);
+      }
     } catch (err) {
       console.error('Error loading leads:', err);
+      // Set empty array as fallback
+      setLeads([]);
     } finally {
       setLoading(false);
     }
@@ -124,7 +133,7 @@ const MyLeads: React.FC = () => {
     const matchesSearch = lead.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          lead.client_phone.includes(searchTerm) ||
                          lead.client_email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStage = !stageFilter || lead.stage === stageFilter;
+    const matchesStage = stageFilter === 'all' || !stageFilter || lead.stage === stageFilter;
     return matchesSearch && matchesStage;
   });
 
@@ -207,13 +216,13 @@ const MyLeads: React.FC = () => {
                 />
               </div>
             </div>
-            <Select value={stageFilter} onValueChange={(value) => setStageFilter(value as LeadStage | '')}>
+            <Select value={stageFilter} onValueChange={(value) => setStageFilter(value as LeadStage | 'all')}>
               <SelectTrigger className="w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="All Stages" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Stages</SelectItem>
+                <SelectItem value="all">All Stages</SelectItem>
                 {LEAD_STAGES.map(stage => (
                   <SelectItem key={stage} value={stage}>{stage}</SelectItem>
                 ))}
@@ -239,7 +248,7 @@ const MyLeads: React.FC = () => {
                 : 'No leads match your search criteria.'}
             </p>
             {leads.length === 0 && (
-              <Button onClick={() => window.location.href = '/shop'}>
+              <Button onClick={() => window.location.href = '/app/shop'}>
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Visit Shop
               </Button>

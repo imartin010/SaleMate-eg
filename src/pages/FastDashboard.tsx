@@ -59,28 +59,28 @@ const FastDashboard: React.FC = () => {
   const quickActions = [
     { 
       label: 'View Deals', 
-      href: '/deals', 
+      href: '/app/deals', 
       icon: Handshake, 
       color: 'bg-gradient-to-r from-blue-600 to-blue-700',
       hoverColor: 'hover:from-blue-700 hover:to-blue-800'
     },
     { 
       label: 'Browse Shop', 
-      href: '/shop', 
+      href: '/app/shop', 
       icon: ShoppingBag, 
       color: 'bg-gradient-to-r from-green-600 to-green-700',
       hoverColor: 'hover:from-green-700 hover:to-green-800'
     },
     { 
       label: 'My Leads', 
-      href: '/crm', 
+      href: '/app/crm', 
       icon: FileText, 
       color: 'bg-gradient-to-r from-purple-600 to-purple-700',
       hoverColor: 'hover:from-purple-700 hover:to-purple-800'
     },
     { 
       label: 'Settings', 
-      href: '/settings', 
+      href: '/app/settings', 
       icon: Settings, 
       color: 'bg-gradient-to-r from-gray-600 to-gray-700',
       hoverColor: 'hover:from-gray-700 hover:to-gray-800'
