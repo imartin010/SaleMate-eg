@@ -449,56 +449,113 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                         onClick={() => {
                           const account = 'imartin1@instapay';
                           const amount = totalAmount;
-                          const deeplink = `instapay://send?account=${encodeURIComponent(account)}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(`Order ${currentOrderId?.slice(-8)}`)}`;
+                          const orderRef = currentOrderId?.slice(-8);
                           
-                          // Set up fallback detection
-                          const timeout = setTimeout(() => {
-                            // If page is still visible after 1.2s, app probably didn't open
-                            if (document.visibilityState !== 'hidden') {
-                              alert(`📱 Instapay app didn't open?\n\n` +
-                                    `Please:\n` +
-                                    `1. Make sure Instapay app is installed\n` +
-                                    `2. Open Instapay manually and send:\n` +
-                                    `   • Amount: EGP ${amount}\n` +
-                                    `   • To: ${account}\n` +
-                                    `   • Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
+                          // Try multiple URL schemes for Instapay
+                          const urlSchemes = [
+                            `instapay://transfer?to=${encodeURIComponent(account)}&amount=${amount}&reference=${encodeURIComponent(`Order ${orderRef}`)}`,
+                            `instapay://send?to=${encodeURIComponent(account)}&amount=${amount}&note=${encodeURIComponent(`Order ${orderRef}`)}`,
+                            `instapay://pay?recipient=${encodeURIComponent(account)}&amount=${amount}&memo=${encodeURIComponent(`Order ${orderRef}`)}`,
+                            `instapay://app?action=send&to=${encodeURIComponent(account)}&amount=${amount}`,
+                            `instapay://`
+                          ];
+                          
+                          let attemptCount = 0;
+                          
+                          const tryNextScheme = () => {
+                            if (attemptCount >= urlSchemes.length) {
+                              // All schemes failed, show manual instructions
+                              alert(`📱 Please open your Instapay app manually and send:\n\n` +
+                                    `💰 Amount: EGP ${amount}\n` +
+                                    `👤 To: ${account}\n` +
+                                    `📝 Reference: Order ${orderRef}\n\n` +
                                     `Then come back and upload your receipt.`);
+                              return;
                             }
-                          }, 1200);
+                            
+                            const currentScheme = urlSchemes[attemptCount];
+                            attemptCount++;
+                            
+                            // Set up detection for this attempt
+                            const timeout = setTimeout(() => {
+                              if (document.visibilityState !== 'hidden') {
+                                // This scheme didn't work, try next one
+                                tryNextScheme();
+                              }
+                            }, 800);
 
-                          // Clear timeout if user switches to app
-                          const handleVisibilityChange = () => {
-                            if (document.visibilityState === 'hidden') {
+                            const handleVisibilityChange = () => {
+                              if (document.visibilityState === 'hidden') {
+                                clearTimeout(timeout);
+                                document.removeEventListener('visibilitychange', handleVisibilityChange);
+                                // Success! App opened
+                              }
+                            };
+                            
+                            document.addEventListener('visibilitychange', handleVisibilityChange);
+                            
+                            // Try current scheme
+                            try {
+                              window.location.href = currentScheme;
+                            } catch (error) {
                               clearTimeout(timeout);
-                              document.removeEventListener('visibilitychange', handleVisibilityChange);
+                              tryNextScheme();
                             }
                           };
                           
-                          document.addEventListener('visibilitychange', handleVisibilityChange);
-                          
-                          // Try to open Instapay app
-                          try {
-                            window.location.href = deeplink;
-                          } catch (error) {
-                            clearTimeout(timeout);
-                            alert(`📱 Please open your Instapay app and send:\n\n` +
-                                  `Amount: EGP ${amount}\n` +
-                                  `To: ${account}\n` +
-                                  `Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
-                                  `Then come back and upload your receipt.`);
-                          }
+                          // Start with first scheme
+                          tryNextScheme();
                         }}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         size="lg"
                       >
                         <DollarSign className="h-5 w-5 mr-2" />
-                        Pay with Instapay
+                        Open Instapay App
                       </Button>
                     </div>
                     
                     <p className="text-xs text-blue-600 mt-2 text-center">
                       Click above to open Instapay app directly (mobile) or get manual instructions
                     </p>
+                    
+                    {/* Alternative: Manual Instructions Button */}
+                    <div className="mt-2">
+                      <Button
+                        onClick={() => {
+                          const account = 'imartin1@instapay';
+                          const amount = totalAmount;
+                          const orderRef = currentOrderId?.slice(-8);
+                          const paymentDetails = `Send EGP ${amount} to ${account}\nReference: Order ${orderRef}`;
+                          
+                          navigator.clipboard.writeText(paymentDetails).then(() => {
+                            alert(`💳 Payment details copied to clipboard!\n\n` +
+                                  `Manual Instructions:\n` +
+                                  `1. Open your Instapay app\n` +
+                                  `2. Choose "Send Money" or "Transfer"\n` +
+                                  `3. Enter recipient: ${account}\n` +
+                                  `4. Enter amount: EGP ${amount}\n` +
+                                  `5. Add reference: Order ${orderRef}\n` +
+                                  `6. Complete the payment\n` +
+                                  `7. Come back and upload your receipt\n\n` +
+                                  `Payment details have been copied to your clipboard for easy pasting.`);
+                          }).catch(() => {
+                            alert(`💳 Manual Payment Instructions:\n\n` +
+                                  `1. Open your Instapay app\n` +
+                                  `2. Choose "Send Money" or "Transfer"\n` +
+                                  `3. Enter recipient: ${account}\n` +
+                                  `4. Enter amount: EGP ${amount}\n` +
+                                  `5. Add reference: Order ${orderRef}\n` +
+                                  `6. Complete the payment\n` +
+                                  `7. Come back and upload your receipt`);
+                          });
+                        }}
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                      >
+                        Manual Instructions
+                      </Button>
+                    </div>
                     
                     <p><strong>4. Upload your payment receipt below</strong></p>
                   </div>
