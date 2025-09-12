@@ -23,6 +23,10 @@ import { TempLanding } from '../pages/TempLanding/TempLanding';
 // LEGAL PAGES
 import { TermsAndConditions } from '../pages/Legal/TermsAndConditions';
 import { RefundPolicy } from '../pages/Legal/RefundPolicy';
+import { PrivacyPolicy } from '../pages/Legal/PrivacyPolicy';
+
+// SUPPORT PAGES
+import { ContactSupport } from '../pages/Support/ContactSupport';
 
 // DRAFT PAGES: No sidebar
 import TeamPNL from '../pages/Draft/TeamPNL';
@@ -109,6 +113,24 @@ export const router = createBrowserRouter([
       <>
         <ScrollToTop />
         <RefundPolicy />
+      </>
+    ),
+  },
+  {
+    path: '/privacy-policy',
+    element: (
+      <>
+        <ScrollToTop />
+        <PrivacyPolicy />
+      </>
+    ),
+  },
+  {
+    path: '/contact-support',
+    element: (
+      <>
+        <ScrollToTop />
+        <ContactSupport />
       </>
     ),
   },

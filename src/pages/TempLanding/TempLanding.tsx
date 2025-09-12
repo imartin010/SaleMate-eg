@@ -458,8 +458,8 @@ export const TempLanding: React.FC = () => {
             <div className="flex justify-center space-x-6 text-gray-400 mb-6">
               <a href="/terms" className="hover:text-white transition-colors">Terms & Conditions</a>
               <a href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+              <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="/contact-support" className="hover:text-white transition-colors">Contact Support</a>
             </div>
             <div className="pt-6 border-t border-gray-800 text-gray-500 text-sm">
               © 2025 SaleMate. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
