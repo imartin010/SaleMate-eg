@@ -111,7 +111,7 @@ export const TempLanding: React.FC = () => {
                 <Users className="h-3 w-3 mr-1" />
                 Live Marketplace
               </Badge>
-              <Button size="sm">
+              <Button size="sm" onClick={() => window.location.href = 'tel:+201070020058'}>
                 <Phone className="h-4 w-4 mr-2" />
                 Contact Sales
               </Button>

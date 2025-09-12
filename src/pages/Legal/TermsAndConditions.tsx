@@ -151,7 +151,7 @@ export const TermsAndConditions: React.FC = () => {
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <p className="text-blue-900 font-medium">SaleMate Support</p>
               <p className="text-blue-800">Email: legal@salemate-eg.com</p>
-              <p className="text-blue-800">Phone: +20 100 XXX XXXX</p>
+              <p className="text-blue-800">Phone: (+2) 010 700 200 58</p>
               <p className="text-blue-800">Address: Cairo, Egypt</p>
             </div>
 

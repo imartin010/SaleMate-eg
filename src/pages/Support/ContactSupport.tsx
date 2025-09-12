@@ -110,7 +110,7 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone Support</h3>
-                    <p className="text-gray-600">+20 100 XXX XXXX</p>
+                    <p className="text-gray-600">(+2) 010 700 200 58</p>
                     <p className="text-sm text-gray-500">Sun-Thu: 9 AM - 6 PM (Cairo Time)</p>
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">WhatsApp</h3>
-                    <p className="text-gray-600">+20 100 XXX XXXX</p>
+                    <p className="text-gray-600">(+2) 010 700 200 58</p>
                     <p className="text-sm text-gray-500">Quick responses via chat</p>
                   </div>
                 </div>
@@ -193,7 +193,7 @@ export const ContactSupport: React.FC = () => {
                     <Input
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+20 100 XXX XXXX"
+                      placeholder="(+2) 010 700 200 58"
                     />
                   </div>
                   <div>
