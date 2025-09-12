@@ -447,30 +447,34 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                     <div className="mt-3">
                       <Button
                         onClick={() => {
-                          const instapayUrl = `instapay://send?to=imartin1@instapay&amount=${totalAmount}&note=Order ${currentOrderId?.slice(-8)}`;
-                          const fallbackUrl = `https://instapay.com/send?to=imartin1@instapay&amount=${totalAmount}&note=Order ${currentOrderId?.slice(-8)}`;
+                          // Copy payment details to clipboard for easy pasting
+                          const paymentDetails = `Send EGP ${totalAmount} to imartin1@instapay\nReference: Order ${currentOrderId?.slice(-8)}`;
                           
-                          // Try to open Instapay app, fallback to web
-                          try {
-                            window.location.href = instapayUrl;
-                            // Fallback to web version after a short delay
-                            setTimeout(() => {
-                              window.open(fallbackUrl, '_blank');
-                            }, 1000);
-                          } catch (error) {
-                            window.open(fallbackUrl, '_blank');
-                          }
+                          navigator.clipboard.writeText(paymentDetails).then(() => {
+                            alert(`💳 Payment details copied to clipboard!\n\n` +
+                                  `Please open your Instapay app and:\n` +
+                                  `1. Send EGP ${totalAmount}\n` +
+                                  `2. To: imartin1@instapay\n` +
+                                  `3. Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
+                                  `Then come back and upload your receipt.`);
+                          }).catch(() => {
+                            alert(`💳 Please open your Instapay app and send:\n\n` +
+                                  `Amount: EGP ${totalAmount}\n` +
+                                  `To: imartin1@instapay\n` +
+                                  `Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
+                                  `Then come back and upload your receipt.`);
+                          });
                         }}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         size="lg"
                       >
                         <DollarSign className="h-5 w-5 mr-2" />
-                        Pay with Instapay
+                        Copy Payment Details
                       </Button>
                     </div>
                     
                     <p className="text-xs text-blue-600 mt-2 text-center">
-                      Click above to open Instapay app and pay automatically
+                      Click above to copy payment details, then open your Instapay app
                     </p>
                     
                     <p><strong>4. Upload your payment receipt below</strong></p>
