@@ -447,34 +447,57 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                     <div className="mt-3">
                       <Button
                         onClick={() => {
-                          // Copy payment details to clipboard for easy pasting
-                          const paymentDetails = `Send EGP ${totalAmount} to imartin1@instapay\nReference: Order ${currentOrderId?.slice(-8)}`;
+                          const account = 'imartin1@instapay';
+                          const amount = totalAmount;
+                          const deeplink = `instapay://send?account=${encodeURIComponent(account)}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(`Order ${currentOrderId?.slice(-8)}`)}`;
                           
-                          navigator.clipboard.writeText(paymentDetails).then(() => {
-                            alert(`💳 Payment details copied to clipboard!\n\n` +
-                                  `Please open your Instapay app and:\n` +
-                                  `1. Send EGP ${totalAmount}\n` +
-                                  `2. To: imartin1@instapay\n` +
-                                  `3. Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
-                                  `Then come back and upload your receipt.`);
-                          }).catch(() => {
-                            alert(`💳 Please open your Instapay app and send:\n\n` +
-                                  `Amount: EGP ${totalAmount}\n` +
-                                  `To: imartin1@instapay\n` +
+                          // Set up fallback detection
+                          const timeout = setTimeout(() => {
+                            // If page is still visible after 1.2s, app probably didn't open
+                            if (document.visibilityState !== 'hidden') {
+                              alert(`📱 Instapay app didn't open?\n\n` +
+                                    `Please:\n` +
+                                    `1. Make sure Instapay app is installed\n` +
+                                    `2. Open Instapay manually and send:\n` +
+                                    `   • Amount: EGP ${amount}\n` +
+                                    `   • To: ${account}\n` +
+                                    `   • Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
+                                    `Then come back and upload your receipt.`);
+                            }
+                          }, 1200);
+
+                          // Clear timeout if user switches to app
+                          const handleVisibilityChange = () => {
+                            if (document.visibilityState === 'hidden') {
+                              clearTimeout(timeout);
+                              document.removeEventListener('visibilitychange', handleVisibilityChange);
+                            }
+                          };
+                          
+                          document.addEventListener('visibilitychange', handleVisibilityChange);
+                          
+                          // Try to open Instapay app
+                          try {
+                            window.location.href = deeplink;
+                          } catch (error) {
+                            clearTimeout(timeout);
+                            alert(`📱 Please open your Instapay app and send:\n\n` +
+                                  `Amount: EGP ${amount}\n` +
+                                  `To: ${account}\n` +
                                   `Reference: Order ${currentOrderId?.slice(-8)}\n\n` +
                                   `Then come back and upload your receipt.`);
-                          });
+                          }
                         }}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         size="lg"
                       >
                         <DollarSign className="h-5 w-5 mr-2" />
-                        Copy Payment Details
+                        Pay with Instapay
                       </Button>
                     </div>
                     
                     <p className="text-xs text-blue-600 mt-2 text-center">
-                      Click above to copy payment details, then open your Instapay app
+                      Click above to open Instapay app directly (mobile) or get manual instructions
                     </p>
                     
                     <p><strong>4. Upload your payment receipt below</strong></p>
