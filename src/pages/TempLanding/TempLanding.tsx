@@ -441,6 +441,32 @@ export const TempLanding: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <div className="bg-gray-900 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-white">SaleMate</span>
+            </div>
+            <p className="text-gray-400 mb-6">
+              Egypt's Premium Real Estate Lead Marketplace
+            </p>
+            <div className="flex justify-center space-x-6 text-gray-400 mb-6">
+              <a href="/terms" className="hover:text-white transition-colors">Terms & Conditions</a>
+              <a href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+            </div>
+            <div className="pt-6 border-t border-gray-800 text-gray-500 text-sm">
+              © 2025 SaleMate. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

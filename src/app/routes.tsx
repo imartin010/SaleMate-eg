@@ -20,6 +20,10 @@ import HomeArabic from '../pages/marketing/HomeArabic';
 // TEMPORARY LANDING PAGE for Paymob configuration
 import { TempLanding } from '../pages/TempLanding/TempLanding';
 
+// LEGAL PAGES
+import { TermsAndConditions } from '../pages/Legal/TermsAndConditions';
+import { RefundPolicy } from '../pages/Legal/RefundPolicy';
+
 // DRAFT PAGES: No sidebar
 import TeamPNL from '../pages/Draft/TeamPNL';
 
@@ -85,6 +89,26 @@ export const router = createBrowserRouter([
       <>
         <ScrollToTop />
         <HomeArabic />
+      </>
+    ),
+  },
+
+  // Legal pages
+  {
+    path: '/terms',
+    element: (
+      <>
+        <ScrollToTop />
+        <TermsAndConditions />
+      </>
+    ),
+  },
+  {
+    path: '/refund-policy',
+    element: (
+      <>
+        <ScrollToTop />
+        <RefundPolicy />
       </>
     ),
   },
