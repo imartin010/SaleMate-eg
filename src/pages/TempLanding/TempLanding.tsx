@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { 
   Zap, 
   Users, 
@@ -13,16 +11,11 @@ import {
   Star,
   ArrowRight,
   DollarSign,
-  Shield,
-  Clock,
   Target,
-  CreditCard,
-  Smartphone,
   Globe,
   Award,
   BarChart3,
   MessageCircle,
-  ShoppingCart,
   MapPin,
   Phone,
   Mail,
@@ -34,14 +27,6 @@ import {
 export const TempLanding: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
-  const [purchaseForm, setPurchaseForm] = useState({
-    quantity: 1,
-    paymentMethod: 'card',
-    buyerName: '',
-    buyerEmail: '',
-    buyerPhone: ''
-  });
 
   // Mock premium projects data
   const projects = [
@@ -101,14 +86,9 @@ export const TempLanding: React.FC = () => {
     project.region.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const openPurchaseDialog = (project: any) => {
-    setSelectedProject(project);
-    setShowPurchaseDialog(true);
-  };
-
-  const handlePurchase = async () => {
+  const handlePurchase = (project: any) => {
     // Redirect to external checkout page with project data
-    const checkoutUrl = `/checkout.html?projectId=${selectedProject.id}&projectName=${encodeURIComponent(selectedProject.name)}&developer=${encodeURIComponent(selectedProject.developer)}&region=${encodeURIComponent(selectedProject.region)}&availableLeads=${selectedProject.availableLeads}&pricePerLead=${selectedProject.pricePerLead}&image=${encodeURIComponent(selectedProject.image)}&quantity=${purchaseForm.quantity}&totalPrice=${selectedProject.pricePerLead * purchaseForm.quantity}`;
+    const checkoutUrl = `/checkout.html?projectId=${project.id}&projectName=${encodeURIComponent(project.name)}&developer=${encodeURIComponent(project.developer)}&region=${encodeURIComponent(project.region)}&availableLeads=${project.availableLeads}&pricePerLead=${project.pricePerLead}&image=${encodeURIComponent(project.image)}&quantity=1&totalPrice=${project.pricePerLead}`;
     window.location.href = checkoutUrl;
   };
 
@@ -274,140 +254,6 @@ export const TempLanding: React.FC = () => {
         </div>
       </div>
 
-      {/* Purchase Dialog with Paymob Integration */}
-      <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Purchase Leads
-            </DialogTitle>
-            <DialogDescription>
-              {selectedProject?.name} - {selectedProject?.developer}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedProject && (
-            <div className="space-y-6">
-              {/* Project Info */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-blue-900">Available Leads</span>
-                  <span className="text-lg font-bold text-blue-600">{selectedProject.availableLeads}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-700">Price per lead</span>
-                  <span className="text-sm font-bold text-blue-800">EGP {selectedProject.pricePerLead}</span>
-                </div>
-              </div>
-
-              {/* Buyer Information */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Buyer Information</h4>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <Input
-                      placeholder="Your name"
-                      value={purchaseForm.buyerName}
-                      onChange={(e) => setPurchaseForm(prev => ({ ...prev, buyerName: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <Input
-                      placeholder="+20 1XX XXX XXXX"
-                      value={purchaseForm.buyerPhone}
-                      onChange={(e) => setPurchaseForm(prev => ({ ...prev, buyerPhone: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                  <Input
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={purchaseForm.buyerEmail}
-                    onChange={(e) => setPurchaseForm(prev => ({ ...prev, buyerEmail: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              {/* Quantity Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Leads (1 - {selectedProject.availableLeads})
-                </label>
-                <Input
-                  type="number"
-                  min="1"
-                  max={selectedProject.availableLeads}
-                  value={purchaseForm.quantity}
-                  onChange={(e) => setPurchaseForm(prev => ({ 
-                    ...prev, 
-                    quantity: Math.min(parseInt(e.target.value) || 1, selectedProject.availableLeads)
-                  }))}
-                />
-              </div>
-
-              {/* Order Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                <h4 className="font-medium text-gray-900">Order Summary</h4>
-                <div className="flex justify-between text-sm">
-                  <span>Project:</span>
-                  <span className="font-medium">{selectedProject.name}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Quantity:</span>
-                  <span className="font-medium">{purchaseForm.quantity} leads</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Price per lead:</span>
-                  <span className="font-medium">EGP {selectedProject.pricePerLead}</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between font-semibold">
-                  <span>Total Amount:</span>
-                  <span className="text-lg text-green-600">
-                    EGP {(selectedProject.pricePerLead * purchaseForm.quantity).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Payment Button - Paymob Integration Point */}
-              <div className="space-y-3">
-                <Button 
-                  onClick={handlePurchase}
-                  className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-lg font-semibold"
-                  disabled={!purchaseForm.buyerName || !purchaseForm.buyerEmail || !purchaseForm.buyerPhone}
-                >
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Pay EGP {(selectedProject.pricePerLead * purchaseForm.quantity).toLocaleString()}
-                </Button>
-                
-                <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
-                  <div className="flex items-center">
-                    <Shield className="h-3 w-3 mr-1" />
-                    <span>Secure Payment</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    <span>Instant Delivery</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Terms */}
-              <div className="text-xs text-gray-500 space-y-1">
-                <p>• Leads will be delivered instantly to your email</p>
-                <p>• All sales are final - no refunds</p>
-                <p>• Contact support for any issues</p>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Trust Indicators */}
       <div className="bg-white py-12 border-t">
