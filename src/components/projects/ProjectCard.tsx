@@ -22,10 +22,12 @@ const PAYMENT_METHODS: PaymentMethod[] = ['Instapay', 'VodafoneCash', 'BankTrans
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
-  const [quantity, setQuantity] = useState(50);
+  const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Instapay');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
   
   const { createOrder } = useOrderStore();
   const { user } = useAuthStore();
@@ -101,8 +103,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     }
   };
 
-  const canPurchase = quantity >= 50 && quantity <= project.availableLeads;
-  const quantityError = quantity < 50 ? 'Minimum 50 leads required' : 
+  const canPurchase = quantity >= 1 && quantity <= project.availableLeads;
+  const quantityError = quantity < 1 ? 'Minimum 1 lead required' : 
                       quantity > project.availableLeads ? 'Not enough leads available' : null;
 
   // Generate a placeholder hero image based on project name
@@ -216,15 +218,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Quantity (minimum 50)
+                Quantity (minimum 1)
               </label>
               <Input
                 type="number"
-                min={50}
+                min={1}
                 max={project.availableLeads}
-                step={50}
+                step={1}
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 50)}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
               />
               {quantityError && (
                 <p className="text-sm text-destructive mt-1">{quantityError}</p>

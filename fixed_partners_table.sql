@@ -122,3 +122,4 @@ SELECT COUNT(*) as total_compounds FROM public.partners;
 
 
 
+

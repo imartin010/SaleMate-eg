@@ -357,10 +357,10 @@ const Shop: React.FC = () => {
                 <Button 
                   onClick={() => openPurchaseDialog(project)}
                   className="w-full"
-                  disabled={(project.available_leads || 0) < 50}
+                  disabled={(project.available_leads || 0) < 1}
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  {(project.available_leads || 0) >= 50 ? 'Purchase Leads' : 'Insufficient Leads'}
+                  {(project.available_leads || 0) >= 1 ? 'Purchase Leads' : 'No Leads Available'}
                 </Button>
               </CardContent>
             </Card>
@@ -405,11 +405,11 @@ const Shop: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">Number of Leads</label>
                 <Input
                   type="number"
-                  min="50"
-                  max={selectedProject?.available_leads || 50}
+                  min="1"
+                  max={selectedProject?.available_leads || 1}
                   value={purchaseForm.quantity}
-                  onChange={(e) => setPurchaseForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 50 }))}
-                  placeholder="Minimum 50 leads"
+                  onChange={(e) => setPurchaseForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                  placeholder="Minimum 1 lead"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Total: ${((selectedProject?.current_cpl || 0) * purchaseForm.quantity).toFixed(2)}

@@ -20,7 +20,8 @@ import {
   AlertCircle, 
   CheckCircle,
   RefreshCw,
-  Clock
+  Clock,
+  DollarSign
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,12 +34,15 @@ const PAYMENT_METHODS: PaymentMethod[] = ['Instapay', 'VodafoneCash', 'BankTrans
 
 export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPurchaseSuccess }) => {
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
-  const [quantity, setQuantity] = useState(50);
+  const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Instapay');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentAvailableLeads, setCurrentAvailableLeads] = useState(project.availableLeads);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   
   const { user } = useAuthStore();
@@ -60,7 +64,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
       if (!error && data) {
         setCurrentAvailableLeads(data.available_leads);
         if (quantity > data.available_leads) {
-          setQuantity(Math.min(data.available_leads, 50));
+          setQuantity(Math.min(data.available_leads, 1));
         }
       }
     } catch (err) {
@@ -113,59 +117,10 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
       console.log('✅ Order created:', orderResult);
 
-      // Step 2: Simulate payment processing (in real app, this would be actual payment)
-      setSuccess('Processing payment...');
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate payment delay
-
-      // Step 3: Confirm the order (assigns leads atomically)
-      const { data: confirmResult, error: confirmError } = await supabase.rpc('rpc_confirm_order', {
-        order_id: orderResult.order_id,
-        payment_reference: `PAY-${Date.now()}-${user.id.slice(0, 8)}`
-      });
-
-      if (confirmError) {
-        // Payment succeeded but lead assignment failed - need manual intervention
-        console.error('❌ Order confirmation failed:', confirmError);
-        
-        // Try to fail the order gracefully
-        try {
-          await supabase.rpc('rpc_fail_order', {
-            order_id: orderResult.order_id,
-            reason: `Lead assignment failed: ${confirmError.message}`
-          });
-        } catch (failError) {
-          console.error('Failed to mark order as failed:', failError);
-        }
-        
-        throw new Error(`Purchase failed: ${confirmError.message}`);
-      }
-
-      if (!confirmResult?.success) {
-        throw new Error('Order confirmation returned unsuccessful result');
-      }
-
-      console.log('🎉 Purchase successful:', confirmResult);
-
-      // Step 4: Show success and update UI
-      setSuccess(`Successfully purchased ${confirmResult.leads_assigned} leads!`);
-      
-      // Update local state
-      setCurrentAvailableLeads(confirmResult.remaining_available_leads);
-      
-      // Close dialog after success
-      setTimeout(() => {
-        setShowPurchaseDialog(false);
-        setSuccess(null);
-        
-        // Trigger parent refresh
-        if (onPurchaseSuccess) {
-          onPurchaseSuccess();
-        }
-        
-        // Show success message and redirect to CRM
-        alert(`🎉 Purchase successful! ${confirmResult.leads_assigned} leads have been added to your CRM.`);
-        navigate('/crm');
-      }, 2000);
+      // Step 2: Save order ID and show payment instructions
+      setCurrentOrderId(orderResult.order_id);
+      setShowPaymentInstructions(true);
+      setSuccess(`Order created! Total: EGP ${orderResult.total_amount}`);
 
     } catch (err: any) {
       console.error('❌ Purchase error:', err);
@@ -175,13 +130,92 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
     }
   };
 
+  const handleReceiptUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setReceiptFile(file);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!currentOrderId || !receiptFile) {
+      setError('Please upload a payment receipt');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Upload receipt to storage
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${receiptFile.name}`;
+      const filePath = `${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(filePath, receiptFile);
+
+      if (uploadError) {
+        throw new Error(`Failed to upload receipt: ${uploadError.message}`);
+      }
+
+      // Get public URL for the receipt
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(filePath);
+
+      // Confirm the order with receipt
+      const { data: confirmResult, error: confirmError } = await supabase.rpc('rpc_confirm_order', {
+        order_id: currentOrderId,
+        payment_reference: `PAY-${timestamp}-${user?.id.slice(0, 8)}`
+      });
+
+      if (confirmError) {
+        throw new Error(`Confirmation failed: ${confirmError.message}`);
+      }
+
+      if (!confirmResult?.success) {
+        throw new Error('Order confirmation failed');
+      }
+
+      console.log('🎉 Purchase confirmed:', confirmResult);
+
+      // Show success and update UI
+      setSuccess(`Payment confirmed! ${confirmResult.leads_assigned} leads added to your CRM.`);
+      setCurrentAvailableLeads(confirmResult.remaining_available_leads);
+      
+      // Close dialog and redirect after success
+      setTimeout(() => {
+        setShowPurchaseDialog(false);
+        setShowPaymentInstructions(false);
+        setCurrentOrderId(null);
+        setReceiptFile(null);
+        setSuccess(null);
+        
+        if (onPurchaseSuccess) {
+          onPurchaseSuccess();
+        }
+        
+        alert(`🎉 Purchase successful! ${confirmResult.leads_assigned} leads have been added to your CRM.`);
+        navigate('/crm');
+      }, 2000);
+
+    } catch (err: any) {
+      console.error('❌ Payment confirmation error:', err);
+      setError(err.message || 'Payment confirmation failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Validation
-  const canPurchase = quantity >= 50 && 
+  const canPurchase = quantity >= 1 && 
                      quantity <= currentAvailableLeads && 
                      !isProcessing && 
                      user;
 
-  const quantityError = quantity < 50 ? 'Minimum 50 leads required' : 
+  const quantityError = quantity < 1 ? 'Minimum 1 lead required' : 
                        quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : 
                        null;
 
@@ -307,15 +341,15 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             {/* Quantity Selection */}
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Quantity (minimum 50, maximum {currentAvailableLeads})
+                Quantity (minimum 1, maximum {currentAvailableLeads})
               </label>
               <Input
                 type="number"
-                min={50}
+                min={1}
                 max={currentAvailableLeads}
-                step={50}
+                step={1}
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(50, parseInt(e.target.value) || 50))}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                 disabled={isProcessing}
               />
               {quantityError && (
@@ -394,38 +428,134 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
               </div>
             )}
 
+            {/* Payment Instructions */}
+            {showPaymentInstructions && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                    💳 Payment Instructions
+                  </h4>
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <p><strong>1. Send payment via Instapay to:</strong></p>
+                    <div className="bg-blue-100 p-3 rounded font-mono text-center text-lg font-bold">
+                      imartin1@instapay
+                    </div>
+                    <p><strong>2. Amount:</strong> EGP {totalAmount.toFixed(2)}</p>
+                    <p><strong>3. Reference:</strong> Order #{currentOrderId?.slice(-8)}</p>
+                    
+                    {/* Direct Instapay Button */}
+                    <div className="mt-3">
+                      <Button
+                        onClick={() => {
+                          const instapayUrl = `instapay://send?to=imartin1@instapay&amount=${totalAmount}&note=Order ${currentOrderId?.slice(-8)}`;
+                          const fallbackUrl = `https://instapay.com/send?to=imartin1@instapay&amount=${totalAmount}&note=Order ${currentOrderId?.slice(-8)}`;
+                          
+                          // Try to open Instapay app, fallback to web
+                          try {
+                            window.location.href = instapayUrl;
+                            // Fallback to web version after a short delay
+                            setTimeout(() => {
+                              window.open(fallbackUrl, '_blank');
+                            }, 1000);
+                          } catch (error) {
+                            window.open(fallbackUrl, '_blank');
+                          }
+                        }}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                        size="lg"
+                      >
+                        <DollarSign className="h-5 w-5 mr-2" />
+                        Pay with Instapay
+                      </Button>
+                    </div>
+                    
+                    <p className="text-xs text-blue-600 mt-2 text-center">
+                      Click above to open Instapay app and pay automatically
+                    </p>
+                    
+                    <p><strong>4. Upload your payment receipt below</strong></p>
+                  </div>
+                </div>
+
+                {/* Receipt Upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Upload Payment Receipt *</label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleReceiptUpload}
+                    className="w-full p-2 border border-gray-300 rounded-lg"
+                  />
+                  {receiptFile && (
+                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-700">{receiptFile.name}</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Upload screenshot or photo of your Instapay payment confirmation
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setShowPurchaseDialog(false)}
+                onClick={() => {
+                  setShowPurchaseDialog(false);
+                  setShowPaymentInstructions(false);
+                  setCurrentOrderId(null);
+                  setReceiptFile(null);
+                }}
                 disabled={isProcessing}
               >
                 Cancel
               </Button>
-              <Button
-                className="flex-1"
-                onClick={handlePurchase}
-                disabled={!canPurchase || isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Confirm Purchase
-                  </>
-                )}
-              </Button>
+              {!showPaymentInstructions ? (
+                <Button
+                  className="flex-1"
+                  onClick={handlePurchase}
+                  disabled={!canPurchase || isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating Order...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Create Order
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  className="flex-1"
+                  onClick={handleConfirmPayment}
+                  disabled={!receiptFile || isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Confirming...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirm Payment
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Purchase Terms */}
             <div className="text-xs text-gray-500 space-y-1">
-              <p>• Minimum purchase: 50 leads</p>
+              <p>• Minimum purchase: 1 lead</p>
               <p>• Leads will appear in your CRM immediately after payment</p>
               <p>• All purchases are final - no refunds</p>
               <p>• Contact support for any issues</p>
