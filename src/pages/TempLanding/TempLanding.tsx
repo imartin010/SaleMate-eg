@@ -107,13 +107,9 @@ export const TempLanding: React.FC = () => {
   };
 
   const handlePurchase = async () => {
-    // This is where Paymob integration will go
-    console.log('Purchase with Paymob:', {
-      project: selectedProject,
-      form: purchaseForm,
-      total: selectedProject.pricePerLead * purchaseForm.quantity
-    });
-    alert(`Paymob payment integration will be configured here!\n\nOrder Details:\nProject: ${selectedProject.name}\nQuantity: ${purchaseForm.quantity} leads\nTotal: EGP ${selectedProject.pricePerLead * purchaseForm.quantity}`);
+    // Redirect to checkout page with project data
+    const checkoutUrl = `/checkout?projectId=${selectedProject.id}&projectName=${encodeURIComponent(selectedProject.name)}&developer=${encodeURIComponent(selectedProject.developer)}&region=${encodeURIComponent(selectedProject.region)}&availableLeads=${selectedProject.availableLeads}&pricePerLead=${selectedProject.pricePerLead}&image=${encodeURIComponent(selectedProject.image)}&quantity=${purchaseForm.quantity}&totalPrice=${selectedProject.pricePerLead * purchaseForm.quantity}`;
+    window.location.href = checkoutUrl;
   };
 
   return (

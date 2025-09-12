@@ -28,6 +28,9 @@ import { PrivacyPolicy } from '../pages/Legal/PrivacyPolicy';
 // SUPPORT PAGES
 import { ContactSupport } from '../pages/Support/ContactSupport';
 
+// CHECKOUT PAGES
+import { Checkout } from '../pages/Checkout/Checkout';
+
 // DRAFT PAGES: No sidebar
 import TeamPNL from '../pages/Draft/TeamPNL';
 
@@ -131,6 +134,15 @@ export const router = createBrowserRouter([
       <>
         <ScrollToTop />
         <ContactSupport />
+      </>
+    ),
+  },
+  {
+    path: '/checkout',
+    element: (
+      <>
+        <ScrollToTop />
+        <Checkout />
       </>
     ),
   },
