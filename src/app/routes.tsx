@@ -17,6 +17,9 @@ import ResetPassword from '../pages/Auth/ResetPassword';
 import Home from '../pages/marketing/Home';
 import HomeArabic from '../pages/marketing/HomeArabic';
 
+// TEMPORARY LANDING PAGE for Paymob configuration
+import { TempLanding } from '../pages/TempLanding/TempLanding';
+
 // DRAFT PAGES: No sidebar
 import TeamPNL from '../pages/Draft/TeamPNL';
 
@@ -53,9 +56,20 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
-  // Public marketing home page
+  // TEMPORARY: Landing page for Paymob configuration
   {
     path: '/',
+    element: (
+      <>
+        <ScrollToTop />
+        <TempLanding />
+      </>
+    ),
+  },
+  
+  // Original home page (temporarily moved)
+  {
+    path: '/home-original',
     element: (
       <>
         <ScrollToTop />
