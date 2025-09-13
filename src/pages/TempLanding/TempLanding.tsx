@@ -169,7 +169,7 @@ export const TempLanding: React.FC = () => {
                 All Regions
               </Button>
               <Button variant="outline" size="sm">
-                <DollarSign className="h-4 w-4 mr-2" />
+                <TrendingUp className="h-4 w-4 mr-2" />
                 Price Range
               </Button>
             </div>
