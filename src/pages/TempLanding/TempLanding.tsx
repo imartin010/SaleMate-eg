@@ -10,7 +10,7 @@ import {
   CheckCircle, 
   Star,
   ArrowRight,
-  DollarSign,
+  Shield,
   Target,
   Globe,
   Award,
@@ -245,11 +245,7 @@ export const TempLanding: React.FC = () => {
                     onClick={() => handlePurchase(project)}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
-                    <DollarSign className="h-4 w-4 mr-2" />
                     Pay EGP {project.pricePerLead}
-                    <Badge className="ml-2 bg-green-500 text-white text-xs">
-                      Paymob
-                    </Badge>
                   </Button>
                 </CardContent>
               </Card>
@@ -265,7 +261,7 @@ export const TempLanding: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 border border-green-200">
             <div className="flex items-center justify-center space-x-4 mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
+                <Shield className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900">
                 Secure Payments Powered by Paymob
