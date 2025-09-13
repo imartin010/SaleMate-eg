@@ -377,15 +377,7 @@ export const TempLanding: React.FC = () => {
               <a href="/contact-support" className="hover:text-white transition-colors">Contact Support</a>
             </div>
             <div className="pt-6 border-t border-gray-800 text-gray-500 text-sm">
-              <div className="mb-2">
-                © 2025 SaleMate Egypt LLC. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
-              </div>
-              <div className="text-xs">
-                Company Registration: 12345-2024 | Tax ID: 123-456-789 | Real Estate Broker License #789
-              </div>
-              <div className="text-xs mt-1">
-                Head Office: New Administrative Capital, Egypt | Email: support@salemate.eg | Phone: +20 100 123 4567
-              </div>
+              © 2025 SaleMate Egypt LLC. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
             </div>
           </div>
         </div>
