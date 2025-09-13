@@ -45,7 +45,7 @@ export const TempLanding: React.FC = () => {
     },
     {
       id: '2', 
-      name: 'New Administrative Capital',
+      name: 'EDNC',
       developer: 'SODIC',
       region: 'New Capital',
       description: 'Modern smart city development with premium residential and commercial opportunities.',
