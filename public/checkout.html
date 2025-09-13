@@ -8,8 +8,8 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <!-- Tap Payments Configuration -->
     <script src="/config.js"></script>
-    <!-- Tap Payments SDK -->
-    <script src="https://js.tap.company/v2/tap.min.js"></script>
+    <!-- Tap Payments SDK - Fallback approach -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tap-payments/1.0.0/tap.min.js"></script> -->
     <style>
         .step-active {
             @apply bg-blue-600 text-white;
@@ -417,73 +417,33 @@
 
         function processTapPayment() {
             const payButton = document.getElementById('pay-button');
-            payButton.innerHTML = '<i data-lucide="clock" class="h-4 w-4 inline mr-2 animate-spin"></i>Processing Payment...';
+            payButton.innerHTML = '<i data-lucide="clock" class="h-4 w-4 inline mr-2 animate-spin"></i>Redirecting to Tap...';
             payButton.disabled = true;
 
-            // Use Tap's Checkout SDK for proper integration
-            const tap = new Tap({
-                key: TAP_CONFIG.publicKey,
-                sandbox: TAP_CONFIG.sandbox
-            });
+            // Generate unique order ID
+            const orderId = `order_${Date.now()}`;
+            const transactionId = `lead_${Date.now()}`;
 
-            const chargeRequest = {
-                amount: orderData.totalPrice,
-                currency: 'EGP',
-                threeDSecure: true,
-                save_card: false,
-                description: `Lead Purchase - ${orderData.projectName}`,
-                statement_descriptor: 'SaleMate Leads',
-                metadata: {
-                    udf1: orderData.projectName,
-                    udf2: orderData.quantity.toString(),
-                    udf3: orderData.buyerInfo.email
-                },
-                reference: {
-                    transaction: `lead_${Date.now()}`,
-                    order: `order_${Date.now()}`
-                },
-                receipt: {
-                    email: true,
-                    sms: true
-                },
-                customer: {
-                    first_name: orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name,
-                    last_name: orderData.buyerInfo.name.split(' ').slice(1).join(' ') || '',
-                    email: orderData.buyerInfo.email,
-                    phone: {
-                        country_code: '20',
-                        number: orderData.buyerInfo.phone.replace(/[^0-9]/g, '')
-                    }
-                },
-                merchant: {
-                    id: ''
-                },
-                source: {
-                    id: 'src_all'
-                },
-                redirect: {
-                    url: window.location.origin + '/payment-success?order_id=' + encodeURIComponent(`order_${Date.now()}`) + '&amount=' + orderData.totalPrice
-                }
-            };
+            // Create Tap payment URL with all required parameters
+            const tapPaymentUrl = new URL('https://api.tap.company/v2/charges');
+            tapPaymentUrl.searchParams.set('public_key', TAP_CONFIG.publicKey);
+            tapPaymentUrl.searchParams.set('amount', orderData.totalPrice);
+            tapPaymentUrl.searchParams.set('currency', 'EGP');
+            tapPaymentUrl.searchParams.set('customer_first_name', orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name);
+            tapPaymentUrl.searchParams.set('customer_last_name', orderData.buyerInfo.name.split(' ').slice(1).join(' ') || '');
+            tapPaymentUrl.searchParams.set('customer_email', orderData.buyerInfo.email);
+            tapPaymentUrl.searchParams.set('customer_phone', orderData.buyerInfo.phone.replace(/[^0-9]/g, ''));
+            tapPaymentUrl.searchParams.set('description', `Lead Purchase - ${orderData.projectName}`);
+            tapPaymentUrl.searchParams.set('reference_transaction', transactionId);
+            tapPaymentUrl.searchParams.set('reference_order', orderId);
+            tapPaymentUrl.searchParams.set('redirect_url', window.location.origin + '/payment-success.html?order_id=' + encodeURIComponent(orderId) + '&amount=' + orderData.totalPrice + '&status=success');
+            tapPaymentUrl.searchParams.set('post_url', window.location.origin + '/payment-webhook.html');
+            tapPaymentUrl.searchParams.set('metadata_udf1', orderData.projectName);
+            tapPaymentUrl.searchParams.set('metadata_udf2', orderData.quantity.toString());
+            tapPaymentUrl.searchParams.set('metadata_udf3', orderData.buyerInfo.email);
 
-            tap.open(chargeRequest)
-                .then(function(result) {
-                    if (result.status === 'CAPTURED') {
-                        // Payment successful
-                        window.location.href = window.location.origin + '/payment-success?order_id=' + encodeURIComponent(`order_${Date.now()}`) + '&amount=' + orderData.totalPrice + '&status=success';
-                    } else if (result.status === 'INITIATED') {
-                        // Payment initiated, redirect to payment page
-                        window.location.href = result.transaction.url;
-                    } else {
-                        throw new Error('Payment failed');
-                    }
-                })
-                .catch(function(error) {
-                    console.error('Tap payment error:', error);
-                    alert('Payment failed. Please try again.');
-                    payButton.innerHTML = '<i data-lucide="credit-card" class="h-4 w-4 inline mr-2"></i>Pay <span id="total-amount">' + orderData.totalPrice + '</span> EGP';
-                    payButton.disabled = false;
-                });
+            // Redirect to Tap payment page
+            window.location.href = tapPaymentUrl.toString();
         }
 
         function goBack() {
