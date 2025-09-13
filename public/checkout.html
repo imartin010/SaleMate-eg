@@ -204,6 +204,24 @@
                                 You will be redirected to Tap Payments to complete your payment securely.
                             </p>
                             
+                            <form id="tap-payment-form" method="POST" action="https://checkout.tap.company/" target="_blank" style="display: none;">
+                                <input type="hidden" name="pk" id="tap-pk" value="">
+                                <input type="hidden" name="amount" id="tap-amount" value="">
+                                <input type="hidden" name="currency" value="EGP">
+                                <input type="hidden" name="customer_first_name" id="tap-first-name" value="">
+                                <input type="hidden" name="customer_last_name" id="tap-last-name" value="">
+                                <input type="hidden" name="customer_email" id="tap-email" value="">
+                                <input type="hidden" name="customer_phone" id="tap-phone" value="">
+                                <input type="hidden" name="description" id="tap-description" value="">
+                                <input type="hidden" name="reference_transaction" id="tap-transaction" value="">
+                                <input type="hidden" name="reference_order" id="tap-order" value="">
+                                <input type="hidden" name="redirect_url" id="tap-redirect" value="">
+                                <input type="hidden" name="post_url" id="tap-post" value="">
+                                <input type="hidden" name="metadata_udf1" id="tap-udf1" value="">
+                                <input type="hidden" name="metadata_udf2" id="tap-udf2" value="">
+                                <input type="hidden" name="metadata_udf3" id="tap-udf3" value="">
+                            </form>
+                            
                             <button onclick="processPayment()" id="pay-button" class="w-full max-w-md bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
                                 <i data-lucide="credit-card" class="h-4 w-4 inline mr-2"></i>
                                 Pay <span id="total-amount">25</span> EGP
@@ -424,26 +442,24 @@
             const orderId = `order_${Date.now()}`;
             const transactionId = `lead_${Date.now()}`;
 
-            // Create Tap payment URL with all required parameters
-            const tapPaymentUrl = new URL('https://api.tap.company/v2/charges');
-            tapPaymentUrl.searchParams.set('public_key', TAP_CONFIG.publicKey);
-            tapPaymentUrl.searchParams.set('amount', orderData.totalPrice);
-            tapPaymentUrl.searchParams.set('currency', 'EGP');
-            tapPaymentUrl.searchParams.set('customer_first_name', orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name);
-            tapPaymentUrl.searchParams.set('customer_last_name', orderData.buyerInfo.name.split(' ').slice(1).join(' ') || '');
-            tapPaymentUrl.searchParams.set('customer_email', orderData.buyerInfo.email);
-            tapPaymentUrl.searchParams.set('customer_phone', orderData.buyerInfo.phone.replace(/[^0-9]/g, ''));
-            tapPaymentUrl.searchParams.set('description', `Lead Purchase - ${orderData.projectName}`);
-            tapPaymentUrl.searchParams.set('reference_transaction', transactionId);
-            tapPaymentUrl.searchParams.set('reference_order', orderId);
-            tapPaymentUrl.searchParams.set('redirect_url', window.location.origin + '/payment-success.html?order_id=' + encodeURIComponent(orderId) + '&amount=' + orderData.totalPrice + '&status=success');
-            tapPaymentUrl.searchParams.set('post_url', window.location.origin + '/payment-webhook.html');
-            tapPaymentUrl.searchParams.set('metadata_udf1', orderData.projectName);
-            tapPaymentUrl.searchParams.set('metadata_udf2', orderData.quantity.toString());
-            tapPaymentUrl.searchParams.set('metadata_udf3', orderData.buyerInfo.email);
+            // Populate the hidden form with payment data
+            document.getElementById('tap-pk').value = TAP_CONFIG.publicKey;
+            document.getElementById('tap-amount').value = orderData.totalPrice;
+            document.getElementById('tap-first-name').value = orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name;
+            document.getElementById('tap-last-name').value = orderData.buyerInfo.name.split(' ').slice(1).join(' ') || '';
+            document.getElementById('tap-email').value = orderData.buyerInfo.email;
+            document.getElementById('tap-phone').value = orderData.buyerInfo.phone.replace(/[^0-9]/g, '');
+            document.getElementById('tap-description').value = `Lead Purchase - ${orderData.projectName}`;
+            document.getElementById('tap-transaction').value = transactionId;
+            document.getElementById('tap-order').value = orderId;
+            document.getElementById('tap-redirect').value = window.location.origin + '/payment-success.html?order_id=' + encodeURIComponent(orderId) + '&amount=' + orderData.totalPrice + '&status=success';
+            document.getElementById('tap-post').value = window.location.origin + '/payment-webhook.html';
+            document.getElementById('tap-udf1').value = orderData.projectName;
+            document.getElementById('tap-udf2').value = orderData.quantity.toString();
+            document.getElementById('tap-udf3').value = orderData.buyerInfo.email;
 
-            // Redirect to Tap payment page
-            window.location.href = tapPaymentUrl.toString();
+            // Submit the form to Tap's hosted checkout
+            document.getElementById('tap-payment-form').submit();
         }
 
         function goBack() {
