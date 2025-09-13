@@ -179,10 +179,6 @@ export const TempLanding: React.FC = () => {
                 <Filter className="h-4 w-4 mr-2" />
                 All Regions
               </Button>
-              <Button variant="outline" size="sm">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Price Range
-              </Button>
             </div>
           </div>
         </div>
