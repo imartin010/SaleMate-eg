@@ -9,7 +9,7 @@
     <!-- Tap Payments Configuration -->
     <script src="/config.js"></script>
     <!-- Tap Payments SDK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tap-payments/1.0.0/tap.min.js"></script>
+    <script src="https://js.tap.company/v2/tap.min.js"></script>
     <style>
         .step-active {
             @apply bg-blue-600 text-white;
@@ -420,10 +420,32 @@
             payButton.innerHTML = '<i data-lucide="clock" class="h-4 w-4 inline mr-2 animate-spin"></i>Processing Payment...';
             payButton.disabled = true;
 
-            // Create Tap charge request
+            // Use Tap's Checkout SDK for proper integration
+            const tap = new Tap({
+                key: TAP_CONFIG.publicKey,
+                sandbox: TAP_CONFIG.sandbox
+            });
+
             const chargeRequest = {
                 amount: orderData.totalPrice,
                 currency: 'EGP',
+                threeDSecure: true,
+                save_card: false,
+                description: `Lead Purchase - ${orderData.projectName}`,
+                statement_descriptor: 'SaleMate Leads',
+                metadata: {
+                    udf1: orderData.projectName,
+                    udf2: orderData.quantity.toString(),
+                    udf3: orderData.buyerInfo.email
+                },
+                reference: {
+                    transaction: `lead_${Date.now()}`,
+                    order: `order_${Date.now()}`
+                },
+                receipt: {
+                    email: true,
+                    sms: true
+                },
                 customer: {
                     first_name: orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name,
                     last_name: orderData.buyerInfo.name.split(' ').slice(1).join(' ') || '',
@@ -434,54 +456,34 @@
                     }
                 },
                 merchant: {
-                    id: 'default'
+                    id: ''
                 },
                 source: {
                     id: 'src_all'
                 },
                 redirect: {
-                    url: window.location.origin + '/payment-success'
-                },
-                post: {
-                    url: window.location.origin + '/payment-webhook'
-                },
-                description: `Lead Purchase - ${orderData.projectName}`,
-                reference: {
-                    transaction: `lead_${Date.now()}`,
-                    order: `order_${Date.now()}`
-                },
-                metadata: {
-                    order_id: `order_${Date.now()}`,
-                    project_name: orderData.projectName,
-                    quantity: orderData.quantity,
-                    price_per_lead: orderData.pricePerLead
+                    url: window.location.origin + '/payment-success?order_id=' + encodeURIComponent(`order_${Date.now()}`) + '&amount=' + orderData.totalPrice
                 }
             };
 
-            // Initialize Tap Payments
-            if (typeof Tap !== 'undefined') {
-                const tap = new Tap(TAP_CONFIG.publicKey);
-                
-                tap.createCharge(chargeRequest)
-                    .then(function(result) {
-                        if (result.status === 'INITIATED') {
-                            // Redirect to Tap payment page
-                            window.location.href = result.transaction.url;
-                        } else {
-                            throw new Error('Payment initiation failed');
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Tap payment error:', error);
-                        alert('Payment failed. Please try again.');
-                        payButton.innerHTML = '<i data-lucide="credit-card" class="h-4 w-4 inline mr-2"></i>Pay <span id="total-amount">' + orderData.totalPrice + '</span> EGP';
-                        payButton.disabled = false;
-                    });
-            } else {
-                // Fallback: redirect to Tap payment page directly
-                const tapUrl = `https://api.tap.company/v2/charges?public_key=${TAP_CONFIG.publicKey}&amount=${orderData.totalPrice}&currency=EGP&customer_first_name=${encodeURIComponent(orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name)}&customer_email=${encodeURIComponent(orderData.buyerInfo.email)}&description=${encodeURIComponent('Lead Purchase - ' + orderData.projectName)}&redirect_url=${encodeURIComponent(window.location.origin + '/payment-success')}`;
-                window.location.href = tapUrl;
-            }
+            tap.open(chargeRequest)
+                .then(function(result) {
+                    if (result.status === 'CAPTURED') {
+                        // Payment successful
+                        window.location.href = window.location.origin + '/payment-success?order_id=' + encodeURIComponent(`order_${Date.now()}`) + '&amount=' + orderData.totalPrice + '&status=success';
+                    } else if (result.status === 'INITIATED') {
+                        // Payment initiated, redirect to payment page
+                        window.location.href = result.transaction.url;
+                    } else {
+                        throw new Error('Payment failed');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Tap payment error:', error);
+                    alert('Payment failed. Please try again.');
+                    payButton.innerHTML = '<i data-lucide="credit-card" class="h-4 w-4 inline mr-2"></i>Pay <span id="total-amount">' + orderData.totalPrice + '</span> EGP';
+                    payButton.disabled = false;
+                });
         }
 
         function goBack() {
