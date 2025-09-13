@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success - SaleMate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+            <!-- Success Icon -->
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="check-circle" class="h-10 w-10 text-green-600"></i>
+            </div>
+            
+            <!-- Success Message -->
+            <h1 class="text-2xl font-bold text-gray-900 mb-4">Payment Successful!</h1>
+            <p class="text-gray-600 mb-6">
+                Your payment has been processed successfully. Your leads will be delivered to your account shortly.
+            </p>
+            
+            <!-- Order Details -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 class="font-semibold text-gray-900 mb-2">Order Details</h3>
+                <div class="text-sm text-gray-600 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Order ID:</span>
+                        <span id="order-id">Loading...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Amount:</span>
+                        <span id="amount">Loading...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Status:</span>
+                        <span class="text-green-600 font-semibold">Paid</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                <h4 class="font-semibold text-blue-900 mb-2">What's Next?</h4>
+                <ul class="text-sm text-blue-800 space-y-1 text-left">
+                    <li>• Check your email for order confirmation</li>
+                    <li>• Access your leads in your CRM dashboard</li>
+                    <li>• Contact support if you need assistance</li>
+                </ul>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <button onclick="goToDashboard()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i data-lucide="dashboard" class="h-4 w-4 inline mr-2"></i>
+                    Go to Dashboard
+                </button>
+                <button onclick="goToShop()" class="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i data-lucide="shopping-cart" class="h-4 w-4 inline mr-2"></i>
+                    Continue Shopping
+                </button>
+            </div>
+            
+            <!-- Support Info -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="text-xs text-gray-500">
+                    Need help? Contact our support team at 
+                    <a href="mailto:support@salemate.com" class="text-blue-600 hover:underline">support@salemate.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function initializePage() {
+            // Get order details from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order_id') || 'ORDER_' + Date.now();
+            const amount = urlParams.get('amount') || '25 EGP';
+            
+            // Update order details
+            document.getElementById('order-id').textContent = orderId;
+            document.getElementById('amount').textContent = amount;
+        }
+
+        function goToDashboard() {
+            // Redirect to main SaleMate dashboard
+            window.location.href = '/';
+        }
+
+        function goToShop() {
+            // Redirect to shop page
+            window.location.href = '/';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
