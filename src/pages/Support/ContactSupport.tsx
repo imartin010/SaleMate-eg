@@ -111,7 +111,7 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone Support</h3>
-                    <p className="text-gray-600">+20 100 123 4567</p>
+                    <p className="text-gray-600">+2 010 700 200 58</p>
                     <p className="text-sm text-gray-500">Sun-Thu: 9 AM - 6 PM (Cairo Time)</p>
                     <p className="text-xs text-gray-400">Sales & Technical Support</p>
                   </div>
@@ -123,23 +123,12 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">WhatsApp</h3>
-                    <p className="text-gray-600">+20 100 123 4567</p>
+                    <p className="text-gray-600">+2 010 700 200 58</p>
                     <p className="text-sm text-gray-500">Quick responses via chat</p>
                     <p className="text-xs text-gray-400">Business Hours Only</p>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Office</h3>
-                    <p className="text-gray-600">New Administrative Capital, Egypt</p>
-                    <p className="text-sm text-gray-500">Visit by appointment only</p>
-                    <p className="text-xs text-gray-400">SaleMate Egypt LLC</p>
-                  </div>
-                </div>
               </div>
 
               <div className="mt-8 p-4 bg-blue-50 rounded-lg">
