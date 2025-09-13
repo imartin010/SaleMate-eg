@@ -27,6 +27,7 @@ import {
 export const TempLanding: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [quantities, setQuantities] = useState<{[key: string]: number}>({});
 
   // Mock premium projects data
   const projects = [
@@ -87,9 +88,19 @@ export const TempLanding: React.FC = () => {
   );
 
   const handlePurchase = (project: any) => {
+    const quantity = quantities[project.id] || 1;
+    const totalPrice = quantity * project.pricePerLead;
+    
     // Redirect to external checkout page with project data
-    const checkoutUrl = `/checkout.html?projectId=${project.id}&projectName=${encodeURIComponent(project.name)}&developer=${encodeURIComponent(project.developer)}&region=${encodeURIComponent(project.region)}&availableLeads=${project.availableLeads}&pricePerLead=${project.pricePerLead}&image=${encodeURIComponent(project.image)}&quantity=1&totalPrice=${project.pricePerLead}`;
+    const checkoutUrl = `/checkout.html?projectId=${project.id}&projectName=${encodeURIComponent(project.name)}&developer=${encodeURIComponent(project.developer)}&region=${encodeURIComponent(project.region)}&availableLeads=${project.availableLeads}&pricePerLead=${project.pricePerLead}&image=${encodeURIComponent(project.image)}&quantity=${quantity}&totalPrice=${totalPrice}`;
     window.location.href = checkoutUrl;
+  };
+
+  const handleQuantityChange = (projectId: string, quantity: number) => {
+    setQuantities(prev => ({
+      ...prev,
+      [projectId]: Math.max(1, Math.min(quantity, 1000)) // Limit between 1 and 1000
+    }));
   };
 
   return (
@@ -241,11 +252,49 @@ export const TempLanding: React.FC = () => {
                     </span>
                   </div>
                   
+                  {/* Quantity Selector */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Quantity:</label>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleQuantityChange(project.id, (quantities[project.id] || 1) - 1)}
+                          className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          max="1000"
+                          value={quantities[project.id] || 1}
+                          onChange={(e) => handleQuantityChange(project.id, parseInt(e.target.value) || 1)}
+                          className="w-16 text-center border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
+                        <button
+                          onClick={() => handleQuantityChange(project.id, (quantities[project.id] || 1) + 1)}
+                          className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-green-600">
+                        Total: EGP {(quantities[project.id] || 1) * project.pricePerLead}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {quantities[project.id] || 1} leads × EGP {project.pricePerLead}
+                      </div>
+                    </div>
+                  </div>
+                  
                   <Button 
                     onClick={() => handlePurchase(project)}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
-                    Pay EGP {project.pricePerLead}
+                    Pay EGP {(quantities[project.id] || 1) * project.pricePerLead}
                   </Button>
                 </CardContent>
               </Card>
