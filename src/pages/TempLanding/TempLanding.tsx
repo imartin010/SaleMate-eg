@@ -377,7 +377,7 @@ export const TempLanding: React.FC = () => {
               <a href="/contact-support" className="hover:text-white transition-colors">Contact Support</a>
             </div>
             <div className="pt-6 border-t border-gray-800 text-gray-500 text-sm">
-              © 2025 SaleMate Egypt LLC. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
+              © 2025 SaleMate Egypt. All rights reserved.
             </div>
           </div>
         </div>
