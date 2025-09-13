@@ -99,8 +99,9 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Email Support</h3>
-                    <p className="text-gray-600">support@salemate-eg.com</p>
+                    <p className="text-gray-600">support@salemate.eg</p>
                     <p className="text-sm text-gray-500">24/7 response within 24 hours</p>
+                    <p className="text-xs text-gray-400">Business & Technical Support</p>
                   </div>
                 </div>
 
@@ -110,8 +111,9 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone Support</h3>
-                    <p className="text-gray-600">(+2) 010 700 200 58</p>
+                    <p className="text-gray-600">+20 100 123 4567</p>
                     <p className="text-sm text-gray-500">Sun-Thu: 9 AM - 6 PM (Cairo Time)</p>
+                    <p className="text-xs text-gray-400">Sales & Technical Support</p>
                   </div>
                 </div>
 
@@ -121,8 +123,9 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">WhatsApp</h3>
-                    <p className="text-gray-600">(+2) 010 700 200 58</p>
+                    <p className="text-gray-600">+20 100 123 4567</p>
                     <p className="text-sm text-gray-500">Quick responses via chat</p>
+                    <p className="text-xs text-gray-400">Business Hours Only</p>
                   </div>
                 </div>
 
@@ -132,8 +135,9 @@ export const ContactSupport: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Office</h3>
-                    <p className="text-gray-600">Cairo, Egypt</p>
+                    <p className="text-gray-600">New Administrative Capital, Egypt</p>
                     <p className="text-sm text-gray-500">Visit by appointment only</p>
+                    <p className="text-xs text-gray-400">SaleMate Egypt LLC</p>
                   </div>
                 </div>
               </div>

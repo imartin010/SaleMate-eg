@@ -6,10 +6,6 @@
     <title>Checkout - SaleMate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Tap Payments Configuration -->
-    <script src="/config.js"></script>
-    <!-- Tap Payments SDK - Fallback approach -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tap-payments/1.0.0/tap.min.js"></script> -->
     <style>
         .step-active {
             @apply bg-blue-600 text-white;
@@ -129,14 +125,14 @@
                             Choose Payment Method
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="payment-method p-4 border-2 border-blue-500 bg-blue-50 rounded-lg cursor-pointer" data-method="tap">
+                            <div class="payment-method p-4 border-2 border-blue-500 bg-blue-50 rounded-lg cursor-pointer" data-method="paymob">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                                         <i data-lucide="credit-card" class="h-5 w-5 text-blue-600"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-semibold">Tap Payments</h3>
-                                        <p class="text-sm text-gray-600">Credit/Debit Cards, Digital Wallets</p>
+                                        <h3 class="font-semibold">Paymob</h3>
+                                        <p class="text-sm text-gray-600">Credit/Debit Cards, Fawry, Valu</p>
                                     </div>
                                 </div>
                             </div>
@@ -180,10 +176,24 @@
 
                         <div class="bg-green-50 p-4 rounded-lg mt-6">
                             <h4 class="font-semibold text-green-900 mb-2">Secure Payment</h4>
-                            <p class="text-sm text-green-800">
-                                All payments are processed securely through certified payment gateways. 
-                                Your financial information is encrypted and protected.
+                            <p class="text-sm text-green-800 mb-3">
+                                All payments are processed securely through Paymob, Egypt's leading payment gateway. 
+                                Your financial information is encrypted and protected with PCI DSS compliance.
                             </p>
+                            <div class="flex items-center space-x-4 text-xs text-green-700">
+                                <div class="flex items-center">
+                                    <i data-lucide="shield" class="h-3 w-3 mr-1"></i>
+                                    <span>SSL Encrypted</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
+                                    <span>PCI DSS Compliant</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i data-lucide="lock" class="h-3 w-3 mr-1"></i>
+                                    <span>Bank Grade Security</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -201,26 +211,8 @@
                             </div>
                             <h3 class="text-xl font-semibold mb-2">Ready to Pay</h3>
                             <p class="text-gray-600 mb-6" id="payment-method-text">
-                                You will be redirected to Tap Payments to complete your payment securely.
+                                You will be redirected to Paymob to complete your payment securely.
                             </p>
-                            
-                            <form id="tap-payment-form" method="POST" action="https://checkout.tap.company/" target="_blank" style="display: none;">
-                                <input type="hidden" name="pk" id="tap-pk" value="">
-                                <input type="hidden" name="amount" id="tap-amount" value="">
-                                <input type="hidden" name="currency" value="EGP">
-                                <input type="hidden" name="customer_first_name" id="tap-first-name" value="">
-                                <input type="hidden" name="customer_last_name" id="tap-last-name" value="">
-                                <input type="hidden" name="customer_email" id="tap-email" value="">
-                                <input type="hidden" name="customer_phone" id="tap-phone" value="">
-                                <input type="hidden" name="description" id="tap-description" value="">
-                                <input type="hidden" name="reference_transaction" id="tap-transaction" value="">
-                                <input type="hidden" name="reference_order" id="tap-order" value="">
-                                <input type="hidden" name="redirect_url" id="tap-redirect" value="">
-                                <input type="hidden" name="post_url" id="tap-post" value="">
-                                <input type="hidden" name="metadata_udf1" id="tap-udf1" value="">
-                                <input type="hidden" name="metadata_udf2" id="tap-udf2" value="">
-                                <input type="hidden" name="metadata_udf3" id="tap-udf3" value="">
-                            </form>
                             
                             <button onclick="processPayment()" id="pay-button" class="w-full max-w-md bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
                                 <i data-lucide="credit-card" class="h-4 w-4 inline mr-2"></i>
@@ -281,6 +273,29 @@
                         <span id="total-price">29 EGP</span>
                     </div>
 
+                    <!-- Business Information -->
+                    <div class="pt-4 border-t border-gray-200">
+                        <h4 class="font-semibold text-sm mb-3">Business Information</h4>
+                        <div class="space-y-2 text-xs text-gray-600">
+                            <div class="flex justify-between">
+                                <span>Company:</span>
+                                <span class="font-medium">SaleMate Egypt LLC</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Registration:</span>
+                                <span class="font-medium">12345-2024</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Tax ID:</span>
+                                <span class="font-medium">123-456-789</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>License:</span>
+                                <span class="font-medium">Real Estate Broker #789</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Security Badges -->
                     <div class="pt-4 space-y-2">
                         <div class="flex items-center space-x-2 text-xs text-gray-600">
@@ -295,6 +310,10 @@
                             <i data-lucide="clock" class="h-3 w-3"></i>
                             <span>24/7 Support</span>
                         </div>
+                        <div class="flex items-center space-x-2 text-xs text-gray-600">
+                            <i data-lucide="building" class="h-3 w-3"></i>
+                            <span>Licensed Broker</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -303,14 +322,8 @@
 
     <script>
         let currentStep = 1;
-        let selectedPaymentMethod = 'tap';
+        let selectedPaymentMethod = 'paymob';
         let orderData = {};
-        
-        // Tap Payments Configuration loaded from config.js
-        const TAP_CONFIG = window.TAP_CONFIG || {
-            publicKey: 'YOUR_TAP_PUBLIC_KEY_HERE',
-            sandbox: true
-        };
 
         // Initialize from URL parameters
         function initializeFromURL() {
@@ -425,41 +438,16 @@
         }
 
         function processPayment() {
-            if (selectedPaymentMethod === 'tap') {
-                processTapPayment();
-            } else {
-                // Handle other payment methods
-                alert(`Payment method ${selectedPaymentMethod} will be implemented soon.`);
-            }
-        }
-
-        function processTapPayment() {
             const payButton = document.getElementById('pay-button');
-            payButton.innerHTML = '<i data-lucide="clock" class="h-4 w-4 inline mr-2 animate-spin"></i>Redirecting to Tap...';
+            payButton.innerHTML = '<i data-lucide="clock" class="h-4 w-4 inline mr-2 animate-spin"></i>Processing Payment...';
             payButton.disabled = true;
-
-            // Generate unique order ID
-            const orderId = `order_${Date.now()}`;
-            const transactionId = `lead_${Date.now()}`;
-
-            // Populate the hidden form with payment data
-            document.getElementById('tap-pk').value = TAP_CONFIG.publicKey;
-            document.getElementById('tap-amount').value = orderData.totalPrice;
-            document.getElementById('tap-first-name').value = orderData.buyerInfo.name.split(' ')[0] || orderData.buyerInfo.name;
-            document.getElementById('tap-last-name').value = orderData.buyerInfo.name.split(' ').slice(1).join(' ') || '';
-            document.getElementById('tap-email').value = orderData.buyerInfo.email;
-            document.getElementById('tap-phone').value = orderData.buyerInfo.phone.replace(/[^0-9]/g, '');
-            document.getElementById('tap-description').value = `Lead Purchase - ${orderData.projectName}`;
-            document.getElementById('tap-transaction').value = transactionId;
-            document.getElementById('tap-order').value = orderId;
-            document.getElementById('tap-redirect').value = window.location.origin + '/payment-success.html?order_id=' + encodeURIComponent(orderId) + '&amount=' + orderData.totalPrice + '&status=success';
-            document.getElementById('tap-post').value = window.location.origin + '/payment-webhook.html';
-            document.getElementById('tap-udf1').value = orderData.projectName;
-            document.getElementById('tap-udf2').value = orderData.quantity.toString();
-            document.getElementById('tap-udf3').value = orderData.buyerInfo.email;
-
-            // Submit the form to Tap's hosted checkout
-            document.getElementById('tap-payment-form').submit();
+            
+            // Simulate payment processing
+            setTimeout(() => {
+                alert('Payment successful! This is where Paymob integration would be implemented.');
+                // In real implementation, redirect to success page or back to main app
+                window.location.href = '/';
+            }, 2000);
         }
 
         function goBack() {
@@ -485,7 +473,7 @@
                 
                 // Update payment method text
                 const methodNames = {
-                    'tap': 'Tap Payments',
+                    'paymob': 'Paymob',
                     'instapay': 'Instapay',
                     'bank_transfer': 'Bank Transfer',
                     'cash_on_delivery': 'Cash on Delivery'

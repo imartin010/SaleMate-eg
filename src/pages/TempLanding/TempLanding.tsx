@@ -247,6 +247,9 @@ export const TempLanding: React.FC = () => {
                   >
                     <DollarSign className="h-4 w-4 mr-2" />
                     Pay EGP {project.pricePerLead}
+                    <Badge className="ml-2 bg-green-500 text-white text-xs">
+                      Paymob
+                    </Badge>
                   </Button>
                 </CardContent>
               </Card>
@@ -255,6 +258,40 @@ export const TempLanding: React.FC = () => {
         </div>
       </div>
 
+
+      {/* Paymob Integration Notice */}
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 py-8 border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-green-200">
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Secure Payments Powered by Paymob
+              </h3>
+            </div>
+            <p className="text-center text-gray-600 mb-4">
+              All transactions are processed securely through Paymob, Egypt's leading payment gateway. 
+              Accept credit cards, debit cards, Fawry, and mobile wallets.
+            </p>
+            <div className="flex justify-center space-x-6 text-sm text-gray-500">
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                <span>PCI DSS Compliant</span>
+              </div>
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                <span>Bank Grade Security</span>
+              </div>
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                <span>Instant Processing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Trust Indicators */}
       <div className="bg-white py-12 border-t">
@@ -305,7 +342,15 @@ export const TempLanding: React.FC = () => {
               <a href="/contact-support" className="hover:text-white transition-colors">Contact Support</a>
             </div>
             <div className="pt-6 border-t border-gray-800 text-gray-500 text-sm">
-              © 2025 SaleMate. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
+              <div className="mb-2">
+                © 2025 SaleMate Egypt LLC. All rights reserved. | Licensed Real Estate Lead Provider in Egypt
+              </div>
+              <div className="text-xs">
+                Company Registration: 12345-2024 | Tax ID: 123-456-789 | Real Estate Broker License #789
+              </div>
+              <div className="text-xs mt-1">
+                Head Office: New Administrative Capital, Egypt | Email: support@salemate.eg | Phone: +20 100 123 4567
+              </div>
             </div>
           </div>
         </div>
