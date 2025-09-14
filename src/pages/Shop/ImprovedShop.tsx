@@ -50,10 +50,18 @@ export const ImprovedShop: React.FC = () => {
         setTimeout(() => reject(new Error('Database timeout')), 10000)
       );
 
-      const queryPromise = supabase
+      const queryPromise = (supabase as any)
         .from('projects')
-        .select('*')
-        .gt('available_leads', 0)
+        .select(`
+          id,
+          name,
+          region,
+          description,
+          price_per_lead,
+          available_leads,
+          cover_image,
+          developers:developers ( name )
+        `)
         .order('name');
 
       const { data: projectsData, error: projectsError } = await Promise.race([
@@ -68,20 +76,44 @@ export const ImprovedShop: React.FC = () => {
 
       if (projectsData && projectsData.length > 0) {
         console.log(`✅ Loaded ${projectsData.length} projects from database`);
-        
-        // Transform database data to frontend format
-        const formattedProjects: Project[] = projectsData.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          developer: p.developer,
-          region: p.region,
-          availableLeads: p.available_leads,
-          description: p.description,
-          createdAt: p.created_at,
-          pricePerLead: p.price_per_lead || 100
-        }));
 
-        setProjects(formattedProjects);
+        const extractName = (val: unknown): string => {
+          if (!val) return 'Unknown';
+          if (typeof val === 'string') {
+            const m1 = val.match(/"name"\s*:\s*"([^"]+)"/); if (m1?.[1]) return m1[1];
+            const m2 = val.match(/'name'\s*:\s*'([^']+)'/); if (m2?.[1]) return m2[1];
+            return val;
+          }
+          if (typeof val === 'object') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const o: any = val; return o.name ?? o.region ?? o.area ?? 'Unknown';
+          }
+          return String(val);
+        };
+
+        // Base list from projects table
+        const base: Project[] = (projectsData as any[]).map((p: any) => {
+          const name = extractName(p.name);
+          const developer = extractName(p?.developers?.name ?? p.developer);
+          const region = extractName(p.region);
+          // Prefer a clean description; if it looks like JSON, replace with developer tagline
+          const desc = typeof p.description === 'string' && /['"]name['"]\s*:/.test(p.description)
+            ? `Project from ${developer}`
+            : (p.description || `Project from ${developer}`);
+          return {
+            id: p.id,
+            name,
+            developer,
+            region,
+            availableLeads: Number(p.available_leads ?? 0),
+            description: desc,
+            createdAt: undefined,
+            pricePerLead: Number(p.price_per_lead ?? 100),
+            coverImage: p.cover_image ?? null,
+          } as Project;
+        });
+
+        setProjects(base);
       } else {
         // No projects available
         console.log('📝 No projects available');
@@ -115,7 +147,7 @@ export const ImprovedShop: React.FC = () => {
       const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            project.developer.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRegion = !regionFilter || project.region === regionFilter;
-      return matchesSearch && matchesRegion && project.availableLeads > 0;
+      return matchesSearch && matchesRegion; // do not hide 0-availability projects
     })
     .sort((a, b) => {
       switch (sortBy) {

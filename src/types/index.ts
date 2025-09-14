@@ -17,8 +17,9 @@ export interface Project {
   region: string;
   availableLeads: number;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
   pricePerLead?: number; // CPL - Cost Per Lead
+  coverImage?: string | null;
 }
 
 export type Platform = 'Facebook' | 'Google' | 'TikTok' | 'Other';

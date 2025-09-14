@@ -57,8 +57,8 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
           projects (
             id,
             name,
-            developer,
-            region
+            region,
+            developers:developers ( name )
           )
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
@@ -112,7 +112,7 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
         project: lead.projects ? {
           id: lead.projects.id,
           name: lead.projects.name,
-          developer: lead.projects.developer,
+          developer: lead.projects?.developers?.name ?? 'Unknown',
           region: lead.projects.region
         } : undefined
       }));

@@ -1,176 +1,266 @@
 #!/usr/bin/env python3
 """
-Script to import brdata_properties_rows data into Supabase
-This script processes the large SQL file and imports it into the brdata_properties table
+Import BRData Properties CSV files into Supabase salemate-inventory table
+This script processes all 5 CSV files and imports them directly to Supabase
 """
 
-import os
-import re
+import csv
 import json
-import psycopg2
-from psycopg2.extras import execute_values
-import sys
+import os
+import requests
+import time
+from datetime import datetime
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'db.wkxbhvckmgrmdkdkhnqo.supabase.co',
-    'port': 5432,
-    'database': 'postgres',
-    'user': 'postgres',
-    'password': os.getenv('SUPABASE_PASSWORD', '')
-}
+# Supabase configuration - you'll need to update these
+SUPABASE_URL = "https://wkxbhvckmgrmdkdkhnqo.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGJodmNrbWdybWRrZGtobnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTgzNTQsImV4cCI6MjA3MjA3NDM1NH0.Vg48-ld0anvU4OQJWf5ZlEqTKjXiHBK0A14fz0vGvU8"
 
-def create_table_if_not_exists(cursor):
-    """Create the brdata_properties table if it doesn't exist"""
-    create_table_sql = """
-    CREATE TABLE IF NOT EXISTS brdata_properties (
-        id TEXT PRIMARY KEY,
-        unit_code TEXT,
-        unit_reference TEXT,
-        property_type TEXT DEFAULT 'primary',
-        sub_type TEXT,
-        area DECIMAL(10,2),
-        bedrooms INTEGER DEFAULT 0,
-        bathrooms INTEGER DEFAULT 0,
-        delivery_date TIMESTAMPTZ,
-        status TEXT DEFAULT 'not_finished',
-        built_up_area DECIMAL(10,2) DEFAULT 0,
-        terrace_area DECIMAL(10,2) DEFAULT 0,
-        floor_number DECIMAL(3,1) DEFAULT 0,
-        internal_unit_code TEXT,
-        price_per_meter DECIMAL(12,2),
-        total_price DECIMAL(15,2),
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW(),
-        currency TEXT DEFAULT 'EGP',
-        payment_plans JSONB,
-        image_url TEXT,
-        discounts JSONB,
-        is_featured BOOLEAN DEFAULT FALSE,
-        project_info JSONB,
-        location_info JSONB,
-        developer_info JSONB,
-        compound_info JSONB,
-        unit_type_info JSONB
-    );
-    """
-    
-    cursor.execute(create_table_sql)
-    print("✅ Table created successfully")
+# CSV files to process
+CSV_FILES = [
+    "/Users/martin2/Desktop/Sale Mate Final/brdata_properties_part_01.csv",
+    "/Users/martin2/Desktop/Sale Mate Final/brdata_properties_part_02.csv", 
+    "/Users/martin2/Desktop/Sale Mate Final/brdata_properties_part_03.csv",
+    "/Users/martin2/Desktop/Sale Mate Final/brdata_properties_part_04.csv",
+    "/Users/martin2/Desktop/Sale Mate Final/brdata_properties_part_05.csv"
+]
 
-def process_sql_file():
-    """Process the SQL file and prepare it for import"""
-    sql_file = "brdata_properties_rows (1).sql"
-    
-    if not os.path.exists(sql_file):
-        print(f"❌ Error: {sql_file} not found")
+def clean_value(value):
+    """Clean and return appropriate value"""
+    if not value or value.strip() == '' or value.strip().lower() in ['null', 'none']:
+        return None
+    return value.strip()
+
+def parse_json_field(value):
+    """Parse JSON-like string fields"""
+    if not value or value.strip() == '' or value.strip().lower() in ['null', 'none']:
         return None
     
-    print(f"📁 Processing SQL file: {sql_file}")
-    print(f"📊 File size: {os.path.getsize(sql_file) / 1024 / 1024:.2f} MB")
-    
-    # For a 246MB file, we need to be careful about memory usage
-    # Let's create a modified version that can be imported
-    
-    output_file = "brdata_properties_formatted.sql"
-    
     try:
-        with open(sql_file, 'r', encoding='utf-8') as input_file, \
-             open(output_file, 'w', encoding='utf-8') as output_file_handle:
-            
-            # Add the INSERT statement at the beginning
-            output_file_handle.write("INSERT INTO brdata_properties (id, unit_code, unit_reference, property_type, sub_type, area, bedrooms, bathrooms, delivery_date, status, built_up_area, terrace_area, floor_number, internal_unit_code, price_per_meter, total_price, created_at, updated_at, currency, payment_plans, image_url, discounts, is_featured, project_info, location_info, developer_info, compound_info, unit_type_info) VALUES\n")
-            
-            # Process the file line by line to avoid memory issues
-            line_count = 0
-            for line in input_file:
-                # Skip empty lines
-                if line.strip():
-                    output_file_handle.write(line)
-                    line_count += 1
-                    
-                    if line_count % 1000 == 0:
-                        print(f"📝 Processed {line_count} lines...")
-            
-            print(f"✅ Created formatted file: {output_file}")
-            return output_file
-            
-    except Exception as e:
-        print(f"❌ Error processing file: {e}")
+        # Replace single quotes with double quotes for valid JSON
+        cleaned = value.replace("'", '"').replace('None', 'null').replace('True', 'true').replace('False', 'false')
+        return json.loads(cleaned)
+    except (json.JSONDecodeError, TypeError):
         return None
 
-def run_import():
-    print("🚀 Starting brdata_properties import process...")
+def parse_numeric(value):
+    """Parse numeric values safely"""
+    if not value or value.strip() == '' or value.strip().lower() in ['null', 'none']:
+        return None
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+def parse_integer(value):
+    """Parse integer values safely"""
+    if not value or value.strip() == '' or value.strip().lower() in ['null', 'none']:
+        return None
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return None
+
+def parse_date(value):
+    """Parse date values safely"""
+    if not value or value.strip() == '' or value.strip().lower() in ['null', 'none']:
+        return None
+    try:
+        # Handle PostgreSQL timestamp format
+        if '+' in value:
+            value = value.split('+')[0]
+        # Convert to ISO format for PostgreSQL
+        if ' ' in value and 'T' not in value:
+            value = value.replace(' ', 'T')
+        return value.strip()
+    except:
+        return None
+
+def parse_boolean(value):
+    """Parse boolean values safely"""
+    if not value or value.strip() == '' or value.strip().lower() in ['null', 'none']:
+        return None
+    return str(value).lower() in ['true', '1', 'yes', 't']
+
+def import_batch_to_supabase(records, batch_num):
+    """Import a batch of records to Supabase"""
+    headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': f'Bearer {SUPABASE_ANON_KEY}',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+    }
     
-    # Check database password
-    if not DB_CONFIG['password']:
-        print("❌ Error: SUPABASE_PASSWORD environment variable not set")
-        print("   Please set your Supabase database password:")
-        print("   export SUPABASE_PASSWORD='your_password'")
-        return
+    url = f"{SUPABASE_URL}/rest/v1/salemate-inventory"
+    
+    # Ensure all records have the same keys by using a consistent schema
+    expected_keys = {
+        'id', 'unit_id', 'original_unit_id', 'sale_type', 'unit_number', 'unit_area',
+        'number_of_bedrooms', 'number_of_bathrooms', 'ready_by', 'finishing',
+        'garden_area', 'roof_area', 'floor_number', 'building_number', 'price_per_meter',
+        'price_in_egp', 'last_inventory_update', 'currency', 'payment_plans', 'image',
+        'offers', 'is_launch', 'compound', 'area', 'developer', 'phase', 'property_type'
+    }
+    
+    # Normalize all records to have the same keys
+    normalized_records = []
+    for record in records:
+        normalized_record = {}
+        for key in expected_keys:
+            normalized_record[key] = record.get(key)
+        normalized_records.append(normalized_record)
     
     try:
-        # Connect to database
-        print("🔌 Connecting to Supabase database...")
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor()
-        
-        # Create table
-        print("📋 Creating table structure...")
-        create_table_if_not_exists(cursor)
-        conn.commit()
-        
-        print("\n🎯 Table created successfully!")
-        print("📝 Next steps:")
-        print("1. Your brdata_properties table is now ready")
-        print("2. You can now import your data using one of these methods:")
-        print("   a) Use pgAdmin to import the SQL file directly")
-        print("   b) Use psql command line tool")
-        print("   c) Process the data file to match our table structure")
-        
-        print(f"\n💡 To import via psql:")
-        print(f"psql 'postgresql://postgres:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}' -c \"\\copy brdata_properties FROM 'your_csv_file.csv' DELIMITER ',' CSV HEADER;\"")
-        
-        print(f"\n📊 Table created with {cursor.rowcount if hasattr(cursor, 'rowcount') else 'N/A'} rows affected")
-        
-        cursor.close()
-        conn.close()
-        
-    except psycopg2.Error as e:
-        print(f"❌ Database error: {e}")
+        response = requests.post(url, headers=headers, json=normalized_records)
+        if response.status_code in [200, 201]:
+            print(f"✅ Batch {batch_num}: Successfully imported {len(records)} records")
+            return True
+        else:
+            print(f"❌ Batch {batch_num}: Failed - {response.status_code}: {response.text}")
+            return False
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Batch {batch_num}: Error - {e}")
+        return False
+
+def process_csv_file(csv_file, file_num):
+    """Process a single CSV file and return records"""
+    print(f"\n📄 Processing file {file_num}: {os.path.basename(csv_file)}")
+    
+    if not os.path.exists(csv_file):
+        print(f"❌ File not found: {csv_file}")
+        return []
+    
+    records = []
+    row_count = 0
+    
+    with open(csv_file, 'r', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        
+        for row_num, row in enumerate(reader, 1):
+            try:
+                # Process the row according to the CSV structure
+                record = {
+                    'id': parse_integer(row.get('id')),
+                    'unit_id': clean_value(row.get('unit_id')),
+                    'original_unit_id': clean_value(row.get('original_unit_id')),
+                    'sale_type': clean_value(row.get('sale_type')),
+                    'unit_number': clean_value(row.get('unit_number')),
+                    'unit_area': parse_numeric(row.get('unit_area')),
+                    'number_of_bedrooms': parse_integer(row.get('number_of_bedrooms')),
+                    'number_of_bathrooms': parse_integer(row.get('number_of_bathrooms')),
+                    'ready_by': parse_date(row.get('ready_by')),
+                    'finishing': clean_value(row.get('finishing')),
+                    'garden_area': parse_numeric(row.get('garden_area')),
+                    'roof_area': parse_numeric(row.get('roof_area')),
+                    'floor_number': parse_numeric(row.get('floor_number')),
+                    'building_number': clean_value(row.get('building_number')),
+                    'price_per_meter': parse_numeric(row.get('price_per_meter')),
+                    'price_in_egp': parse_numeric(row.get('price_in_egp')),
+                    'last_inventory_update': parse_date(row.get('last_inventory_update')),
+                    'currency': clean_value(row.get('currency')) or 'EGP',
+                    'payment_plans': parse_json_field(row.get('payment_plans')),
+                    'image': clean_value(row.get('image')),
+                    'offers': parse_json_field(row.get('offers')),
+                    'is_launch': parse_boolean(row.get('is_launch')),
+                    'compound': parse_json_field(row.get('compound')),
+                    'area': parse_json_field(row.get('area')),
+                    'developer': parse_json_field(row.get('developer')),
+                    'phase': parse_json_field(row.get('phase')),
+                    'property_type': parse_json_field(row.get('property_type'))
+                }
+                
+                # Keep all fields, even if None, to ensure consistent schema
+                
+                records.append(record)
+                row_count += 1
+                
+                if row_count % 1000 == 0:
+                    print(f"   📊 Processed {row_count} rows from {os.path.basename(csv_file)}...")
+            
+            except Exception as e:
+                print(f"⚠️  Error processing row {row_num} in {os.path.basename(csv_file)}: {e}")
+                continue
+    
+    print(f"✅ File {file_num}: Processed {row_count} records from {os.path.basename(csv_file)}")
+    return records
+
+def import_records_to_supabase(records, batch_size=100):
+    """Import records to Supabase in batches"""
+    total_imported = 0
+    total_failed = 0
+    batch_num = 1
+    
+    print(f"\n🚀 Starting import of {len(records)} records to Supabase...")
+    
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        
+        if import_batch_to_supabase(batch, batch_num):
+            total_imported += len(batch)
+        else:
+            total_failed += len(batch)
+        
+        batch_num += 1
+        time.sleep(0.1)  # Small delay to avoid rate limiting
+    
+    return total_imported, total_failed
 
 def main():
-    """Main function to run the import process"""
-    print("🚀 BRData Properties Import Tool")
+    """Main function to process all CSV files and import to Supabase"""
+    print("🏠 BRData Properties Import Tool")
     print("=" * 50)
+    print("This will import all 5 CSV files into the salemate-inventory table")
+    print()
     
-    # Check if SQL file exists
-    sql_file = "brdata_properties_rows (1).sql"
-    if not os.path.exists(sql_file):
-        print(f"❌ Error: {sql_file} not found")
-        return
+    # Check if API key is configured
+    if SUPABASE_ANON_KEY == "your-anon-key-here":
+        print("❌ Please update the SUPABASE_ANON_KEY in the script with your actual Supabase anon key")
+        print("You can find it in: Supabase Dashboard → Settings → API → anon public key")
+        return False
     
-    print(f"📁 Found SQL file: {sql_file}")
-    print(f"📊 File size: {os.path.getsize(sql_file) / 1024 / 1024:.2f} MB")
+    # Check if all CSV files exist
+    missing_files = []
+    for csv_file in CSV_FILES:
+        if not os.path.exists(csv_file):
+            missing_files.append(csv_file)
     
-    print("\n🔧 Choose an option:")
-    print("1. Create table structure only")
-    print("2. Process SQL file for import")
-    print("3. Run complete import (requires SUPABASE_PASSWORD)")
+    if missing_files:
+        print("❌ Missing CSV files:")
+        for file in missing_files:
+            print(f"   - {file}")
+        return False
     
-    choice = input("\nEnter your choice (1-3): ").strip()
+    print("✅ All CSV files found")
+    print()
     
-    if choice == "1":
-        run_import()
-    elif choice == "2":
-        process_sql_file()
-    elif choice == "3":
-        run_import()
-        process_sql_file()
-    else:
-        print("❌ Invalid choice")
+    # Process all CSV files
+    all_records = []
+    total_records = 0
+    
+    for i, csv_file in enumerate(CSV_FILES, 1):
+        records = process_csv_file(csv_file, i)
+        all_records.extend(records)
+        total_records += len(records)
+    
+    print(f"\n📊 Total records to import: {total_records}")
+    
+    if total_records == 0:
+        print("❌ No records found to import")
+        return False
+    
+    # Confirm before importing
+    print(f"\n⚠️  About to import {total_records} records to Supabase")
+    print("Press Enter to continue or Ctrl+C to cancel...")
+    input()
+    
+    # Import to Supabase
+    total_imported, total_failed = import_records_to_supabase(all_records)
+    
+    print(f"\n🎉 Import completed!")
+    print(f"✅ Successfully imported: {total_imported} records")
+    print(f"❌ Failed to import: {total_failed} records")
+    print(f"📊 Success rate: {(total_imported/total_records)*100:.1f}%")
+    
+    return total_failed == 0
 
 if __name__ == "__main__":
     main()

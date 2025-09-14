@@ -31,7 +31,12 @@ import {
 import type { Database } from '../../types/database';
 
 type Lead = Database['public']['Tables']['leads']['Row'] & {
-  projects?: { name: string; developer: string; region: string } | null;
+  projects?: {
+    id: string;
+    name: string;
+    region: string;
+    developers?: { name: string } | null;
+  } | null;
 };
 
 type LeadStage = Database['public']['Enums']['lead_stage'];
@@ -77,7 +82,12 @@ const WebsiteStyleCRM: React.FC = () => {
         .from('leads')
         .select(`
           *,
-          projects(name, developer, region)
+          projects(
+            id,
+            name,
+            region,
+            developers:developers ( name )
+          )
         `)
         .eq('buyer_user_id', user.id)
         .order('created_at', { ascending: false });

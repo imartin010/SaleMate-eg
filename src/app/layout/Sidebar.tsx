@@ -17,6 +17,7 @@ import {
   FileText,
   UserCheck,
   RefreshCw,
+  Package,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -66,6 +67,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       show: true,
     },
     {
+      name: 'Partners',
+      href: '/app/partners',
+      icon: Handshake,
+      show: true,
+    },
+    {
+      name: 'Inventory',
+      href: '/app/inventory',
+      icon: Package,
+      show: true,
+    },
+    {
       name: 'My Deals',
       href: '/app/deals',
       icon: FileText,
@@ -76,12 +89,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       href: '/app/team',
       icon: UserCheck,
       show: profile?.role === 'manager' || profile?.role === 'admin',
-    },
-    {
-      name: 'Partners',
-      href: '/app/partners',
-      icon: Handshake,
-      show: true,
     },
     {
       name: 'Support',

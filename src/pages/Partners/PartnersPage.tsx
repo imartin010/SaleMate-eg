@@ -8,14 +8,12 @@ import { supabase } from "../../lib/supabaseClient"
 import { 
   Search, 
   Building,
-  MapPin,
   Calculator,
   Heart,
   X,
   Phone,
   MessageCircle,
   Eye,
-  Star,
   Handshake
 } from 'lucide-react';
 
@@ -85,22 +83,146 @@ const PartnersPage: React.FC = () => {
     
     try {
       console.log('🏢 Loading partner projects...');
-      
-      const { data, error: queryError } = await supabase
-        .from('partner_commissions_view')
-        .select('*')
-        .order('compound_name');
+      // Fetch from project_partner_commissions and join projects and partners
+      // This assumes FKs: project_partner_commissions.project_id -> projects.id
+      // and project_partner_commissions.partner_id -> partners.id
+      const { data, error: queryError } = await ((supabase as any)
+        .from('project_partner_commissions')
+        .select(`
+          commission_rate,
+          projects:projects ( id, name, region, developer_id, cover_image, developers:developers ( name ) ),
+          partners:partners ( name )
+        `));
 
       if (queryError) {
         throw new Error(`Database error: ${queryError.message}`);
       }
 
-      console.log(`✅ Loaded ${data?.length || 0} partner projects`);
-      setProjects(data as PartnerProject[] || []);
+      // Aggregate rows into one record per project with partner-specific commission fields
+      const extractName = (value: unknown): string => {
+        if (value == null) return 'Unknown';
+        if (typeof value === 'string') {
+          // Try to extract name from JSON or pseudo-JSON (single quotes)
+          const jsonMatch = value.match(/"name"\s*:\s*"([^"]+)"/);
+          if (jsonMatch && jsonMatch[1]) return jsonMatch[1];
+          const pseudoJsonMatch = value.match(/'name'\s*:\s*'([^']+)'/);
+          if (pseudoJsonMatch && pseudoJsonMatch[1]) return pseudoJsonMatch[1];
+          return value;
+        }
+        if (typeof value === 'object') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const v: any = value;
+          return v.name ?? v.area ?? v.region ?? 'Unknown';
+        }
+        return String(value);
+      };
+      type Row = {
+        commission_rate: number | null;
+        projects: { id: string; name: string | null; region: unknown; cover_image?: string | null } | null;
+        partners: { name: string | null } | null;
+      };
 
-    } catch (error: any) {
-      console.error('❌ Error loading partner projects:', error);
-      setError(error.message || 'Failed to load projects');
+      const byProject = new Map<string, PartnerProject>();
+
+      (data as unknown as Row[] | null)?.forEach((row) => {
+        if (!row?.projects?.id) return;
+        const pid = row.projects.id;
+        // Normalize compound (project) name: it might be JSON text or object
+        const compoundName = extractName(row.projects.name);
+        // region may be JSON or text; try to extract a readable string
+        const areaText = extractName(row.projects.region);
+
+        if (!byProject.has(pid)) {
+          // Normalize developer name with multiple fallbacks
+          let developerName = 'Unknown';
+          const dnameRel = (row.projects as any)?.developers?.name as string | undefined;
+          if (dnameRel && typeof dnameRel === 'string') {
+            developerName = dnameRel;
+          }
+          byProject.set(pid, {
+            id: 0, // not used in UI for keys; using pid via map key instead
+            compound_name: compoundName,
+            compound_id: pid,
+            developer: developerName,
+            area: areaText,
+            starting_price: 0,
+            image_url: (row.projects?.cover_image ?? '') as string,
+            phone_number: '',
+            developer_sales_name: '',
+            salemate_commission: 0,
+            address_investments_commission: 0,
+            bold_routes_commission: 0,
+            nawy_partners_commission: 0,
+            coldwell_banker_commission: 0,
+            connect_homes_commission: 0,
+            view_investments_commission: 0,
+            y_network_commission: 0,
+            byit_commission: 0,
+            active_partners_count: 0,
+            highest_commission_rate: 0,
+          });
+        }
+
+        const proj = byProject.get(pid)!;
+        const partnerName = (row.partners?.name ?? '').toLowerCase();
+        const rate = row.commission_rate ?? 0;
+
+        // Map known partner names to fields
+        if (partnerName.includes('address')) proj.address_investments_commission = rate;
+        else if (partnerName.includes('bold')) proj.bold_routes_commission = rate;
+        else if (partnerName.includes('nawy')) proj.nawy_partners_commission = rate;
+        else if (partnerName.includes('coldwell')) proj.coldwell_banker_commission = rate;
+        else if (partnerName.includes('salemate')) proj.salemate_commission = rate;
+        else if (partnerName.includes('connect')) proj.connect_homes_commission = rate;
+        else if (partnerName.includes('view')) proj.view_investments_commission = rate;
+        else if (partnerName.includes('y network') || partnerName === 'ynetwork') proj.y_network_commission = rate;
+        else if (partnerName.includes('byit')) proj.byit_commission = rate;
+
+        // Update summary stats
+        const rates = [
+          proj.salemate_commission,
+          proj.address_investments_commission,
+          proj.bold_routes_commission,
+          proj.nawy_partners_commission,
+          proj.coldwell_banker_commission,
+          proj.connect_homes_commission,
+          proj.view_investments_commission,
+          proj.y_network_commission,
+          proj.byit_commission,
+        ].filter((v) => typeof v === 'number') as number[];
+        proj.active_partners_count = rates.filter((v) => v > 0).length;
+        proj.highest_commission_rate = rates.reduce((m, v) => (v > m ? v : m), 0);
+      });
+
+      const aggregated = Array.from(byProject.values()).sort((a, b) =>
+        a.compound_name.localeCompare(b.compound_name)
+      );
+
+      // Fetch representative images per compound from salemate-inventory and attach
+      const { data: inventoryRows, error: invErr } = await ((supabase as any)
+        .from('salemate-inventory')
+        .select('compound,image'));
+      if (invErr) {
+        console.warn('Could not fetch images from salemate-inventory:', invErr.message);
+      } else if (inventoryRows) {
+        const imageByName = new Map<string, string>();
+        (inventoryRows as Array<{ compound: unknown; image: string | null }>).forEach(r => {
+          const name = extractName(r.compound);
+          if (!imageByName.has(name) && r.image) imageByName.set(name, r.image);
+        });
+        aggregated.forEach(p => {
+          const img = imageByName.get(p.compound_name);
+          if (img) p.image_url = img;
+        });
+      }
+
+      console.log(`✅ Loaded ${aggregated.length} partner projects (aggregated)`);
+      setProjects(aggregated);
+
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('❌ Error loading partner projects:', err);
+      setError(message || 'Failed to load projects');
       setProjects([]);
     } finally {
       setLoading(false);
@@ -169,6 +291,14 @@ const PartnersPage: React.FC = () => {
     navigate(`/inventory?compound=${encodeURIComponent(project.compound_name)}`);
   };
 
+  // Return a unique image URL per project. If no image_url is available from DB,
+  // use a deterministic Unsplash placeholder seeded by compound_id so each card differs.
+  const getProjectImage = (p: PartnerProject): string => {
+    if (p.image_url && p.image_url.trim().length > 0) return p.image_url;
+    const seed = encodeURIComponent(p.compound_id || p.compound_name || 'salemate');
+    return `https://source.unsplash.com/featured/640x420?real-estate,building,architecture&sig=${seed}`;
+  };
+
   const calculateEarnings = (dealValue: number, commissionRate: number) => {
     const grossCommission = dealValue * (commissionRate / 100);
     const tax = grossCommission * 0.05; // 5% tax
@@ -181,6 +311,18 @@ const PartnersPage: React.FC = () => {
       netCommission,
       yourEarnings
     };
+  };
+
+  // Normalize display names that may be stringified JSON like {"id": 10, "name": "Aden"}
+  // or pseudo-JSON with single quotes. Falls back to the original string.
+  const normalizeDisplayName = (value?: string | null): string => {
+    const s = value == null ? '' : String(value);
+    if (!s) return 'Unknown';
+    const m1 = s.match(/"name"\s*:\s*"([^"]+)"/);
+    if (m1 && m1[1]) return m1[1];
+    const m2 = s.match(/'name'\s*:\s*'([^']+)'/);
+    if (m2 && m2[1]) return m2[1];
+    return s;
   };
 
   // Get active partners for a project (only those with commission rates)
@@ -265,7 +407,7 @@ const PartnersPage: React.FC = () => {
             
             return (
               <Card 
-                key={project.id} 
+                key={project.compound_id} 
                 className={`group overflow-hidden rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 ${
                   isPriority 
                     ? 'bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 ring-1 ring-blue-300' 
@@ -279,12 +421,12 @@ const PartnersPage: React.FC = () => {
                 {/* Compact Image Section */}
                 <div className="relative h-48 sm:h-56 overflow-hidden">
                   <img 
-                    src={project.image_url || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500&h=300&fit=crop'}
+                    src={getProjectImage(project)}
                     alt={project.compound_name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500&h=300&fit=crop';
+                      target.src = getProjectImage(project);
                     }}
                   />
                   
@@ -349,9 +491,9 @@ const PartnersPage: React.FC = () => {
                     {/* Project Name & Location */}
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
-                        {project.compound_name}
+                        {normalizeDisplayName(project.compound_name)}
                       </h3>
-                      <p className="text-sm text-gray-600 line-clamp-1">{project.area}</p>
+                      <p className="text-sm text-gray-600 line-clamp-1">{normalizeDisplayName(project.area)}</p>
               </div>
 
                     {/* Compact Info Grid */}
@@ -374,7 +516,7 @@ const PartnersPage: React.FC = () => {
                         <Building className="w-4 h-4 text-blue-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-900 truncate">{project.developer}</p>
+                        <p className="text-xs font-medium text-gray-900 truncate">{normalizeDisplayName(project.developer)}</p>
                         <p className="text-xs text-gray-600 truncate">{project.developer_sales_name}</p>
                       </div>
                       <div className="flex gap-1">
@@ -408,6 +550,7 @@ const PartnersPage: React.FC = () => {
                 </div>
                 
       {/* Add CSS animations */}
+      {/* @ts-ignore styled-jsx in TSX */}
       <style jsx>{`
         @keyframes slideInUp {
           from {
@@ -577,6 +720,8 @@ const PartnersPage: React.FC = () => {
       )}
 
       {/* Additional CSS for animations */}
+      {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+      {/* @ts-ignore - allow styled-jsx props in TS */}
       <style jsx global>{`
         @keyframes slideInUp {
           from {

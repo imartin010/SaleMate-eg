@@ -49,7 +49,12 @@ export const PurchaseRequestsManager: React.FC = () => {
         .select(`
           *,
           profiles!buyer_user_id(name, email),
-          projects(name, developer, region)
+          projects(
+            id,
+            name,
+            region,
+            developers:developers ( name )
+          )
         `)
         .order('created_at', { ascending: true });
 
@@ -159,7 +164,7 @@ export const PurchaseRequestsManager: React.FC = () => {
                           <Building className="h-4 w-4 text-muted-foreground" />
                           <span>{request.projects?.name || 'Unknown Project'}</span>
                           <span className="text-sm text-muted-foreground">
-                            {request.projects?.developer} • {request.projects?.region}
+                            {request.projects?.developers?.name || 'Unknown'} • {request.projects?.region}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm">

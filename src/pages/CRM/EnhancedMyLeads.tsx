@@ -28,7 +28,11 @@ import {
 import type { Database } from '../../types/database';
 
 type Lead = Database['public']['Tables']['leads']['Row'] & {
-  projects?: { name: string; developer: string; region: string } | null;
+  projects?: { 
+    name: string | any; 
+    region: string | any; 
+    developers?: { name: string } | null;
+  } | null;
 };
 
 type LeadStage = Database['public']['Enums']['lead_stage'];
@@ -68,7 +72,12 @@ const EnhancedMyLeads: React.FC = () => {
         .from('leads')
         .select(`
           *,
-          projects(name, developer, region)
+          projects(
+            id,
+            name,
+            region,
+            developers:developers ( name )
+          )
         `)
         .eq('buyer_user_id', user.id)
         .order('created_at', { ascending: false });
