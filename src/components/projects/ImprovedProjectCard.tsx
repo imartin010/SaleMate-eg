@@ -219,7 +219,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                        quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : 
                        null;
 
-  // Generate hero image
+  // Generate hero image (deterministic placeholder)
   const getHeroImage = (projectName: string) => {
     const images = [
       'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop',
@@ -237,9 +237,13 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
         {/* Hero Photo Section */}
         <div className="relative h-48 overflow-hidden">
           <img
-            src={getHeroImage(project.name)}
+            src={project.coverImage || getHeroImage(project.name)}
             alt={project.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = getHeroImage(project.name);
+            }}
           />
           
           {/* Overlay with Project Name */}

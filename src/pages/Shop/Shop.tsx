@@ -21,7 +21,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
-import type { Database } from '../../types/database';
+// Note: We avoid strict DB typings here to support views/RPC not in generated types
 
 // Define types locally to avoid database schema dependencies
 interface Project {
@@ -32,8 +32,8 @@ interface Project {
   description?: string;
   available_leads: number;
   current_cpl: number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 type PaymentMethod = 'Instapay' | 'VodafoneCash' | 'BankTransfer';
@@ -70,30 +70,66 @@ const Shop: React.FC = () => {
     setError(null);
     
     try {
-      // Load from projects table directly (more reliable)
-      const { data: projectData, error: queryError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Load from lead_availability view as the source of truth
+      const { data: projectData, error: queryError } = await (supabase as any)
+        .from('lead_availability')
+        .select('*');
       
       if (queryError) {
         throw new Error(queryError.message);
       }
       
-      // Transform projects data to match expected format
-      const data = (projectData || []).map(project => ({
-        project_id: project.id,
-        name: project.name,
-        developer: project.developer,
-        region: project.region,
-        description: project.description || '',
-        available_leads: project.available_leads || 0,
-        current_cpl: project.price_per_lead || 125,
-        created_at: project.created_at,
-        updated_at: project.updated_at
-      }));
+      const extractName = (val: unknown): string => {
+        if (!val) return 'Unknown';
+        if (typeof val === 'string') {
+          const s = val.trim();
+          // JSON with double quotes
+          const m1 = s.match(/"name"\s*:\s*"([^"]+)"/);
+          if (m1?.[1]) return m1[1];
+          // Robust single-quote extractor that tolerates apostrophes inside value
+          const nameKey = s.indexOf("'name'");
+          if (nameKey !== -1) {
+            const colon = s.indexOf(':', nameKey);
+            if (colon !== -1) {
+              let start = s.indexOf("'", colon + 1);
+              if (start !== -1) {
+                // scan for closing quote followed by comma or brace
+                let end = -1;
+                for (let i = start + 1; i < s.length; i++) {
+                  if (s[i] === "'") {
+                    // find next non-space char
+                    let j = i + 1;
+                    while (j < s.length && /\s/.test(s[j])) j++;
+                    if (j >= s.length || s[j] === ',' || s[j] === '}') { end = i; break; }
+                  }
+                }
+                if (end > start + 1) {
+                  return s.slice(start + 1, end);
+                }
+              }
+            }
+          }
+          return s;
+        }
+        if (typeof val === 'object') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const o: any = val;
+          return o.name ?? o.region ?? o.area ?? 'Unknown';
+        }
+        return String(val);
+      };
 
-      setProjects(data || []);
+      const base = (projectData || []).map((p: any) => ({
+        project_id: p.project_id,
+        name: extractName(p.name),
+        developer: extractName(p.developer),
+        region: extractName(p.region),
+        description: p.description || '',
+        available_leads: Number(p.available_leads || 0),
+        current_cpl: Number(p.current_cpl || 125),
+      })) as Project[];
+
+      setProjects(base);
     } catch (err: any) {
       console.error('Error loading projects:', err);
       setError(err.message || 'Failed to load projects');
@@ -145,9 +181,8 @@ const Shop: React.FC = () => {
       }
 
       // Try to create order using RPC function, fallback to direct insert if not available
-      let requestId;
       try {
-        const { data, error: orderError } = await supabase.rpc('rpc_start_order', {
+        const { data, error: orderError } = await (supabase as any).rpc('rpc_start_order', {
           p_project: selectedProject.project_id,
           p_qty: purchaseForm.quantity,
           p_payment: purchaseForm.paymentMethod as PaymentMethod,
@@ -158,11 +193,10 @@ const Shop: React.FC = () => {
         if (orderError) {
           throw new Error(`Failed to create order: ${orderError.message}`);
         }
-        requestId = data;
-      } catch (rpcError: any) {
+      } catch (_rpcError: any) {
         // Fallback: Create order directly in orders table
         console.log('RPC function not available, using direct insert');
-        const { data, error: insertError } = await supabase
+        const { data, error: insertError } = await (supabase as any)
           .from('orders')
           .insert({
             user_id: user.id,
@@ -175,11 +209,10 @@ const Shop: React.FC = () => {
           })
           .select('id')
           .single();
-          
+        
         if (insertError) {
           throw new Error(`Failed to create order: ${insertError.message}`);
         }
-        requestId = data?.id;
       }
 
       setPurchaseSuccess(true);
@@ -214,7 +247,7 @@ const Shop: React.FC = () => {
     const matchesSearch = project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.developer?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRegion = regionFilter === 'all' || !regionFilter || project.region === regionFilter;
-    return matchesSearch && matchesRegion && (project.available_leads || 0) > 0;
+    return matchesSearch && matchesRegion; // do not hide projects with 0 available
   });
 
   const totalAvailableLeads = filteredProjects.reduce((sum, p) => sum + (p.available_leads || 0), 0);

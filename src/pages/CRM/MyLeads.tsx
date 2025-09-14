@@ -23,7 +23,10 @@ import {
 import type { Database } from '../../types/database';
 
 type Lead = Database['public']['Tables']['leads']['Row'] & {
-  projects?: { name: string; developer: string; region: string } | null;
+  projects?: { 
+    name: string; 
+    region: string; 
+  } | null;
 };
 
 type LeadStage = Database['public']['Enums']['lead_stage'];
@@ -63,7 +66,12 @@ const MyLeads: React.FC = () => {
         .from('leads')
         .select(`
           *,
-          projects(name, developer, region)
+          projects(
+            id,
+            name,
+            region,
+            developers:developers ( name )
+          )
         `)
         .eq('buyer_user_id', user.id)
         .order('created_at', { ascending: false });
@@ -73,7 +81,28 @@ const MyLeads: React.FC = () => {
         // Set empty array as fallback
         setLeads([]);
       } else {
-        setLeads(data || []);
+        // Normalize any JSON-like name/region for safe display
+        const extract = (v: unknown): string => {
+          if (!v) return 'Unknown';
+          if (typeof v === 'string') {
+            const m1 = v.match(/"name"\s*:\s*"([^"]+)"/); if (m1?.[1]) return m1[1];
+            const m2 = v.match(/'name'\s*:\s*'([^']+)'/); if (m2?.[1]) return m2[1];
+            return v;
+          }
+          if (typeof v === 'object') {
+            const anyV: any = v; return anyV.name ?? anyV.region ?? anyV.area ?? 'Unknown';
+          }
+          return String(v);
+        };
+        const normalized = (data || []).map((row: any) => {
+          if (row.projects) {
+            const name = extract(row.projects.name);
+            const region = extract(row.projects.region);
+            return { ...row, projects: { name, region } } as Lead;
+          }
+          return row as Lead;
+        });
+        setLeads(normalized);
       }
     } catch (err) {
       console.error('Error loading leads:', err);

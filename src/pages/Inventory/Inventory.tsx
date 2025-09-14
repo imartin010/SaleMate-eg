@@ -21,7 +21,6 @@ import {
   Sparkles,
   Eye,
   ArrowUpDown,
-  Download,
   RefreshCw,
   Info,
   ChevronLeft,
@@ -206,22 +205,123 @@ const Inventory: React.FC = () => {
         query = query.eq('ready_by', filters.ready_by);
       }
 
-      // Apply sorting
+      // Apply sorting - first get all data for custom sorting
       query = query.order(sort.field, { ascending: sort.direction === 'asc' });
 
-      // Apply pagination
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-      query = query.range(from, to);
+      // Get total count with same filters
+      let countQuery = (supabase as any)
+        .from('salemate-inventory')
+        .select('*', { count: 'exact', head: true });
 
-      const { data, error: queryError, count } = await query;
+      // Apply same filters to count query
+      if (filters.search) {
+        countQuery = countQuery.or(`unit_id.ilike.%${filters.search}%,unit_number.ilike.%${filters.search}%,building_number.ilike.%${filters.search}%,compound.ilike.%${filters.search}%,developer.ilike.%${filters.search}%,area.ilike.%${filters.search}%`);
+      }
+      
+      if (filters.compound) {
+        countQuery = countQuery.filter('compound', 'ilike', `%${filters.compound}%`);
+      }
+      
+      if (filters.area) {
+        countQuery = countQuery.ilike('area', `%${filters.area}%`);
+      }
+      
+      if (filters.developer) {
+        countQuery = countQuery.ilike('developer', `%${filters.developer}%`);
+      }
+      
+      if (filters.property_type) {
+        countQuery = countQuery.ilike('property_type', `%${filters.property_type}%`);
+      }
+      
+      if (filters.min_bedrooms !== undefined) {
+        countQuery = countQuery.gte('number_of_bedrooms', filters.min_bedrooms);
+      }
+      
+      if (filters.max_bedrooms !== undefined) {
+        countQuery = countQuery.lte('number_of_bedrooms', filters.max_bedrooms);
+      }
+      
+      if (filters.min_bathrooms !== undefined) {
+        countQuery = countQuery.gte('number_of_bathrooms', filters.min_bathrooms);
+      }
+      
+      if (filters.max_bathrooms !== undefined) {
+        countQuery = countQuery.lte('number_of_bathrooms', filters.max_bathrooms);
+      }
+      
+      if (filters.min_price !== undefined) {
+        countQuery = countQuery.gte('price', filters.min_price);
+      }
+      
+      if (filters.max_price !== undefined) {
+        countQuery = countQuery.lte('price', filters.max_price);
+      }
+      
+      if (filters.min_area !== undefined) {
+        countQuery = countQuery.gte('area', filters.min_area);
+      }
+      
+      if (filters.max_area !== undefined) {
+        countQuery = countQuery.lte('area', filters.max_area);
+      }
+      
+      
+      if (filters.unit_number) {
+        countQuery = countQuery.ilike('unit_number', `%${filters.unit_number}%`);
+      }
+      
+      if (filters.building_number) {
+        countQuery = countQuery.ilike('building_number', `%${filters.building_number}%`);
+      }
+      
+      if (filters.ready_by !== undefined) {
+        countQuery = countQuery.eq('ready_by', filters.ready_by);
+      }
+
+      const { count } = await countQuery;
+
+      // Get all data for custom sorting (we'll paginate after sorting)
+      const { data: allData, error: queryError } = await query;
 
       if (queryError) {
         throw new Error(`Database error: ${queryError.message}`);
       }
 
-      console.log(`✅ Loaded ${data?.length || 0} properties from database`);
-      setProperties((data as BRDataProperty[]) || []);
+      // Custom sorting: Mountain View and Palm Hills first, then others
+      const sortedData = (allData as BRDataProperty[])?.sort((a, b) => {
+        const aCompound = a.compound?.name?.toLowerCase() || '';
+        const bCompound = b.compound?.name?.toLowerCase() || '';
+        
+        // Priority compounds
+        const priorityCompounds = ['mountain view', 'palm hills'];
+        
+        const aIsPriority = priorityCompounds.some(compound => aCompound.includes(compound));
+        const bIsPriority = priorityCompounds.some(compound => bCompound.includes(compound));
+        
+        // If one is priority and other isn't, priority comes first
+        if (aIsPriority && !bIsPriority) return -1;
+        if (!aIsPriority && bIsPriority) return 1;
+        
+        // If both are priority or both are not priority, sort by Mountain View first, then Palm Hills
+        if (aIsPriority && bIsPriority) {
+          if (aCompound.includes('mountain view') && !bCompound.includes('mountain view')) return -1;
+          if (!aCompound.includes('mountain view') && bCompound.includes('mountain view')) return 1;
+          if (aCompound.includes('palm hills') && !bCompound.includes('palm hills')) return -1;
+          if (!aCompound.includes('palm hills') && bCompound.includes('palm hills')) return 1;
+        }
+        
+        // For same priority level, maintain original sort order
+        return 0;
+      }) || [];
+
+      // Apply pagination after custom sorting
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      const paginatedData = sortedData.slice(from, to + 1);
+
+      console.log(`✅ Loaded ${paginatedData.length} properties from database (custom sorted)`);
+      setProperties(paginatedData);
       setTotalCount(count || 0);
 
     } catch (error: any) {
@@ -427,16 +527,6 @@ const Inventory: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const exportData = async () => {
-    // This would implement CSV export functionality
-    console.log('Export functionality would be implemented here');
-  };
-
-  const refreshData = () => {
-    setCurrentPage(1);
-    loadProperties();
-    loadFilterOptions();
-  };
 
   const hasActiveFilters = Object.keys(filters).some(key => 
     filters[key as keyof BRDataPropertyFilters] !== undefined && 
@@ -835,7 +925,7 @@ const Inventory: React.FC = () => {
           <p className="text-muted-foreground mb-4">
             {error}
           </p>
-          <Button onClick={refreshData}>
+          <Button onClick={() => window.location.reload()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Again
           </Button>
@@ -854,18 +944,6 @@ const Inventory: React.FC = () => {
           icon={Home}
           color="teal"
         />
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={refreshData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm" onClick={exportData}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </div>
-        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

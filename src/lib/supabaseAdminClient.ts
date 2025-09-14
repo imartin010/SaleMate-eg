@@ -15,11 +15,33 @@ export async function getAllProjectsAdmin() {
   try {
     const { data, error } = await supabaseAdmin
       .from('projects')
-      .select('id, name, developer, region, available_leads, price_per_lead, description, created_at')
+      .select(`
+        id,
+        name,
+        region,
+        available_leads,
+        price_per_lead,
+        description,
+        created_at,
+        developers:developers ( name )
+      `)
       .order('name')
 
     if (error) throw error
-    return data
+
+    // Map developer relation to flat string expected by UI
+    const mapped = (data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      region: p.region,
+      available_leads: p.available_leads ?? 0,
+      price_per_lead: p.price_per_lead ?? null,
+      description: p.description ?? null,
+      created_at: p.created_at,
+      developer: p?.developers?.name ?? 'Unknown'
+    }))
+
+    return mapped
   } catch (error) {
     console.error('Error getting all projects (admin):', error)
     throw error
@@ -43,13 +65,39 @@ export async function uploadLeadsAdmin(
   }>
 ) {
   try {
-    const { data, error } = await supabaseAdmin.rpc('rpc_upload_leads', {
+    // Try RPC first if it exists
+    try {
+      const { data, error } = await supabaseAdmin.rpc('rpc_upload_leads', {
+        project_id: projectId,
+        leads_data: leadsData
+      })
+      if (!error) return data
+    } catch (_rpcErr) {
+      // fall through to direct insert
+    }
+
+    // Fallback: direct insert into leads table using backend column names
+    const rows = leadsData.map(ld => ({
       project_id: projectId,
-      leads_data: leadsData
-    })
+      client_name: ld.client_name,
+      client_phone: ld.client_phone,
+      client_phone2: ld.client_phone2 ?? null,
+      client_phone3: ld.client_phone3 ?? null,
+      client_email: ld.client_email ?? null,
+      client_job_title: ld.client_job_title ?? null,
+      source: ld.platform ?? 'Other',
+      stage: ld.stage ?? 'New Lead',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }))
+
+    const { data, error } = await supabaseAdmin
+      .from('leads')
+      .insert(rows)
+      .select('id')
 
     if (error) throw error
-    return data
+    return { success: true, inserted: data?.length || 0 }
   } catch (error) {
     console.error('Error uploading leads (admin):', error)
     throw error

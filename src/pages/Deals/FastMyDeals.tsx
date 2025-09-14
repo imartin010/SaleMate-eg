@@ -259,7 +259,7 @@ const FastMyDeals: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
       <div className="mb-8">
         <div className="text-center space-y-4 mb-6">
