@@ -5,6 +5,7 @@ import { Select } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ImprovedProjectCard } from '../../components/projects/ImprovedProjectCard';
+import { WalletDisplay } from '../../components/wallet/WalletDisplay';
 import { supabase } from "../../lib/supabaseClient"
 import { Project } from '../../types';
 import { 
@@ -30,7 +31,7 @@ export const ImprovedShop: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'leads' | 'region' | 'price'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'leads' | 'region' | 'price'>('leads');
   const [showFilters, setShowFilters] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
@@ -150,9 +151,14 @@ export const ImprovedShop: React.FC = () => {
       return matchesSearch && matchesRegion; // do not hide 0-availability projects
     })
     .sort((a, b) => {
+      // First priority: Sort by available leads (highest first)
+      const leadsDiff = b.availableLeads - a.availableLeads;
+      if (leadsDiff !== 0) return leadsDiff;
+      
+      // If leads are equal, sort by selected criteria
       switch (sortBy) {
         case 'leads':
-          return b.availableLeads - a.availableLeads;
+          return b.availableLeads - a.availableLeads; // This is already handled above
         case 'region':
           return a.region.localeCompare(b.region);
         case 'price':
@@ -165,10 +171,10 @@ export const ImprovedShop: React.FC = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setRegionFilter('');
-    setSortBy('name');
+    setSortBy('leads');
   };
 
-  const hasActiveFilters = searchTerm || regionFilter || sortBy !== 'name';
+  const hasActiveFilters = searchTerm || regionFilter || sortBy !== 'leads';
   const totalAvailableLeads = filteredAndSortedProjects.reduce((sum, p) => sum + p.availableLeads, 0);
 
   if (loading) {
@@ -267,6 +273,11 @@ export const ImprovedShop: React.FC = () => {
             <div className="text-2xl font-bold text-foreground">Premium</div>
             <div className="text-sm text-muted-foreground">Quality</div>
           </div>
+        </div>
+
+        {/* Wallet Display */}
+        <div className="mt-6">
+          <WalletDisplay />
         </div>
       </div>
 

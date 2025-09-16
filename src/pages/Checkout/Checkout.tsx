@@ -51,7 +51,8 @@ export const Checkout: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('paymob');
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [imageError, setImageError] = useState(false);
   
   // Get project data from URL params or use mock data
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
@@ -62,12 +63,18 @@ export const Checkout: React.FC = () => {
       region: searchParams.get('region') || 'New Administrative Capital',
       availableLeads: parseInt(searchParams.get('availableLeads') || '150'),
       pricePerLead: parseInt(searchParams.get('pricePerLead') || '25'),
-      image: searchParams.get('image') || '/api/placeholder/400/300',
+      image: searchParams.get('image') || '/placeholder-project.svg',
       rating: 4.8,
       totalSold: 1250
     },
-    quantity: parseInt(searchParams.get('quantity') || '1'),
-    totalPrice: parseInt(searchParams.get('totalPrice') || '25'),
+    quantity: Math.max(30, parseInt(searchParams.get('quantity') || '30')),
+    totalPrice: (() => {
+      const quantity = Math.max(30, parseInt(searchParams.get('quantity') || '30'));
+      const pricePerLead = parseInt(searchParams.get('pricePerLead') || '25');
+      const subtotal = quantity * pricePerLead;
+      const vat = Math.round(subtotal * 0.14);
+      return subtotal + vat;
+    })(),
     buyerInfo: {
       name: '',
       email: '',
@@ -265,22 +272,22 @@ export const Checkout: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        paymentMethod === 'paymob'
+                        paymentMethod === 'credit_card'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => handlePaymentMethodChange('paymob')}
+                      onClick={() => handlePaymentMethodChange('credit_card')}
                     >
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                           <CreditCard className="h-5 w-5 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">Paymob</h3>
-                          <p className="text-sm text-gray-600">Credit/Debit Cards, Fawry, Valu</p>
+                          <h3 className="font-semibold">Debit/Credit Card</h3>
+                          <p className="text-sm text-gray-600">Visa, Mastercard, American Express</p>
                         </div>
                       </div>
                     </div>
@@ -306,38 +313,19 @@ export const Checkout: React.FC = () => {
 
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        paymentMethod === 'bank_transfer'
+                        paymentMethod === 'vodafone_cash'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => handlePaymentMethodChange('bank_transfer')}
+                      onClick={() => handlePaymentMethodChange('vodafone_cash')}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <Building className="h-5 w-5 text-purple-600" />
+                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                          <Phone className="h-5 w-5 text-red-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">Bank Transfer</h3>
-                          <p className="text-sm text-gray-600">Direct bank transfer</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        paymentMethod === 'cash_on_delivery'
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => handlePaymentMethodChange('cash_on_delivery')}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                          <MapPin className="h-5 w-5 text-orange-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">Cash on Delivery</h3>
-                          <p className="text-sm text-gray-600">Pay when leads are delivered</p>
+                          <h3 className="font-semibold">Vodafone Cash</h3>
+                          <p className="text-sm text-gray-600">Mobile wallet payment</p>
                         </div>
                       </div>
                     </div>
@@ -370,7 +358,7 @@ export const Checkout: React.FC = () => {
                     </div>
                     <h3 className="text-xl font-semibold mb-2">Ready to Pay</h3>
                     <p className="text-gray-600 mb-6">
-                      You will be redirected to {paymentMethod === 'paymob' ? 'Paymob' : 'Instapay'} to complete your payment securely.
+                      You will be redirected to {paymentMethod === 'credit_card' ? 'our secure payment gateway' : paymentMethod === 'instapay' ? 'Instapay' : 'Vodafone Cash'} to complete your payment securely.
                     </p>
                     
                     <Button 
@@ -466,11 +454,20 @@ export const Checkout: React.FC = () => {
               <CardContent className="space-y-4">
                 {/* Project Info */}
                 <div className="flex space-x-4">
-                  <img
-                    src={checkoutData.project.image}
-                    alt={checkoutData.project.name}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {!imageError ? (
+                      <img
+                        src={checkoutData.project.image}
+                        alt={checkoutData.project.name}
+                        className="w-full h-full object-cover"
+                        onError={() => setImageError(true)}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+                        <Building className="h-8 w-8 text-blue-600" />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-sm">{checkoutData.project.name}</h3>
                     <p className="text-xs text-gray-600">{checkoutData.project.developer}</p>
@@ -504,7 +501,7 @@ export const Checkout: React.FC = () => {
 
                 <div className="flex justify-between font-semibold">
                   <span>Total:</span>
-                  <span>{checkoutData.totalPrice} EGP</span>
+                  <span>{checkoutData.quantity * checkoutData.project.pricePerLead + Math.round(checkoutData.quantity * checkoutData.project.pricePerLead * 0.14)} EGP</span>
                 </div>
 
                 {/* Security Badges */}
