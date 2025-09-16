@@ -94,7 +94,7 @@ export const TermsAndConditions: React.FC = () => {
             </p>
             <ul className="list-disc list-inside mb-6 text-gray-700 space-y-2">
               <li>Must be made in Egyptian Pounds (EGP)</li>
-              <li>Processed through secure payment gateways (Paymob, Instapay, etc.)</li>
+              <li>Processed through secure payment gateways (Card payments, Instapay, etc.)</li>
               <li>Prices are clearly displayed before purchase</li>
               <li>No hidden fees or additional charges</li>
               <li>Payment confirmation required before lead delivery</li>

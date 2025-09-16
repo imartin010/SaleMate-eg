@@ -211,7 +211,7 @@ export const PrivacyPolicy: React.FC = () => {
               We integrate with trusted third-party services:
             </p>
             <ul className="list-disc list-inside mb-6 text-gray-700 space-y-2">
-              <li><strong>Payment Processing:</strong> Paymob, Instapay for secure transactions</li>
+              <li><strong>Payment Processing:</strong> Card payments, Instapay for secure transactions</li>
               <li><strong>Analytics:</strong> Google Analytics for usage insights</li>
               <li><strong>Communication:</strong> Email and SMS service providers</li>
               <li><strong>Infrastructure:</strong> Supabase for database and authentication</li>
