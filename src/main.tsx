@@ -34,7 +34,7 @@ class DebugErrorBoundary extends React.Component<{children: React.ReactNode}, {h
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🚨 React Error Boundary caught error:', error, errorInfo);
   }
 
