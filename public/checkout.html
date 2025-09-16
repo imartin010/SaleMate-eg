@@ -131,7 +131,7 @@
                                         <i data-lucide="credit-card" class="h-5 w-5 text-blue-600"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-semibold">Paymob</h3>
+                                        <h3 class="font-semibold">Pay by Card</h3>
                                         <p class="text-sm text-gray-600">Credit/Debit Cards, Fawry, Valu</p>
                                     </div>
                                 </div>
@@ -177,7 +177,7 @@
                         <div class="bg-green-50 p-4 rounded-lg mt-6">
                             <h4 class="font-semibold text-green-900 mb-2">Secure Payment</h4>
                             <p class="text-sm text-green-800 mb-3">
-                                All payments are processed securely through Paymob, Egypt's leading payment gateway. 
+                                All payments are processed securely through our payment gateway. 
                                 Your financial information is encrypted and protected with PCI DSS compliance.
                             </p>
                             <div class="flex items-center space-x-4 text-xs text-green-700">
@@ -211,7 +211,7 @@
                             </div>
                             <h3 class="text-xl font-semibold mb-2">Ready to Pay</h3>
                             <p class="text-gray-600 mb-6" id="payment-method-text">
-                                You will be redirected to Paymob to complete your payment securely.
+                                You will be redirected to our payment gateway to complete your payment securely.
                             </p>
                             
                             <button onclick="processPayment()" id="pay-button" class="w-full max-w-md bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
@@ -422,7 +422,7 @@
             
             // Simulate payment processing
             setTimeout(() => {
-                alert('Payment successful! This is where Paymob integration would be implemented.');
+                alert('Payment successful! This is where payment gateway integration would be implemented.');
                 // In real implementation, redirect to success page or back to main app
                 window.location.href = '/';
             }, 2000);
@@ -451,7 +451,7 @@
                 
                 // Update payment method text
                 const methodNames = {
-                    'paymob': 'Paymob',
+                    'paymob': 'Pay by Card',
                     'instapay': 'Instapay',
                     'bank_transfer': 'Bank Transfer',
                     'cash_on_delivery': 'Cash on Delivery'
