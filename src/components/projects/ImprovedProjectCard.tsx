@@ -10,6 +10,7 @@ import { getPaymentMethodIcon, calculateTotalAmount } from '../../lib/payments';
 import { formatCurrency } from '../../lib/format';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from "../../lib/supabaseClient"
+import { LeadRequestDialog } from '../leads/LeadRequestDialog';
 import { 
   MapPin, 
   Building, 
@@ -21,7 +22,8 @@ import {
   CheckCircle,
   RefreshCw,
   Clock,
-  DollarSign
+  DollarSign,
+  MessageSquare
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,7 +36,8 @@ const PAYMENT_METHODS: PaymentMethod[] = ['Instapay', 'VodafoneCash', 'BankTrans
 
 export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPurchaseSuccess }) => {
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [showLeadRequestDialog, setShowLeadRequestDialog] = useState(false);
+  const [quantity, setQuantity] = useState(30);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Instapay');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
       if (!error && data) {
         setCurrentAvailableLeads(data.available_leads);
         if (quantity > data.available_leads) {
-          setQuantity(Math.min(data.available_leads, 1));
+          setQuantity(Math.min(data.available_leads, 30));
         }
       }
     } catch (err) {
@@ -81,53 +84,39 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
     }
   }, [showPurchaseDialog]);
 
-  const handlePurchase = async () => {
+  const handleProceedToCheckout = () => {
     if (!user) {
       setError('Please log in to make a purchase');
       return;
     }
-    
-    setIsProcessing(true);
-    setError(null);
-    setSuccess(null);
 
-    try {
-      console.log('🛒 Starting purchase:', { 
-        projectId: project.id, 
-        quantity, 
-        paymentMethod, 
-        userId: user.id 
-      });
-
-      // Step 1: Start the order (creates pending order)
-      const { data: orderResult, error: orderError } = await supabase.rpc('rpc_start_order', {
-        user_id: user.id,
-        project_id: project.id,
-        quantity,
-        payment_method: paymentMethod
-      });
-
-      if (orderError) {
-        throw new Error(orderError.message || 'Failed to create order');
-      }
-
-      if (!orderResult?.success || !orderResult?.order_id) {
-        throw new Error('Invalid order response from server');
-      }
-
-      console.log('✅ Order created:', orderResult);
-
-      // Step 2: Save order ID and show payment instructions
-      setCurrentOrderId(orderResult.order_id);
-      setShowPaymentInstructions(true);
-      setSuccess(`Order created! Total: EGP ${orderResult.total_amount}`);
-
-    } catch (err: any) {
-      console.error('❌ Purchase error:', err);
-      setError(err.message || 'Purchase failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
+    if (quantity < 30) {
+      setError('Minimum order is 30 leads');
+      return;
     }
+
+    if (quantity > currentAvailableLeads) {
+      setError(`Only ${currentAvailableLeads} leads available`);
+      return;
+    }
+
+    // Close the dialog and navigate to checkout
+    setShowPurchaseDialog(false);
+    
+    // Navigate to checkout with project data
+    const checkoutParams = new URLSearchParams({
+      projectId: project.id,
+      projectName: project.name,
+      developer: project.developer,
+      region: project.region,
+      availableLeads: currentAvailableLeads.toString(),
+      pricePerLead: pricePerLead.toString(),
+      quantity: quantity.toString(),
+      totalPrice: totalAmount.toString(),
+      image: project.image || '/placeholder-project.svg'
+    });
+
+    navigate(`/checkout?${checkoutParams.toString()}`);
   };
 
   const handleReceiptUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,12 +199,12 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
   };
 
   // Validation
-  const canPurchase = quantity >= 1 && 
+  const canPurchase = quantity >= 30 && 
                      quantity <= currentAvailableLeads && 
                      !isProcessing && 
                      user;
 
-  const quantityError = quantity < 1 ? 'Minimum 1 lead required' : 
+  const quantityError = quantity < 30 ? 'Minimum order is 30 leads' : 
                        quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : 
                        null;
 
@@ -233,6 +222,39 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
   return (
     <>
+      <style jsx>{`
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        input[type="range"]::-webkit-slider-track {
+          height: 8px;
+          border-radius: 4px;
+        }
+        
+        input[type="range"]::-moz-range-track {
+          height: 8px;
+          border-radius: 4px;
+          background: transparent;
+        }
+      `}</style>
       <Card className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-300">
         {/* Hero Photo Section */}
         <div className="relative h-48 overflow-hidden">
@@ -269,6 +291,13 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
               Premium
             </Badge>
           </div>
+          
+          {/* Minimum Order Badge */}
+          <div className="absolute bottom-3 right-3">
+            <Badge className="bg-blue-600 text-white hover:bg-blue-700">
+              Min 30 leads
+            </Badge>
+          </div>
         </div>
 
         {/* Project Details */}
@@ -299,240 +328,188 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
         {/* Action Footer */}
         <CardFooter className="p-4 pt-0">
-          <Button 
-            className="w-full h-12 text-base font-semibold" 
-            onClick={() => setShowPurchaseDialog(true)}
-            disabled={currentAvailableLeads === 0 || !user}
-          >
-            <ShoppingCart className="h-5 w-5 mr-2" />
-            {currentAvailableLeads === 0 ? 'Sold Out' : 
-             !user ? 'Login to Purchase' : 'Buy Leads'}
-          </Button>
+          {currentAvailableLeads === 0 ? (
+            <Button 
+              className="w-full h-12 text-base font-semibold bg-orange-600 hover:bg-orange-700" 
+              onClick={() => setShowLeadRequestDialog(true)}
+              disabled={!user}
+            >
+              <MessageSquare className="h-5 w-5 mr-2" />
+              {!user ? 'Login to Request' : 'Request Leads'}
+            </Button>
+          ) : (
+            <Button 
+              className="w-full h-12 text-base font-semibold" 
+              onClick={() => setShowPurchaseDialog(true)}
+              disabled={!user}
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              {!user ? 'Login to Purchase' : 'Buy Leads'}
+            </Button>
+          )}
         </CardFooter>
       </Card>
 
       {/* Enhanced Purchase Dialog */}
       <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
+        <DialogContent className="max-w-md w-[90vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="relative pb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPurchaseDialog(false)}
+              className="absolute top-0 right-0 h-8 w-8 p-0 hover:bg-gray-100 rounded-full z-10"
+            >
+              <span className="sr-only">Close</span>
+              <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </Button>
+            <DialogTitle className="text-center text-lg sm:text-xl font-semibold text-gray-900">
               Purchase Leads
             </DialogTitle>
-            <DialogDescription>
-              Buy leads from {project.name} in {project.region}
+            <DialogDescription className="text-center text-gray-600 text-sm">
+              Select quantity and proceed to secure checkout
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Real-time availability check */}
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-medium">Current Availability:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-blue-600">{currentAvailableLeads} leads</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={checkProjectAvailability}
-                  disabled={isCheckingAvailability}
-                  className="h-6 w-6 p-0"
-                >
-                  <RefreshCw className={`h-3 w-3 ${isCheckingAvailability ? 'animate-spin' : ''}`} />
-                </Button>
+            {/* Project Information */}
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h4>
+                <p className="text-gray-600 mb-3 text-sm">{project.developer} • {project.region}</p>
+                <div className="flex justify-center gap-6">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-blue-600">EGP {pricePerLead.toFixed(0)}</div>
+                    <div className="text-xs text-gray-500">per lead</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-600">{currentAvailableLeads}</div>
+                    <div className="text-xs text-gray-500">available</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Quantity Selection */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Quantity (minimum 1, maximum {currentAvailableLeads})
-              </label>
-              <Input
-                type="number"
-                min={1}
-                max={currentAvailableLeads}
-                step={1}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                disabled={isProcessing}
-              />
+            {/* Quantity Selection with Slider */}
+            <div className="space-y-3">
+              <div className="text-center">
+                <h3 className="text-base font-semibold">Select Quantity</h3>
+                <p className="text-xs text-gray-500 mt-1">Minimum order: 30 leads</p>
+              </div>
+              
+              {/* Quantity Display */}
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{quantity}</div>
+                <div className="text-xs text-gray-500">leads selected</div>
+              </div>
+              
+              {/* Range Slider */}
+              <div className="px-2">
+                <input
+                  type="range"
+                  min="30"
+                  max={currentAvailableLeads}
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((quantity - 30) / (currentAvailableLeads - 30)) * 100}%, #e5e7eb ${((quantity - 30) / (currentAvailableLeads - 30)) * 100}%, #e5e7eb 100%)`,
+                    WebkitAppearance: 'none',
+                    appearance: 'none'
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>30</span>
+                  <span>{currentAvailableLeads}</span>
+                </div>
+              </div>
+
+              {/* Quick Selection Buttons */}
+              <div className="grid grid-cols-4 gap-2">
+                {[30, 50, 100, 200].map((qty) => (
+                  <Button
+                    key={qty}
+                    variant={quantity === qty ? "default" : "outline"}
+                    onClick={() => setQuantity(Math.min(qty, currentAvailableLeads))}
+                    disabled={qty > currentAvailableLeads}
+                    className="h-8 text-xs font-medium"
+                  >
+                    {qty}
+                  </Button>
+                ))}
+              </div>
+
               {quantityError && (
-                <div className="flex items-center gap-2 mt-1 text-sm text-red-600">
-                  <AlertCircle className="h-4 w-4" />
-                  {quantityError}
+                <div className="flex items-center justify-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg">
+                  <AlertCircle className="h-3 w-3" />
+                  <span className="text-xs font-medium">{quantityError}</span>
                 </div>
               )}
             </div>
 
-            {/* Payment Method */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Payment Method
-              </label>
-              <Select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                disabled={isProcessing}
-              >
-                {PAYMENT_METHODS.map(method => (
-                  <option key={method} value={method}>
-                    {method}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
             {/* Order Summary */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <h4 className="font-medium text-gray-900">Order Summary</h4>
-              <div className="flex justify-between text-sm">
-                <span>Project:</span>
-                <span className="font-medium">{project.name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Quantity:</span>
-                <span className="font-medium">{quantity} leads</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Price per lead:</span>
-                <span className="font-medium">EGP {pricePerLead.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Payment method:</span>
-                <span className="font-medium">{paymentMethod}</span>
-              </div>
-              <div className="border-t pt-2 flex justify-between font-semibold">
-                <span>Total Amount:</span>
-                <span className="text-lg">EGP {totalAmount.toFixed(2)}</span>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 mb-1">
+                  EGP {totalAmount.toFixed(0)}
+                </div>
+                <div className="text-gray-600 mb-1 text-sm">
+                  Total for {quantity} lead{quantity !== 1 ? 's' : ''}
+                </div>
+                <div className="text-xs text-gray-500">
+                  EGP {pricePerLead.toFixed(0)} × {quantity} leads
+                </div>
               </div>
             </div>
 
-            {/* Status Messages */}
+            {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm">{error}</span>
-              </div>
-            )}
-
-            {success && (
-              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm">{success}</span>
-              </div>
-            )}
-
-            {/* Processing Status */}
-            {isProcessing && (
-              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700">
-                <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-                <span className="text-sm">
-                  {success || 'Processing your purchase...'}
-                </span>
-              </div>
-            )}
-
-            {/* Payment Instructions */}
-            {showPaymentInstructions && (
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                    💳 Payment Instructions
-                  </h4>
-                  <div className="space-y-2 text-sm text-blue-800">
-                    <p><strong>Payment Method:</strong> {paymentMethod}</p>
-                    <p><strong>Amount:</strong> EGP {totalAmount.toFixed(2)}</p>
-                    <p><strong>Order Reference:</strong> #{currentOrderId?.slice(-8)}</p>
-                    <p><strong>Please complete your payment using your preferred method and upload the receipt below</strong></p>
-                  </div>
-                </div>
-
-                {/* Receipt Upload */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Upload Payment Receipt *</label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleReceiptUpload}
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                  />
-                  {receiptFile && (
-                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-700">{receiptFile.name}</span>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Upload screenshot or photo of your Instapay payment confirmation
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                <span className="text-xs font-medium">{error}</span>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="space-y-2">
+              <Button
+                className="w-full h-10 text-sm font-semibold"
+                onClick={handleProceedToCheckout}
+                disabled={quantity < 1 || quantity > currentAvailableLeads}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Proceed to Checkout
+              </Button>
               <Button
                 variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowPurchaseDialog(false);
-                  setShowPaymentInstructions(false);
-                  setCurrentOrderId(null);
-                  setReceiptFile(null);
-                }}
-                disabled={isProcessing}
+                className="w-full h-8 text-sm"
+                onClick={() => setShowPurchaseDialog(false)}
               >
                 Cancel
               </Button>
-              {!showPaymentInstructions ? (
-                <Button
-                  className="flex-1"
-                  onClick={handlePurchase}
-                  disabled={!canPurchase || isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating Order...
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Create Order
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  className="flex-1"
-                  onClick={handleConfirmPayment}
-                  disabled={!receiptFile || isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Confirming...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirm Payment
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Purchase Terms */}
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>• Minimum purchase: 1 lead</p>
-              <p>• Leads will appear in your CRM immediately after payment</p>
-              <p>• All purchases are final - no refunds</p>
-              <p>• Contact support for any issues</p>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Lead Request Dialog */}
+      <LeadRequestDialog
+        isOpen={showLeadRequestDialog}
+        onClose={() => setShowLeadRequestDialog(false)}
+        project={{
+          id: project.id,
+          name: project.name,
+          developer: project.developer,
+          region: project.region,
+          pricePerLead: pricePerLead
+        }}
+        onSuccess={() => {
+          onPurchaseSuccess?.();
+          setShowLeadRequestDialog(false);
+        }}
+      />
     </>
   );
 };
