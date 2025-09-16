@@ -294,7 +294,7 @@ export const TempLanding: React.FC = () => {
       </div>
 
 
-      {/* Paymob Integration Notice */}
+      {/* Payment Integration Notice */}
       <div className="bg-gradient-to-r from-green-50 to-blue-50 py-8 border-t">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-6 border border-green-200">
@@ -303,11 +303,11 @@ export const TempLanding: React.FC = () => {
                 <Shield className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900">
-                Secure Payments Powered by Paymob
+                Secure Payments - Pay by Card
               </h3>
             </div>
             <p className="text-center text-gray-600 mb-4">
-              All transactions are processed securely through Paymob, Egypt's leading payment gateway. 
+              All transactions are processed securely through our payment gateway. 
               Accept credit cards, debit cards, Fawry, and mobile wallets.
             </p>
             <div className="flex justify-center space-x-6 text-sm text-gray-500">

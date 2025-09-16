@@ -116,8 +116,8 @@ export const Checkout: React.FC = () => {
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Here you would integrate with Paymob
-    console.log('Processing payment with Paymob:', {
+    // Here you would integrate with payment gateway
+    console.log('Processing payment with payment gateway:', {
       amount: checkoutData.totalPrice,
       currency: 'EGP',
       paymentMethod,
