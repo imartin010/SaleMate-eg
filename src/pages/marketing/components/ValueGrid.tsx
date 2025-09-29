@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { 
@@ -90,7 +89,7 @@ const ValueGrid = () => {
       scale: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   };
@@ -100,7 +99,7 @@ const ValueGrid = () => {
       scale: 1.1,
       rotate: 5,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 20
       }
@@ -137,14 +136,14 @@ const ValueGrid = () => {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          {values.map((value, index) => {
+          {values.map((value) => {
             const Icon = value.icon;
             return (
               <motion.div
                 key={value.title}
                 variants={cardVariants}
                 whileHover={{ y: -8, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                transition={{ type: "spring" as const, stiffness: 300, damping: 30 }}
               >
                 <Card className={`h-full p-6 ${value.bgColor} ${value.borderColor} border-2 hover:shadow-xl transition-all duration-300 group`}>
                   {/* Icon */}

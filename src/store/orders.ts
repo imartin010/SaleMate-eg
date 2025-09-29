@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Order, PurchaseRequest } from '../types';
+import { Order, PurchaseRequest, OrderStatus } from '../types';
 import { supabase } from "../lib/supabaseClient"
 import { processPayment, calculateTotalAmount } from '../lib/payments';
 
@@ -53,9 +53,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         projectId: order.project_id,
         quantity: order.quantity,
         paymentMethod: order.payment_method,
-        status: order.status,
+        status: (order.status || 'pending') as OrderStatus,
         totalAmount: order.total_amount,
-        createdAt: order.created_at
+        createdAt: order.created_at || new Date().toISOString()
       })) || [];
 
       console.log(`✅ Fetched ${transformedOrders.length} orders from Supabase`);
@@ -84,7 +84,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         throw new Error('Project not found');
       }
 
-      if (project.available_leads < request.quantity) {
+      if ((project.available_leads || 0) < request.quantity) {
         set({ loading: false, error: 'Insufficient leads available' });
         return { success: false, error: 'Insufficient leads available' };
       }
@@ -130,7 +130,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             paymentMethod: newOrder.payment_method,
             status: 'failed',
             totalAmount: newOrder.total_amount,
-            createdAt: newOrder.created_at
+            createdAt: newOrder.created_at || new Date().toISOString()
           }], 
           loading: false, 
           error: paymentResult.error 
@@ -151,7 +151,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       // Update project available leads
       const { error: projectUpdateError } = await supabase
         .from('projects')
-        .update({ available_leads: project.available_leads - request.quantity })
+        .update({ available_leads: (project.available_leads || 0) - request.quantity })
         .eq('id', request.projectId);
 
       if (projectUpdateError) {

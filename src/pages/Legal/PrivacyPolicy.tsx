@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, Shield, Lock, Eye, Database, Users, Mail } from 'lucide-react';
+import { ArrowLeft, Shield, Lock, Eye, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const PrivacyPolicy: React.FC = () => {

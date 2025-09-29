@@ -88,18 +88,7 @@ const Inventory: React.FC = () => {
     saleTypes: [] as string[],
   });
 
-  useEffect(() => {
-    // Add a small delay to ensure filters are properly set
-    const timer = setTimeout(() => {
-      loadProperties();
-      loadFilterOptions();
-      loadCardCounts();
-    }, 50);
-    
-    return () => clearTimeout(timer);
-  }, [currentPage, filters, sort]);
-
-  const loadProperties = async () => {
+  const loadProperties = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -107,6 +96,7 @@ const Inventory: React.FC = () => {
       console.log('🏠 Loading inventory properties with filters:', filters);
       
       // Build query - cast to any to handle dynamic table
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
         .from('salemate-inventory')
         .select('*', { count: 'exact' });
@@ -209,6 +199,7 @@ const Inventory: React.FC = () => {
       query = query.order(sort.field, { ascending: sort.direction === 'asc' });
 
       // Get total count with same filters
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let countQuery = (supabase as any)
         .from('salemate-inventory')
         .select('*', { count: 'exact', head: true });
@@ -324,19 +315,32 @@ const Inventory: React.FC = () => {
       setProperties(paginatedData);
       setTotalCount(count || 0);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error loading properties:', error);
-      setError(error.message || 'Failed to load properties');
+      setError((error instanceof Error ? error.message : String(error)) || 'Failed to load properties');
       setProperties([]);
       setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, filters, sort]);
+
+  useEffect(() => {
+    // Add a small delay to ensure filters are properly set
+    const timer = setTimeout(() => {
+      loadProperties();
+      loadFilterOptions();
+      loadCardCounts();
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [loadProperties]);
+
 
   const loadFilterOptions = async () => {
     try {
       // Get unique values for filter dropdowns
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('salemate-inventory')
         .select('compound, area, developer, property_type, finishing, sale_type')
@@ -351,10 +355,11 @@ const Inventory: React.FC = () => {
       const finishings = new Set<string>();
       const saleTypes = new Set<string>();
 
-      data?.forEach(property => {
+      data?.forEach((property: Record<string, unknown>) => {
         // Handle compound
-        if (property.compound?.name) {
-          compounds.add(property.compound.name);
+        const compound = property.compound as Record<string, unknown>;
+        if (compound?.name && typeof compound.name === 'string') {
+          compounds.add(compound.name);
         } else if (typeof property.compound === 'string') {
           try {
             const parsed = JSON.parse(property.compound.replace(/'/g, '"'));
@@ -365,8 +370,9 @@ const Inventory: React.FC = () => {
         }
         
         // Handle area
-        if (property.area?.name) {
-          areas.add(property.area.name);
+        const area = property.area as Record<string, unknown>;
+        if (area?.name && typeof area.name === 'string') {
+          areas.add(area.name);
         } else if (typeof property.area === 'string') {
           try {
             const parsed = JSON.parse(property.area.replace(/'/g, '"'));
@@ -377,8 +383,9 @@ const Inventory: React.FC = () => {
         }
         
         // Handle developer
-        if (property.developer?.name) {
-          developers.add(property.developer.name);
+        const developer = property.developer as Record<string, unknown>;
+        if (developer?.name && typeof developer.name === 'string') {
+          developers.add(developer.name);
         } else if (typeof property.developer === 'string') {
           try {
             const parsed = JSON.parse(property.developer.replace(/'/g, '"'));
@@ -389,8 +396,9 @@ const Inventory: React.FC = () => {
         }
         
         // Handle property_type
-        if (property.property_type?.name) {
-          propertyTypes.add(property.property_type.name);
+        const propertyType = property.property_type as Record<string, unknown>;
+        if (propertyType?.name && typeof propertyType.name === 'string') {
+          propertyTypes.add(propertyType.name);
         } else if (typeof property.property_type === 'string') {
           try {
             const parsed = JSON.parse(property.property_type.replace(/'/g, '"'));
@@ -400,8 +408,8 @@ const Inventory: React.FC = () => {
           }
         }
         
-        if (property.finishing) finishings.add(property.finishing);
-        if (property.sale_type) saleTypes.add(property.sale_type);
+        if (property.finishing && typeof property.finishing === 'string') finishings.add(property.finishing);
+        if (property.sale_type && typeof property.sale_type === 'string') saleTypes.add(property.sale_type);
       });
 
       setFilterOptions({
@@ -432,6 +440,7 @@ const Inventory: React.FC = () => {
 
       // Fetch all records in batches
       while (hasMore) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: batchData, error: batchError } = await (supabase as any)
           .from('salemate-inventory')
           .select('compound, area, developer')
@@ -450,7 +459,7 @@ const Inventory: React.FC = () => {
         totalFetched += batchData.length;
 
         // Process this batch
-        batchData.forEach(property => {
+        batchData.forEach((property: Record<string, unknown>) => {
           // Handle compound - extract name from Python dict string
           if (property.compound) {
             if (typeof property.compound === 'string') {
@@ -461,7 +470,7 @@ const Inventory: React.FC = () => {
                   uniqueCompounds.add(compoundName);
                 }
               }
-            } else if (property.compound.name) {
+            } else if (property.compound && typeof property.compound === 'object' && 'name' in property.compound && typeof property.compound.name === 'string') {
               uniqueCompounds.add(property.compound.name.trim());
             }
           }
@@ -476,7 +485,7 @@ const Inventory: React.FC = () => {
                   uniqueAreas.add(areaName);
                 }
               }
-            } else if (property.area.name) {
+            } else if (property.area && typeof property.area === 'object' && 'name' in property.area && typeof property.area.name === 'string') {
               uniqueAreas.add(property.area.name.trim());
             }
           }
@@ -491,7 +500,7 @@ const Inventory: React.FC = () => {
                   uniqueDevelopers.add(developerName);
                 }
               }
-            } else if (property.developer.name) {
+            } else if (property.developer && typeof property.developer === 'object' && 'name' in property.developer && typeof property.developer.name === 'string') {
               uniqueDevelopers.add(property.developer.name.trim());
             }
           }
@@ -603,11 +612,11 @@ const Inventory: React.FC = () => {
               <tr key={property.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   {(() => {
-                    const compound = property.compound as any;
+                    const compound = property.compound as Record<string, unknown>;
                     if (compound?.name) return compound.name;
                     if (typeof compound === 'string') {
                       try {
-                        const parsed = JSON.parse(compound.replace(/'/g, '"'));
+                        const parsed = JSON.parse((compound as string).replace(/'/g, '"'));
                         return parsed.name || '-';
                       } catch {
                         return compound;
@@ -619,11 +628,11 @@ const Inventory: React.FC = () => {
                 
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   {(() => {
-                    const developer = property.developer as any;
+                    const developer = property.developer as Record<string, unknown>;
                     if (developer?.name) return developer.name;
                     if (typeof developer === 'string') {
                       try {
-                        const parsed = JSON.parse(developer.replace(/'/g, '"'));
+                        const parsed = JSON.parse((developer as string).replace(/'/g, '"'));
                         return parsed.name || '-';
                       } catch {
                         return developer;
@@ -635,11 +644,11 @@ const Inventory: React.FC = () => {
                 
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   {(() => {
-                    const area = property.area as any;
+                    const area = property.area as Record<string, unknown>;
                     if (area?.name) return area.name;
                     if (typeof area === 'string') {
                       try {
-                        const parsed = JSON.parse(area.replace(/'/g, '"'));
+                        const parsed = JSON.parse((area as string).replace(/'/g, '"'));
                         return parsed.name || '-';
                       } catch {
                         return area;
@@ -681,12 +690,12 @@ const Inventory: React.FC = () => {
                   <div className="flex flex-col gap-1">
                     {(() => {
                       let propertyTypeName = null;
-                      const propertyType = property.property_type as any;
+                      const propertyType = property.property_type as Record<string, unknown>;
                       if (propertyType?.name) {
                         propertyTypeName = propertyType.name;
                       } else if (typeof propertyType === 'string') {
                         try {
-                          const parsed = JSON.parse(propertyType.replace(/'/g, '"'));
+                          const parsed = JSON.parse((propertyType as string).replace(/'/g, '"'));
                           propertyTypeName = parsed.name;
                         } catch {
                           propertyTypeName = propertyType;
@@ -1422,7 +1431,7 @@ const Inventory: React.FC = () => {
           
           <div className="flex items-center space-x-1">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
+              let pageNum: number;
               if (totalPages <= 5) {
                 pageNum = i + 1;
               } else if (currentPage <= 3) {

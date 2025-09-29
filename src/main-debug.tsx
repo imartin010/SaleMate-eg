@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -121,7 +122,7 @@ class DebugErrorBoundary extends React.Component<{children: React.ReactNode}, {h
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  componentDidCatch(error: Error, errorInfo: unknown) {
     console.error('🚨 Debug Error Boundary error details:', error, errorInfo);
   }
 

@@ -22,7 +22,6 @@ import {
   AlertCircle,
   Receipt,
   Upload,
-  Eye,
   Clock,
   TrendingUp
 } from 'lucide-react';

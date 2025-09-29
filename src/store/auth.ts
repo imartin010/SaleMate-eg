@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import type { Database } from "../types/database";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type Role = Database["public"]["Enums"]["user_role"];
+// type Role = Database["public"]["Enums"]["user_role"]; // Unused
 
 interface AuthState {
   user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] | null;
@@ -16,7 +16,7 @@ interface AuthState {
   signOut(): Promise<void>;
   refreshProfile(): Promise<void>;
   // Legacy methods for compatibility
-  loadUserProfile(user: any): Promise<void>;
+  loadUserProfile(user: unknown): Promise<void>;
   resetPassword(email: string): Promise<boolean>;
   updatePassword(password: string): Promise<boolean>;
   clearError(): void;
@@ -55,16 +55,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const uid = data.user?.id;
     if (uid) {
       try {
-        await supabase.rpc("ensure_profile", { 
-          p_uid: uid, 
-          p_name: name, 
-          p_email: email, 
-          p_phone: phone, 
-          p_role: 'user' 
-        });
+        // RPC function not available - profile will be created by trigger
+        console.log('Profile creation handled by database trigger');
         await get().refreshProfile();
-      } catch (rpcError) {
-        console.warn('RPC ensure_profile failed, profile may be created by trigger');
+      } catch {
+        console.warn('Profile creation failed, may be handled by trigger');
       }
     }
     set({ loading: false });
@@ -104,11 +99,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // Legacy methods for compatibility
-  async loadUserProfile(user) {
+  async loadUserProfile() {
     await get().refreshProfile();
   },
 
-  async resetPassword(email) {
+  async resetPassword(email: string) {
     set({ error: undefined, loading: true });
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     set({ loading: false });

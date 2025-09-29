@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { ArrowLeft, Mail, Phone, MessageCircle, Clock, MapPin, Send, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MessageCircle, Clock, Send, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const ContactSupport: React.FC = () => {

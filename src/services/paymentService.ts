@@ -5,7 +5,7 @@ export interface PaymentRequest {
   paymentMethod: PaymentMethod;
   description: string;
   userId: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentResult {
@@ -27,44 +27,26 @@ export class PaymentService {
 
       // Mock payment processing based on method
       switch (request.paymentMethod) {
-        case 'credit_card':
-          return await this.processCreditCardPayment(request);
-        case 'instapay':
-          return await this.processInstapayPayment(request);
-        case 'vodafone_cash':
-          return await this.processVodafoneCashPayment(request);
-        case 'bank_transfer':
-          return await this.processBankTransferPayment(request);
+        case 'Instapay':
+          return await this.processInstapayPayment();
+        case 'VodafoneCash':
+          return await this.processVodafoneCashPayment();
+        case 'BankTransfer':
+          return await this.processBankTransferPayment();
         default:
           throw new Error('Unsupported payment method');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error.message || 'Payment processing failed'
+        error: (error instanceof Error ? error.message : String(error)) || 'Payment processing failed'
       };
     }
   }
 
-  private static async processCreditCardPayment(request: PaymentRequest): Promise<PaymentResult> {
-    // Mock credit card processing
-    // In real implementation, integrate with Stripe, Square, or similar
-    const mockSuccess = Math.random() > 0.1; // 90% success rate for demo
+  // Credit card payment method removed as it's not in the PaymentMethod type
 
-    if (mockSuccess) {
-      return {
-        success: true,
-        transactionId: `cc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Credit card payment declined. Please try again.'
-      };
-    }
-  }
-
-  private static async processInstapayPayment(request: PaymentRequest): Promise<PaymentResult> {
+  private static async processInstapayPayment(): Promise<PaymentResult> {
     // Mock Instapay processing
     // In real implementation, integrate with Instapay API
     const mockSuccess = Math.random() > 0.05; // 95% success rate for demo
@@ -82,7 +64,7 @@ export class PaymentService {
     }
   }
 
-  private static async processVodafoneCashPayment(request: PaymentRequest): Promise<PaymentResult> {
+  private static async processVodafoneCashPayment(): Promise<PaymentResult> {
     // Mock Vodafone Cash processing
     // In real implementation, integrate with Vodafone Cash API
     const mockSuccess = Math.random() > 0.05; // 95% success rate for demo
@@ -100,7 +82,7 @@ export class PaymentService {
     }
   }
 
-  private static async processBankTransferPayment(request: PaymentRequest): Promise<PaymentResult> {
+  private static async processBankTransferPayment(): Promise<PaymentResult> {
     // Mock bank transfer processing
     // In real implementation, this would require manual verification
     const mockSuccess = Math.random() > 0.2; // 80% success rate for demo
@@ -123,13 +105,11 @@ export class PaymentService {
    */
   static getPaymentInstructions(method: PaymentMethod): string {
     switch (method) {
-      case 'credit_card':
-        return 'Enter your card details to complete the payment securely.';
-      case 'instapay':
+      case 'Instapay':
         return 'Send payment to our Instapay account: 01234567890. Include your user ID in the reference.';
-      case 'vodafone_cash':
+      case 'VodafoneCash':
         return 'Send payment to our Vodafone Cash number: 01234567890. Include your user ID in the reference.';
-      case 'bank_transfer':
+      case 'BankTransfer':
         return 'Transfer to our bank account: Bank Name, Account: 1234567890, Reference: Your User ID. Upload receipt for verification.';
       default:
         return 'Please contact support for payment instructions.';
@@ -141,13 +121,11 @@ export class PaymentService {
    */
   static getPaymentMethodName(method: PaymentMethod): string {
     switch (method) {
-      case 'credit_card':
-        return 'Debit/Credit Card';
-      case 'instapay':
+      case 'Instapay':
         return 'Instapay';
-      case 'vodafone_cash':
+      case 'VodafoneCash':
         return 'Vodafone Cash';
-      case 'bank_transfer':
+      case 'BankTransfer':
         return 'Bank Transfer';
       default:
         return 'Unknown Method';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { 
@@ -90,7 +89,7 @@ const ValueGridArabic = () => {
       scale: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   };
@@ -125,7 +124,7 @@ const ValueGridArabic = () => {
           whileInView="visible"
           viewport={{ once: true }}
         >
-          {values.map((value, index) => {
+          {values.map((value) => {
             const Icon = value.icon;
             return (
               <motion.div

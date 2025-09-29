@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import MarketingSEOArabic from './seoArabic';
 import HeroArabic from './components/HeroArabic';
 import PartnerStripArabic from './components/PartnerStripArabic';

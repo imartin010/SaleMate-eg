@@ -56,10 +56,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           name: project.name,
           developer: project.developer,
           region: project.region,
-          availableLeads: project.available_leads,
+          availableLeads: project.available_leads || 0,
           pricePerLead: project.price_per_lead,
           description: project.description || undefined,
-          createdAt: project.created_at
+          createdAt: project.created_at || undefined
         })) || [];
 
       console.log(`✅ Fetched ${transformedProjects.length} projects from Supabase`);
@@ -80,7 +80,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       set({ error: null });
       
       // Transform frontend data to Supabase format
-      const supabaseUpdates: any = {};
+      const supabaseUpdates: Record<string, unknown> = {};
       if (updates.name !== undefined) supabaseUpdates.name = updates.name;
       if (updates.developer !== undefined) supabaseUpdates.developer = updates.developer;
       if (updates.region !== undefined) supabaseUpdates.region = updates.region;
@@ -88,7 +88,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       if (updates.pricePerLead !== undefined) supabaseUpdates.price_per_lead = updates.pricePerLead;
       if (updates.description !== undefined) supabaseUpdates.description = updates.description;
 
-      const { data: updatedProject, error } = await supabase
+      const { error } = await supabase
         .from('projects')
         .update(supabaseUpdates)
         .eq('id', id)
@@ -144,10 +144,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         name: newProject.name,
         developer: newProject.developer,
         region: newProject.region,
-        availableLeads: newProject.available_leads,
+        availableLeads: newProject.available_leads || 0,
         pricePerLead: newProject.price_per_lead,
-        description: newProject.description || undefined,
-        createdAt: newProject.created_at
+        description: newProject.description || '',
+        createdAt: newProject.created_at || undefined
       };
 
       const projects = [...get().projects, transformedProject];

@@ -37,8 +37,7 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [walletAmount, setWalletAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card');
-  const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Instapay');
 
   const totalAmount = quantity * project.pricePerLead;
   const hasEnoughBalance = balance >= totalAmount;
@@ -73,20 +72,18 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
       } else {
         setError(result.error || 'Failed to add money to wallet');
       }
-    } catch (err: any) {
-      setError(err.message || 'Payment processing failed');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : String(err)) || 'Payment processing failed');
     }
   };
 
   const getPaymentMethodIcon = (method: PaymentMethod) => {
     switch (method) {
-      case 'credit_card':
-        return <CreditCard className="h-4 w-4" />;
-      case 'instapay':
+      case 'Instapay':
         return <Smartphone className="h-4 w-4" />;
-      case 'vodafone_cash':
+      case 'VodafoneCash':
         return <Phone className="h-4 w-4" />;
-      case 'bank_transfer':
+      case 'BankTransfer':
         return <DollarSign className="h-4 w-4" />;
       default:
         return <CreditCard className="h-4 w-4" />;
@@ -95,16 +92,14 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
 
   const getPaymentMethodName = (method: PaymentMethod) => {
     switch (method) {
-      case 'credit_card':
-        return 'Debit/Credit Card';
-      case 'instapay':
+      case 'Instapay':
         return 'Instapay';
-      case 'vodafone_cash':
+      case 'VodafoneCash':
         return 'Vodafone Cash';
-      case 'bank_transfer':
+      case 'BankTransfer':
         return 'Bank Transfer';
       default:
-        return 'Debit/Credit Card';
+        return 'Instapay';
     }
   };
 
@@ -123,7 +118,8 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
     setError(null);
 
     try {
-      const { data, error: requestError } = await supabase.rpc('create_lead_request', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: requestError } = await (supabase as any).rpc('create_lead_request', {
         p_user_id: (await supabase.auth.getUser()).data.user?.id,
         p_project_id: project.id,
         p_requested_quantity: quantity,
@@ -141,9 +137,9 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
         onSuccess?.();
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating lead request:', err);
-      setError(err.message || 'Failed to submit lead request');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to submit lead request');
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +218,7 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
             <div>
               <Label className="text-xs text-gray-600 mb-2 block">Payment Method</Label>
               <div className="grid grid-cols-2 gap-2">
-                {(['credit_card', 'instapay', 'vodafone_cash', 'bank_transfer'] as PaymentMethod[]).map((method) => (
+                {(['Instapay', 'VodafoneCash', 'BankTransfer'] as PaymentMethod[]).map((method) => (
                   <div
                     key={method}
                     className={`p-2 border rounded cursor-pointer transition-all text-xs ${
@@ -244,11 +240,11 @@ export const LeadRequestDialog: React.FC<LeadRequestDialogProps> = ({
             </div>
 
             {/* Payment Instructions */}
-            {paymentMethod !== 'credit_card' && (
+            {paymentMethod && (
               <div className="bg-blue-50 p-2 rounded text-xs text-blue-700">
-                {paymentMethod === 'instapay' && 'Use your mobile wallet to send payment to our Instapay account.'}
-                {paymentMethod === 'vodafone_cash' && 'Send payment to our Vodafone Cash number: 01234567890'}
-                {paymentMethod === 'bank_transfer' && 'Transfer to our bank account and contact support with receipt.'}
+                {paymentMethod === 'Instapay' && 'Use your mobile wallet to send payment to our Instapay account.'}
+                {paymentMethod === 'VodafoneCash' && 'Send payment to our Vodafone Cash number: 01234567890'}
+                {paymentMethod === 'BankTransfer' && 'Transfer to our bank account and contact support with receipt.'}
               </div>
             )}
           </div>

@@ -78,8 +78,8 @@ const AdminPanel: React.FC = () => {
       // Transform Supabase data to match User type
       const transformedUsers: User[] = data?.map(profile => ({
         id: profile.id,
-        name: profile.name,
-        email: profile.email,
+        name: profile.name || 'Unknown',
+        email: profile.email || 'unknown@example.com',
         role: profile.role as UserRole,
         managerId: profile.manager_id as string | undefined,
         createdAt: profile.created_at
@@ -143,8 +143,8 @@ const AdminPanel: React.FC = () => {
           name: data.name,
           developer: data.developer,
           region: data.region,
-          availableLeads: data.available_leads,
-          pricePerLead: data.price_per_lead,
+          availableLeads: data.available_leads || 0,
+          pricePerLead: data.price_per_lead || 0,
           description: data.description || undefined,
         });
       
@@ -233,7 +233,8 @@ const AdminPanel: React.FC = () => {
       setError(null);
       
       // Call the Supabase function to update user role
-      const { data, error } = await supabase.rpc('update_user_role', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('update_user_role', {
         target_user_id: selectedUser.id,
         new_role: newRole
       });

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext } from 'react';
 
 interface ThemeContextType {
@@ -20,7 +21,7 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   // Always use light mode
-  const theme: 'light' = 'light';
+  const theme = 'light' as const;
 
   // Set light mode on document root
   React.useEffect(() => {

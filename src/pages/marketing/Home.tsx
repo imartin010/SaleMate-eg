@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import MarketingSEO from './seo';
 import Hero from './components/Hero';
 import PartnerStrip from './components/PartnerStrip';

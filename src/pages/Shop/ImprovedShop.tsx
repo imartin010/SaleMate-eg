@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
@@ -14,7 +13,6 @@ import {
   ShoppingCart,
   MapPin,
   Building,
-  TrendingUp,
   Star,
   Zap,
   Shield,
@@ -51,6 +49,7 @@ export const ImprovedShop: React.FC = () => {
         setTimeout(() => reject(new Error('Database timeout')), 10000)
       );
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const queryPromise = (supabase as any)
         .from('projects')
         .select(`
@@ -68,6 +67,7 @@ export const ImprovedShop: React.FC = () => {
       const { data: projectsData, error: projectsError } = await Promise.race([
         queryPromise, 
         timeoutPromise
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ]) as any;
 
       if (projectsError) {
@@ -93,9 +93,11 @@ export const ImprovedShop: React.FC = () => {
         };
 
         // Base list from projects table
-        const base: Project[] = (projectsData as any[]).map((p: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const base: Project[] = (projectsData as any[]).map((p: Record<string, unknown>) => {
           const name = extractName(p.name);
-          const developer = extractName(p?.developers?.name ?? p.developer);
+          const developers = p.developers as Record<string, unknown> | undefined;
+          const developer = extractName(developers?.name ?? p.developer);
           const region = extractName(p.region);
           // Prefer a clean description; if it looks like JSON, replace with developer tagline
           const desc = typeof p.description === 'string' && /['"]name['"]\s*:/.test(p.description)
@@ -123,9 +125,9 @@ export const ImprovedShop: React.FC = () => {
 
       setLastRefresh(new Date());
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Failed to load projects:', err);
-      setError(err.message || 'Failed to load projects');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to load projects');
       
       // No fallback data - show empty state
       console.log('📝 No projects available');
@@ -349,8 +351,7 @@ export const ImprovedShop: React.FC = () => {
                 <label className="text-sm font-medium mb-2 block">Sort By</label>
                 <Select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full"
+                  onValueChange={(value) => setSortBy(value as 'name' | 'leads' | 'region' | 'price')}
                 >
                   <option value="name">Project Name</option>
                   <option value="leads">Available Leads</option>
@@ -363,8 +364,7 @@ export const ImprovedShop: React.FC = () => {
                 <label className="text-sm font-medium mb-2 block">Region</label>
                 <Select
                   value={regionFilter}
-                  onChange={(e) => setRegionFilter(e.target.value)}
-                  className="w-full"
+                  onValueChange={(value) => setRegionFilter(value)}
                 >
                   <option value="">All Regions</option>
                   {regions.map(region => (

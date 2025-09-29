@@ -33,7 +33,7 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE, {
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-type Row = Record<string, any>;
+type Row = Record<string, unknown>;
 
 async function insertBatch(rows: Row[]) {
   const maxAttempts = 5;
@@ -42,19 +42,16 @@ async function insertBatch(rows: Row[]) {
     attempt++;
     const q = env.UPSERT
       ? supabase.from(env.TABLE).upsert(rows, {
-          returning: 'minimal',
           onConflict: env.CONFLICT_TARGET,
         })
-      : supabase.from(env.TABLE).insert(rows, { returning: 'minimal' });
+      : supabase.from(env.TABLE).insert(rows);
 
     const { error } = await q;
 
     if (!error) return;
 
-    // Retry on 429/5xx
-    const retryable =
-      error?.status && (error.status === 429 || (error.status >= 500 && error.status <= 599));
-    if (!retryable || attempt >= maxAttempts) {
+    // Retry on any error up to maxAttempts
+    if (attempt >= maxAttempts) {
       throw new Error(`Insert failed (attempt ${attempt}): ${error?.message || 'unknown error'}`);
     }
     const backoff = Math.min(15000, 500 * Math.pow(2, attempt));
@@ -72,7 +69,7 @@ async function ensureTableExists() {
   }
 }
 
-function normalizeValue(v: any) {
+function normalizeValue(v: unknown) {
   if (v === undefined) return null;
   if (typeof v === 'string') {
     const t = v.trim();
@@ -103,7 +100,7 @@ async function processFile(file: string) {
     });
 
     parser.on('readable', () => {
-      let record: any;
+      let record: Record<string, unknown>;
       while ((record = parser.read()) !== null) {
         read++;
         const obj: Row = {};

@@ -38,7 +38,7 @@ export const BrandHeader: React.FC<BrandHeaderProps> = ({
         {variant === 'hero' && (
           <Logo 
             variant="full" 
-            size={logoSizes[variant] as any} 
+            size={logoSizes[variant] as any} // eslint-disable-line @typescript-eslint/no-explicit-any
             showTagline={true} 
             className="mx-auto mb-8" 
           />

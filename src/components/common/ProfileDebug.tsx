@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabaseClient"
 
 export const ProfileDebug: React.FC = () => {
   const { user, profile, refreshProfile } = useAuthStore();
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const checkProfileDirectly = async () => {
@@ -37,7 +37,7 @@ export const ProfileDebug: React.FC = () => {
 
   useEffect(() => {
     checkProfileDirectly();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) return null;
 
@@ -48,11 +48,10 @@ export const ProfileDebug: React.FC = () => {
         <div><strong>User ID:</strong> {user.id}</div>
         <div><strong>User Email:</strong> {user.email}</div>
         <div><strong>Store Profile Role:</strong> {profile?.role || 'undefined'}</div>
-        <div><strong>Store Role:</strong> {useAuthStore.getState().role}</div>
-        <div><strong>Direct DB Role:</strong> {debugInfo?.role || 'loading...'}</div>
+        <div><strong>Direct DB Role:</strong> {(debugInfo && 'role' in debugInfo) ? String(debugInfo.role) : 'loading...'}</div>
         <div><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</div>
-        {debugInfo?.error && (
-          <div className="text-red-500"><strong>Error:</strong> {debugInfo.error}</div>
+        {debugInfo && 'error' in debugInfo && (
+          <div className="text-red-500"><strong>Error:</strong> {String(debugInfo.error)}</div>
         )}
       </div>
       <div className="mt-2 space-x-2">

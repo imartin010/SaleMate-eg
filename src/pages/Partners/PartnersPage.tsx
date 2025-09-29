@@ -86,7 +86,8 @@ const PartnersPage: React.FC = () => {
       // Fetch from project_partner_commissions and join projects and partners
       // This assumes FKs: project_partner_commissions.project_id -> projects.id
       // and project_partner_commissions.partner_id -> partners.id
-      const { data, error: queryError } = await ((supabase as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: queryError } = await ((supabase as unknown as { from: (table: string) => any })
         .from('project_partner_commissions')
         .select(`
           commission_rate,
@@ -135,7 +136,9 @@ const PartnersPage: React.FC = () => {
         if (!byProject.has(pid)) {
           // Normalize developer name with multiple fallbacks
           let developerName = 'Unknown';
-          const dnameRel = (row.projects as any)?.developers?.name as string | undefined;
+          const projects = row.projects as Record<string, unknown>;
+          const developers = projects?.developers as Record<string, unknown> | undefined;
+          const dnameRel = developers?.name as string | undefined;
           if (dnameRel && typeof dnameRel === 'string') {
             developerName = dnameRel;
           }
@@ -199,7 +202,8 @@ const PartnersPage: React.FC = () => {
       );
 
       // Fetch representative images per compound from salemate-inventory and attach
-      const { data: inventoryRows, error: invErr } = await ((supabase as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: inventoryRows, error: invErr } = await ((supabase as unknown as { from: (table: string) => any })
         .from('salemate-inventory')
         .select('compound,image'));
       if (invErr) {
@@ -220,7 +224,7 @@ const PartnersPage: React.FC = () => {
       setProjects(aggregated);
 
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? (err instanceof Error ? err.message : String(err)) : 'Unknown error';
       console.error('❌ Error loading partner projects:', err);
       setError(message || 'Failed to load projects');
       setProjects([]);
@@ -550,8 +554,7 @@ const PartnersPage: React.FC = () => {
                 </div>
                 
       {/* Add CSS animations */}
-      {/* @ts-ignore styled-jsx in TSX */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideInUp {
           from {
             opacity: 0;
@@ -720,9 +723,7 @@ const PartnersPage: React.FC = () => {
       )}
 
       {/* Additional CSS for animations */}
-      {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
-      {/* @ts-ignore - allow styled-jsx props in TS */}
-      <style jsx global>{`
+      <style>{`
         @keyframes slideInUp {
           from {
             opacity: 0;

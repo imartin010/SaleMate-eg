@@ -1,8 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { AppLayout } from './app/layout/AppLayout';
-import { ThemeProvider } from './app/providers/ThemeProvider';
 // Import the simple auth store instead
 // import { useAuthStore } from './store/auth-simple';
 import './index.css';

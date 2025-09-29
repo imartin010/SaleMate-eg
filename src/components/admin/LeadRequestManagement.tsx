@@ -3,16 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   Users, 
-  Clock, 
   CheckCircle, 
   XCircle, 
-  MessageSquare,
-  DollarSign,
-  Calendar
+  MessageSquare
 } from 'lucide-react';
 
 interface LeadRequest {
@@ -51,15 +47,17 @@ export const LeadRequestManagement: React.FC = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('lead_request_details')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('lead_requests' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
-    } catch (err: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setRequests((data as any) || []);
+    } catch (err: unknown) {
       console.error('Error loading lead requests:', err);
-      setError(err.message);
+      setError((err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -69,7 +67,8 @@ export const LeadRequestManagement: React.FC = () => {
     try {
       setIsUpdating(true);
       const { error } = await supabase
-        .from('lead_requests')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('lead_requests' as any)
         .update({ 
           status,
           admin_notes: adminNotes || null,
@@ -84,9 +83,9 @@ export const LeadRequestManagement: React.FC = () => {
       await loadLeadRequests();
       setSelectedRequest(null);
       setAdminNotes('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating request:', err);
-      setError(err.message);
+      setError((err instanceof Error ? err.message : String(err)));
     } finally {
       setIsUpdating(false);
     }

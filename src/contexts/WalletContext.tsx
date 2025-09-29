@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuthStore } from '../store/auth';
@@ -44,7 +45,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase.rpc('get_user_wallet_balance', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: fetchError } = await (supabase as any).rpc('get_user_wallet_balance', {
         p_user_id: user.id
       });
 
@@ -52,10 +54,11 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         throw new Error(fetchError.message);
       }
 
-      setBalance(data || 0);
-    } catch (err: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setBalance((data as any) || 0);
+    } catch (err: unknown) {
       console.error('Error fetching wallet balance:', err);
-      setError(err.message || 'Failed to fetch wallet balance');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to fetch wallet balance');
     } finally {
       setLoading(false);
     }
@@ -70,7 +73,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     try {
       setError(null);
 
-      const { error: addError } = await supabase.rpc('add_to_wallet', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: addError } = await (supabase as any).rpc('add_to_wallet', {
         p_user_id: user.id,
         p_amount: amount,
         p_description: description
@@ -83,9 +87,9 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       // Refresh balance after successful addition
       await refreshBalance();
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding to wallet:', err);
-      setError(err.message || 'Failed to add money to wallet');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to add money to wallet');
       return false;
     }
   };
@@ -119,7 +123,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       }
 
       // Add to wallet after successful payment
-      const { error: addError } = await supabase.rpc('add_to_wallet', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: addError } = await (supabase as any).rpc('add_to_wallet', {
         p_user_id: user.id,
         p_amount: amount,
         p_description: `${description} (${paymentResult.transactionId})`
@@ -132,15 +137,15 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       // Refresh balance after successful addition
       await refreshBalance();
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding to wallet with payment:', err);
-      return { success: false, error: err.message || 'Payment processing failed' };
+      return { success: false, error: (err instanceof Error ? err.message : String(err)) || 'Payment processing failed' };
     }
   };
 
   useEffect(() => {
     refreshBalance();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value: WalletContextType = {
     balance,

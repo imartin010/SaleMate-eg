@@ -81,7 +81,7 @@ serve(async (req) => {
     }
   } catch (error: unknown) {
     console.error('Error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const errorMessage = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : 'Internal server error';
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -210,7 +210,7 @@ async function handleRequestOTP(req: Request, supabase: any) {
 
   } catch (error: unknown) {
     console.error('Request OTP error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to request OTP';
+    const errorMessage = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : 'Failed to request OTP';
     return new Response(
       JSON.stringify({ error: 'Failed to request OTP', details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -364,7 +364,7 @@ async function handleVerifyOTP(req: Request, supabase: any) {
 
   } catch (error: unknown) {
     console.error('Verify OTP error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP';
+    const errorMessage = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : 'Failed to verify OTP';
     return new Response(
       JSON.stringify({ error: 'Failed to verify OTP', details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -473,7 +473,7 @@ async function handleVerificationSuccess(verifyResult: any, supabase: any) {
 
   } catch (error: unknown) {
     console.error('Verification success handling error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to process verification';
+    const errorMessage = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : 'Failed to process verification';
     return new Response(
       JSON.stringify({ error: 'Failed to process verification', details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

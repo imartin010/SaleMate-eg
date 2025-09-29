@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from "../lib/supabaseClient"
-import type { Lead, LeadFilters } from '../types';
+import type { Lead, LeadFilters, LeadStage, Platform } from '../types';
 
 interface LeadsState {
   leads: Lead[];
@@ -88,34 +88,37 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
         setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
 
-      const { data, error, count } = await Promise.race([query, timeoutPromise]) as any;
+      const { data, error, count } = await Promise.race([query, timeoutPromise]) as { data: unknown; error: unknown; count: number };
 
       if (error) {
-        throw new Error(`Database error: ${error.message}`);
+        throw new Error(`Database error: ${(error as Error).message}`);
       }
 
       // Transform data to match frontend types
-      const transformedLeads: Lead[] = (data || []).map((lead: any) => ({
-        id: lead.id,
-        projectId: lead.project_id,
-        buyerUserId: lead.buyer_user_id,
-        clientName: lead.client_name,
-        clientPhone: lead.client_phone,
-        clientPhone2: lead.client_phone2,
-        clientPhone3: lead.client_phone3,
-        clientEmail: lead.client_email,
-        clientJobTitle: lead.client_job_title,
-        platform: lead.platform,
-        stage: lead.stage,
-        feedback: lead.feedback,
-        createdAt: lead.created_at,
-        project: lead.projects ? {
-          id: lead.projects.id,
-          name: lead.projects.name,
-          developer: lead.projects?.developers?.name ?? 'Unknown',
-          region: lead.projects.region
+      const transformedLeads: Lead[] = ((data as unknown[]) || []).map((lead: unknown) => {
+        const leadData = lead as Record<string, unknown>;
+        return {
+        id: leadData.id as string,
+        projectId: leadData.project_id as string,
+        buyerUserId: leadData.buyer_user_id as string,
+        clientName: leadData.client_name as string,
+        clientPhone: leadData.client_phone as string,
+        clientPhone2: leadData.client_phone2 as string,
+        clientPhone3: leadData.client_phone3 as string,
+        clientEmail: leadData.client_email as string,
+        clientJobTitle: leadData.client_job_title as string,
+        platform: leadData.platform as Platform,
+        stage: leadData.stage as LeadStage,
+        feedback: leadData.feedback as string,
+        createdAt: leadData.created_at as string,
+        project: leadData.projects ? {
+          id: (leadData.projects as Record<string, unknown>).id as string,
+          name: (leadData.projects as Record<string, unknown>).name as string,
+          developer: ((leadData.projects as Record<string, unknown>)?.developers as Record<string, unknown>)?.name as string ?? 'Unknown',
+          region: (leadData.projects as Record<string, unknown>).region as string
         } : undefined
-      }));
+      };
+      });
 
       console.log(`✅ Loaded ${transformedLeads.length} leads, Total: ${count}`);
 
@@ -128,10 +131,10 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
         error: null
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Failed to fetch leads:', err);
       set({ 
-        error: err.message || 'Failed to load leads',
+        error: (err instanceof Error ? err.message : String(err)) || 'Failed to load leads',
         loading: false,
         hasMore: false
       });
@@ -149,7 +152,7 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
     try {
       console.log(`🔄 Updating lead ${leadId} to stage: ${stage}`);
 
-      const updateData: any = { 
+      const updateData: Record<string, unknown> = { 
         stage,
         updated_at: new Date().toISOString()
       };
@@ -158,7 +161,7 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
         updateData.feedback = feedback;
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('leads')
         .update(updateData)
         .eq('id', leadId)
@@ -173,18 +176,18 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
       const state = get();
       const updatedLeads = state.leads.map(lead => 
         lead.id === leadId 
-          ? { ...lead, stage: stage as any, feedback }
+          ? { ...lead, stage: stage as LeadStage, feedback }
           : lead
       );
 
       set({ leads: updatedLeads });
 
       console.log(`✅ Lead updated successfully`);
-      return data;
+      // Function should return void according to interface
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Failed to update lead stage:', err);
-      set({ error: err.message || 'Failed to update lead' });
+      set({ error: (err instanceof Error ? err.message : String(err)) || 'Failed to update lead' });
       throw err;
     }
   },

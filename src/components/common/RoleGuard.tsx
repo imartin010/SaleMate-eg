@@ -16,7 +16,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
 }) => {
   const { user } = useAuthStore();
 
-  if (!user || !hasRole(user.role, roles)) {
+  if (!user || !user.role || !hasRole(user.role as UserRole, roles)) {
     return <>{fallback}</>;
   }
 

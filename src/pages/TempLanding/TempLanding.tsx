@@ -5,28 +5,27 @@ import { Badge } from '../../components/ui/badge';
 import { 
   Zap, 
   Users, 
-  Building2, 
-  TrendingUp, 
+ 
+ 
   CheckCircle, 
   Star,
-  ArrowRight,
+
   Shield,
-  Target,
-  Globe,
-  Award,
-  BarChart3,
-  MessageCircle,
+
+
+
+
+
   MapPin,
   Phone,
-  Mail,
+
   Eye,
-  Filter,
+
   Search
 } from 'lucide-react';
 
 export const TempLanding: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProject, setSelectedProject] = useState<any>(null);
   const [quantities, setQuantities] = useState<{[key: string]: number}>({});
 
   // Mock premium projects data
@@ -87,12 +86,12 @@ export const TempLanding: React.FC = () => {
     project.region.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handlePurchase = (project: any) => {
-    const quantity = quantities[project.id] || 1;
-    const totalPrice = quantity * project.pricePerLead;
+  const handlePurchase = (project: Record<string, unknown>) => {
+    const quantity = quantities[project.id as string] || 1;
+    const totalPrice = quantity * (project.pricePerLead as number);
     
     // Redirect to external checkout page with project data
-    const checkoutUrl = `/checkout.html?projectId=${project.id}&projectName=${encodeURIComponent(project.name)}&developer=${encodeURIComponent(project.developer)}&region=${encodeURIComponent(project.region)}&availableLeads=${project.availableLeads}&pricePerLead=${project.pricePerLead}&image=${encodeURIComponent(project.image)}&quantity=${quantity}&totalPrice=${totalPrice}`;
+    const checkoutUrl = `/checkout.html?projectId=${project.id}&projectName=${encodeURIComponent(project.name as string)}&developer=${encodeURIComponent(project.developer as string)}&region=${encodeURIComponent(project.region as string)}&availableLeads=${project.availableLeads}&pricePerLead=${project.pricePerLead}&image=${encodeURIComponent(project.image as string)}&quantity=${quantity}&totalPrice=${totalPrice}`;
     window.location.href = checkoutUrl;
   };
 

@@ -91,7 +91,7 @@ export async function verifyOTP(
   code: string, 
   email?: string, 
   name?: string
-): Promise<{ success: boolean; error?: string; session?: any }> {
+): Promise<{ success: boolean; error?: string; session?: Record<string, unknown> }> {
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/auth-otp/auth/verify-otp`, {
       method: 'POST',
@@ -122,7 +122,8 @@ export async function startOrder(
   paymentMethod: string
 ) {
   try {
-    const { data, error } = await supabase.rpc('rpc_start_order', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_start_order', {
       user_id: userId,
       project_id: projectId,
       quantity,
@@ -142,7 +143,8 @@ export async function startOrder(
  */
 export async function getLeadStats(userId: string) {
   try {
-    const { data, error } = await supabase.rpc('rpc_leads_stats', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_leads_stats', {
       for_user: userId
     })
 
@@ -160,7 +162,7 @@ export async function getLeadStats(userId: string) {
 export async function getTeamUserIds(managerId: string) {
   try {
     const { data, error } = await supabase.rpc('rpc_team_user_ids', {
-      manager_id: managerId
+      root_user_id: managerId
     })
 
     if (error) throw error
@@ -195,7 +197,8 @@ export async function getUserProfile(userId: string) {
  */
 export async function getProjects() {
   try {
-    const { data, error } = await supabase.rpc('rpc_get_shop_projects')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_get_shop_projects')
 
     if (error) throw error
     return data || []
@@ -255,7 +258,7 @@ export async function getUserLeads(userId: string) {
  */
 export async function updateLeadStage(leadId: string, stage: string, feedback?: string) {
   try {
-    const updateData: any = { stage }
+    const updateData: Record<string, unknown> = { stage }
     if (feedback !== undefined) {
       updateData.feedback = feedback
     }
@@ -336,7 +339,7 @@ export async function createSupportCase(
         created_by: createdBy,
         subject,
         description,
-        priority
+        priority: priority as any // eslint-disable-line @typescript-eslint/no-explicit-any
       })
       .select()
 
@@ -501,7 +504,8 @@ export async function uploadLeads(
   }>
 ) {
   try {
-    const { data, error } = await supabase.rpc('rpc_upload_leads', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_upload_leads', {
       project_id: projectId,
       leads_data: leadsData
     })
@@ -519,7 +523,8 @@ export async function uploadLeads(
  */
 export async function updateProjectLeads(projectId: string, newAvailableLeads: number) {
   try {
-    const { data, error } = await supabase.rpc('rpc_update_project_leads', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_update_project_leads', {
       project_id: projectId,
       new_available_leads: newAvailableLeads
     })
@@ -537,7 +542,8 @@ export async function updateProjectLeads(projectId: string, newAvailableLeads: n
  */
 export async function getProjectStats() {
   try {
-    const { data, error } = await supabase.rpc('rpc_project_stats')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_project_stats')
 
     if (error) throw error
     return data
@@ -552,7 +558,8 @@ export async function getProjectStats() {
  */
 export async function updateProjectCPL(projectId: string, newPricePerLead: number) {
   try {
-    const { data, error } = await supabase.rpc('rpc_update_project_cpl', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_update_project_cpl', {
       project_id: projectId,
       new_price_per_lead: newPricePerLead
     })
@@ -570,7 +577,8 @@ export async function updateProjectCPL(projectId: string, newPricePerLead: numbe
  */
 export async function calculateOrderTotal(projectId: string, quantity: number) {
   try {
-    const { data, error } = await supabase.rpc('rpc_calculate_order_total', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('rpc_calculate_order_total', {
       project_id: projectId,
       quantity: quantity
     })

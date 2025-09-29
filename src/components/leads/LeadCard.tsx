@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
-import { Lead, LeadStage, Project } from '../../types';
+import { Lead, LeadStage } from '../../types';
 import { formatPhone, formatRelativeTime, createTelUrl, createWhatsAppUrl } from '../../lib/format';
 import { useLeadStore } from '../../store/leads';
 import { useTeamStore } from '../../store/team';
@@ -13,12 +12,10 @@ import {
   Phone, 
   MessageCircle, 
   Mail, 
-  MapPin, 
   Clock, 
   Edit3,
   Save,
   X,
-  MoreHorizontal,
   Calendar,
   Building,
   Globe,
@@ -94,7 +91,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
   const { user, profile } = useAuthStore();
 
   // Use the project data from the lead object
-  const project = (lead as any).project;
+  const project = (lead as any).project; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const handleSave = async () => {
     await updateLead(lead.id, {
@@ -270,12 +267,12 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
                       Unassigned
                     </div>
                   </SelectItem>
-                  <SelectItem value={user?.id}>
+                  {user?.id && <SelectItem value={user.id}>
                     <div className="flex items-center gap-2">
                       <UserCheck className="h-4 w-4" />
                       Me
                     </div>
-                  </SelectItem>
+                  </SelectItem>}
                   {members.map(member => (
                     <SelectItem key={member.id} value={member.id}>
                       <div className="flex items-center gap-2">
@@ -361,7 +358,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
                     variant="outline" 
                     size="sm" 
                     className="h-8 text-xs"
-                    onClick={() => window.open(createTelUrl(lead.clientPhone2), '_self')}
+                    onClick={() => lead.clientPhone2 && window.open(createTelUrl(lead.clientPhone2), '_self')}
                   >
                     <Phone className="h-3 w-3 mr-1" />
                     Call 2nd
@@ -372,7 +369,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead }) => {
                     variant="outline" 
                     size="sm" 
                     className="h-8 text-xs"
-                    onClick={() => window.open(createTelUrl(lead.clientPhone3), '_self')}
+                    onClick={() => lead.clientPhone3 && window.open(createTelUrl(lead.clientPhone3), '_self')}
                   >
                     <Phone className="h-3 w-3 mr-1" />
                     Call 3rd

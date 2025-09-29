@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { SupportCase, User } from '../types';
-import { supabase } from "../lib/supabaseClient"
+import { SupportCase } from '../types';
 
 interface SupportState {
   cases: SupportCase[];
@@ -30,7 +29,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
       // TODO: Implement Supabase support cases table
       // For now, return empty array
       set({ cases: [], loading: false });
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to fetch support cases', loading: false });
     }
   },
@@ -46,7 +45,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
       
       const cases = [newCase, ...get().cases];
       set({ cases });
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to create support case' });
     }
   },
@@ -58,7 +57,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
         c.id === id ? { ...c, ...updates } : c
       );
       set({ cases });
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to update support case' });
     }
   },
@@ -66,7 +65,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
   assignCase: async (id: string, assignedTo: string) => {
     try {
       await get().updateCase(id, { assignedTo, status: 'in_progress' });
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to assign support case' });
     }
   },
@@ -76,7 +75,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
       // TODO: Implement Supabase support cases table
       const cases = get().cases.filter(c => c.id !== id);
       set({ cases });
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to delete support case' });
     }
   },
@@ -85,7 +84,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
     try {
       // TODO: Implement Supabase user banning
       console.log('Banning user:', userId);
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to ban user' });
     }
   },
@@ -94,7 +93,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
     try {
       // TODO: Implement Supabase user unbanning
       console.log('Unbanning user:', userId);
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to unban user' });
     }
   },
@@ -103,7 +102,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
     try {
       // TODO: Implement Supabase manager removal
       console.log('Removing manager:', userId);
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to remove manager' });
     }
   },

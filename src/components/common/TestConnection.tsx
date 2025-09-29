@@ -13,7 +13,7 @@ export const TestConnection: React.FC = () => {
     
     try {
       // Test basic connection
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .select('count')
         .limit(1);

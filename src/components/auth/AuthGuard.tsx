@@ -57,11 +57,10 @@ export const AuthGuard: React.FC = () => {
 
       // Set the test user in the store
       useAuthStore.setState({
-        user: testUser as any,
+        user: testUser as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         profile: testProfile,
-        role: 'admin',
         loading: false,
-        error: null
+        error: undefined
       });
 
       return <Outlet />;

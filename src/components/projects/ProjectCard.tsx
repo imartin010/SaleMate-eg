@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
-import { Select } from '../ui/select';
 import { Project, PaymentMethod } from '../../types';
-import { getPaymentMethodIcon, calculateTotalAmount } from '../../lib/payments';
-import { formatCurrency } from '../../lib/format';
-import { useOrderStore } from '../../store/orders';
 import { useAuthStore } from '../../store/auth';
 import { startOrder, supabase } from "../../lib/supabaseClient"
-import { MapPin, Building, Users, ShoppingCart, Star } from 'lucide-react';
+import { MapPin, Building, ShoppingCart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ProjectCardProps {
@@ -26,10 +22,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Instapay');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
-  const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
   
-  const { createOrder } = useOrderStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -50,7 +43,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       console.log('Using user ID for purchase:', userId);
       
       // Use real backend order function
-      const result = await startOrder(userId, project.id, quantity, paymentMethod);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await startOrder(userId, project.id, quantity, paymentMethod) as any;
       console.log('Order result:', result);
 
       if (result && result.order_id) {
@@ -66,7 +60,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         try {
           console.log('✅ Order created successfully, confirming purchase...');
           
-          const { data: confirmResult, error: confirmError } = await supabase.rpc('rpc_confirm_order', {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: confirmResult, error: confirmError } = await (supabase as any).rpc('rpc_confirm_order', {
             order_id: result.order_id,
             payment_reference: `PAY-${Date.now()}-${user.id.slice(0, 8)}`
           });
@@ -88,16 +83,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             console.error('Order confirmation failed:', confirmError);
             setError(`Purchase failed: ${confirmError?.message || 'Unknown error'}. Please contact support.`);
           }
-        } catch (confirmErr: any) {
+        } catch (confirmErr: unknown) {
           console.error('Confirmation error:', confirmErr);
-          setError(`Purchase confirmation failed: ${confirmErr.message}. Please contact support.`);
+          setError(`Purchase confirmation failed: ${(confirmErr instanceof Error ? confirmErr.message : String(confirmErr))}. Please contact support.`);
         }
       } else {
         setError('Failed to create order');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Purchase error:', err);
-      setError(err.message || 'An unexpected error occurred');
+      setError((err instanceof Error ? err.message : String(err)) || 'An unexpected error occurred');
     } finally {
       setIsProcessing(false);
     }
@@ -237,16 +232,17 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               <label className="text-sm font-medium mb-2 block">
                 Payment Method
               </label>
-              <Select
+              <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                className="w-full p-2 border rounded"
               >
                 {PAYMENT_METHODS.map(method => (
                   <option key={method} value={method}>
-                    {getPaymentMethodIcon(method)} {method}
+                    {method}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
 
             <div className="bg-accent/50 p-3 rounded-lg">

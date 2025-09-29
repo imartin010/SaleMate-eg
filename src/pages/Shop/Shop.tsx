@@ -71,6 +71,7 @@ const Shop: React.FC = () => {
     
     try {
       // Load from lead_availability view as the source of truth
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: projectData, error: queryError } = await (supabase as any)
         .from('lead_availability')
         .select('*');
@@ -91,7 +92,7 @@ const Shop: React.FC = () => {
           if (nameKey !== -1) {
             const colon = s.indexOf(':', nameKey);
             if (colon !== -1) {
-              let start = s.indexOf("'", colon + 1);
+              const start = s.indexOf("'", colon + 1);
               if (start !== -1) {
                 // scan for closing quote followed by comma or brace
                 let end = -1;
@@ -119,7 +120,7 @@ const Shop: React.FC = () => {
         return String(val);
       };
 
-      const base = (projectData || []).map((p: any) => ({
+      const base = (projectData || []).map((p: Record<string, unknown>) => ({
         project_id: p.project_id,
         name: extractName(p.name),
         developer: extractName(p.developer),
@@ -130,9 +131,9 @@ const Shop: React.FC = () => {
       })) as Project[];
 
       setProjects(base);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading projects:', err);
-      setError(err.message || 'Failed to load projects');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to load projects');
       
       // Set some mock data as fallback
       setProjects([
@@ -182,7 +183,8 @@ const Shop: React.FC = () => {
 
       // Try to create order using RPC function, fallback to direct insert if not available
       try {
-        const { data, error: orderError } = await (supabase as any).rpc('rpc_start_order', {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: orderError } = await (supabase as any).rpc('rpc_start_order', {
           p_project: selectedProject.project_id,
           p_qty: purchaseForm.quantity,
           p_payment: purchaseForm.paymentMethod as PaymentMethod,
@@ -193,10 +195,11 @@ const Shop: React.FC = () => {
         if (orderError) {
           throw new Error(`Failed to create order: ${orderError.message}`);
         }
-      } catch (_rpcError: any) {
+      } catch {
         // Fallback: Create order directly in orders table
         console.log('RPC function not available, using direct insert');
-        const { data, error: insertError } = await (supabase as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: insertError } = await (supabase as any)
           .from('orders')
           .insert({
             user_id: user.id,
@@ -222,9 +225,9 @@ const Shop: React.FC = () => {
         loadProjects(); // Refresh projects
       }, 3000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Purchase error:', err);
-      setError(err.message || 'Purchase failed');
+      setError((err instanceof Error ? err.message : String(err)) || 'Purchase failed');
     } finally {
       setPurchasing(false);
     }

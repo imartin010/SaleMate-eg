@@ -12,7 +12,17 @@ import {
   BarChart3 
 } from 'lucide-react';
 
-const mockLeads: any[] = [];
+interface Lead {
+  id: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail?: string;
+  project: string;
+  platform: string;
+  stage: string;
+}
+
+const mockLeads: Lead[] = [];
 
 const getStageColor = (stage: string) => {
   switch (stage) {

@@ -1,0 +1,256 @@
+
+> salemate@0.0.0 lint
+> eslint .
+
+
+/Users/martin2/Desktop/Sale Mate Final/scripts/import-csv.ts
+   36:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/app/layout/BottomNav.tsx
+  114:6  warning  React Hook useEffect has a missing dependency: 'startDemoScroll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/app/providers/ThemeProvider.tsx
+  9:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/admin/LeadUpload.tsx
+   68:52  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   69:52  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   87:6   warning  React Hook useEffect has missing dependencies: 'loadProjectStats' and 'user?.email'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  238:69  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/admin/PurchaseRequestsManager.tsx
+   96:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/auth/AuthGuard.tsx
+  60:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/common/BrandHeader.tsx
+  41:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/common/ProfileDebug.tsx
+   7:46  error    Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  40:6   warning  React Hook useEffect has a missing dependency: 'checkProfileDirectly'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/inventory/PropertyDetailsModal.tsx
+  313:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/leads/LeadCard.tsx
+  94:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/leads/LeadRequestDialog.tsx
+  125:15  error  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/components/projects/ImprovedProjectCard.tsx
+    6:19  error    'PaymentMethod' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+   70:6   warning  React Hook useEffect has a missing dependency: 'checkProjectAvailability'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  107:9   error    'handleReceiptUpload' is assigned a value but never used                                                                     @typescript-eslint/no-unused-vars
+  114:9   error    'handleConfirmPayment' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  138:23  error    'publicUrl' is assigned a value but never used                                                                               @typescript-eslint/no-unused-vars
+  187:9   error    'canPurchase' is assigned a value but never used                                                                             @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/contexts/WalletContext.tsx
+  144:6  warning  React Hook useEffect has a missing dependency: 'refreshBalance'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/lib/clearDevData.ts
+  19:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/lib/developmentStorage.ts
+  41:90   error  'projectDetails' is defined but never used  @typescript-eslint/no-unused-vars
+  41:107  error  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+  90:126  error  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/lib/payments.ts
+  31:3   error  'method' is defined but never used        @typescript-eslint/no-unused-vars
+  32:3   error  'amount' is defined but never used        @typescript-eslint/no-unused-vars
+  33:3   error  'metadata' is defined but never used      @typescript-eslint/no-unused-vars
+  33:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/lib/supabaseAdminClient.ts
+  75:14  error  '_rpcErr' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/lib/supabaseClient.ts
+   94:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  258:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/main-backup.tsx
+  31:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/main-debug.tsx
+  125:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Admin/PurchaseRequestsManager.tsx
+  33:11  error  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Auth/ResetPassword.tsx
+  2:10  error  'useNavigate' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/CRM/EnhancedMyLeads.tsx
+  32:20  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  33:22  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  64:6   warning  React Hook useEffect has a missing dependency: 'loadLeads'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/CRM/MyLeads.tsx
+  58:6   warning  React Hook useEffect has a missing dependency: 'loadLeads'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  93:25  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/CRM/WebsiteStyleCRM.tsx
+   4:10  error    'Card' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  70:6   warning  React Hook useEffect has a missing dependency: 'loadLeads'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Checkout/Checkout.tsx
+  21:3  error  'Globe' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Deals/FastMyDeals.tsx
+   78:6   warning  React Hook useEffect has a missing dependency: 'fetchDeals'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  501:99  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Inventory/Inventory.tsx
+  100:6   warning  React Hook useEffect has a missing dependency: 'loadProperties'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  110:32  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  212:37  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  340:50  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  435:75  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  606:59  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  622:61  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  638:51  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  684:70  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Partners/Partners.tsx
+   17:3   error  'Eye' is defined but never used           @typescript-eslint/no-unused-vars
+   18:3   error  'DollarSign' is defined but never used    @typescript-eslint/no-unused-vars
+  112:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Partners/PartnersPage.tsx
+   89:63  error    Unexpected any. Specify a different type                                                              @typescript-eslint/no-explicit-any
+  138:45  error    Unexpected any. Specify a different type                                                              @typescript-eslint/no-explicit-any
+  202:74  error    Unexpected any. Specify a different type                                                              @typescript-eslint/no-explicit-any
+  723:8   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/ban-ts-comment')
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Shop/EnhancedShop.tsx
+  25:3  error  'Eye' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Shop/ImprovedShop.tsx
+   16:3   error  'TrendingUp' is defined but never used    @typescript-eslint/no-unused-vars
+   53:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   70:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  351:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Shop/Shop.tsx
+   74:75  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  185:17  error  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  185:64  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  196:16  error  '_rpcError' is defined but never used      @typescript-eslint/no-unused-vars
+  199:17  error  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  199:65  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/SimpleShop.tsx
+  3:10  error  'ShoppingCart' is defined but never used  @typescript-eslint/no-unused-vars
+  3:34  error  'MapPin' is defined but never used        @typescript-eslint/no-unused-vars
+  3:42  error  'Star' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/Support/SupportPanel.tsx
+  19:3  error  'Ban' is defined but never used                           @typescript-eslint/no-unused-vars
+  20:3  error  'UserMinus' is defined but never used                     @typescript-eslint/no-unused-vars
+  25:3  error  'Trash2' is defined but never used                        @typescript-eslint/no-unused-vars
+  31:3  error  'TrendingUp' is defined but never used                    @typescript-eslint/no-unused-vars
+  33:3  error  'UserX' is defined but never used                         @typescript-eslint/no-unused-vars
+  55:9  error  'leads' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  73:9  error  'handleBanUser' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  79:9  error  'handleRemoveManager' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/marketing/components/Hero.tsx
+  10:3  error  'TrendingUp' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/marketing/components/LiveMetrics.tsx
+  144:11  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  158:6   warning  React Hook useEffect has a missing dependency: 'animateValue'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/marketing/seo.tsx
+    1:8  error    'React' is defined but never used                                                                                  @typescript-eslint/no-unused-vars
+  178:6  warning  React Hook useEffect has a missing dependency: 'structuredData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/martin2/Desktop/Sale Mate Final/src/pages/marketing/seoArabic.tsx
+  1:8  error  'React' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/services/paymentService.ts
+    8:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:49  error  'request' is defined but never used       @typescript-eslint/no-unused-vars
+   67:47  error  'request' is defined but never used       @typescript-eslint/no-unused-vars
+   85:51  error  'request' is defined but never used       @typescript-eslint/no-unused-vars
+  103:51  error  'request' is defined but never used       @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/auth.ts
+    6:6   error  'Role' is defined but never used          @typescript-eslint/no-unused-vars
+   19:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:16  error  'rpcError' is defined but never used      @typescript-eslint/no-unused-vars
+  107:25  error  'user' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/deals.ts
+  54:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/improvedLeads.ts
+   91:85  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/leads.ts
+    6:6   error  'LeadRow' is defined but never used               @typescript-eslint/no-unused-vars
+  127:30  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  135:21  error  'updatedLead' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  270:15  error  'data' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  302:15  error  'data' is assigned a value but never used         @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/projects.ts
+  83:30  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  91:21  error  'updatedProject' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/support.ts
+   32:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   48:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   60:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   68:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   78:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   87:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   96:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  105:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/src/store/team.ts
+  70:15  error  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/supabase/functions/assign_leads/index.ts
+   29:13  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  126:9   error  Unexpected lexical declaration in case block  no-case-declarations
+  148:27  error  'result' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  182:9   error  Unexpected lexical declaration in case block  no-case-declarations
+  225:9   error  Unexpected lexical declaration in case block  no-case-declarations
+  247:9   error  Unexpected lexical declaration in case block  no-case-declarations
+  305:9   error  Unexpected lexical declaration in case block  no-case-declarations
+  323:9   error  Unexpected lexical declaration in case block  no-case-declarations
+
+/Users/martin2/Desktop/Sale Mate Final/supabase/functions/auth-otp/index.ts
+   92:57  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  221:56  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  375:56  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  375:71  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  410:21  error  'profileData' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/martin2/Desktop/Sale Mate Final/supabase/functions/bulk-lead-upload/index.ts
+  143:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/supabase/functions/partners/index.ts
+  44:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martin2/Desktop/Sale Mate Final/supabase/functions/upload-deal-files/index.ts
+  93:23  error  'uploadData' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 144 problems (131 errors, 13 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

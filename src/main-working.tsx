@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -37,9 +38,17 @@ const users = [
   { id: 'user-2', name: 'Omar Khaled', email: 'user2@sm.com', role: 'user' },
 ];
 
+// User type definition
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 // Simple Working SaleMate App
 const WorkingSaleMate = () => {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState('login');
 
   // Login page with premium theme
@@ -121,8 +130,8 @@ const WorkingSaleMate = () => {
 
             {/* User Selection */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {users.map((user, index) => {
-                const roleColors = {
+              {users.map((user) => {
+                const roleColors: Record<string, { bg: string; text: string; border: string }> = {
                   admin: { bg: '#fef2f2', text: '#dc2626', border: '#fca5a5' },
                   support: { bg: '#eff6ff', text: '#2563eb', border: '#93c5fd' },
                   manager: { bg: '#f0fdf4', text: '#16a34a', border: '#86efac' },
@@ -152,16 +161,18 @@ const WorkingSaleMate = () => {
                       overflow: 'hidden'
                     }}
                     onMouseOver={(e) => {
-                      e.target.style.backgroundColor = theme.colors.surfaceHover;
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = theme.colors.shadowLg;
-                      e.target.style.borderColor = theme.colors.primary;
+                      const target = e.target as HTMLButtonElement;
+                      target.style.backgroundColor = theme.colors.surfaceHover;
+                      target.style.transform = 'translateY(-2px)';
+                      target.style.boxShadow = theme.colors.shadowLg;
+                      target.style.borderColor = theme.colors.primary;
                     }}
                     onMouseOut={(e) => {
-                      e.target.style.backgroundColor = theme.colors.surface;
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = theme.colors.shadow;
-                      e.target.style.borderColor = theme.colors.border;
+                      const target = e.target as HTMLButtonElement;
+                      target.style.backgroundColor = theme.colors.surface;
+                      target.style.transform = 'translateY(0)';
+                      target.style.boxShadow = theme.colors.shadow;
+                      target.style.borderColor = theme.colors.border;
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -284,14 +295,14 @@ const WorkingSaleMate = () => {
                   color: 'white',
                   fontWeight: '600'
                 }}>
-                  {currentUser.name.charAt(0)}
+                  {currentUser?.name.charAt(0) || 'U'}
                 </div>
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: '600', color: theme.colors.text }}>
-                    {currentUser.name}
+                    {currentUser?.name || 'User'}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: theme.colors.textSecondary, textTransform: 'capitalize' }}>
-                    {currentUser.role}
+                    {currentUser?.role || 'user'}
                   </div>
                 </div>
               </div>
@@ -312,8 +323,14 @@ const WorkingSaleMate = () => {
                   transition: 'all 0.2s ease',
                   boxShadow: theme.colors.shadow
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#b91c1c'}
-                onMouseOut={(e) => e.target.style.backgroundColor = theme.colors.error}
+                onMouseOver={(e) => {
+                  const target = e.target as HTMLButtonElement;
+                  target.style.backgroundColor = '#b91c1c';
+                }}
+                onMouseOut={(e) => {
+                  const target = e.target as HTMLButtonElement;
+                  target.style.backgroundColor = theme.colors.error;
+                }}
               >
                 Logout
               </button>
@@ -326,7 +343,7 @@ const WorkingSaleMate = () => {
       <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem' }}>
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: '0 0 0.5rem 0' }}>
-            Welcome back, {currentUser.name}!
+            Welcome back, {currentUser?.name || 'User'}!
           </h2>
           <p style={{ color: '#6b7280', margin: 0 }}>
             Here's what's happening with your real estate business today.

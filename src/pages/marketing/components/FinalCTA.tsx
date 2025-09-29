@@ -1,6 +1,4 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { 
   Sparkles, 
@@ -25,7 +23,7 @@ const FinalCTA = () => {
       transition: {
         duration: 4,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   };
@@ -146,25 +144,21 @@ const FinalCTA = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button asChild size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-4 text-lg group shadow-xl">
-                  <Link to="/auth/signup">
-                    <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
-                    Create Free Account
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
+                <Link to="/auth/signup" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white hover:bg-gray-100 rounded-lg shadow-xl transition-all duration-300 group">
+                  <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
+                  Create Free Account
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </motion.div>
               
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button asChild variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg backdrop-blur-sm">
-                  <a href="mailto:support@salemate.com">
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Talk to Support
-                  </a>
-                </Button>
+                <a href="mailto:support@salemate.com" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border border-white/30 hover:bg-white/10 rounded-lg backdrop-blur-sm transition-all duration-300">
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Talk to Support
+                </a>
               </motion.div>
             </motion.div>
 

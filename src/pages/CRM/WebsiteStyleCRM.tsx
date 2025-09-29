@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
@@ -21,11 +21,11 @@ import {
   MessageCircle,
   FileText,
   TrendingUp,
-  Activity,
-  Star,
+
+
   MapPin,
   Target,
-  BarChart3,
+
   AlertCircle
 } from 'lucide-react';
 import type { Database } from '../../types/database';
@@ -63,13 +63,7 @@ const WebsiteStyleCRM: React.FC = () => {
   const [updatingLead, setUpdatingLead] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  useEffect(() => {
-    if (user) {
-      loadLeads();
-    }
-  }, [user]);
-
-  const loadLeads = async () => {
+  const loadLeads = React.useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -85,8 +79,7 @@ const WebsiteStyleCRM: React.FC = () => {
           projects(
             id,
             name,
-            region,
-            developers:developers ( name )
+            region
           )
         `)
         .eq('buyer_user_id', user.id)
@@ -98,18 +91,24 @@ const WebsiteStyleCRM: React.FC = () => {
         setLeads([]);
       } else {
         console.log(`✅ Loaded ${data?.length || 0} leads from database`);
-        setLeads(data || []);
+        setLeads((data as Lead[]) || []);
       }
       
       setLastRefresh(new Date());
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading leads:', err);
-      setError(err.message || 'Failed to load leads');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to load leads');
       setLeads([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadLeads();
+    }
+  }, [user, loadLeads]);
 
   const updateLeadStage = async (leadId: string, newStage: LeadStage) => {
     setUpdatingLead(leadId);
@@ -327,7 +326,7 @@ const WebsiteStyleCRM: React.FC = () => {
               key={stage}
               variant={stageFilter === stage ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setStageFilter(stage)}
+              onClick={() => setStageFilter(stage || 'New Lead')}
               className="whitespace-nowrap shrink-0"
             >
               {stage}
@@ -396,8 +395,8 @@ const WebsiteStyleCRM: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <Badge className={`${getStageColor(lead.stage)} font-medium`}>
-                    {lead.stage}
+                  <Badge className={`${getStageColor(lead.stage || 'New Lead')} font-medium`}>
+                    {lead.stage || 'New Lead'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -447,7 +446,7 @@ const WebsiteStyleCRM: React.FC = () => {
 
                 {/* Stage Selector */}
                 <Select 
-                  value={lead.stage} 
+                  value={lead.stage || 'New Lead'} 
                   onValueChange={(value) => updateLeadStage(lead.id, value as LeadStage)}
                   disabled={updatingLead === lead.id}
                 >
@@ -477,7 +476,7 @@ const WebsiteStyleCRM: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>{new Date(lead.created_at).toLocaleDateString()}</span>
+                    <span>{lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'Unknown'}</span>
                   </div>
                   {lead.source && (
                     <Badge variant="outline" className="text-xs">
