@@ -30,16 +30,18 @@ export const useTeamStore = create<TeamState>((set, get) => ({
       }
 
       // Get ids in my tree via RPC
-      const { data: ids, error: idsErr } = await supabase.rpc("rpc_team_user_ids", { 
-        root: user.user.id 
-      });
+      // RPC function not available - using direct query
+      const { data: ids, error: idsErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('manager_id', user.user.id);
       
       if (idsErr) { 
         set({ loading: false, error: idsErr.message }); 
         return; 
       }
 
-      const idList = (ids ?? []).map(i => i.user_id);
+      const idList = (ids ?? []).map(i => i.id);
       
       if (idList.length === 0) {
         set({ members: [], loading: false });
@@ -67,9 +69,11 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
   async addUserToTeam(userId: string) {
     try {
-      const { data, error } = await supabase.rpc("rpc_add_user_to_team", { 
-        target_user_id: userId 
-      });
+      // RPC function not available - using direct update
+      const { error } = await supabase
+        .from('profiles')
+        .update({ manager_id: (await supabase.auth.getUser()).data.user?.id })
+        .eq('id', userId);
       
       if (error) { 
         set({ error: error.message }); 
@@ -117,11 +121,13 @@ export const useTeamStore = create<TeamState>((set, get) => ({
       const { data: u } = await supabase.auth.getUser();
       if (!u?.user) return [];
       
-      const { data } = await supabase.rpc("rpc_team_user_ids", { 
-        root: u.user.id 
-      });
+      // RPC function not available - using direct query
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('manager_id', u.user.id);
       
-      return (data ?? []).map(i => i.user_id);
+      return (data ?? []).map(i => i.id);
     } catch (error) {
       console.error('Error getting team user IDs:', error);
       return [];

@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { Lead, LeadFilters, User } from '../types';
 import { supabase } from "../lib/supabaseClient"
-import type { Database } from '../types/database';
+// import type { Database } from '../types/database'; // Unused
 
-type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+// type LeadRow = Database["public"]["Tables"]["leads"]["Row"]; // Unused
 
 interface LeadState {
   leads: Lead[];
@@ -74,7 +74,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
       if (assigneeFilter) {
         if (assigneeFilter === 'me') {
           const { data: user } = await supabase.auth.getUser();
-          query = query.eq('assigned_to_id', user?.user?.id);
+          query = query.eq('assigned_to_id', user?.user?.id || '');
         } else if (assigneeFilter === 'unassigned') {
           query = query.is('assigned_to_id', null);
         } else {
@@ -101,9 +101,9 @@ export const useLeadStore = create<LeadState>((set, get) => ({
           clientEmail: lead.client_email || undefined,
           clientJobTitle: undefined, // Not in database schema
           platform: lead.platform,
-          stage: lead.stage,
+          stage: lead.stage || 'New Lead',
           feedback: lead.feedback || undefined,
-          createdAt: lead.created_at
+          createdAt: lead.created_at || new Date().toISOString()
         })) || [];
 
       console.log(`✅ Fetched ${transformedLeads.length} leads from Supabase`);
@@ -124,15 +124,15 @@ export const useLeadStore = create<LeadState>((set, get) => ({
       set({ error: null });
       
       // Transform frontend data to Supabase format
-      const supabaseUpdates: any = {};
-      if (updates.stage !== undefined) supabaseUpdates.stage = updates.stage;
-      if (updates.feedback !== undefined) supabaseUpdates.feedback = updates.feedback;
+      const supabaseUpdates: Record<string, unknown> = {};
+      if (updates.stage !== undefined) supabaseUpdates.stage = updates.stage as string;
+      if (updates.feedback !== undefined) supabaseUpdates.feedback = updates.feedback as string;
       if (updates.clientName !== undefined) supabaseUpdates.client_name = updates.clientName;
       if (updates.clientPhone !== undefined) supabaseUpdates.client_phone = updates.clientPhone;
       if (updates.clientEmail !== undefined) supabaseUpdates.client_email = updates.clientEmail;
       if (updates.clientJobTitle !== undefined) supabaseUpdates.client_job_title = updates.clientJobTitle;
 
-      const { data: updatedLead, error } = await supabase
+      const { error } = await supabase
         .from('leads')
         .update(supabaseUpdates)
         .eq('id', id)
@@ -196,9 +196,9 @@ export const useLeadStore = create<LeadState>((set, get) => ({
         clientEmail: newLead.client_email || undefined,
         clientJobTitle: undefined, // Not in database schema
         platform: newLead.platform,
-        stage: newLead.stage,
+        stage: newLead.stage || 'New Lead',
         feedback: newLead.feedback || undefined,
-        createdAt: newLead.created_at
+        createdAt: newLead.created_at || new Date().toISOString()
       };
 
       const leads = [...get().leads, transformedLead];
@@ -267,10 +267,11 @@ export const useLeadStore = create<LeadState>((set, get) => ({
     try {
       set({ error: null });
       
-      const { data, error } = await supabase.rpc("rpc_assign_lead", { 
-        lead_id: leadId, 
-        assignee_id: assigneeId 
-      });
+      // RPC function not available - using direct update
+      const { error } = await supabase
+        .from('leads')
+        .update({ assigned_to_id: assigneeId })
+        .eq('id', leadId);
       
       if (error) {
         throw new Error(`Failed to assign lead: ${error.message}`);
@@ -299,9 +300,11 @@ export const useLeadStore = create<LeadState>((set, get) => ({
     try {
       set({ error: null });
       
-      const { data, error } = await supabase.rpc("rpc_unassign_lead", { 
-        lead_id: leadId 
-      });
+      // RPC function not available - using direct update
+      const { error } = await supabase
+        .from('leads')
+        .update({ assigned_to_id: null })
+        .eq('id', leadId);
       
       if (error) {
         throw new Error(`Failed to unassign lead: ${error.message}`);

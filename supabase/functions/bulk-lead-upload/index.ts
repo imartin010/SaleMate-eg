@@ -168,7 +168,7 @@ serve(async (req) => {
 
     // Insert leads in batches
     const batchSize = 100
-    const insertedLeads = []
+    const insertedLeads: any[] = []
 
     for (let i = 0; i < leads.length; i += batchSize) {
       const batch_leads = leads.slice(i, i + batchSize).map(lead => ({

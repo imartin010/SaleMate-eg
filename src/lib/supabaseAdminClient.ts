@@ -30,6 +30,7 @@ export async function getAllProjectsAdmin() {
     if (error) throw error
 
     // Map developer relation to flat string expected by UI
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapped = (data || []).map((p: any) => ({
       id: p.id,
       name: p.name,
@@ -67,12 +68,13 @@ export async function uploadLeadsAdmin(
   try {
     // Try RPC first if it exists
     try {
-      const { data, error } = await supabaseAdmin.rpc('rpc_upload_leads', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabaseAdmin as any).rpc('rpc_upload_leads', {
         project_id: projectId,
         leads_data: leadsData
       })
       if (!error) return data
-    } catch (_rpcErr) {
+    } catch {
       // fall through to direct insert
     }
 
@@ -93,7 +95,7 @@ export async function uploadLeadsAdmin(
 
     const { data, error } = await supabaseAdmin
       .from('leads')
-      .insert(rows)
+      .insert(rows as any) // eslint-disable-line @typescript-eslint/no-explicit-any
       .select('id')
 
     if (error) throw error
@@ -109,7 +111,8 @@ export async function uploadLeadsAdmin(
  */
 export async function getProjectStatsAdmin() {
   try {
-    const { data, error } = await supabaseAdmin.rpc('rpc_project_stats')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabaseAdmin as any).rpc('rpc_project_stats')
 
     if (error) throw error
     return data
@@ -124,7 +127,8 @@ export async function getProjectStatsAdmin() {
  */
 export async function updateProjectCPLAdmin(projectId: string, newPricePerLead: number) {
   try {
-    const { data, error } = await supabaseAdmin.rpc('rpc_update_project_cpl', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabaseAdmin as any).rpc('rpc_update_project_cpl', {
       project_id: projectId,
       new_price_per_lead: newPricePerLead
     })

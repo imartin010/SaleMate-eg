@@ -28,9 +28,12 @@ export const getPaymentMethodColor = (method: PaymentMethod): string => {
 
 // Mock payment processing
 export const processPayment = async (
-  method: PaymentMethod,
-  amount: number,
-  metadata?: Record<string, any>
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _method: PaymentMethod,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _amount: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; transactionId?: string; error?: string }> => {
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 2000));

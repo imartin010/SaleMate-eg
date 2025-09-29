@@ -1,9 +1,7 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ShoppingCart, Building, MapPin, Star } from 'lucide-react';
+import {Building} from 'lucide-react';
 
-const mockProjects: any[] = [];
 
 export const SimpleShop: React.FC = () => {
   return (

@@ -3,7 +3,7 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Wallet, Plus, RefreshCw, DollarSign, CreditCard, Smartphone, Phone, CheckCircle, AlertCircle } from 'lucide-react';
+import { Wallet, Plus, RefreshCw, DollarSign, Smartphone, Phone, CheckCircle, AlertCircle } from 'lucide-react';
 import { useWallet } from '../../contexts/WalletContext';
 import { PaymentMethod } from '../../types';
 
@@ -11,11 +11,10 @@ export const WalletDisplay: React.FC = () => {
   const { balance, loading, error, refreshBalance, addToWalletWithPayment } = useWallet();
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Instapay');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
-  const [showPaymentInstructions, setShowPaymentInstructions] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const handleAddMoney = async () => {
@@ -25,7 +24,7 @@ export const WalletDisplay: React.FC = () => {
       return;
     }
 
-    if (paymentMethod === 'bank_transfer' && !receiptFile) {
+    if (paymentMethod === 'BankTransfer' && !receiptFile) {
       setAddError('Please upload a receipt for bank transfer');
       return;
     }
@@ -48,8 +47,8 @@ export const WalletDisplay: React.FC = () => {
       } else {
         setAddError(result.error || 'Failed to add money to wallet');
       }
-    } catch (err: any) {
-      setAddError(err.message || 'Payment processing failed');
+    } catch (err: unknown) {
+      setAddError((err instanceof Error ? err.message : String(err)) || 'Payment processing failed');
     } finally {
       setIsAdding(false);
     }
@@ -57,31 +56,27 @@ export const WalletDisplay: React.FC = () => {
 
   const getPaymentMethodIcon = (method: PaymentMethod) => {
     switch (method) {
-      case 'credit_card':
-        return <CreditCard className="h-5 w-5" />;
-      case 'instapay':
+      case 'Instapay':
         return <Smartphone className="h-5 w-5" />;
-      case 'vodafone_cash':
+      case 'VodafoneCash':
         return <Phone className="h-5 w-5" />;
-      case 'bank_transfer':
+      case 'BankTransfer':
         return <DollarSign className="h-5 w-5" />;
       default:
-        return <CreditCard className="h-5 w-5" />;
+        return <Smartphone className="h-5 w-5" />;
     }
   };
 
   const getPaymentMethodName = (method: PaymentMethod) => {
     switch (method) {
-      case 'credit_card':
-        return 'Debit/Credit Card';
-      case 'instapay':
+      case 'Instapay':
         return 'Instapay';
-      case 'vodafone_cash':
+      case 'VodafoneCash':
         return 'Vodafone Cash';
-      case 'bank_transfer':
+      case 'BankTransfer':
         return 'Bank Transfer';
       default:
-        return 'Debit/Credit Card';
+        return 'Instapay';
     }
   };
 
@@ -174,7 +169,7 @@ export const WalletDisplay: React.FC = () => {
                 Payment Method
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {(['credit_card', 'instapay', 'vodafone_cash', 'bank_transfer'] as PaymentMethod[]).map((method) => (
+                {(['Instapay', 'VodafoneCash', 'BankTransfer'] as PaymentMethod[]).map((method) => (
                   <div
                     key={method}
                     className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
@@ -198,7 +193,7 @@ export const WalletDisplay: React.FC = () => {
             </div>
 
             {/* Receipt Upload for Bank Transfer */}
-            {paymentMethod === 'bank_transfer' && (
+            {paymentMethod === 'BankTransfer' && (
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Upload Receipt
@@ -219,15 +214,15 @@ export const WalletDisplay: React.FC = () => {
             )}
 
             {/* Payment Instructions */}
-            {paymentMethod !== 'credit_card' && (
+            {paymentMethod && (
               <div className="bg-blue-50 p-3 rounded-lg">
                 <div className="text-sm font-medium text-blue-900 mb-1">
                   Payment Instructions
                 </div>
                 <div className="text-xs text-blue-700">
-                  {paymentMethod === 'instapay' && 'Use your mobile wallet to send payment to our Instapay account.'}
-                  {paymentMethod === 'vodafone_cash' && 'Send payment to our Vodafone Cash number: 01234567890'}
-                  {paymentMethod === 'bank_transfer' && 'Transfer to our bank account and upload the receipt.'}
+                  {paymentMethod === 'Instapay' && 'Use your mobile wallet to send payment to our Instapay account.'}
+                  {paymentMethod === 'VodafoneCash' && 'Send payment to our Vodafone Cash number: 01234567890'}
+                  {paymentMethod === 'BankTransfer' && 'Transfer to our bank account and upload the receipt.'}
                 </div>
               </div>
             )}

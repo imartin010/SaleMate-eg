@@ -31,7 +31,8 @@ import {
 } from 'lucide-react';
 
 const Settings: React.FC = () => {
-  const { user, profile, role, signOut, refreshProfile } = useAuthStore();
+  const { user, profile, signOut, refreshProfile } = useAuthStore();
+  const role = profile?.role || 'user';
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);

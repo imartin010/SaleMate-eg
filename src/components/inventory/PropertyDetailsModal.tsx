@@ -19,10 +19,7 @@ import {
   Square,
   Sparkles,
   Info,
-  User,
-  Clock,
   Image as ImageIcon,
-  X,
 } from 'lucide-react';
 
 interface PropertyDetailsModalProps {
@@ -39,7 +36,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
   if (!property) return null;
 
   // Helper function to parse JSON strings
-  const parseJsonField = (field: any) => {
+  const parseJsonField = (field: unknown) => {
     if (typeof field === 'object' && field !== null) return field;
     if (typeof field === 'string') {
       try {
@@ -313,22 +310,22 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
                 </h3>
                 
                 <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
-                  {paymentPlans.slice(0, 5).map((plan: any, index: number) => (
+                  {paymentPlans.slice(0, 5).map((plan: Record<string, unknown>, index: number) => (
                     <div key={index} className="p-4 border rounded-lg bg-gray-50">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div>
                           <span className="text-gray-600">Years:</span>
-                          <div className="font-medium">{plan.years || 'N/A'}</div>
+                          <div className="font-medium">{String(plan.years) || 'N/A'}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">Down Payment:</span>
-                          <div className="font-medium">{plan.down_payment ? `${plan.down_payment}%` : 'N/A'}</div>
+                          <div className="font-medium">{plan.down_payment ? `${String(plan.down_payment)}%` : 'N/A'}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">Down Amount:</span>
                           <div className="font-medium">
                             {plan.down_payment_value ? 
-                              formatCurrency(plan.down_payment_value, property.currency || 'EGP') : 
+                              formatCurrency(Number(plan.down_payment_value), property.currency || 'EGP') : 
                               'N/A'
                             }
                           </div>
@@ -337,7 +334,7 @@ export const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
                           <span className="text-gray-600">Installment:</span>
                           <div className="font-medium">
                             {plan.equal_installments_value ? 
-                              formatCurrency(plan.equal_installments_value, property.currency || 'EGP') : 
+                              formatCurrency(Number(plan.equal_installments_value), property.currency || 'EGP') : 
                               'N/A'
                             }
                           </div>

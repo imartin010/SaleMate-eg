@@ -122,9 +122,18 @@ export interface Developer {
 }
 
 // Enhanced Project with developer relationship
-export interface EnhancedProject extends Project {
+export interface EnhancedProject {
+  id: string;
+  name: string;
+  developer: string; // Keep original developer field as string
+  region: string;
+  availableLeads: number;
+  description?: string;
+  createdAt?: string;
+  pricePerLead?: number;
+  coverImage?: string | null;
   developerId?: string;
-  developer?: Developer;
+  developerDetails?: Developer; // Add developer details as separate field
 }
 
 // Lead Batch for bulk upload
@@ -140,7 +149,7 @@ export interface LeadBatch {
   fileName?: string;
   fileUrl?: string;
   status: 'processing' | 'completed' | 'failed';
-  errorDetails?: any;
+  errorDetails?: unknown;
   createdAt: string;
   updatedAt: string;
 }
@@ -261,11 +270,29 @@ export interface CreatePurchaseRequest {
 }
 
 // Admin Purchase Request with Relations
-export interface AdminPurchaseRequest extends LeadPurchaseRequest {
+export interface AdminPurchaseRequest {
+  id: string;
+  buyerUserId: string;
+  projectId: string;
+  numberOfLeads: number;
+  cplPrice: number;
+  totalPrice: number;
+  receiptFileUrl?: string;
+  receiptFileName?: string;
+  status: PurchaseRequestStatus;
+  adminUserId?: string;
+  adminNotes?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Relations with full details
   buyer: {
     id: string;
     name: string;
     email: string;
+    role: UserRole;
+    createdAt: string;
   };
   project: {
     id: string;
@@ -277,6 +304,8 @@ export interface AdminPurchaseRequest extends LeadPurchaseRequest {
     id: string;
     name: string;
     email: string;
+    role: UserRole;
+    createdAt: string;
   };
 }
 

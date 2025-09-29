@@ -60,7 +60,7 @@ serve(async (req) => {
         )
       }
 
-      const uploadedFiles = []
+      const uploadedFiles: any[] = []
 
       for (const file of files) {
         // Validate file size (max 10MB)
@@ -123,7 +123,7 @@ serve(async (req) => {
         }
 
         uploadedFiles.push({
-          ...attachment,
+          ...(attachment as Record<string, unknown>),
           public_url: publicUrl
         })
       }

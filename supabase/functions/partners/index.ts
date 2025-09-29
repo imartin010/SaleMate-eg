@@ -43,20 +43,27 @@ serve(async (req) => {
       // Group by project
       const projectCommissions: { [key: string]: any } = {}
       
-      commissions?.forEach((comm: any) => {
-        if (!projectCommissions[comm.project_id]) {
-          projectCommissions[comm.project_id] = {
-            project_id: comm.project_id,
-            project_name: comm.project_name,
-            developer_name: comm.developer_name,
+      commissions?.forEach((comm: Record<string, unknown>) => {
+        const projectId = comm.project_id as string;
+        const projectName = comm.project_name as string;
+        const developerName = comm.developer_name as string;
+        const partnerId = comm.partner_id as string;
+        const partnerName = comm.partner_name as string;
+        const commissionRate = comm.commission_rate as number;
+        
+        if (!projectCommissions[projectId]) {
+          projectCommissions[projectId] = {
+            project_id: projectId,
+            project_name: projectName,
+            developer_name: developerName,
             partners: []
           }
         }
         
-        projectCommissions[comm.project_id].partners.push({
-          partner_id: comm.partner_id,
-          partner_name: comm.partner_name,
-          commission_rate: comm.commission_rate
+        projectCommissions[projectId].partners.push({
+          partner_id: partnerId,
+          partner_name: partnerName,
+          commission_rate: commissionRate
         })
       })
 

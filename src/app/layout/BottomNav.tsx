@@ -111,7 +111,7 @@ export const BottomNav: React.FC = () => {
     checkScrollable();
     window.addEventListener('resize', checkScrollable);
     return () => window.removeEventListener('resize', checkScrollable);
-  }, [navigation.length, hasScrolled]);
+  }, [navigation.length, hasScrolled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Demo scroll function - goes right once then back to left
   const startDemoScroll = () => {

@@ -1,9 +1,8 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { BackgroundDecor, GradientOrb } from './Decor';
+import { BackgroundDecor } from './Decor';
 import { 
   Shield, 
   Users, 
@@ -39,7 +38,7 @@ const HeroArabic = () => {
       transition: {
         duration: 6,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   };
@@ -61,9 +60,9 @@ const HeroArabic = () => {
       <BackgroundDecor />
       
       {/* Gradient orbs */}
-      <GradientOrb className="top-20 right-20 bg-gradient-to-br from-blue-400 to-cyan-400" size="large" />
-      <GradientOrb className="bottom-40 left-20 bg-gradient-to-br from-purple-400 to-pink-400" size="medium" />
-      <GradientOrb className="top-1/2 left-1/3 bg-gradient-to-br from-green-400 to-emerald-400" size="small" />
+      <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full blur-3xl opacity-60 animate-pulse" />
+      <div className="absolute bottom-40 left-20 w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-2xl opacity-50 animate-pulse" />
+      <div className="absolute top-1/2 left-1/3 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-400 rounded-full blur-xl opacity-40 animate-pulse" />
 
       <div className="container mx-auto px-4 py-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -142,25 +141,21 @@ const HeroArabic = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 text-lg group shadow-xl">
-                  <Link to="/auth/signup">
-                    <Sparkles className="w-5 h-5 ml-2 group-hover:animate-spin" />
-                    ابدأ مجاناً الآن
-                    <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
+                <Link to="/auth/signup" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg shadow-xl transition-all duration-300 group">
+                  <Sparkles className="w-5 h-5 ml-2 group-hover:animate-spin" />
+                  ابدأ مجاناً الآن
+                  <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+                </Link>
               </motion.div>
               
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button asChild variant="outline" size="lg" className="border-2 border-slate-300 hover:border-blue-400 font-semibold px-8 py-4 text-lg group">
-                  <Link to="/demo">
-                    <Play className="w-5 h-5 ml-2" />
-                    شاهد العرض التوضيحي
-                  </Link>
-                </Button>
+                <Link to="/demo" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-300 hover:border-blue-400 hover:bg-blue-50 rounded-lg transition-all duration-300 group">
+                  <Play className="w-5 h-5 ml-2" />
+                  شاهد العرض التوضيحي
+                </Link>
               </motion.div>
             </motion.div>
 

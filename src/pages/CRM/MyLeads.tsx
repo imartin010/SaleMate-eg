@@ -51,13 +51,7 @@ const MyLeads: React.FC = () => {
   const [stageFilter, setStageFilter] = useState<LeadStage | 'all'>('all');
   const [updatingLead, setUpdatingLead] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadLeads();
-    }
-  }, [user]);
-
-  const loadLeads = async () => {
+  const loadLeads = React.useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -89,18 +83,21 @@ const MyLeads: React.FC = () => {
             const m2 = v.match(/'name'\s*:\s*'([^']+)'/); if (m2?.[1]) return m2[1];
             return v;
           }
-          if (typeof v === 'object') {
-            const anyV: any = v; return anyV.name ?? anyV.region ?? anyV.area ?? 'Unknown';
+          if (typeof v === 'object' && v !== null) {
+            const objV = v as Record<string, unknown>; 
+            return (objV.name as string) ?? (objV.region as string) ?? (objV.area as string) ?? 'Unknown';
           }
           return String(v);
         };
-        const normalized = (data || []).map((row: any) => {
-          if (row.projects) {
-            const name = extract(row.projects.name);
-            const region = extract(row.projects.region);
-            return { ...row, projects: { name, region } } as Lead;
+        const normalized = (data || []).map((row: unknown) => {
+          const typedRow = row as Record<string, unknown>;
+          if (typedRow.projects) {
+            const projects = typedRow.projects as Record<string, unknown>;
+            const name = extract(projects.name);
+            const region = extract(projects.region);
+            return { ...typedRow, projects: { name, region } } as Lead;
           }
-          return row as Lead;
+          return typedRow as Lead;
         });
         setLeads(normalized);
       }
@@ -111,7 +108,13 @@ const MyLeads: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadLeads();
+    }
+  }, [user, loadLeads]);
 
   const updateLeadStage = async (leadId: string, newStage: LeadStage) => {
     setUpdatingLead(leadId);
@@ -293,7 +296,7 @@ const MyLeads: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold">{lead.client_name}</h4>
-                      <Badge className={getStageColor(lead.stage)}>{lead.stage}</Badge>
+                      <Badge className={getStageColor(lead.stage || 'New Lead')}>{lead.stage || 'New Lead'}</Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
@@ -322,7 +325,7 @@ const MyLeads: React.FC = () => {
                   </div>
                   <div className="flex flex-col gap-2">
                     <Select 
-                      value={lead.stage} 
+                      value={lead.stage || 'New Lead'} 
                       onValueChange={(value) => updateLeadStage(lead.id, value as LeadStage)}
                       disabled={updatingLead === lead.id}
                     >

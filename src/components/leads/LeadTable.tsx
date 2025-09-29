@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Select } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Lead, LeadStage, Project } from '../../types';
 import { formatPhone, formatDateTime, createTelUrl, createWhatsAppUrl } from '../../lib/format';
@@ -17,7 +16,6 @@ import {
   Building,
   Globe,
   Clock,
-  MoreHorizontal,
   Star,
   TrendingUp,
   CheckCircle,
@@ -243,7 +241,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({ leads }) => {
                             variant="outline"
                             onClick={() => {
                               const phoneToCall = lead.clientPhone2 || lead.clientPhone3;
-                              window.open(createTelUrl(phoneToCall), '_self');
+                              if (phoneToCall) window.open(createTelUrl(phoneToCall), '_self');
                             }}
                             className="h-7 px-2 text-xs"
                           >
@@ -274,7 +272,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({ leads }) => {
                   {/* Stage Column */}
                   <td className="px-6 py-4">
                     {isEditing ? (
-                      <Select
+                      <select
                         value={editingStage}
                         onChange={(e) => setEditingStage(e.target.value as LeadStage)}
                         className="w-40"
@@ -282,7 +280,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({ leads }) => {
                         {LEAD_STAGES.map(stage => (
                           <option key={stage} value={stage}>{stage}</option>
                         ))}
-                      </Select>
+                      </select>
                     ) : (
                       <Badge className={`${getStageColor(lead.stage)} border px-3 py-1.5 text-sm font-medium flex items-center gap-2 w-fit`}>
                         {getStageIcon(lead.stage)}

@@ -1,4 +1,5 @@
-import React from 'react';
+/* eslint-disable react-refresh/only-export-components */
+// React import not needed for this minimal component
 import ReactDOM from 'react-dom/client';
 import './index.css';
 

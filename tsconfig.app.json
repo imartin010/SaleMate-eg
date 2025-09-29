@@ -20,13 +20,11 @@
       "@/*": ["./src/*"]
     },
 
-    /* Linting - Relaxed for deployment */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false
+    /* Linting - Strict mode enabled */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src"]
 }

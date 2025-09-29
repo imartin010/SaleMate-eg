@@ -518,7 +518,7 @@ const MyDeals: React.FC = () => {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No deals found</h3>
             <p className="text-gray-600 max-w-md mx-auto">
-              {searchTerm || Object.values(filters).some(f => f !== '')
+              {searchTerm || Object.values(filters).some(f => f !== 'all')
                 ? 'Try adjusting your search terms or filters to find the right deals.'
                 : 'Get started by creating your first deal. Click the "New Deal" button above to begin.'
             }

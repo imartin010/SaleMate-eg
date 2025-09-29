@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { PageTitle } from '../../components/common/PageTitle';
@@ -15,8 +14,6 @@ import {
   Award,
   Home,
   RefreshCw,
-  Eye,
-  DollarSign,
   Handshake
 } from 'lucide-react';
 
@@ -110,6 +107,7 @@ export const Partners: React.FC = () => {
       console.log('🏢 Loading compound projects for Partners page...');
       
       // Fetch compound data from inventory
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: queryError } = await (supabase as any)
         .from('salemate-inventory')
         .select('compound, developer, area, price_in_egp, property_type, is_launch, ready_by, unit_area, image')
@@ -122,15 +120,16 @@ export const Partners: React.FC = () => {
       // Group by compound and aggregate data
       const compoundMap = new Map<string, CompoundProject>();
 
-      data?.forEach(property => {
-        const compound = property.compound as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data?.forEach((property: any) => {
+        const compound = property.compound as Record<string, unknown>;
         let compoundName = '';
         
-        if (compound?.name) {
+        if (compound?.name && typeof compound.name === 'string') {
           compoundName = compound.name;
         } else if (typeof compound === 'string') {
           try {
-            const parsed = JSON.parse(compound.replace(/'/g, '"'));
+            const parsed = JSON.parse((compound as string).replace(/'/g, '"'));
             compoundName = parsed.name || '';
           } catch {
             compoundName = compound;
@@ -139,39 +138,39 @@ export const Partners: React.FC = () => {
 
         if (!compoundName) return;
 
-        const developer = property.developer as any;
+        const developer = property.developer as Record<string, unknown>;
         let developerName = '';
-        if (developer?.name) {
+        if (developer?.name && typeof developer.name === 'string') {
           developerName = developer.name;
         } else if (typeof developer === 'string') {
           try {
-            const parsed = JSON.parse(developer.replace(/'/g, '"'));
+            const parsed = JSON.parse((developer as string).replace(/'/g, '"'));
             developerName = parsed.name || '';
           } catch {
             developerName = developer;
           }
         }
 
-        const area = property.area as any;
+        const area = property.area as Record<string, unknown>;
         let areaName = '';
-        if (area?.name) {
+        if (area?.name && typeof area.name === 'string') {
           areaName = area.name;
         } else if (typeof area === 'string') {
           try {
-            const parsed = JSON.parse(area.replace(/'/g, '"'));
+            const parsed = JSON.parse((area as string).replace(/'/g, '"'));
             areaName = parsed.name || '';
           } catch {
             areaName = area;
           }
         }
 
-        const propertyType = property.property_type as any;
+        const propertyType = property.property_type as Record<string, unknown>;
         let propertyTypeName = '';
-        if (propertyType?.name) {
+        if (propertyType?.name && typeof propertyType.name === 'string') {
           propertyTypeName = propertyType.name;
         } else if (typeof propertyType === 'string') {
           try {
-            const parsed = JSON.parse(propertyType.replace(/'/g, '"'));
+            const parsed = JSON.parse((propertyType as string).replace(/'/g, '"'));
             propertyTypeName = parsed.name || '';
           } catch {
             propertyTypeName = propertyType;
@@ -226,9 +225,9 @@ export const Partners: React.FC = () => {
       console.log(`✅ Loaded ${projectsArray.length} compound projects for Partners page`);
       setProjects(projectsArray);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error loading compound projects:', error);
-      setError(error.message || 'Failed to load projects');
+      setError((error instanceof Error ? error.message : String(error)) || 'Failed to load projects');
       setProjects([]);
     } finally {
       setLoading(false);

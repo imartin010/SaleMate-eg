@@ -1,13 +1,10 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { BackgroundDecor, GradientOrb } from './Decor';
 import { 
   Shield, 
   Users, 
-  TrendingUp, 
   Sparkles,
   ArrowRight,
   Play,
@@ -39,7 +36,7 @@ const Hero = () => {
       transition: {
         duration: 6,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   };
@@ -164,13 +161,11 @@ const Hero = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Button asChild size="lg" className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group">
-                        <Link to="/auth/signup">
-                          <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
-                          <span className="font-semibold">Start Free Today</span>
-                          <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                      </Button>
+                      <Link to="/auth/signup" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group w-full">
+                        <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
+                        <span className="font-semibold">Start Free Today</span>
+                        <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Link>
                     </motion.div>
 
                     {/* Login Button - Secondary */}
@@ -179,12 +174,10 @@ const Hero = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Button asChild variant="outline" size="lg" className="w-full bg-white/80 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-700 hover:text-blue-700 shadow-md hover:shadow-lg transition-all duration-300 group">
-                        <Link to="/auth/login">
-                          <Users className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                          <span className="font-semibold">Login</span>
-                        </Link>
-                      </Button>
+                      <Link to="/auth/login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-slate-700 bg-white/80 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group w-full">
+                        <Users className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Login</span>
+                      </Link>
                     </motion.div>
                   </div>
 
@@ -203,12 +196,10 @@ const Hero = () => {
                 
                 {/* Secondary CTA */}
                 <div className="flex justify-center">
-                  <Button asChild variant="ghost" size="lg" className="group text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-2xl">
-                    <a href="#how-it-works">
-                      <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      See How It Works
-                    </a>
-                  </Button>
+                  <a href="#how-it-works" className="inline-flex items-center px-6 py-3 text-lg font-medium text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-2xl transition-all duration-300 group">
+                    <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                    See How It Works
+                  </a>
                 </div>
               </motion.div>
 

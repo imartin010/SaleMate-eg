@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, Scale, Shield, FileText } from 'lucide-react';
+import { ArrowLeft, Scale, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const TermsAndConditions: React.FC = () => {

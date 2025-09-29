@@ -38,11 +38,10 @@ const platforms: DevLead['platform'][] = ['Facebook', 'Google', 'TikTok', 'Other
 const stages: DevLead['stage'][] = ['New Lead', 'Potential', 'Hot Case'];
 
 // Generate a random lead with realistic project-specific details
-function generateRandomLead(projectId: string, projectName: string, buyerUserId: string, projectDetails?: any): DevLead {
+function generateRandomLead(projectId: string, projectName: string, buyerUserId: string): DevLead {
   const randomName = egyptianNames[Math.floor(Math.random() * egyptianNames.length)];
   const randomPlatform = platforms[Math.floor(Math.random() * platforms.length)];
   const randomStage = stages[Math.floor(Math.random() * stages.length)];
-  const randomPhone = `+2012${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`;
   const randomEmail = `${randomName.toLowerCase().replace(' ', '.')}@gmail.com`;
 
   // Add some variation to make leads more realistic
@@ -88,12 +87,12 @@ function getRandomJobTitle(): string {
 }
 
 // Add purchased leads to localStorage
-export function addPurchasedLeads(userId: string, projectId: string, projectName: string, quantity: number, projectDetails?: any): DevLead[] {
+export function addPurchasedLeads(userId: string, projectId: string, projectName: string, quantity: number): DevLead[] {
   const newLeads: DevLead[] = [];
   
   // Generate the specified number of leads
   for (let i = 0; i < quantity; i++) {
-    newLeads.push(generateRandomLead(projectId, projectName, userId, projectDetails));
+    newLeads.push(generateRandomLead(projectId, projectName, userId));
   }
 
   // Get existing leads

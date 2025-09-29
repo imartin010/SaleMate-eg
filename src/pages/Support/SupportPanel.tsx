@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
@@ -10,36 +9,30 @@ import { PageTitle } from '../../components/common/PageTitle';
 
 import { useSupportStore } from '../../store/support';
 import { useAuthStore } from '../../store/auth';
-import { User, Lead, SupportCaseStatus } from '../../types';
+import { User, SupportCaseStatus } from '../../types';
 import { formatRelativeTime } from '../../lib/format';
 import { 
   Plus, 
   Search, 
   Filter, 
   Users, 
-  Ban, 
-  UserMinus, 
   AlertCircle,
   AlertTriangle,
   CheckCircle,
   Clock,
-  Trash2,
   Headphones,
   MessageSquare,
   Shield,
   HelpCircle,
   Settings,
-  TrendingUp,
-  UserCheck,
-  UserX
+  UserCheck
 } from 'lucide-react';
 
 const SupportPanel: React.FC = () => {
   const { user } = useAuthStore();
-  const { cases, fetchCases, createCase, updateCase, banUser, removeManager, loading } = useSupportStore();
+  const { cases, fetchCases, createCase, updateCase, loading } = useSupportStore();
   
   const [showCreateCase, setShowCreateCase] = useState(false);
-  const [showUserManagement, setShowUserManagement] = useState(false);
   const [newCase, setNewCase] = useState({
     subject: '',
     description: '',
@@ -54,7 +47,7 @@ const SupportPanel: React.FC = () => {
 
   // TODO: Fetch users and leads from Supabase
   const users: User[] = [];
-  const leads: Lead[] = [];
+  // const leads: Lead[] = [];
 
   const handleCreateCase = async () => {
     if (!newCase.subject.trim() || !newCase.description.trim()) return;
@@ -72,17 +65,18 @@ const SupportPanel: React.FC = () => {
     await updateCase(caseId, { status });
   };
 
-  const handleBanUser = async (userId: string) => {
-    if (confirm('Are you sure you want to ban this user?')) {
-      await banUser(userId);
-    }
-  };
+  // TODO: Implement user management functions when needed
+  // const handleBanUser = async (userId: string) => {
+  //   if (confirm('Are you sure you want to ban this user?')) {
+  //     await banUser(userId);
+  //   }
+  // };
 
-  const handleRemoveManager = async (userId: string) => {
-    if (confirm('Are you sure you want to remove this manager? Their team members will become unassigned.')) {
-      await removeManager(userId);
-    }
-  };
+  // const handleRemoveManager = async (userId: string) => {
+  //   if (confirm('Are you sure you want to remove this manager? Their team members will become unassigned.')) {
+  //     await removeManager(userId);
+  //   }
+  // };
 
   const filteredCases = cases.filter(caseItem => {
     const matchesSearch = caseItem.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -327,8 +321,7 @@ const SupportPanel: React.FC = () => {
                     <div className="flex gap-2">
                       <Select
                         value={caseItem.status}
-                        onChange={(e) => handleStatusChange(caseItem.id, e.target.value as SupportCaseStatus)}
-                        className="w-40"
+                        onValueChange={(value) => handleStatusChange(caseItem.id, value as SupportCaseStatus)}
                       >
                         <option value="open">Open</option>
                         <option value="in_progress">In Progress</option>
@@ -374,7 +367,7 @@ const SupportPanel: React.FC = () => {
             <h2 className="text-xl font-semibold text-foreground">User Management</h2>
             <p className="text-muted-foreground">Admin controls for user administration</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowUserManagement(true)}>
+          <Button variant="outline" size="sm" onClick={() => console.log('User management not implemented yet')}>
             <Users className="h-4 w-4 mr-2" />
             Manage Users
           </Button>

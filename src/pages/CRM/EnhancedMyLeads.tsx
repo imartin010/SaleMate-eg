@@ -16,21 +16,21 @@ import {
   Calendar,
   Loader2,
   RefreshCw,
-  CheckCircle,
+
   ShoppingCart,
   MessageCircle,
   FileText,
   TrendingUp,
-  Activity,
-  Star,
+
+
   MapPin
 } from 'lucide-react';
 import type { Database } from '../../types/database';
 
 type Lead = Database['public']['Tables']['leads']['Row'] & {
   projects?: { 
-    name: string | any; 
-    region: string | any; 
+    name: string; 
+    region: string; 
     developers?: { name: string } | null;
   } | null;
 };
@@ -57,13 +57,7 @@ const EnhancedMyLeads: React.FC = () => {
   const [stageFilter, setStageFilter] = useState<LeadStage | 'all'>('all');
   const [updatingLead, setUpdatingLead] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadLeads();
-    }
-  }, [user]);
-
-  const loadLeads = async () => {
+  const loadLeads = React.useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -75,8 +69,7 @@ const EnhancedMyLeads: React.FC = () => {
           projects(
             id,
             name,
-            region,
-            developers:developers ( name )
+            region
           )
         `)
         .eq('buyer_user_id', user.id)
@@ -86,7 +79,7 @@ const EnhancedMyLeads: React.FC = () => {
         console.error('Error loading leads:', error);
         setLeads([]);
       } else {
-        setLeads(data || []);
+        setLeads((data as Lead[]) || []);
       }
     } catch (err) {
       console.error('Error loading leads:', err);
@@ -94,7 +87,13 @@ const EnhancedMyLeads: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadLeads();
+    }
+  }, [user, loadLeads]);
 
   const updateLeadStage = async (leadId: string, newStage: LeadStage) => {
     setUpdatingLead(leadId);
@@ -316,8 +315,8 @@ const EnhancedMyLeads: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <Badge className={`${getStageColor(lead.stage)} px-3 py-1 rounded-lg font-medium`}>
-                    {lead.stage}
+                  <Badge className={`${getStageColor(lead.stage || 'New Lead')} px-3 py-1 rounded-lg font-medium`}>
+                    {lead.stage || 'New Lead'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -368,7 +367,7 @@ const EnhancedMyLeads: React.FC = () => {
                 {/* Stage Selector */}
                 <div className="space-y-2">
                   <Select 
-                    value={lead.stage} 
+                    value={lead.stage || 'New Lead'} 
                     onValueChange={(value) => updateLeadStage(lead.id, value as LeadStage)}
                     disabled={updatingLead === lead.id}
                   >
@@ -399,7 +398,7 @@ const EnhancedMyLeads: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {new Date(lead.created_at).toLocaleDateString()}
+                    {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'Unknown'}
                   </div>
                   {lead.source && (
                     <Badge variant="outline" className="text-xs">

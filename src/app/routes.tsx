@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './layout/AppLayout';
@@ -31,8 +32,7 @@ import { ContactSupport } from '../pages/Support/ContactSupport';
 // CHECKOUT PAGES
 import { Checkout } from '../pages/Checkout/Checkout';
 
-// DRAFT PAGES: No sidebar
-import TeamPNL from '../pages/Draft/TeamPNL';
+// DRAFT PAGES: No sidebar (removed - file doesn't exist)
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
@@ -176,16 +176,7 @@ export const router = createBrowserRouter([
     ),
   },
   
-  // Draft pages (no sidebar)
-  {
-    path: '/draft/team-pnl',
-    element: (
-      <>
-        <ScrollToTop />
-        <TeamPNL />
-      </>
-    ),
-  },
+  // Draft pages (no sidebar) - removed TeamPNL route as file doesn't exist
   
   // Protected routes with AuthGuard
   {

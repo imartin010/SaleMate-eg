@@ -26,7 +26,7 @@ interface AssignLeadsResponse {
   success: boolean
   message: string
   leads_processed?: number
-  details?: any
+  details?: Record<string, unknown>
 }
 
 serve(async (req) => {
@@ -107,7 +107,7 @@ serve(async (req) => {
     let responseMessage = ''
 
     switch (payload.action) {
-      case 'assign':
+      case 'assign': {
         // Assign specific leads to a user
         if (!payload.lead_ids || !payload.to_user_id) {
           return new Response(
@@ -145,7 +145,7 @@ serve(async (req) => {
         // Assign leads one by one using the RPC function
         for (const leadId of payload.lead_ids) {
           try {
-            const { data: result, error: assignError } = await supabase
+            const { error: assignError } = await supabase
               .rpc('rpc_reassign_lead', {
                 lead_id: leadId,
                 to_user_id: payload.to_user_id
@@ -163,8 +163,9 @@ serve(async (req) => {
 
         responseMessage = `Successfully assigned ${leadsProcessed} leads to ${targetUser.name}`
         break
+      }
 
-      case 'revoke':
+      case 'revoke': {
         // Revoke leads (set buyer_user_id to NULL)
         if (!payload.lead_ids) {
           return new Response(
@@ -205,8 +206,9 @@ serve(async (req) => {
         leadsProcessed = revokedLeads?.length || 0
         responseMessage = `Successfully revoked ${leadsProcessed} leads`
         break
+      }
 
-      case 'bulk_assign':
+      case 'bulk_assign': {
         // Bulk assign leads based on filters
         if (!payload.to_user_id || !payload.quantity || payload.quantity <= 0) {
           return new Response(
@@ -285,8 +287,9 @@ serve(async (req) => {
 
         responseMessage = `Successfully assigned ${leadsProcessed} leads in bulk operation`
         break
+      }
 
-      case 'bulk_revoke':
+      case 'bulk_revoke': {
         // Bulk revoke leads based on filters
         if (!payload.from_user_id) {
           return new Response(
@@ -340,6 +343,7 @@ serve(async (req) => {
         leadsProcessed = revokedBulkLeads?.length || 0
         responseMessage = `Successfully revoked ${leadsProcessed} leads from user`
         break
+      }
 
       default:
         return new Response(

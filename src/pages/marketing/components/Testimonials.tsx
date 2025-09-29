@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Star, Quote } from 'lucide-react';
@@ -59,7 +58,7 @@ const Testimonials = () => {
       scale: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   };
@@ -107,7 +106,7 @@ const Testimonials = () => {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          {testimonials.map((testimonial, index) => (
+          {testimonials.map((testimonial) => (
             <motion.div
               key={testimonial.id}
               variants={cardVariants}

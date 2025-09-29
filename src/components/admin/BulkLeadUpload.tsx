@@ -229,6 +229,11 @@ export const BulkLeadUpload: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      setUploadStatus({ status: 'error', message: 'User not authenticated' });
+      return;
+    }
+
     setUploadStatus({ status: 'uploading' });
 
     try {
@@ -239,7 +244,7 @@ export const BulkLeadUpload: React.FC = () => {
           project_id: formData.projectId,
           batch_name: formData.batchName,
           cpl_price: parseFloat(formData.cplPrice),
-          upload_user_id: user?.id
+          upload_user_id: user.id
         })
         .select()
         .single();
@@ -305,7 +310,7 @@ export const BulkLeadUpload: React.FC = () => {
           platform: 'Other' as const,
           stage: 'New Lead' as const,
           buyer_user_id: null, // Available for purchase
-          upload_user_id: user?.id,
+          upload_user_id: user.id,
           cpl_price: parseFloat(formData.cplPrice)
         };
 
@@ -352,7 +357,7 @@ export const BulkLeadUpload: React.FC = () => {
       console.error('Upload error:', err);
       setUploadStatus({
         status: 'error',
-        message: (err instanceof Error ? err.message : 'Upload failed')
+        message: (err instanceof Error ? (err instanceof Error ? err.message : String(err)) : 'Upload failed')
       });
     }
   };
