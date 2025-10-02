@@ -42,6 +42,7 @@ const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
 const PartnersPage = React.lazy(() => import('../pages/Partners/PartnersPage'));
+const AgentScoringPage = React.lazy(() => import('../pages/AgentScoringPage'));
 const SupportPanel = React.lazy(() => import('../pages/Support/SupportPanel'));
 const AdminPanel = React.lazy(() => import('../pages/Admin/AdminPanel'));
 const Settings = React.lazy(() => import('../pages/Settings'));
@@ -242,6 +243,10 @@ export const router = createBrowserRouter([
           {
             path: 'settings',
             element: <SafePage><Settings /></SafePage>,
+          },
+          {
+            path: 'agent-scoring',
+            element: <SafePage><AgentScoringPage /></SafePage>,
           },
           {
             path: '*',
