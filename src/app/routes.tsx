@@ -42,6 +42,7 @@ const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
 const PartnersPage = React.lazy(() => import('../pages/Partners/PartnersPage'));
+const InvestorFundingPage = React.lazy(() => import('../pages/InvestorFundingPage'));
 const AgentScoringPage = React.lazy(() => import('../pages/AgentScoringPage'));
 const SupportPanel = React.lazy(() => import('../pages/Support/SupportPanel'));
 const AdminPanel = React.lazy(() => import('../pages/Admin/AdminPanel'));
@@ -255,6 +256,17 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  
+  // Investor funding page (public, no sidebar)
+  {
+    path: '/investor-funding',
+    element: (
+      <>
+        <ScrollToTop />
+        <SafePage><InvestorFundingPage /></SafePage>
+      </>
+    ),
   },
   
   // Catch-all redirect to home
