@@ -69,18 +69,18 @@ const InvestorFundingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
           {/* Professional Header */}
-          <div className="text-center space-y-6 py-8 bg-white rounded-lg shadow-sm border">
-            <div className="inline-flex items-center gap-2 bg-blue-100 rounded-full px-6 py-2 text-blue-800 text-sm font-medium">
+          <div className="text-center space-y-4 sm:space-y-6 py-6 sm:py-8 bg-white rounded-lg shadow-sm border">
+            <div className="inline-flex items-center gap-2 bg-blue-100 rounded-full px-4 sm:px-6 py-2 text-blue-800 text-sm font-medium">
               <Target className="w-4 h-4" />
               Investment Opportunity
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight px-4">
               Lead Generation Platform
             </h1>
-            <p className="text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed px-4">
               Comprehensive financial analysis and market opportunity for our lead generation platform 
               targeting Egypt's real estate brokerage market
             </p>
@@ -89,97 +89,97 @@ const InvestorFundingPage: React.FC = () => {
           {/* Market Overview Section */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
+              <CardTitle className="text-xl sm:text-2xl text-gray-900 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 Market Overview
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Key Metrics Dashboard */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-blue-600 text-sm font-medium">Active Market Size</p>
-                        <p className="text-3xl font-bold text-blue-800">{formatNumber(animatedNumbers.marketSize)}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-blue-800">{formatNumber(animatedNumbers.marketSize)}</p>
                         <p className="text-blue-500 text-xs">Active Brokers</p>
                       </div>
-                      <Users className="w-8 h-8 text-blue-600" />
+                      <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-green-50 border-green-200 hover:bg-green-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-green-600 text-sm font-medium">Monthly Lead Demand</p>
-                        <p className="text-3xl font-bold text-green-800">{formatNumber(animatedNumbers.monthlyLeads)}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-green-800">{formatNumber(animatedNumbers.monthlyLeads)}</p>
                         <p className="text-green-500 text-xs">Leads Needed</p>
                       </div>
-                      <Target className="w-8 h-8 text-green-600" />
+                      <Target className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-purple-50 border-purple-200 hover:bg-purple-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-purple-600 text-sm font-medium">Target Market Share</p>
-                        <p className="text-3xl font-bold text-purple-800">{animatedNumbers.targetShare}%</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-purple-800">{animatedNumbers.targetShare}%</p>
                         <p className="text-purple-500 text-xs">Market Penetration</p>
                       </div>
-                      <PieChart className="w-8 h-8 text-purple-600" />
+                      <PieChart className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-orange-50 border-orange-200 hover:bg-orange-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-orange-600 text-sm font-medium">Monthly Gross Profit</p>
-                        <p className="text-3xl font-bold text-orange-800">{formatCurrency(animatedNumbers.grossProfit)}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-orange-800">{formatCurrency(animatedNumbers.grossProfit)}</p>
                         <p className="text-orange-500 text-xs">Target Profit</p>
                       </div>
-                      <TrendingUp className="w-8 h-8 text-orange-600" />
+                      <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Market Analysis Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                 <Card className="bg-white border-gray-200">
                   <CardHeader>
-                    <CardTitle className="text-gray-900 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                    <CardTitle className="text-gray-900 flex items-center gap-2 text-lg sm:text-xl">
+                      <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                       Market Size Analysis
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Brokerage Companies</span>
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">28,000</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Brokerage Companies</span>
+                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs sm:text-sm">28,000</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Active Companies</span>
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">8,000</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Active Companies</span>
+                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs sm:text-sm">8,000</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Agents per Company (Avg)</span>
-                        <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">20</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Agents per Company (Avg)</span>
+                        <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs sm:text-sm">20</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Total Agents</span>
-                        <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">160,000</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Total Agents</span>
+                        <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300 text-xs sm:text-sm">160,000</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Active Freelancers</span>
-                        <Badge variant="outline" className="bg-cyan-100 text-cyan-800 border-cyan-300">788</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Active Freelancers</span>
+                        <Badge variant="outline" className="bg-cyan-100 text-cyan-800 border-cyan-300 text-xs sm:text-sm">788</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -187,24 +187,24 @@ const InvestorFundingPage: React.FC = () => {
 
                 <Card className="bg-white border-gray-200">
                   <CardHeader>
-                    <CardTitle className="text-gray-900 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    <CardTitle className="text-gray-900 flex items-center gap-2 text-lg sm:text-xl">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                       Lead Generation Metrics
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Daily Leads Needed</span>
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">321,576</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Daily Leads Needed</span>
+                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs sm:text-sm">321,576</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Monthly Leads (22 Days)</span>
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">7,074,672</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Monthly Leads (22 Days)</span>
+                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs sm:text-sm">7,074,672</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <span className="text-gray-700">Market Size (EGP)</span>
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">2.9B EGP</Badge>
+                        <span className="text-gray-700 text-sm sm:text-base">Market Size (EGP)</span>
+                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs sm:text-sm">2.9B EGP</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -214,27 +214,27 @@ const InvestorFundingPage: React.FC = () => {
               {/* Pricing Strategy */}
               <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
                 <CardHeader>
-                  <CardTitle className="text-gray-900 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-yellow-600" />
+                  <CardTitle className="text-gray-900 flex items-center gap-2 text-lg sm:text-xl">
+                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                     Pricing Strategy
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-6 bg-white rounded-lg hover:bg-blue-50 transition-all duration-300 border border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-2">Cost Per Lead</h4>
-                      <p className="text-3xl font-bold text-blue-600">200 EGP</p>
-                      <p className="text-sm text-blue-500">Target Cost</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-blue-50 transition-all duration-300 border border-blue-200">
+                      <h4 className="font-semibold text-blue-800 mb-2 text-sm sm:text-base">Cost Per Lead</h4>
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-600">200 EGP</p>
+                      <p className="text-xs sm:text-sm text-blue-500">Target Cost</p>
                     </div>
-                    <div className="text-center p-6 bg-white rounded-lg hover:bg-green-50 transition-all duration-300 border border-green-200">
-                      <h4 className="font-semibold text-green-800 mb-2">Selling Price</h4>
-                      <p className="text-3xl font-bold text-green-600">300 EGP</p>
-                      <p className="text-sm text-green-500">Target Price</p>
+                    <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-green-50 transition-all duration-300 border border-green-200">
+                      <h4 className="font-semibold text-green-800 mb-2 text-sm sm:text-base">Selling Price</h4>
+                      <p className="text-2xl sm:text-3xl font-bold text-green-600">300 EGP</p>
+                      <p className="text-xs sm:text-sm text-green-500">Target Price</p>
                     </div>
-                    <div className="text-center p-6 bg-white rounded-lg hover:bg-purple-50 transition-all duration-300 border border-purple-200">
-                      <h4 className="font-semibold text-purple-800 mb-2">Gross Profit</h4>
-                      <p className="text-3xl font-bold text-purple-600">100 EGP</p>
-                      <p className="text-sm text-purple-500">Per Lead</p>
+                    <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-purple-50 transition-all duration-300 border border-purple-200">
+                      <h4 className="font-semibold text-purple-800 mb-2 text-sm sm:text-base">Gross Profit</h4>
+                      <p className="text-2xl sm:text-3xl font-bold text-purple-600">100 EGP</p>
+                      <p className="text-xs sm:text-sm text-purple-500">Per Lead</p>
                     </div>
                   </div>
                 </CardContent>
@@ -245,8 +245,8 @@ const InvestorFundingPage: React.FC = () => {
           {/* Expenses Section */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
-                <DollarSign className="w-6 h-6 text-red-600" />
+              <CardTitle className="text-xl sm:text-2xl text-gray-900 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                 Financial Projections
               </CardTitle>
             </CardHeader>
@@ -260,91 +260,91 @@ const InvestorFundingPage: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8">
-                    <p className="text-6xl font-bold text-blue-600 mb-2">{formatCurrency(3534300 + 1800000)}</p>
-                    <p className="text-2xl text-blue-500 mb-4">EGP</p>
-                    <p className="text-lg text-blue-600">Direct Investment + Working Capital Loan</p>
+                  <div className="text-center py-6 sm:py-8">
+                    <p className="text-4xl sm:text-5xl lg:text-6xl font-bold text-blue-600 mb-2">{formatCurrency(3534300)}</p>
+                    <p className="text-lg sm:text-2xl text-blue-500 mb-4">EGP</p>
+                    <p className="text-base sm:text-lg text-blue-600 px-4">Total Investment Required</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                     <div className="text-center p-4 bg-white rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-gray-900 mb-1">Direct Investment</h4>
-                      <p className="text-2xl font-bold text-blue-600">{formatCurrency(3534300)}</p>
-                      <p className="text-sm text-blue-500">33% equity stake</p>
+                      <h4 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Total Investment</h4>
+                      <p className="text-xl sm:text-2xl font-bold text-blue-600">{formatCurrency(3534300)}</p>
+                      <p className="text-xs sm:text-sm text-blue-500">33% equity stake</p>
                     </div>
                     <div className="text-center p-4 bg-white rounded-lg border border-green-200">
-                      <h4 className="font-semibold text-gray-900 mb-1">Working Capital Loan</h4>
-                      <p className="text-2xl font-bold text-green-600">{formatCurrency(1800000)}</p>
-                      <p className="text-sm text-green-500">6-month term</p>
+                      <h4 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Working Capital Loan</h4>
+                      <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(1800000)}</p>
+                      <p className="text-xs sm:text-sm text-green-500">6-month term</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Expense Categories */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Rent</h3>
-                      <Calendar className="w-6 h-6 text-blue-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Rent</h3>
+                      <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                     </div>
-                    <p className="text-3xl font-bold text-blue-600 mb-2">360,000 EGP</p>
-                    <p className="text-sm text-blue-500">6 months</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">360,000 EGP</p>
+                    <p className="text-xs sm:text-sm text-blue-500">6 months</p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-green-50 border-green-200 hover:bg-green-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Salaries</h3>
-                      <Users className="w-6 h-6 text-green-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Salaries</h3>
+                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                     </div>
-                    <p className="text-3xl font-bold text-green-600 mb-2">2,352,000 EGP</p>
-                    <p className="text-sm text-green-500">Team of 11</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">2,352,000 EGP</p>
+                    <p className="text-xs sm:text-sm text-green-500">Team of 11</p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-purple-50 border-purple-200 hover:bg-purple-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Marketing</h3>
-                      <TrendingUp className="w-6 h-6 text-purple-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Marketing</h3>
+                      <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                     </div>
-                    <p className="text-3xl font-bold text-purple-600 mb-2">600,000 EGP</p>
-                    <p className="text-sm text-purple-500">Brand awareness</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">600,000 EGP</p>
+                    <p className="text-xs sm:text-sm text-purple-500">Brand awareness</p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-orange-50 border-orange-200 hover:bg-orange-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Operations</h3>
-                      <BarChart3 className="w-6 h-6 text-orange-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Operations</h3>
+                      <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                     </div>
-                    <p className="text-3xl font-bold text-orange-600 mb-2">49,500 EGP</p>
-                    <p className="text-sm text-orange-500">Supplies & tools</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">49,500 EGP</p>
+                    <p className="text-xs sm:text-sm text-orange-500">Supplies & tools</p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-cyan-50 border-cyan-200 hover:bg-cyan-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">AI Tools</h3>
-                      <Target className="w-6 h-6 text-cyan-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">AI Tools</h3>
+                      <Target className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600" />
                     </div>
-                    <p className="text-3xl font-bold text-cyan-600 mb-2">172,800 EGP</p>
-                    <p className="text-sm text-cyan-500">Technology stack</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-cyan-600 mb-2">172,800 EGP</p>
+                    <p className="text-xs sm:text-sm text-cyan-500">Technology stack</p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-yellow-50 border-yellow-200 hover:bg-yellow-100 transition-all duration-300">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Lead Generation</h3>
-                      <DollarSign className="w-6 h-6 text-yellow-600" />
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Lead Generation</h3>
+                      <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
                     </div>
-                    <p className="text-3xl font-bold text-yellow-600 mb-2">12,400,000 EGP</p>
-                    <p className="text-sm text-yellow-500">62,000 leads</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-yellow-600 mb-2">12,400,000 EGP</p>
+                    <p className="text-xs sm:text-sm text-yellow-500">62,000 leads</p>
                   </CardContent>
                 </Card>
               </div>
@@ -401,14 +401,14 @@ const InvestorFundingPage: React.FC = () => {
           {/* Revenue Analysis Section */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-green-600" />
+              <CardTitle className="text-xl sm:text-2xl text-gray-900 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 Revenue Analysis
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Revenue Scenarios */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                 {/* Worst Case Scenario */}
                 <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
                   <CardHeader>
@@ -530,13 +530,13 @@ const InvestorFundingPage: React.FC = () => {
           {/* Monthly Profit/Loss Analysis */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-purple-600" />
+              <CardTitle className="text-xl sm:text-2xl text-gray-900 flex items-center gap-2">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 Monthly Profit/Loss Analysis
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                 {/* Worst Case Monthly Analysis */}
                 <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
                   <CardHeader>
@@ -699,13 +699,13 @@ const InvestorFundingPage: React.FC = () => {
           {/* Net Profit Analysis */}
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
-                <DollarSign className="w-6 h-6 text-green-600" />
+              <CardTitle className="text-xl sm:text-2xl text-gray-900 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 Net Profit Analysis
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                 {/* Worst Case Net Profit */}
                 <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
                   <CardHeader>
@@ -814,14 +814,14 @@ const InvestorFundingPage: React.FC = () => {
           {/* Investment Proposal */}
           <Card className="shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 flex items-center gap-2">
-                <Target className="w-6 h-6 text-blue-600" />
+              <CardTitle className="text-xl sm:text-2xl text-gray-900 flex items-center gap-2">
+                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 Investment Proposal
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Investment Structure */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                 {/* Direct Investment */}
                 <Card className="bg-white border-blue-200">
                   <CardHeader>
@@ -909,8 +909,8 @@ const InvestorFundingPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="text-center p-6 bg-white rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Total Investment</h4>
-                      <p className="text-3xl font-bold text-blue-600 mb-2">{formatCurrency(3534300 + 1800000)}</p>
-                      <p className="text-sm text-blue-500">Direct + Loan</p>
+                      <p className="text-3xl font-bold text-blue-600 mb-2">{formatCurrency(3534300)}</p>
+                      <p className="text-sm text-blue-500">Total Investment</p>
                     </div>
                     <div className="text-center p-6 bg-white rounded-lg border border-green-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Equity Stake</h4>
@@ -955,50 +955,50 @@ const InvestorFundingPage: React.FC = () => {
           {/* Investment Summary */}
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-gray-900 flex items-center gap-2 text-2xl">
-                <Target className="w-6 h-6 text-blue-600" />
+              <CardTitle className="text-gray-900 flex items-center gap-2 text-xl sm:text-2xl">
+                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 Investment Opportunity Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="text-center p-6 bg-white rounded-lg hover:bg-blue-50 transition-all duration-300 border border-blue-200">
-                  <h4 className="font-semibold text-gray-900 mb-2">Direct Investment</h4>
-                  <p className="text-3xl font-bold text-blue-600 mb-2">{formatCurrency(3534300)}</p>
-                  <p className="text-sm text-blue-500">33% equity stake</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-blue-50 transition-all duration-300 border border-blue-200">
+                  <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Direct Investment</h4>
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{formatCurrency(3534300)}</p>
+                  <p className="text-xs sm:text-sm text-blue-500">33% equity stake</p>
                 </div>
-                <div className="text-center p-6 bg-white rounded-lg hover:bg-green-50 transition-all duration-300 border border-green-200">
-                  <h4 className="font-semibold text-gray-900 mb-2">Working Capital Loan</h4>
-                  <p className="text-3xl font-bold text-green-600 mb-2">{formatCurrency(1800000)}</p>
-                  <p className="text-sm text-green-500">6-month term</p>
+                <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-green-50 transition-all duration-300 border border-green-200">
+                  <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Working Capital Loan</h4>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">{formatCurrency(1800000)}</p>
+                  <p className="text-xs sm:text-sm text-green-500">6-month term</p>
                 </div>
-                <div className="text-center p-6 bg-white rounded-lg hover:bg-orange-50 transition-all duration-300 border border-orange-200">
-                  <h4 className="font-semibold text-gray-900 mb-2">Worst Case Net Profit</h4>
-                  <p className="text-3xl font-bold text-orange-600 mb-2">{formatCurrency(27659185 - 15934300)}</p>
-                  <p className="text-sm text-orange-500">7-month projection</p>
+                <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-orange-50 transition-all duration-300 border border-orange-200">
+                  <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Worst Case Net Profit</h4>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">{formatCurrency(27659185 - 15934300)}</p>
+                  <p className="text-xs sm:text-sm text-orange-500">7-month projection</p>
                 </div>
-                <div className="text-center p-6 bg-white rounded-lg hover:bg-purple-50 transition-all duration-300 border border-purple-200">
-                  <h4 className="font-semibold text-gray-900 mb-2">Best Case Net Profit</h4>
-                  <p className="text-3xl font-bold text-purple-600 mb-2">{formatCurrency(45372785 - 15934300)}</p>
-                  <p className="text-sm text-purple-500">7-month projection</p>
+                <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-purple-50 transition-all duration-300 border border-purple-200">
+                  <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Best Case Net Profit</h4>
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">{formatCurrency(45372785 - 15934300)}</p>
+                  <p className="text-xs sm:text-sm text-purple-500">7-month projection</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="text-center py-6 bg-white rounded-lg border border-blue-200">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Investment Terms</h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="text-center py-4 sm:py-6 bg-white rounded-lg border border-blue-200">
+                  <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Investment Terms</h4>
                   <div className="space-y-2">
-                    <p className="text-gray-700">• 33% equity stake for {formatCurrency(3534300)}</p>
-                    <p className="text-gray-700">• {formatCurrency(1800000)} loan after 3 months</p>
-                    <p className="text-gray-700">• Company valuation: {formatCurrency(10710000)}</p>
+                    <p className="text-gray-700 text-sm sm:text-base">• 33% equity stake for {formatCurrency(3534300)}</p>
+                    <p className="text-gray-700 text-sm sm:text-base">• {formatCurrency(1800000)} loan after 3 months</p>
+                    <p className="text-gray-700 text-sm sm:text-base">• Company valuation: {formatCurrency(10710000)}</p>
                   </div>
                 </div>
-                <div className="text-center py-6 bg-white rounded-lg border border-green-200">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Market Opportunity</h4>
+                <div className="text-center py-4 sm:py-6 bg-white rounded-lg border border-green-200">
+                  <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Market Opportunity</h4>
                   <div className="space-y-2">
-                    <p className="text-gray-700">• Target: 1% of Egypt's Real Estate Market</p>
-                    <p className="text-gray-700">• Monthly Gross Profit: {formatCurrency(7074672)}</p>
-                    <p className="text-gray-700">• Active Market Size: 160,788 brokers</p>
+                    <p className="text-gray-700 text-sm sm:text-base">• Target: 1% of Egypt's Real Estate Market</p>
+                    <p className="text-gray-700 text-sm sm:text-base">• Monthly Gross Profit: {formatCurrency(7074672)}</p>
+                    <p className="text-gray-700 text-sm sm:text-base">• Active Market Size: 160,788 brokers</p>
                   </div>
                 </div>
               </div>
