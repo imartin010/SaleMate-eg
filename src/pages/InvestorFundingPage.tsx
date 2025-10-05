@@ -508,17 +508,17 @@ const InvestorFundingPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="text-center p-6 bg-white rounded-lg border border-red-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Investment Required</h4>
-                      <p className="text-3xl font-bold text-red-600 mb-2">{formatCurrency(15934300)}</p>
-                      <p className="text-sm text-red-500">6-month operation</p>
+                      <p className="text-3xl font-bold text-red-600 mb-2">{formatCurrency(3534300)}</p>
+                      <p className="text-sm text-red-500">Total investment</p>
                     </div>
                     <div className="text-center p-6 bg-white rounded-lg border border-orange-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Worst Case ROI</h4>
-                      <p className="text-3xl font-bold text-orange-600 mb-2">73.6%</p>
+                      <p className="text-3xl font-bold text-orange-600 mb-2">{(((27659185 - 3534300) / 3534300) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-orange-500">7-month return</p>
                     </div>
                     <div className="text-center p-6 bg-white rounded-lg border border-green-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Best Case ROI</h4>
-                      <p className="text-3xl font-bold text-green-600 mb-2">184.8%</p>
+                      <p className="text-3xl font-bold text-green-600 mb-2">{(((45372785 - 3534300) / 3534300) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-green-500">7-month return</p>
                     </div>
                   </div>
@@ -583,7 +583,7 @@ const InvestorFundingPage: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-semibold text-gray-900">Overall Net Profit</span>
                           <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-lg">
-                            {formatCurrency(27659185 - 15934300)}
+                            {formatCurrency(27659185 - 3534300)}
                           </Badge>
                         </div>
                       </div>
@@ -637,7 +637,7 @@ const InvestorFundingPage: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-semibold text-gray-900">Overall Net Profit</span>
                           <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-lg">
-                            {formatCurrency(45372785 - 15934300)}
+                            {formatCurrency(45372785 - 3534300)}
                           </Badge>
                         </div>
                       </div>
@@ -725,20 +725,20 @@ const InvestorFundingPage: React.FC = () => {
                       <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-red-100">
                         <span className="text-lg font-semibold text-gray-900">Total Investment</span>
                         <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300 text-lg">
-                          -{formatCurrency(15934300)}
+                          -{formatCurrency(3534300)}
                         </Badge>
                       </div>
                       <hr className="border-gray-300" />
                       <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg border border-red-200">
                         <span className="text-xl font-bold text-gray-900">Net Profit</span>
                         <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300 text-xl font-bold">
-                          {formatCurrency(27659185 - 15934300)}
+                          {formatCurrency(27659185 - 3534300)}
                         </Badge>
                       </div>
                       <div className="text-center p-4 bg-white rounded-lg border border-red-200">
                         <p className="text-sm text-gray-600 mb-1">Net Profit Margin</p>
                         <p className="text-2xl font-bold text-red-600">
-                          {(((27659185 - 15934300) / 15934300) * 100).toFixed(1)}%
+                          {(((27659185 - 3534300) / 3534300) * 100).toFixed(1)}%
                         </p>
                       </div>
                     </div>
@@ -764,20 +764,20 @@ const InvestorFundingPage: React.FC = () => {
                       <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-green-100">
                         <span className="text-lg font-semibold text-gray-900">Total Investment</span>
                         <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300 text-lg">
-                          -{formatCurrency(15934300)}
+                          -{formatCurrency(3534300)}
                         </Badge>
                       </div>
                       <hr className="border-gray-300" />
                       <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-200">
                         <span className="text-xl font-bold text-gray-900">Net Profit</span>
                         <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xl font-bold">
-                          {formatCurrency(45372785 - 15934300)}
+                          {formatCurrency(45372785 - 3534300)}
                         </Badge>
                       </div>
                       <div className="text-center p-4 bg-white rounded-lg border border-green-200">
                         <p className="text-sm text-gray-600 mb-1">Net Profit Margin</p>
                         <p className="text-2xl font-bold text-green-600">
-                          {(((45372785 - 15934300) / 15934300) * 100).toFixed(1)}%
+                          {(((45372785 - 3534300) / 3534300) * 100).toFixed(1)}%
                         </p>
                       </div>
                     </div>
@@ -797,13 +797,13 @@ const InvestorFundingPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="text-center p-6 bg-white rounded-lg border border-red-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Worst Case Net Profit</h4>
-                      <p className="text-3xl font-bold text-red-600 mb-2">{formatCurrency(27659185 - 15934300)}</p>
-                      <p className="text-sm text-red-500">73.6% return on investment</p>
+                      <p className="text-3xl font-bold text-red-600 mb-2">{formatCurrency(27659185 - 3534300)}</p>
+                      <p className="text-sm text-red-500">{(((27659185 - 3534300) / 3534300) * 100).toFixed(1)}% return on investment</p>
                     </div>
                     <div className="text-center p-6 bg-white rounded-lg border border-green-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Best Case Net Profit</h4>
-                      <p className="text-3xl font-bold text-green-600 mb-2">{formatCurrency(45372785 - 15934300)}</p>
-                      <p className="text-sm text-green-500">184.8% return on investment</p>
+                      <p className="text-3xl font-bold text-green-600 mb-2">{formatCurrency(45372785 - 3534300)}</p>
+                      <p className="text-sm text-green-500">{(((45372785 - 3534300) / 3534300) * 100).toFixed(1)}% return on investment</p>
                     </div>
                   </div>
                 </CardContent>
@@ -974,12 +974,12 @@ const InvestorFundingPage: React.FC = () => {
                 </div>
                 <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-orange-50 transition-all duration-300 border border-orange-200">
                   <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Worst Case Net Profit</h4>
-                  <p className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">{formatCurrency(27659185 - 15934300)}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">{formatCurrency(27659185 - 3534300)}</p>
                   <p className="text-xs sm:text-sm text-orange-500">7-month projection</p>
                 </div>
                 <div className="text-center p-4 sm:p-6 bg-white rounded-lg hover:bg-purple-50 transition-all duration-300 border border-purple-200">
                   <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Best Case Net Profit</h4>
-                  <p className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">{formatCurrency(45372785 - 15934300)}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">{formatCurrency(45372785 - 3534300)}</p>
                   <p className="text-xs sm:text-sm text-purple-500">7-month projection</p>
                 </div>
               </div>
