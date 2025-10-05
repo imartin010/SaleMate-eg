@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Users, Target, DollarSign, Calendar, BarChart3, PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Target, DollarSign, Calendar, BarChart3, PieChart } from 'lucide-react';
 
 const InvestorFundingPage: React.FC = () => {
   const [animatedNumbers, setAnimatedNumbers] = useState({
