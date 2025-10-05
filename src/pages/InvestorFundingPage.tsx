@@ -513,12 +513,12 @@ const InvestorFundingPage: React.FC = () => {
                     </div>
                     <div className="text-center p-6 bg-white rounded-lg border border-orange-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Worst Case ROI</h4>
-                      <p className="text-3xl font-bold text-orange-600 mb-2">{(((27659185 - 3534300) / 3534300) * 100).toFixed(1)}%</p>
+                      <p className="text-3xl font-bold text-orange-600 mb-2">73.6%</p>
                       <p className="text-sm text-orange-500">7-month return</p>
                     </div>
                     <div className="text-center p-6 bg-white rounded-lg border border-green-200">
                       <h4 className="font-semibold text-gray-900 mb-2">Best Case ROI</h4>
-                      <p className="text-3xl font-bold text-green-600 mb-2">{(((45372785 - 3534300) / 3534300) * 100).toFixed(1)}%</p>
+                      <p className="text-3xl font-bold text-green-600 mb-2">184.8%</p>
                       <p className="text-sm text-green-500">7-month return</p>
                     </div>
                   </div>
