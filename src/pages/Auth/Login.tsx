@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, LogIn, AlertCircle, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -17,8 +17,11 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInEmail, loading, error, clearError } = useAuthStore();
+  const { signInEmail, loading, error, clearError, resendConfirmation } = useAuthStore();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [resendLoading, setResendLoading] = React.useState(false);
+  const [resendSuccess, setResendSuccess] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState('');
 
   const {
     register,
@@ -30,6 +33,7 @@ export default function Login() {
 
   const onSubmit = async (values: LoginForm) => {
     clearError();
+    setUserEmail(values.email);
     const success = await signInEmail(values.email, values.password);
     if (success) {
       // Get the intended destination from location state, or default to dashboard
@@ -43,6 +47,24 @@ export default function Login() {
     }
   };
 
+  const handleResendConfirmation = async () => {
+    if (!userEmail) return;
+    
+    setResendLoading(true);
+    setResendSuccess(false);
+    
+    const success = await resendConfirmation(userEmail);
+    
+    if (success) {
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 5000);
+    }
+    
+    setResendLoading(false);
+  };
+
+  const isEmailNotConfirmed = error && error.toLowerCase().includes('email not confirmed');
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
@@ -52,10 +74,52 @@ export default function Login() {
           <p className="text-gray-600">Sign in to your SaleMate account</p>
         </div>
 
+        {resendSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+            <div>
+              <span className="text-green-700 text-sm font-medium">Confirmation email sent!</span>
+              <p className="text-green-600 text-xs mt-1">Please check your email and click the confirmation link.</p>
+            </div>
+          </div>
+        )}
+
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <span className="text-red-700 text-sm">{error}</span>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+              <span className="text-red-700 text-sm">{error}</span>
+            </div>
+            
+            {isEmailNotConfirmed && userEmail && (
+              <div className="mt-3 pt-3 border-t border-red-200">
+                <p className="text-red-600 text-xs mb-2">
+                  Check your email for a confirmation link, or resend it if needed.
+                </p>
+                <button
+                  onClick={handleResendConfirmation}
+                  disabled={resendLoading || resendSuccess}
+                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {resendLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : resendSuccess ? (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Email Sent!
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4" />
+                      Resend Confirmation Email
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
 

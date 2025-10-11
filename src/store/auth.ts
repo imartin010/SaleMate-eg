@@ -15,6 +15,7 @@ interface AuthState {
   signInEmail(email: string, password: string): Promise<boolean>;
   signOut(): Promise<void>;
   refreshProfile(): Promise<void>;
+  resendConfirmation(email: string): Promise<boolean>;
   // Legacy methods for compatibility
   loadUserProfile(user: unknown): Promise<void>;
   resetPassword(email: string): Promise<boolean>;
@@ -55,10 +56,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const uid = data.user?.id;
     if (uid) {
       try {
-        // RPC function not available - profile will be created by trigger
-        console.log('Profile creation handled by database trigger');
+        // Try to create profile manually if trigger doesn't work
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: uid,
+            name: name,
+            email: email,
+            phone: phone || '',
+            role: 'user'
+          });
+        
+        if (profileError) {
+          console.warn('Profile creation failed:', profileError);
+          // Don't fail the signup if profile creation fails
+          // The trigger might still work or we can handle it later
+        }
+        
         await get().refreshProfile();
-      } catch {
+      } catch (error) {
         console.warn('Profile creation failed, may be handled by trigger');
       }
     }
@@ -96,6 +112,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
     if (error) set({ error: error.message });
     set({ profile: data ?? null });
+  },
+
+  async resendConfirmation(email: string) {
+    set({ error: undefined, loading: true });
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+    });
+    
+    set({ loading: false });
+    if (error) {
+      set({ error: error.message });
+      return false;
+    }
+    return true;
   },
 
   // Legacy methods for compatibility

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaleMate - Confirm Your Account</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+            line-height: 1.6; 
+            color: #1a1a1a; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 640px; 
+            margin: 0 auto; 
+            background: #fff; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%); 
+            color: white; 
+            padding: 48px 32px; 
+            text-align: center; 
+            position: relative;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        .content { 
+            padding: 48px 32px; 
+            background: #fff; 
+        }
+        .button { 
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
+            color: white; 
+            padding: 16px 32px; 
+            text-decoration: none; 
+            border-radius: 12px; 
+            display: inline-block; 
+            margin: 32px 0; 
+            font-weight: 600; 
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+            border: none;
+            cursor: pointer;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(59, 130, 246, 0.5);
+        }
+        .footer { 
+            text-align: center; 
+            padding: 32px; 
+            background: #f8fafc; 
+            color: #64748b; 
+            font-size: 14px; 
+            border-top: 1px solid #e2e8f0;
+        }
+        .logo { 
+            font-size: 36px; 
+            font-weight: 700; 
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        .link-box { 
+            background: #f1f5f9; 
+            padding: 16px; 
+            border-radius: 12px; 
+            margin: 24px 0; 
+            word-break: break-all; 
+            font-size: 14px;
+            border-left: 4px solid #3b82f6;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        .features {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 32px;
+            border-radius: 16px;
+            margin: 32px 0;
+            border: 1px solid #e2e8f0;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .feature-content h4 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .feature-content p {
+            margin: 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
+            margin: 40px 0;
+        }
+        .icon {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .icon-large {
+            width: 32px;
+            height: 32px;
+        }
+        .icon-primary {
+            color: #3b82f6;
+        }
+        .icon-secondary {
+            color: #64748b;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 24px 0;
+        }
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .social-link:hover {
+            background: #e2e8f0;
+            color: #3b82f6;
+        }
+        @media (max-width: 600px) {
+            .container { 
+                margin: 0; 
+                border-radius: 0;
+            }
+            .header, .content, .footer { 
+                padding: 24px; 
+            }
+            .logo { 
+                font-size: 28px; 
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">SaleMate</div>
+                <h1 style="margin: 0; font-size: 24px; font-weight: 300; opacity: 0.9;">Egypt's Premier Real Estate Platform</h1>
+            </div>
+        </div>
+        
+        <div class="content">
+            <h2 style="color: #1e293b; margin-top: 0; font-size: 28px; font-weight: 700;">Welcome to SaleMate!</h2>
+            
+            <p style="font-size: 18px; color: #475569; margin-bottom: 24px;">Hello!</p>
+            
+            <p style="font-size: 16px; color: #475569; line-height: 1.7;">Thank you for joining <strong>SaleMate</strong> - Egypt's leading real estate platform. We're excited to have you on board!</p>
+            
+            <p style="font-size: 16px; color: #475569; line-height: 1.7;">To complete your registration and start accessing our premium real estate services, please confirm your email address:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ .ConfirmationURL }}" class="button">Confirm My Account</a>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <div class="link-box">{{ .ConfirmationURL }}</div>
+            
+            <div class="features">
+                <h3 style="margin-top: 0; color: #1e293b; font-size: 20px; font-weight: 600; text-align: center;">What you'll get with SaleMate:</h3>
+                
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <svg class="feature-icon icon-primary" viewBox="0 0 24 24">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="m22 21-3-3m0 0a5 5 0 1 1-7.07-7.07 5 5 0 0 1 7.07 7.07Z"/>
+                        </svg>
+                        <div class="feature-content">
+                            <h4>Fresh Leads</h4>
+                            <p>Access to verified, high-quality real estate leads from across Egypt</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <svg class="feature-icon icon-primary" viewBox="0 0 24 24">
+                            <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
+                            <path d="M21 9h-6"/>
+                            <path d="M21 15h-6"/>
+                            <path d="M9 21v-6"/>
+                            <path d="M15 21v-6"/>
+                        </svg>
+                        <div class="feature-content">
+                            <h4>Free Built-in CRM</h4>
+                            <p>Complete customer relationship management system included</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <svg class="feature-icon icon-primary" viewBox="0 0 24 24">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                            <path d="M12 11h4"/>
+                            <path d="M12 16h4"/>
+                            <path d="M8 11h.01"/>
+                            <path d="M8 16h.01"/>
+                        </svg>
+                        <div class="feature-content">
+                            <h4>Partnership with Top Brokerages</h4>
+                            <p>Connect with Egypt's most trusted real estate professionals</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <svg class="feature-icon icon-primary" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9,22 9,12 15,12 15,22"/>
+                            <path d="M12 2v20"/>
+                        </svg>
+                        <div class="feature-content">
+                            <h4>Real Estate Updated Inventory</h4>
+                            <p>Live property listings with real-time updates and availability</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <p style="font-size: 16px; color: #475569; line-height: 1.7;">If you have any questions or need assistance, our support team is here to help.</p>
+            
+            <p style="font-size: 16px; color: #475569; margin-top: 32px;">
+                Best regards,<br>
+                <strong style="color: #1e293b;">The SaleMate Team</strong><br>
+                <em style="color: #64748b;">Your trusted real estate partner in Egypt</em>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p style="margin: 0; font-weight: 600; color: #1e293b;">© 2024 SaleMate. All rights reserved.</p>
+            <p style="color: #64748b; margin: 8px 0;">Egypt's Premier Real Estate Platform</p>
+            
+            <div class="social-links">
+                <a href="https://salemate-eg.com" class="social-link">
+                    <svg class="icon icon-secondary" viewBox="0 0 24 24">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15,3 21,3 21,9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                </a>
+                <a href="https://salemate-eg.com/contact" class="social-link">
+                    <svg class="icon icon-secondary" viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </a>
+                <a href="https://salemate-eg.com/privacy" class="social-link">
+                    <svg class="icon icon-secondary" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                </a>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                    You received this email because you signed up for SaleMate. If you didn't create an account, please ignore this email.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
