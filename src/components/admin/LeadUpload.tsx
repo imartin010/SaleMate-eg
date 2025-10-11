@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { getAllProjectsAdmin, uploadLeadsAdmin, getProjectStatsAdmin, updateProjectCPLAdmin } from '../../lib/supabaseAdminClient';
+import { supabase } from '../../lib/supabaseClient';
 import { useAuthStore } from '../../store/auth';
 import { 
   Upload, 
@@ -125,23 +126,65 @@ export const LeadUpload: React.FC = () => {
   const loadProjects = async () => {
     setProjectsLoading(true);
     try {
-      console.log('Loading projects from Supabase backend...');
+      console.log('🔍 Loading projects from Supabase backend...');
       
-      // Load ALL projects from your Supabase backend using admin client
-      const projectData = await getAllProjectsAdmin();
+      // Try the admin function first
+      let projectData;
+      try {
+        projectData = await getAllProjectsAdmin();
+      } catch (adminError) {
+        console.warn('⚠️ Admin function failed, trying direct query:', adminError);
+        
+        // Fallback: direct query using regular supabase client
+        const { data, error } = await supabase
+          .from('projects')
+          .select('id, name, region, available_leads, price_per_lead, description, created_at')
+          .order('name');
+        
+        if (error) {
+          throw error;
+        }
+        
+        projectData = (data || []).map((p: any) => {
+          // Handle case where name might be an object like {'id': 948, 'name': 'Jazebeya'}
+          let projectName = p.name;
+          if (typeof p.name === 'object' && p.name !== null && p.name.name) {
+            projectName = p.name.name;
+            console.log('🔄 Extracted name from object (component fallback):', p.name, '→', projectName);
+          }
+          
+          return {
+            id: p.id,
+            name: projectName,
+            region: p.region,
+            available_leads: p.available_leads ?? 0,
+            price_per_lead: p.price_per_lead ?? null,
+            description: p.description ?? null,
+            created_at: p.created_at,
+            developer: 'Unknown'
+          };
+        });
+      }
       
       if (projectData && projectData.length > 0) {
-        console.log('Successfully loaded projects from backend:', projectData.length);
+        console.log('✅ Successfully loaded projects from backend:', projectData.length);
+        console.log('📋 Project names that will be displayed:', projectData.map(p => `"${p.name}"`));
         setProjects(projectData);
+        setFilteredProjects(projectData);
       } else {
-        console.warn('No projects found in backend');
+        console.warn('⚠️ No projects found in backend');
         setProjects([]);
+        setFilteredProjects([]);
       }
       
     } catch (error) {
-      console.error('Failed to load projects from backend:', error);
-      // Show error message to user
+      console.error('💥 Failed to load projects from backend:', error);
+      
+      // Show user-friendly error message
+      alert(`Failed to load projects: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
       setProjects([]);
+      setFilteredProjects([]);
     } finally {
       setProjectsLoading(false);
     }
