@@ -227,21 +227,27 @@ export const Checkout: React.FC = () => {
     setIsUploading(true);
     
     try {
+      let receiptPath = '';
+      
       // Upload receipt to Supabase Storage if InstaPay
       if (paymentMethod === 'instapay' && receiptFile) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Clean filename - remove spaces and special characters
-          const cleanFileName = receiptFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          // Get file extension
+          const fileExtension = receiptFile.name.split('.').pop() || 'png';
           const timestamp = Date.now();
-          // Structure: userId/receipt_timestamp_filename
-          const filePath = `${user.id}/receipt_${timestamp}_${cleanFileName}`;
+          const randomString = Math.random().toString(36).substring(2, 8);
+          
+          // Create a completely clean filename: userId/timestamp_random.ext
+          const filePath = `${user.id}/receipt_${timestamp}_${randomString}.${fileExtension}`;
+          receiptPath = filePath;
           
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('payment-receipts')
             .upload(filePath, receiptFile, {
               cacheControl: '3600',
-              upsert: false
+              upsert: false,
+              contentType: receiptFile.type
             });
 
           if (uploadError) {
@@ -256,17 +262,42 @@ export const Checkout: React.FC = () => {
         }
       }
 
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create purchase request for InstaPay
+      if (paymentMethod === 'instapay' && receiptPath) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error: requestError } = await supabase
+            .from('purchase_requests')
+            .insert({
+              user_id: user.id,
+              project_id: checkoutData.project.id,
+              quantity: checkoutData.quantity,
+              total_price: checkoutData.totalPrice,
+              receipt_url: receiptPath,
+              status: 'pending'
+            });
+
+          if (requestError) {
+            console.error('Error creating purchase request:', requestError);
+            alert('Failed to create purchase request. Please contact support.');
+            setIsProcessing(false);
+            setIsUploading(false);
+            return;
+          }
+
+          console.log('Purchase request created successfully');
+        }
+      }
+
+      // Simulate payment processing delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Here you would integrate with payment gateway or save order
-      console.log('Processing payment:', {
+      console.log('Purchase request created:', {
         amount: checkoutData.totalPrice,
         currency: 'EGP',
         paymentMethod,
-        buyerInfo: checkoutData.buyerInfo,
         project: checkoutData.project,
-        receiptUploaded: !!receiptFile
+        quantity: checkoutData.quantity
       });
       
       // Success

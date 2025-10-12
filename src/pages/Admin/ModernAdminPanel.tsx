@@ -4,6 +4,7 @@ import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Card } from '../../components/ui/card';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../../components/ui/collapsible';
+import { PurchaseRequests } from '../../components/admin/PurchaseRequests';
 import { useAdminData, AdminUser, AdminProject } from '../../hooks/admin/useAdminData';
 import { useLeadUpload } from '../../hooks/admin/useLeadUpload';
 import { useProjectSearch } from '../../hooks/admin/useProjectSearch';
@@ -35,6 +36,7 @@ import {
   BarChart3,
   FileText,
   DollarSign,
+  ShoppingCart,
 } from 'lucide-react';
 
 export default function ModernAdminPanel() {
@@ -45,7 +47,7 @@ export default function ModernAdminPanel() {
   // Section visibility state
   const [showUsers, setShowUsers] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
-  const [showRequests, setShowRequests] = useState(false);
+  const [showPurchaseRequests, setShowPurchaseRequests] = useState(true);
 
   // Lead upload state
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -316,6 +318,33 @@ export default function ModernAdminPanel() {
           </div>
         </Card>
       </div>
+
+      {/* Purchase Requests Section */}
+      <Collapsible open={showPurchaseRequests} onOpenChange={setShowPurchaseRequests}>
+        <Card className="overflow-hidden">
+          <CollapsibleTrigger asChild>
+            <button className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="h-6 w-6 text-orange-600" />
+                <div className="text-left">
+                  <h2 className="text-xl font-semibold text-gray-900">Purchase Requests</h2>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    Review and approve lead purchase requests with payment receipts
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-orange-100 text-orange-800">
+                {stats.pendingRequests} Pending
+              </Badge>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border-t p-6">
+              <PurchaseRequests />
+            </div>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Lead Upload Section */}
       <Card className="p-6">
@@ -702,58 +731,6 @@ export default function ModernAdminPanel() {
         </Collapsible>
       </Card>
 
-      {/* Purchase Requests Section */}
-      <Card>
-        <Collapsible open={showRequests} onOpenChange={setShowRequests}>
-          <CollapsibleTrigger className="w-full">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              <span>Purchase Requests ({requests.length} pending)</span>
-            </div>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {requests.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">No pending requests</p>
-              ) : (
-                requests.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{request.user_name}</p>
-                      <p className="text-sm text-gray-600">
-                        {request.project_name} • {request.lead_count} leads • {request.total_amount} EGP
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(request.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleApproveRequest(request.id)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRejectRequest(request.id)}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
     </div>
   );
 }
