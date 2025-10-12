@@ -231,14 +231,22 @@ export const Checkout: React.FC = () => {
       if (paymentMethod === 'instapay' && receiptFile) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const fileName = `receipt_${user.id}_${Date.now()}_${receiptFile.name}`;
+          // Clean filename - remove spaces and special characters
+          const cleanFileName = receiptFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const timestamp = Date.now();
+          // Structure: userId/receipt_timestamp_filename
+          const filePath = `${user.id}/receipt_${timestamp}_${cleanFileName}`;
+          
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('payment-receipts')
-            .upload(fileName, receiptFile);
+            .upload(filePath, receiptFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
           if (uploadError) {
             console.error('Error uploading receipt:', uploadError);
-            alert('Failed to upload receipt. Please try again.');
+            alert(`Failed to upload receipt: ${uploadError.message}. Please try again.`);
             setIsProcessing(false);
             setIsUploading(false);
             return;
