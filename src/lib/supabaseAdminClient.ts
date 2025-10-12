@@ -144,10 +144,16 @@ export async function uploadLeadsAdmin(
     // Try RPC first if it exists
     try {
       console.log('🔄 Trying RPC function...');
+      // Transform platform to source for RPC call
+      const transformedLeadsData = leadsData.map(ld => ({
+        ...ld,
+        source: ld.platform || 'Other'
+      }));
+      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabaseAdmin as any).rpc('rpc_upload_leads', {
         project_id: projectId,
-        leads_data: leadsData
+        leads_data: transformedLeadsData
       });
       
       if (!error) {
@@ -163,6 +169,9 @@ export async function uploadLeadsAdmin(
     // Fallback: direct insert into leads table
     console.log('🔄 Using direct insert method...');
     
+    // Generate a unique batch_id for this upload
+    const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const rows = leadsData.map(ld => ({
       project_id: projectId,
       client_name: ld.client_name?.trim() || 'Unknown',
@@ -171,8 +180,9 @@ export async function uploadLeadsAdmin(
       client_phone3: ld.client_phone3?.trim() || null,
       client_email: ld.client_email?.trim() || null,
       client_job_title: ld.client_job_title?.trim() || null,
-      source: ld.platform || 'Other',
-      stage: ld.stage || 'New Lead'
+      source: ld.platform || 'Other', // Changed from 'platform' to 'source'
+      stage: ld.stage || 'New Lead',
+      batch_id: batchId,
     }));
 
     console.log('📝 Prepared rows for insert:', rows.length);

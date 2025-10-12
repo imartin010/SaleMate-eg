@@ -34,7 +34,7 @@ import { Checkout } from '../pages/Checkout/Checkout';
 
 // APP PAGES: Lazy load for performance
 const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
-const MyLeads = React.lazy(() => import('../pages/CRM/WebsiteStyleCRM'));
+const MyLeads = React.lazy(() => import('../pages/CRM/ModernCRM'));
 const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
@@ -43,7 +43,7 @@ const PartnersPage = React.lazy(() => import('../pages/Partners/PartnersPage'));
 const InvestorFundingPage = React.lazy(() => import('../pages/InvestorFundingPage'));
 const AgentScoringPage = React.lazy(() => import('../pages/AgentScoringPage'));
 const SupportPanel = React.lazy(() => import('../pages/Support/SupportPanel'));
-const AdminPanel = React.lazy(() => import('../pages/Admin/AdminPanel'));
+const AdminPanel = React.lazy(() => import('../pages/Admin/ModernAdminPanel'));
 const Settings = React.lazy(() => import('../pages/Settings'));
 
 // Fast loading component
