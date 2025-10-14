@@ -1,109 +1,171 @@
 import { create } from 'zustand';
-import { SupportCase } from '../types';
+import { SupportCase, SupportCaseStatus, SupportCaseReply } from '../types';
+import { 
+  getAllSupportCases,
+  getUserSupportCasesWithDetails,
+  createSupportCase as createSupportCaseDB,
+  updateSupportCase as updateSupportCaseDB,
+  createSupportCaseReply as createSupportCaseReplyDB,
+  getSupportCaseReplies as getSupportCaseRepliesDB
+} from '../lib/supabaseClient';
 
 interface SupportState {
-  cases: SupportCase[];
+  cases: any[];
   loading: boolean;
   error: string | null;
+  replies: { [caseId: string]: SupportCaseReply[] };
+  loadingReplies: boolean;
   
-  fetchCases: () => Promise<void>;
-  createCase: (caseData: Omit<SupportCase, 'id' | 'createdAt'>) => Promise<void>;
-  updateCase: (id: string, updates: Partial<SupportCase>) => Promise<void>;
-  assignCase: (id: string, assignedTo: string) => Promise<void>;
-  deleteCase: (id: string) => Promise<void>;
-  
-  // User management functions
-  banUser: (userId: string) => Promise<void>;
-  unbanUser: (userId: string) => Promise<void>;
-  removeManager: (userId: string) => Promise<void>;
+  fetchUserCases: (userId: string) => Promise<void>;
+  fetchAllCases: () => Promise<void>;
+  createCase: (userId: string, subject: string, description: string, topic: string, issue: string) => Promise<void>;
+  updateCase: (id: string, updates: { status?: SupportCaseStatus; assignedTo?: string }) => Promise<void>;
+  fetchReplies: (caseId: string) => Promise<void>;
+  createReply: (caseId: string, userId: string, message: string, isInternalNote?: boolean) => Promise<void>;
 }
 
 export const useSupportStore = create<SupportState>((set, get) => ({
   cases: [],
   loading: false,
   error: null,
+  replies: {},
+  loadingReplies: false,
   
-  fetchCases: async () => {
+  fetchUserCases: async (userId: string) => {
     set({ loading: true, error: null });
     try {
-      // TODO: Implement Supabase support cases table
-      // For now, return empty array
-      set({ cases: [], loading: false });
-    } catch {
+      const data = await getUserSupportCasesWithDetails(userId);
+      const mappedCases = (data || []).map((item: any) => ({
+        id: item.id,
+        createdBy: item.created_by,
+        assignedTo: item.assigned_to,
+        subject: item.subject,
+        description: item.description,
+        status: item.status || 'open',
+        topic: item.topic,
+        issue: item.issue,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        creator: item.creator,
+        assignee: item.assignee,
+      }));
+      set({ cases: mappedCases, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch user cases:', error);
       set({ error: 'Failed to fetch support cases', loading: false });
     }
   },
   
-  createCase: async (caseData: Omit<SupportCase, 'id' | 'createdAt'>) => {
+  fetchAllCases: async () => {
+    set({ loading: true, error: null });
     try {
-      // TODO: Implement Supabase support cases table
-      const newCase: SupportCase = {
-        ...caseData,
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        createdAt: new Date().toISOString(),
-      };
-      
-      const cases = [newCase, ...get().cases];
-      set({ cases });
-    } catch {
-      set({ error: 'Failed to create support case' });
+      const data = await getAllSupportCases();
+      const mappedCases = (data || []).map((item: any) => ({
+        id: item.id,
+        createdBy: item.created_by,
+        assignedTo: item.assigned_to,
+        subject: item.subject,
+        description: item.description,
+        status: item.status || 'open',
+        topic: item.topic,
+        issue: item.issue,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        creator: item.creator,
+        assignee: item.assignee,
+      }));
+      set({ cases: mappedCases, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch all cases:', error);
+      set({ error: 'Failed to fetch support cases', loading: false });
     }
   },
   
-  updateCase: async (id: string, updates: Partial<SupportCase>) => {
+  createCase: async (userId: string, subject: string, description: string, topic: string, issue: string) => {
     try {
-      // TODO: Implement Supabase support cases table
+      await createSupportCaseDB(userId, subject, description, topic, issue);
+      // Refresh cases after creation
+      const currentCases = get().cases;
+      if (currentCases.length > 0 && currentCases[0].creator) {
+        // If we have detailed cases, we're viewing all cases (support role)
+        await get().fetchAllCases();
+      } else {
+        // Otherwise, we're viewing user cases
+        await get().fetchUserCases(userId);
+      }
+    } catch (error) {
+      console.error('Failed to create case:', error);
+      set({ error: 'Failed to create support case' });
+      throw error;
+    }
+  },
+  
+  updateCase: async (id: string, updates: { status?: SupportCaseStatus; assignedTo?: string }) => {
+    try {
+      const dbUpdates: any = {};
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.assignedTo) dbUpdates.assigned_to = updates.assignedTo;
+      
+      await updateSupportCaseDB(id, dbUpdates);
+      
+      // Update local state optimistically
       const cases = get().cases.map(c => 
         c.id === id ? { ...c, ...updates } : c
       );
       set({ cases });
-    } catch {
+    } catch (error) {
+      console.error('Failed to update case:', error);
       set({ error: 'Failed to update support case' });
+      throw error;
     }
   },
   
-  assignCase: async (id: string, assignedTo: string) => {
+  fetchReplies: async (caseId: string) => {
+    set({ loadingReplies: true });
     try {
-      await get().updateCase(id, { assignedTo, status: 'in_progress' });
-    } catch {
-      set({ error: 'Failed to assign support case' });
+      const data = await getSupportCaseRepliesDB(caseId);
+      const mappedReplies = (data || []).map((item: any) => ({
+        id: item.id,
+        caseId: item.case_id,
+        userId: item.user_id,
+        message: item.message,
+        isInternalNote: item.is_internal_note,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        user: item.user ? {
+          id: item.user.id,
+          name: item.user.name,
+          email: item.user.email,
+          role: item.user.role
+        } : undefined
+      }));
+      
+      set((state) => ({
+        replies: { ...state.replies, [caseId]: mappedReplies },
+        loadingReplies: false
+      }));
+    } catch (error) {
+      console.error('Failed to fetch replies:', error);
+      set({ loadingReplies: false });
     }
   },
   
-  deleteCase: async (id: string) => {
+  createReply: async (caseId: string, userId: string, message: string, isInternalNote: boolean = false) => {
     try {
-      // TODO: Implement Supabase support cases table
-      const cases = get().cases.filter(c => c.id !== id);
-      set({ cases });
-    } catch {
-      set({ error: 'Failed to delete support case' });
-    }
-  },
-  
-  banUser: async (userId: string) => {
-    try {
-      // TODO: Implement Supabase user banning
-      console.log('Banning user:', userId);
-    } catch {
-      set({ error: 'Failed to ban user' });
-    }
-  },
-  
-  unbanUser: async (userId: string) => {
-    try {
-      // TODO: Implement Supabase user unbanning
-      console.log('Unbanning user:', userId);
-    } catch {
-      set({ error: 'Failed to unban user' });
-    }
-  },
-  
-  removeManager: async (userId: string) => {
-    try {
-      // TODO: Implement Supabase manager removal
-      console.log('Removing manager:', userId);
-    } catch {
-      set({ error: 'Failed to remove manager' });
+      await createSupportCaseReplyDB(caseId, userId, message, isInternalNote);
+      // Refresh replies for this case
+      await get().fetchReplies(caseId);
+      // Also refresh the cases list to update lastReplyAt
+      const currentCases = get().cases;
+      if (currentCases.length > 0 && currentCases[0].creator) {
+        await get().fetchAllCases();
+      } else {
+        await get().fetchUserCases(userId);
+      }
+    } catch (error) {
+      console.error('Failed to create reply:', error);
+      set({ error: 'Failed to send reply' });
+      throw error;
     }
   },
 }));

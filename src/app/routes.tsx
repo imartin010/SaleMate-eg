@@ -215,7 +215,7 @@ export const router = createBrowserRouter([
           {
             path: 'support',
             element: (
-              <RoleGuard allowedRoles={['admin', 'support']}>
+              <RoleGuard allowedRoles={['admin', 'support', 'manager', 'user']}>
                 <SafePage><SupportPanel /></SafePage>
               </RoleGuard>
             ),
