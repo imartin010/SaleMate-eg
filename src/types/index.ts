@@ -64,7 +64,8 @@ export interface Order {
 
 
 
-export type SupportCaseStatus = 'open' | 'in_progress' | 'resolved';
+export type SupportCaseStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type SupportCasePriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface SupportCase {
   id: string;
@@ -73,7 +74,24 @@ export interface SupportCase {
   subject: string;
   description: string;
   status: SupportCaseStatus;
+  priority?: SupportCasePriority; // Deprecated - kept for backward compatibility
+  topic?: string; // New: Category of the issue
+  issue?: string; // New: Specific issue within the topic
   createdAt: string;
+  updatedAt?: string;
+  replyCount?: number; // Number of replies
+  lastReplyAt?: string; // Last reply timestamp
+}
+
+export interface SupportCaseReply {
+  id: string;
+  caseId: string;
+  userId: string;
+  message: string;
+  isInternalNote: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  user?: User; // User who created the reply
 }
 
 export interface Partner {

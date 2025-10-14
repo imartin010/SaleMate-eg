@@ -330,7 +330,8 @@ export async function createSupportCase(
   createdBy: string,
   subject: string,
   description: string,
-  priority: string = 'medium'
+  topic: string,
+  issue: string
 ) {
   try {
     const { data, error } = await supabase
@@ -339,7 +340,8 @@ export async function createSupportCase(
         created_by: createdBy,
         subject,
         description,
-        priority: priority as any // eslint-disable-line @typescript-eslint/no-explicit-any
+        topic,
+        issue
       })
       .select()
 
@@ -347,6 +349,152 @@ export async function createSupportCase(
     return data
   } catch (error) {
     console.error('Error creating support case:', error)
+    throw error
+  }
+}
+
+/**
+ * Get all support cases (for support role)
+ */
+export async function getAllSupportCases() {
+  try {
+    const { data, error } = await supabase
+      .from('support_cases')
+      .select(`
+        *,
+        creator:profiles!support_cases_created_by_fkey(id, name, email, role),
+        assignee:profiles!support_cases_assigned_to_fkey(id, name, email, role)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error getting all support cases:', error)
+    throw error
+  }
+}
+
+/**
+ * Update a support case
+ */
+export async function updateSupportCase(
+  caseId: string,
+  updates: {
+    status?: string;
+    assigned_to?: string;
+    topic?: string;
+    issue?: string;
+  }
+) {
+  try {
+    const { data, error } = await supabase
+      .from('support_cases')
+      .update(updates)
+      .eq('id', caseId)
+      .select()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error updating support case:', error)
+    throw error
+  }
+}
+
+/**
+ * Create a reply to a support case
+ */
+export async function createSupportCaseReply(
+  caseId: string,
+  userId: string,
+  message: string,
+  isInternalNote: boolean = false
+) {
+  try {
+    const { data, error } = await supabase
+      .from('support_case_replies')
+      .insert({
+        case_id: caseId,
+        user_id: userId,
+        message,
+        is_internal_note: isInternalNote
+      })
+      .select()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error creating support case reply:', error)
+    throw error
+  }
+}
+
+/**
+ * Get all replies for a support case with user details
+ */
+export async function getSupportCaseReplies(caseId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('support_case_replies')
+      .select(`
+        *,
+        user:profiles!support_case_replies_user_id_fkey (
+          id,
+          name,
+          email,
+          role
+        )
+      `)
+      .eq('case_id', caseId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error fetching support case replies:', error)
+    throw error
+  }
+}
+
+/**
+ * Get reply count for a support case
+ */
+export async function getSupportCaseReplyCount(caseId: string) {
+  try {
+    const { count, error } = await supabase
+      .from('support_case_replies')
+      .select('*', { count: 'exact', head: true })
+      .eq('case_id', caseId)
+      .eq('is_internal_note', false)
+
+    if (error) throw error
+    return count || 0
+  } catch (error) {
+    console.error('Error fetching support case reply count:', error)
+    return 0
+  }
+}
+
+/**
+ * Get support cases with user details
+ */
+export async function getUserSupportCasesWithDetails(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('support_cases')
+      .select(`
+        *,
+        creator:profiles!support_cases_created_by_fkey(id, name, email, role),
+        assignee:profiles!support_cases_assigned_to_fkey(id, name, email, role)
+      `)
+      .eq('created_by', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error getting user support cases with details:', error)
     throw error
   }
 }
