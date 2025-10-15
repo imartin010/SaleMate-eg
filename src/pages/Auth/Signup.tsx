@@ -1,11 +1,11 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle, UserPlus } from 'lucide-react';
+import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle, UserPlus, Users } from 'lucide-react';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -22,10 +22,16 @@ type SignupForm = z.infer<typeof signupSchema>;
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUpEmail, loading, error, clearError } = useAuthStore();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [signupSuccess, setSignupSuccess] = React.useState(false);
+
+  // Check for invitation parameters
+  const invitationToken = searchParams.get('invitation');
+  const invitationEmail = searchParams.get('email');
+  const hasInvitation = !!invitationToken && !!invitationEmail;
 
   const {
     register,
@@ -33,6 +39,9 @@ export default function Signup() {
     formState: { errors },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
+    defaultValues: {
+      email: invitationEmail || '',
+    },
   });
 
   const onSubmit = async (values: SignupForm) => {
@@ -57,9 +66,14 @@ export default function Signup() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8 text-center">
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {hasInvitation ? 'Account Created & Team Joined!' : 'Account Created!'}
+          </h1>
           <p className="text-gray-600 mb-4">
-            Please check your email to verify your account.
+            {hasInvitation 
+              ? 'Your account has been created and you\'ve been added to the team. Please check your email to verify your account.'
+              : 'Please check your email to verify your account.'
+            }
           </p>
           <p className="text-sm text-gray-500">
             Redirecting to login...
@@ -77,6 +91,18 @@ export default function Signup() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h1>
           <p className="text-gray-600">Join SaleMate today</p>
         </div>
+
+        {hasInvitation && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <span className="font-semibold text-blue-900">Team Invitation</span>
+            </div>
+            <p className="text-sm text-blue-700">
+              You've been invited to join a team! Complete your signup to automatically join.
+            </p>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
@@ -110,13 +136,17 @@ export default function Signup() {
             <input
               {...register('email')}
               type="email"
+              disabled={hasInvitation}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                 errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-              }`}
+              } ${hasInvitation ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               placeholder="Enter your email"
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            )}
+            {hasInvitation && (
+              <p className="mt-1 text-sm text-blue-600">Email from team invitation</p>
             )}
           </div>
 

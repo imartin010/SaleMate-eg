@@ -4,12 +4,28 @@ import type { Database } from "../types/database";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
+export interface TeamInvitation {
+  id: string;
+  manager_id: string;
+  invitee_email: string;
+  invitee_user_id: string | null;
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  token: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface TeamState {
   members: ProfileRow[];
+  invitations: TeamInvitation[];
   loading: boolean;
   error?: string;
   fetchTeam(): Promise<void>;
+  fetchInvitations(): Promise<void>;
   addUserToTeam(userId: string): Promise<boolean>;
+  inviteUserByEmail(email: string): Promise<boolean>;
+  cancelInvitation(invitationId: string): Promise<boolean>;
   teamUserIds(): Promise<string[]>; // returns my recursive tree ids
   removeUserFromTeam(userId: string): Promise<boolean>;
   clearError(): void;
@@ -17,6 +33,7 @@ interface TeamState {
 
 export const useTeamStore = create<TeamState>((set, get) => ({
   members: [],
+  invitations: [],
   loading: false,
   error: undefined,
 
@@ -131,6 +148,89 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     } catch (error) {
       console.error('Error getting team user IDs:', error);
       return [];
+    }
+  },
+
+  async fetchInvitations() {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user?.user) return;
+
+      const { data, error } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('manager_id', user.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        set({ error: error.message });
+        return;
+      }
+
+      set({ invitations: data ?? [] });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  },
+
+  async inviteUserByEmail(email: string) {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user?.user) {
+        set({ error: 'Not authenticated' });
+        return false;
+      }
+
+      // Call the edge function to send invitation
+      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
+        body: { invitee_email: email }
+      });
+
+      if (error) {
+        set({ error: error.message });
+        return false;
+      }
+
+      if (!data?.success) {
+        set({ error: data?.error || 'Failed to send invitation' });
+        return false;
+      }
+
+      // Refresh invitations list
+      await get().fetchInvitations();
+      
+      return true;
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+      return false;
+    }
+  },
+
+  async cancelInvitation(invitationId: string) {
+    try {
+      const { error } = await supabase
+        .from('team_invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (error) {
+        set({ error: error.message });
+        return false;
+      }
+
+      // Refresh invitations list
+      await get().fetchInvitations();
+      
+      return true;
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+      return false;
     }
   },
 
