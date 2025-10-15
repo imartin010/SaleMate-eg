@@ -39,6 +39,7 @@ const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
+const AcceptInvitation = React.lazy(() => import('../pages/Team/AcceptInvitation'));
 const PartnersPage = React.lazy(() => import('../pages/Partners/PartnersPage'));
 const InvestorFundingPage = React.lazy(() => import('../pages/InvestorFundingPage'));
 const AgentScoringPage = React.lazy(() => import('../pages/AgentScoringPage'));
@@ -202,11 +203,11 @@ export const router = createBrowserRouter([
           },
           {
             path: 'team',
-            element: (
-              <RoleGuard allowedRoles={['admin', 'manager']}>
-                <SafePage><TeamPage /></SafePage>
-              </RoleGuard>
-            ),
+            element: <SafePage><TeamPage /></SafePage>,
+          },
+          {
+            path: 'team/accept-invitation',
+            element: <SafePage><AcceptInvitation /></SafePage>,
           },
           {
             path: 'partners',

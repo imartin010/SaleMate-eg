@@ -4,6 +4,7 @@ import { cn } from '../../lib/cn';
 import { useAuthStore } from '../../store/auth';
 import { canAccessSupport, canAccessAdmin } from '../../lib/rbac';
 import { Logo } from '../../components/common/Logo';
+import { supabase } from '../../lib/supabaseClient';
 
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   UserCheck,
   RefreshCw,
   Package,
+  Mail,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const location = useLocation();
   const { user, profile, signOut, refreshProfile } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
   
   // Debug logging
   console.log('🔍 Sidebar - User:', user?.email);
@@ -42,12 +45,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     }
   }, [user, profile, refreshProfile]);
 
+  // Fetch pending invitations count
+  useEffect(() => {
+    const fetchInvitationsCount = async () => {
+      if (!user || !profile) return;
+
+      try {
+        const { count } = await supabase
+          .from('team_invitations')
+          .select('*', { count: 'exact', head: true })
+          .eq('invitee_email', profile.email)
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString());
+
+        setPendingInvitationsCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching invitations count:', error);
+      }
+    };
+
+    fetchInvitationsCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchInvitationsCount, 30000);
+    return () => clearInterval(interval);
+  }, [user, profile]);
+
   if (!user) return null;
 
   const handleMouseEnter = () => setIsCollapsed(false);
   const handleMouseLeave = () => setIsCollapsed(true);
 
-  const navigation = [
+  const navigation: Array<{
+    name: string;
+    href: string;
+    icon: typeof LayoutDashboard;
+    show: boolean;
+    badge?: number;
+  }> = [
     {
       name: 'Dashboard',
       href: '/app',
@@ -88,7 +123,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'My Team',
       href: '/app/team',
       icon: UserCheck,
-      show: profile?.role === 'manager' || profile?.role === 'admin',
+      show: true,
+      badge: pendingInvitationsCount > 0 ? pendingInvitationsCount : undefined,
     },
     {
       name: 'Support',
@@ -148,12 +184,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           .filter(item => item.show)
           .map((item) => {
             const Icon = item.icon;
+            const hasBadge = item.badge && item.badge > 0;
             return (
               <Link
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  'group flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ease-out',
+                  'group flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ease-out relative',
                   isActive(item.href)
                     ? 'neumorphic-inset text-primary shadow-lg'
                     : 'text-muted-foreground hover:neumorphic hover:text-foreground hover:scale-105',
@@ -161,13 +198,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 )}
                 title={isCollapsed ? item.name : undefined}
               >
-                <Icon className={cn(
-                  'h-5 w-5 transition-all duration-300',
-                  isActive(item.href) 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground group-hover:text-primary'
-                )} />
-                {!isCollapsed && <span>{item.name}</span>}
+                <div className="relative">
+                  <Icon className={cn(
+                    'h-5 w-5 transition-all duration-300',
+                    isActive(item.href) 
+                      ? 'text-primary' 
+                      : 'text-muted-foreground group-hover:text-primary'
+                  )} />
+                  {hasBadge && (
+                    <div className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                      {item.badge}
+                    </div>
+                  )}
+                </div>
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between flex-1">
+                    <span>{item.name}</span>
+                    {hasBadge && (
+                      <div className="h-6 w-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {item.badge}
+                      </div>
+                    )}
+                  </div>
+                )}
               </Link>
             );
           })}
