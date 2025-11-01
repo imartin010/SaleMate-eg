@@ -30,9 +30,9 @@ OTP codes are not being received on real phone numbers during signup.
 ### 3. ✅ Verify Twilio Credentials
 
 **Check the credentials we set:**
-- Account SID: `AC73463e4086874fd5d132d212a7fba9e7`
-- Auth Token: `8c778bcf5f1002c5a7499c038ab8831f`
-- Messaging Service SID: `MGba4a7ef40574982c512a71d4828fbece`
+- Account SID: `AC...` (check your Twilio console)
+- Auth Token: `***` (check your Twilio console)
+- Messaging Service SID: `MG...` (check your Twilio console)
 
 **How to verify:**
 1. Go to https://console.twilio.com
@@ -58,9 +58,9 @@ supabase secrets list
 
 **If missing or wrong, reset them:**
 ```bash
-supabase secrets set TWILIO_ACCOUNT_SID=AC73463e4086874fd5d132d212a7fba9e7
-supabase secrets set TWILIO_AUTH_TOKEN=8c778bcf5f1002c5a7499c038ab8831f
-supabase secrets set TWILIO_MESSAGING_SERVICE_SID=MGba4a7ef40574982c512a71d4828fbece
+supabase secrets set TWILIO_ACCOUNT_SID=your_account_sid
+supabase secrets set TWILIO_AUTH_TOKEN=your_auth_token
+supabase secrets set TWILIO_MESSAGING_SERVICE_SID=your_messaging_service_sid
 ```
 
 ### 5. ✅ Phone Number Format
@@ -159,9 +159,9 @@ cd "/Users/martin2/Desktop/Sale Mate Final"
 supabase secrets list
 
 # If any are missing, set them again
-supabase secrets set TWILIO_ACCOUNT_SID=AC73463e4086874fd5d132d212a7fba9e7
-supabase secrets set TWILIO_AUTH_TOKEN=8c778bcf5f1002c5a7499c038ab8831f
-supabase secrets set TWILIO_MESSAGING_SERVICE_SID=MGba4a7ef40574982c512a71d4828fbece
+supabase secrets set TWILIO_ACCOUNT_SID=your_account_sid
+supabase secrets set TWILIO_AUTH_TOKEN=your_auth_token
+supabase secrets set TWILIO_MESSAGING_SERVICE_SID=your_messaging_service_sid
 
 # Redeploy the function after setting secrets
 supabase functions deploy send-otp

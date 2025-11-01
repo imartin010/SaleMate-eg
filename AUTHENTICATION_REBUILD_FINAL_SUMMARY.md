@@ -224,9 +224,9 @@ Logged in 30 days        Logged in 30 days  Extra Security
 
 ### Supabase (Already Configured ✅)
 ```bash
-TWILIO_ACCOUNT_SID=AC73463e4086874fd5d132d212a7fba9e7
-TWILIO_AUTH_TOKEN=8c778bcf5f1002c5a7499c038ab8831f
-TWILIO_MESSAGING_SERVICE_SID=MGba4a7ef40574982c512a71d4828fbece
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_MESSAGING_SERVICE_SID=your_messaging_service_sid
 ```
 
 ### Local Development (.env.local)
