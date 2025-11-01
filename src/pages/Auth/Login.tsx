@@ -1,50 +1,146 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2, LogIn, AlertCircle, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
+import { OTPInput } from '../../components/auth/OTPInput';
+import { Loader2, LogIn, AlertCircle, Eye, EyeOff, Mail, CheckCircle, Shield, ArrowLeft } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean().optional(),
+  use2FA: z.boolean().optional(),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+type LoginStep = 'credentials' | 'otp';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInEmail, loading, error, clearError, resendConfirmation } = useAuthStore();
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [resendLoading, setResendLoading] = React.useState(false);
-  const [resendSuccess, setResendSuccess] = React.useState(false);
-  const [userEmail, setUserEmail] = React.useState('');
+  const { signInEmail, signInWith2FA, sendOTP, loading, error, clearError, resendConfirmation } = useAuthStore();
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [step, setStep] = useState<LoginStep>('credentials');
+  const [formData, setFormData] = useState<LoginForm | null>(null);
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [otpError, setOtpError] = useState<string>();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      rememberMe: localStorage.getItem('remember_me') === 'true',
+      use2FA: false,
+    },
   });
+
+  const use2FA = watch('use2FA');
 
   const onSubmit = async (values: LoginForm) => {
     clearError();
+    setOtpError(undefined);
     setUserEmail(values.email);
-    const success = await signInEmail(values.email, values.password);
+    setFormData(values);
+
+    // If 2FA is not requested, sign in directly
+    if (!values.use2FA) {
+      const success = await signInEmail(values.email, values.password, values.rememberMe);
+      if (success) {
+        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 100);
+      }
+      return;
+    }
+
+    // If 2FA is requested, we need to get the user's phone and send OTP
+    // First, try to sign in to get user profile (we'll sign out if 2FA fails)
+    const tempSuccess = await signInEmail(values.email, values.password, false);
+    if (!tempSuccess) return;
+
+    // Get user's phone from the store
+    const profile = useAuthStore.getState().profile;
+    if (!profile?.phone) {
+      clearError();
+      await useAuthStore.getState().signOut();
+      setOtpError('No phone number found. Please sign in without 2FA.');
+      return;
+    }
+
+    setUserPhone(profile.phone);
+
+    // Sign out temporarily - we'll sign in again after 2FA
+    await useAuthStore.getState().signOut();
+
+    // Send OTP
+    setSendingOTP(true);
+    const result = await sendOTP(profile.phone, '2fa');
+    setSendingOTP(false);
+
+    if (!result.success) {
+      setOtpError(result.error);
+      return;
+    }
+
+    // Move to OTP step
+    setStep('otp');
+  };
+
+  const handleOTPComplete = async (otp: string) => {
+    if (!formData) return;
+
+    clearError();
+    setOtpError(undefined);
+    setVerifyingOTP(true);
+
+    const success = await signInWith2FA(
+      formData.email,
+      formData.password,
+      otp,
+      formData.rememberMe
+    );
+
+    setVerifyingOTP(false);
+
     if (success) {
-      // Get the intended destination from location state, or default to dashboard
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
-      console.log('Login successful, redirecting to:', from);
-      
-      // Small delay to ensure auth state is fully updated
       setTimeout(() => {
         navigate(from, { replace: true });
       }, 100);
+    } else {
+      setOtpError(error || 'Invalid verification code');
     }
+  };
+
+  const handleResendOTP = async () => {
+    if (!userPhone) return;
+    
+    setOtpError(undefined);
+    const result = await sendOTP(userPhone, '2fa');
+    
+    if (!result.success) {
+      setOtpError(result.error);
+    }
+  };
+
+  const handleBackToCredentials = () => {
+    setStep('credentials');
+    setOtpError(undefined);
+    clearError();
   };
 
   const handleResendConfirmation = async () => {
@@ -65,6 +161,44 @@ export default function Login() {
 
   const isEmailNotConfirmed = error && error.toLowerCase().includes('email not confirmed');
 
+  // OTP Verification Screen
+  if (step === 'otp') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
+          <div className="text-center mb-8">
+            <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Two-Factor Authentication</h1>
+            <p className="text-gray-600">
+              We've sent a 6-digit code to <br />
+              <span className="font-semibold font-mono">{userPhone}</span>
+            </p>
+          </div>
+
+          <OTPInput
+            length={6}
+            onComplete={handleOTPComplete}
+            onResend={handleResendOTP}
+            isVerifying={verifyingOTP}
+            error={otpError}
+            expiresInSeconds={300}
+          />
+
+          <button
+            type="button"
+            onClick={handleBackToCredentials}
+            disabled={verifyingOTP}
+            className="mt-6 w-full flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to login</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Credentials Entry Screen
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
@@ -84,11 +218,11 @@ export default function Login() {
           </div>
         )}
 
-        {error && (
+        {(error || otpError) && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-3 mb-3">
               <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-              <span className="text-red-700 text-sm">{error}</span>
+              <span className="text-red-700 text-sm">{error || otpError}</span>
             </div>
             
             {isEmailNotConfirmed && userEmail && (
@@ -124,6 +258,7 @@ export default function Login() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
@@ -141,10 +276,19 @@ export default function Login() {
             )}
           </div>
 
+          {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Link 
+                to="/auth/reset-password" 
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative">
               <input
                 {...register('password')}
@@ -167,15 +311,48 @@ export default function Login() {
             )}
           </div>
 
+          {/* Remember Me & 2FA Options */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                {...register('rememberMe')}
+                type="checkbox"
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Remember me for 30 days</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                {...register('use2FA')}
+                type="checkbox"
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700 flex items-center gap-1">
+                <Shield className="h-4 w-4 text-blue-600" />
+                Use two-factor authentication (2FA)
+              </span>
+            </label>
+          </div>
+
+          {use2FA && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                <strong>2FA enabled:</strong> You'll receive a verification code via SMS after entering your password.
+              </p>
+            </div>
+          )}
+
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || sendingOTP}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {(loading || sendingOTP) ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Signing in...
+                {sendingOTP ? 'Sending 2FA code...' : 'Signing in...'}
               </>
             ) : (
               <>

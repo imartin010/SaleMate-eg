@@ -28,9 +28,9 @@ export interface AdminStats {
 
 export interface PurchaseRequest {
   id: string;
-  user_id: string;
+  buyer_user_id: string;
   project_id: string;
-  lead_count: number;
+  number_of_leads: number;
   total_amount: number;
   status: string;
   created_at: string;
@@ -61,7 +61,12 @@ export function useAdminData() {
         supabase.from('profiles').select('id, name, email, role, created_at').order('created_at', { ascending: false }),
         supabase.from('projects').select('id, name, region, available_leads, price_per_lead, description').order('name'),
         supabase.from('leads').select('id', { count: 'exact', head: true }),
-        supabase.from('lead_purchase_requests').select('id, user_id, project_id, lead_count, total_amount, status, created_at, profiles:user_id(name), projects:project_id(name)').eq('status', 'pending').order('created_at', { ascending: false }).then(res => res).catch(() => ({ data: [], error: null }))
+        (supabase.from('lead_purchase_requests' as any) as any)
+          .select('id, buyer_user_id, project_id, number_of_leads, total_price, status, created_at, profiles!buyer_user_id(name), projects:project_id(name)')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .then((res: any) => res)
+          .catch(() => ({ data: [], error: null }))
       ]);
 
       if (usersResult.error) {
@@ -81,7 +86,7 @@ export function useAdminData() {
         console.warn('Purchase requests table not available:', requestsResult.error);
       }
 
-      const fetchedUsers: AdminUser[] = (usersResult.data || []).map(u => ({
+      const fetchedUsers: AdminUser[] = (usersResult.data || []).map((u: any) => ({
         id: u.id,
         name: u.name || 'Unknown',
         email: u.email || '',
@@ -89,7 +94,7 @@ export function useAdminData() {
         created_at: u.created_at,
       }));
 
-      const fetchedProjects: AdminProject[] = (projectsResult.data || []).map(p => ({
+      const fetchedProjects: AdminProject[] = (projectsResult.data || []).map((p: any) => ({
         id: p.id,
         name: typeof p.name === 'object' && p.name !== null && (p.name as any).name 
           ? (p.name as any).name 
@@ -103,10 +108,10 @@ export function useAdminData() {
       const fetchedRequests: PurchaseRequest[] = (requestsResult && 'data' in requestsResult && requestsResult.data)
         ? requestsResult.data.map((r: any) => ({
             id: r.id,
-            user_id: r.user_id,
+            buyer_user_id: r.buyer_user_id,
             project_id: r.project_id,
-            lead_count: r.lead_count,
-            total_amount: r.total_amount,
+            number_of_leads: r.number_of_leads,
+            total_amount: r.total_price || r.total_amount, // Support both column names for compatibility
             status: r.status,
             created_at: r.created_at,
             user_name: r.profiles?.name || 'Unknown',
