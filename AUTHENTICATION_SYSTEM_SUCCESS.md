@@ -309,8 +309,8 @@ vercel --prod
 ## Configuration Summary
 
 ### Twilio (Paid Account)
-- Account SID: AC73463e4086874fd5d132d212a7fba9e7
-- Messaging Service: MGba4a7ef40574982c512a71d4828fbece
+- Account SID: AC*** (configured in Supabase secrets)
+- Messaging Service: MG*** (configured in Supabase secrets)
 - Sender Pool: +1 (478) 210-4607
 - Alphanumeric: Enabled ✅
 - Egypt: Enabled ✅
