@@ -6,6 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function hashOTP(code: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(code);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -20,54 +29,12 @@ serve(async (req) => {
   }
 
   try {
-    const { phone, code, email, name } = await req.json();
+    const { phone, code, purpose = 'signup' } = await req.json();
 
     // Validate input
     if (!phone || !code) {
       return new Response(
         JSON.stringify({ success: false, error: 'Phone number and verification code are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get Twilio credentials
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const verifyServiceSid = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
-
-    if (!accountSid || !authToken || !verifyServiceSid) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'SMS service configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify OTP with Twilio
-    const twilioUrl = `https://verify.twilio.com/v2/Services/${verifyServiceSid}/VerificationCheck`;
-    const twilioAuth = btoa(`${accountSid}:${authToken}`);
-
-    const twilioResponse = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${twilioAuth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        To: phone,
-        Code: code,
-      }),
-    });
-
-    const twilioResult = await twilioResponse.json();
-
-    if (!twilioResponse.ok || twilioResult.status !== 'approved') {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: twilioResult.status === 'pending' 
-            ? 'Invalid verification code' 
-            : 'Verification failed or expired'
-        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -84,97 +51,106 @@ serve(async (req) => {
       }
     );
 
-    // Generate email for phone-only users
-    const userEmail = email || `${phone.replace('+', '')}@phone.local`;
-    const userName = name || phone.replace('+', '');
+    // Get the OTP record
+    const { data: otpRecord, error: fetchError } = await supabaseAdmin
+      .from('otp_verifications')
+      .select('*')
+      .eq('phone', phone)
+      .eq('purpose', purpose)
+      .eq('verified', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    // Check if user exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByPhone(phone);
-
-    let userId: string;
-
-    if (existingUser.user) {
-      // User exists, use existing ID
-      userId = existingUser.user.id;
-    } else {
-      // Create new user
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: userEmail,
-        phone: phone,
-        user_metadata: {
-          name: userName,
-          phone: phone,
-        },
-        email_confirm: true,
-        phone_confirm: true,
-      });
-
-      if (createError || !newUser.user) {
-        console.error('User creation error:', createError);
-        return new Response(
-          JSON.stringify({ success: false, error: 'Failed to create user account' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      userId = newUser.user.id;
-    }
-
-    // Generate session tokens
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userEmail,
-      options: {
-        redirectTo: `${req.headers.get('origin') || 'http://localhost:5173'}/auth/callback`,
-      },
-    });
-
-    if (sessionError || !sessionData) {
-      console.error('Session generation error:', sessionError);
+    if (fetchError || !otpRecord) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to create session' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'No verification code found. Please request a new code.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Extract tokens from the magic link
-    const url = new URL(sessionData.properties.action_link);
-    const accessToken = url.searchParams.get('access_token');
-    const refreshToken = url.searchParams.get('refresh_token');
+    // Check if expired
+    const expiresAt = new Date(otpRecord.expires_at);
+    if (expiresAt < new Date()) {
+      // Delete expired OTP
+      await supabaseAdmin
+        .from('otp_verifications')
+        .delete()
+        .eq('id', otpRecord.id);
 
-    if (!accessToken || !refreshToken) {
-      console.error('Missing tokens in magic link');
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to generate session tokens' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Verification code has expired. Please request a new code.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update profile with phone if needed
+    // Check max attempts
+    if (otpRecord.attempts >= 5) {
+      // Delete OTP after too many attempts
+      await supabaseAdmin
+        .from('otp_verifications')
+        .delete()
+        .eq('id', otpRecord.id);
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Too many failed attempts. Please request a new code.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Hash the provided code and compare
+    const codeHash = await hashOTP(code);
+
+    if (codeHash !== otpRecord.code_hash) {
+      // Increment attempts
+      await supabaseAdmin
+        .from('otp_verifications')
+        .update({ attempts: otpRecord.attempts + 1 })
+        .eq('id', otpRecord.id);
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Invalid verification code. ${4 - otpRecord.attempts} attempts remaining.` 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Code is valid! Mark as verified
     await supabaseAdmin
+      .from('otp_verifications')
+      .update({ verified: true })
+      .eq('id', otpRecord.id);
+
+    // Update user's phone_verified_at if they exist
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .upsert({
-        id: userId,
-        email: userEmail,
-        name: userName,
-        phone: phone,
-        role: 'user',
-      }, {
-        onConflict: 'id',
-      });
+      .select('id')
+      .eq('phone', phone)
+      .maybeSingle();
+
+    if (profile) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({ phone_verified_at: new Date().toISOString() })
+        .eq('id', profile.id);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        session: {
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          user: {
-            id: userId,
-            email: userEmail,
-            phone: phone,
-          },
-        },
+        message: 'Phone number verified successfully',
+        phone_verified: true,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

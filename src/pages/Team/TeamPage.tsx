@@ -75,17 +75,78 @@ const TeamPage: React.FC = () => {
 
   useEffect(() => {
     if (user && profile) {
-      if (isManager) {
+      const currentIsManager = profile.role === 'manager' || profile.role === 'admin';
+      
+      if (currentIsManager) {
         // Managers: fetch their team members and sent invitations
+        console.log('👨‍💼 Loading manager view for:', profile.email);
         fetchTeam();
         fetchInvitations();
       } else {
         // Regular users: fetch teammates and their received invitations
+        console.log('👤 Loading user view for:', profile.email);
         fetchTeammates();
         fetchMyInvitations();
       }
     }
-  }, [user, profile?.role]);
+  }, [user?.id, profile?.role, profile?.id]); // Better dependencies
+
+  // Add a manual refresh function
+  const handleRefresh = async () => {
+    // First refresh the profile to get the latest role and manager_id
+    const { refreshProfile } = useAuthStore.getState();
+    await refreshProfile();
+    
+    // Then fetch team data based on current role
+    const currentIsManager = profile?.role === 'manager' || profile?.role === 'admin';
+    if (currentIsManager) {
+      fetchTeam();
+      fetchInvitations();
+    } else {
+      fetchTeammates();
+      fetchMyInvitations();
+    }
+  };
+
+  // Debug function to check database directly
+  const handleDebug = async () => {
+    console.log('🔍 === DEBUG INFO ===');
+    console.log('Current User ID:', user?.id);
+    console.log('Current Profile:', profile);
+    console.log('Is Manager:', isManager);
+    console.log('Members in store:', members.length);
+    
+    // Refresh current user's profile from database
+    const { data: freshProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user?.id)
+      .single();
+    
+    console.log('Fresh profile from DB:', freshProfile);
+    console.log('Profile error:', profileError);
+    
+    // Direct database query for team members
+    const { data: directMembers, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('manager_id', user?.id);
+    
+    console.log('Direct DB query results:', directMembers);
+    console.log('Direct DB query error:', error);
+    
+    // Check invitations
+    const { data: invitationsData } = await supabase
+      .from('team_invitations')
+      .select('*')
+      .eq('manager_id', user?.id)
+      .eq('status', 'accepted');
+    
+    console.log('Accepted invitations:', invitationsData);
+    console.log('🔍 === END DEBUG ===');
+    
+    alert(`Debug info logged to console. Check:\n- User ID: ${user?.id}\n- Role: ${profile?.role}\n- Fresh Role: ${freshProfile?.role}\n- Members found: ${directMembers?.length || 0}\n- Accepted invitations: ${invitationsData?.length || 0}`);
+  };
 
   // Fetch teammates for regular users (people under the same manager)
   const fetchTeammates = async () => {
@@ -363,13 +424,31 @@ const TeamPage: React.FC = () => {
                 </div>
               </div>
               
-              <Button 
-                onClick={() => setShowAddModal(true)}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl hover:shadow-lg transition-all duration-300"
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Invite Member
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleDebug}
+                  variant="outline"
+                  className="rounded-xl text-gray-500"
+                  title="Debug team data"
+                >
+                  🐛
+                </Button>
+                <Button 
+                  onClick={handleRefresh}
+                  variant="outline"
+                  className="rounded-xl"
+                  title="Refresh team data"
+                >
+                  <Activity className="h-4 w-4" />
+                </Button>
+                <Button 
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl hover:shadow-lg transition-all duration-300"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Invite Member
+                </Button>
+              </div>
             </div>
           </div>
 

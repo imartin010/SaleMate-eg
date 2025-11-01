@@ -13,13 +13,20 @@ CREATE TABLE IF NOT EXISTS team_invitations (
 );
 
 -- Create index for faster lookups
-CREATE INDEX idx_team_invitations_email ON team_invitations(invitee_email);
-CREATE INDEX idx_team_invitations_token ON team_invitations(token);
-CREATE INDEX idx_team_invitations_manager ON team_invitations(manager_id);
-CREATE INDEX idx_team_invitations_status ON team_invitations(status);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_email ON team_invitations(invitee_email);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_token ON team_invitations(token);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_manager ON team_invitations(manager_id);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_status ON team_invitations(status);
 
 -- Enable RLS
 ALTER TABLE team_invitations ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Managers can view their own invitations" ON team_invitations;
+DROP POLICY IF EXISTS "Managers can create invitations" ON team_invitations;
+DROP POLICY IF EXISTS "Users can view invitations sent to them" ON team_invitations;
+DROP POLICY IF EXISTS "Users can update their invitation status" ON team_invitations;
+DROP POLICY IF EXISTS "Managers can delete their invitations" ON team_invitations;
 
 -- Managers can see invitations they sent
 CREATE POLICY "Managers can view their own invitations" 

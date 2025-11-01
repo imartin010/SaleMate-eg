@@ -91,7 +91,7 @@ serve(async (req) => {
       .from('profiles')
       .select('id, name, manager_id')
       .eq('email', invitee_email)
-      .single();
+      .maybeSingle();
 
     if (existingUser?.manager_id === user.id) {
       return new Response(
@@ -103,26 +103,59 @@ serve(async (req) => {
     // Generate a unique token
     const token = crypto.randomUUID();
 
-    // Create or update the invitation
-    const { data: invitation, error: inviteError } = await supabaseClient
+    // Check if invitation already exists
+    const { data: existingInvitation } = await supabaseClient
       .from('team_invitations')
-      .upsert({
-        manager_id: user.id,
-        invitee_email: invitee_email.toLowerCase(),
-        invitee_user_id: existingUser?.id || null,
-        token: token,
-        status: 'pending',
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-      }, {
-        onConflict: 'manager_id,invitee_email',
-      })
-      .select()
-      .single();
+      .select('*')
+      .eq('manager_id', user.id)
+      .eq('invitee_email', invitee_email.toLowerCase())
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    let invitation;
+    let inviteError;
+
+    if (existingInvitation) {
+      // Update existing invitation with new token
+      const { data, error } = await supabaseClient
+        .from('team_invitations')
+        .update({
+          token: token,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingInvitation.id)
+        .select()
+        .single();
+      
+      invitation = data;
+      inviteError = error;
+    } else {
+      // Create new invitation
+      const { data, error } = await supabaseClient
+        .from('team_invitations')
+        .insert({
+          manager_id: user.id,
+          invitee_email: invitee_email.toLowerCase(),
+          invitee_user_id: existingUser?.id || null,
+          token: token,
+          status: 'pending',
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .select()
+        .single();
+      
+      invitation = data;
+      inviteError = error;
+    }
 
     if (inviteError) {
       console.error('Error creating invitation:', inviteError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create invitation' }),
+        JSON.stringify({ 
+          error: 'Failed to create invitation',
+          details: inviteError.message 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }

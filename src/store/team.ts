@@ -42,9 +42,12 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user?.user) { 
+        console.log('❌ fetchTeam: No user found');
         set({ loading: false }); 
         return; 
       }
+
+      console.log('👥 Fetching team for user:', user.user.id);
 
       // Get ids in my tree via RPC
       // RPC function not available - using direct query
@@ -54,13 +57,16 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         .eq('manager_id', user.user.id);
       
       if (idsErr) { 
+        console.error('❌ Error fetching team IDs:', idsErr);
         set({ loading: false, error: idsErr.message }); 
         return; 
       }
 
       const idList = (ids ?? []).map(i => i.id);
+      console.log('📋 Found team member IDs:', idList);
       
       if (idList.length === 0) {
+        console.log('ℹ️ No team members found');
         set({ members: [], loading: false });
         return;
       }
@@ -71,12 +77,15 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         .in("id", idList)
         .order("created_at", { ascending: false });
 
+      console.log('✅ Fetched team members:', data?.length || 0);
+      
       set({ 
         members: data ?? [], 
         loading: false, 
         error: error?.message 
       });
     } catch (error) {
+      console.error('❌ fetchTeam error:', error);
       set({ 
         loading: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 

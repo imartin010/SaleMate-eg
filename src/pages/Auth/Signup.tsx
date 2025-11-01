@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../../components/common/Logo';
-import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle, UserPlus, Users } from 'lucide-react';
+import { PhoneInput } from '../../components/auth/PhoneInput';
+import { OTPInput } from '../../components/auth/OTPInput';
+import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle, UserPlus, Users, ArrowLeft, Shield } from 'lucide-react';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
+  phone: z.string().min(10, 'Please enter a valid phone number'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  phone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -20,13 +22,20 @@ const signupSchema = z.object({
 
 type SignupForm = z.infer<typeof signupSchema>;
 
-export default function Signup() {
+type SignupStep = 'details' | 'otp' | 'success';
+
+export default function SignUp() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signUpEmail, loading, error, clearError } = useAuthStore();
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const [signupSuccess, setSignupSuccess] = React.useState(false);
+  const { signUpWithOTP, sendOTP, loading, error, clearError } = useAuthStore();
+  
+  const [step, setStep] = useState<SignupStep>('details');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [otpError, setOtpError] = useState<string>();
+  const [formData, setFormData] = useState<SignupForm | null>(null);
 
   // Check for invitation parameters
   const invitationToken = searchParams.get('invitation');
@@ -37,6 +46,8 @@ export default function Signup() {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -44,24 +55,73 @@ export default function Signup() {
     },
   });
 
-  const onSubmit = async (values: SignupForm) => {
+  const phoneValue = watch('phone');
+
+  const onSubmitDetails = async (values: SignupForm) => {
     clearError();
-    const success = await signUpEmail(
-      values.name,
-      values.email,
-      values.password,
-      values.phone
+    setOtpError(undefined);
+    setFormData(values);
+
+    // Send OTP
+    setSendingOTP(true);
+    const result = await sendOTP(values.phone, 'signup');
+    setSendingOTP(false);
+
+    if (!result.success) {
+      setOtpError(result.error);
+      return;
+    }
+
+    // Move to OTP step
+    setStep('otp');
+  };
+
+  const handleOTPComplete = async (otp: string) => {
+    if (!formData) return;
+
+    clearError();
+    setOtpError(undefined);
+    setVerifyingOTP(true);
+
+    const success = await signUpWithOTP(
+      formData.name,
+      formData.email,
+      formData.phone,
+      formData.password,
+      otp
     );
-    
+
+    setVerifyingOTP(false);
+
     if (success) {
-      setSignupSuccess(true);
+      setStep('success');
       setTimeout(() => {
         navigate('/auth/login');
       }, 2000);
+    } else {
+      setOtpError(error || 'Invalid verification code');
     }
   };
 
-  if (signupSuccess) {
+  const handleResendOTP = async () => {
+    if (!formData) return;
+    
+    setOtpError(undefined);
+    const result = await sendOTP(formData.phone, 'signup');
+    
+    if (!result.success) {
+      setOtpError(result.error);
+    }
+  };
+
+  const handleBackToDetails = () => {
+    setStep('details');
+    setOtpError(undefined);
+    clearError();
+  };
+
+  // Success Screen
+  if (step === 'success') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8 text-center">
@@ -71,18 +131,57 @@ export default function Signup() {
           </h1>
           <p className="text-gray-600 mb-4">
             {hasInvitation 
-              ? 'Your account has been created and you\'ve been added to the team. Please check your email to verify your account.'
-              : 'Please check your email to verify your account.'
+              ? 'Your account has been created and you\'ve been added to the team.'
+              : 'Your phone number has been verified and your account is ready.'
             }
           </p>
-          <p className="text-sm text-gray-500">
-            Redirecting to login...
-          </p>
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Redirecting to login...</span>
+          </div>
         </div>
       </div>
     );
   }
 
+  // OTP Verification Screen
+  if (step === 'otp') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
+          <div className="text-center mb-8">
+            <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Phone</h1>
+            <p className="text-gray-600">
+              We've sent a 6-digit code to <br />
+              <span className="font-semibold font-mono">{formData?.phone}</span>
+            </p>
+          </div>
+
+          <OTPInput
+            length={6}
+            onComplete={handleOTPComplete}
+            onResend={handleResendOTP}
+            isVerifying={verifyingOTP}
+            error={otpError}
+            expiresInSeconds={300}
+          />
+
+          <button
+            type="button"
+            onClick={handleBackToDetails}
+            disabled={verifyingOTP}
+            className="mt-6 w-full flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to details</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Details Entry Screen
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
@@ -104,17 +203,18 @@ export default function Signup() {
           </div>
         )}
 
-        {error && (
+        {(error || otpError) && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <span className="text-red-700 text-sm">{error}</span>
+            <span className="text-red-700 text-sm">{error || otpError}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmitDetails)} className="space-y-6">
+          {/* Full Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+              Full Name <span className="text-red-600">*</span>
             </label>
             <input
               {...register('name')}
@@ -129,9 +229,10 @@ export default function Signup() {
             )}
           </div>
 
+          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              Email Address <span className="text-red-600">*</span>
             </label>
             <input
               {...register('email')}
@@ -150,21 +251,18 @@ export default function Signup() {
             )}
           </div>
 
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number (Optional)
-            </label>
-            <input
-              {...register('phone')}
-              type="tel"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder="Enter your phone number"
-            />
-          </div>
+          {/* Phone Number */}
+          <PhoneInput
+            value={phoneValue || ''}
+            onChange={(value) => setValue('phone', value)}
+            error={errors.phone?.message}
+            required
+          />
 
+          {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
+              Password <span className="text-red-600">*</span>
             </label>
             <div className="relative">
               <input
@@ -188,9 +286,10 @@ export default function Signup() {
             )}
           </div>
 
+          {/* Confirm Password */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password
+              Confirm Password <span className="text-red-600">*</span>
             </label>
             <div className="relative">
               <input
@@ -214,20 +313,21 @@ export default function Signup() {
             )}
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || sendingOTP}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {sendingOTP ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Creating Account...
+                Sending verification code...
               </>
             ) : (
               <>
                 <UserPlus className="h-5 w-5" />
-                Create Account
+                Continue
               </>
             )}
           </button>

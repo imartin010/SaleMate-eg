@@ -267,14 +267,15 @@ export const Checkout: React.FC = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { error: requestError } = await supabase
-            .from('purchase_requests')
+            .from('lead_purchase_requests' as any)
             .insert({
-              user_id: user.id,
+              buyer_user_id: user.id,
               project_id: checkoutData.project.id,
-              quantity: checkoutData.quantity,
+              number_of_leads: checkoutData.quantity,
               total_price: checkoutData.totalPrice,
-              receipt_url: receiptPath,
-              status: 'pending'
+              receipt_file_url: receiptPath,
+              payment_method: 'Instapay' as any,
+              status: 'pending' as any
             });
 
           if (requestError) {
