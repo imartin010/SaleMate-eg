@@ -8,15 +8,21 @@ import { useAuthStore } from '../../store/auth';
 
 interface PurchaseRequest {
   id: string;
-  buyer_user_id: string;
+  user_id: string;
   project_id: string;
+  project_name?: string; // Denormalized project name
   quantity: number;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
-  total_cost: number;
+  total_amount: number;
+  payment_method?: string;
+  receipt_url?: string;
+  receipt_file_name?: string;
   admin_notes?: string;
+  approved_by?: string;
+  approved_at?: string;
+  rejected_at?: string;
+  rejected_reason?: string;
   created_at: string;
-  validated_at?: string;
-  validated_by?: string;
   user?: {
     name: string;
     email: string;
@@ -38,19 +44,126 @@ export default function PurchaseRequests() {
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   useEffect(() => {
     loadRequests();
     
-    const channel = supabase
+      const channel = supabase
       .channel('purchase_requests_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_purchase_requests' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_requests' }, () => {
         loadRequests();
       })
       .subscribe();
 
     return () => channel.unsubscribe();
   }, []);
+
+  // Load receipt image when request is selected
+  useEffect(() => {
+    if (selectedRequest?.receipt_url) {
+      const loadReceipt = async () => {
+        setLoadingReceipt(true);
+        try {
+          const { data, error } = await supabase.storage
+            .from('payment-receipts')
+            .createSignedUrl(selectedRequest.receipt_url!, 3600);
+          
+          if (error) throw error;
+          if (data?.signedUrl) {
+            setReceiptImageUrl(data.signedUrl);
+          }
+        } catch (err) {
+          console.error('Error loading receipt:', err);
+          setReceiptImageUrl(null);
+        } finally {
+          setLoadingReceipt(false);
+        }
+      };
+      loadReceipt();
+    } else {
+      setReceiptImageUrl(null);
+    }
+  }, [selectedRequest?.receipt_url]);
+
+  // Load project details from projects table when viewing details - ALWAYS fetch to ensure fresh data
+  useEffect(() => {
+    if (selectedRequest?.project_id) {
+      const fetchProject = async () => {
+        console.log('🔍 Fetching project for details modal:', {
+          requestId: selectedRequest.id,
+          projectId: selectedRequest.project_id,
+          projectIdType: typeof selectedRequest.project_id,
+          currentProjectName: selectedRequest.project?.name
+        });
+        
+        // Always fetch from projects table for fresh data
+        const { data: projectData, error } = await supabase
+          .from('projects')
+          .select('id, name, region')
+          .eq('id', selectedRequest.project_id)
+          .maybeSingle();
+        
+        console.log('📦 Project fetch result:', {
+          found: !!projectData,
+          projectId: selectedRequest.project_id,
+          data: projectData,
+          error: error?.message,
+          errorCode: error?.code,
+          errorDetails: error?.details
+        });
+        
+        if (!error && projectData) {
+          console.log('✅ Project found:', projectData.name);
+          // Update local state with project details from projects table
+          setSelectedRequest(prev => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              project: {
+                name: projectData.name || 'Unknown',
+                developer: projectData.region || '', // region contains developer display name
+                region: projectData.region || ''
+              }
+            };
+          });
+        } else if (error) {
+          console.error('❌ Error fetching project:', {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            projectId: selectedRequest.project_id
+          });
+          // Set error state in project
+          setSelectedRequest(prev => prev ? {
+            ...prev,
+            project: {
+              name: `Error: ${error.message}`,
+              developer: '',
+              region: ''
+            }
+          } : null);
+        } else {
+          console.warn('⚠️ Project not found in database:', {
+            projectId: selectedRequest.project_id,
+            projectIdType: typeof selectedRequest.project_id
+          });
+          // Keep Unknown but log for debugging
+          setSelectedRequest(prev => prev ? {
+            ...prev,
+            project: {
+              name: 'Project Not Found',
+              developer: '',
+              region: ''
+            }
+          } : null);
+        }
+      };
+      fetchProject();
+    }
+  }, [selectedRequest?.id]); // Use id as dependency to refetch when different request is selected
 
   const loadRequests = async () => {
     try {
@@ -64,7 +177,7 @@ export default function PurchaseRequests() {
       
       // Fetch purchase requests first
       const { data: requestsData, error: requestsErr } = await supabase
-        .from('lead_purchase_requests')
+        .from('purchase_requests')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -77,7 +190,7 @@ export default function PurchaseRequests() {
         });
         // Check if table doesn't exist
         if (requestsErr.message?.includes('could not find the table') || requestsErr.message?.includes('does not exist')) {
-          setError('The lead_purchase_requests table does not exist. Please run the migration or verify the table exists in your database.');
+          setError('The purchase_requests table does not exist. Please run the migration or verify the table exists in your database.');
         } else if (requestsErr.code === 'PGRST116' || requestsErr.message?.includes('permission denied')) {
           setError('Permission denied. Please check your admin role and RLS policies.');
         } else {
@@ -93,10 +206,20 @@ export default function PurchaseRequests() {
       }
 
       // Get unique user IDs and project IDs
-      const userIds = [...new Set(requestsData.map((r: any) => r.buyer_user_id).filter(Boolean))];
+      const userIds = [...new Set(requestsData.map((r: any) => r.user_id).filter(Boolean))];
       const projectIds = [...new Set(requestsData.map((r: any) => r.project_id).filter(Boolean))];
 
-      // Fetch profiles and projects in parallel
+      console.log('🔍 Debug: Purchase Requests Analysis', {
+        totalRequests: requestsData.length,
+        uniqueProjectIds: projectIds,
+        sampleRequest: requestsData[0] ? {
+          id: requestsData[0].id,
+          project_id: requestsData[0].project_id,
+          project_id_type: typeof requestsData[0].project_id
+        } : null
+      });
+
+      // Fetch profiles and projects from their respective tables
       const [profilesResult, projectsResult] = await Promise.all([
         userIds.length > 0
           ? supabase
@@ -105,37 +228,119 @@ export default function PurchaseRequests() {
               .in('id', userIds)
           : Promise.resolve({ data: [], error: null }),
         projectIds.length > 0
-          ? supabase
-              .from('projects')
-              .select('id, name, developer, region')
-              .in('id', projectIds)
+          ? (async () => {
+              // First try batch query
+              let { data, error } = await supabase
+                .from('projects')
+                .select('id, name, region')
+                .in('id', projectIds);
+              
+              // If batch fails, try fetching individually
+              if (error || !data || data.length === 0) {
+                console.warn('⚠️ Batch project fetch failed, trying individually:', error?.message);
+                const projects: any[] = [];
+                const errors: string[] = [];
+                
+                for (const projectId of projectIds.slice(0, 10)) { // Limit to first 10 to avoid timeout
+                  try {
+                    const { data: projectData, error: projectError } = await supabase
+                      .from('projects')
+                      .select('id, name, region')
+                      .eq('id', projectId)
+                      .maybeSingle();
+                    
+                    if (projectError) {
+                      console.error(`Error fetching project ${projectId}:`, projectError);
+                      errors.push(`${projectId}: ${projectError.message}`);
+                    } else if (projectData) {
+                      projects.push(projectData);
+                    }
+                  } catch (err: any) {
+                    console.error(`Exception fetching project ${projectId}:`, err);
+                    errors.push(`${projectId}: ${err.message}`);
+                  }
+                }
+                
+                console.log('📊 Individual projects fetch result:', {
+                  requested: projectIds.length,
+                  found: projects.length,
+                  projects: projects.map((p: any) => ({ id: p.id, name: p.name })),
+                  errors: errors.length > 0 ? errors : null
+                });
+                
+                return { data: projects, error: errors.length > 0 ? new Error(errors.join('; ')) : null };
+              }
+              
+              console.log('📊 Projects fetch result:', {
+                requestedIds: projectIds.length,
+                found: data?.length || 0,
+                projects: data?.map((p: any) => ({ id: p.id, name: p.name })),
+                error: error?.message
+              });
+              
+              return { data: data || [], error };
+            })()
           : Promise.resolve({ data: [], error: null }),
       ]);
 
       if (profilesResult.error) {
-        console.error('Profiles fetch error:', profilesResult.error);
+        console.error('❌ Profiles fetch error:', profilesResult.error);
       }
       if (projectsResult.error) {
-        console.error('Projects fetch error:', projectsResult.error);
+        console.error('❌ Projects fetch error:', projectsResult.error);
       }
 
-      // Create lookup maps
+      // Create lookup maps - use both string and UUID keys for reliability
       const profilesMap = new Map(
-        (profilesResult.data || []).map((p: any) => [p.id, { name: p.name, email: p.email }])
+        (profilesResult.data || []).map((p: any) => {
+          const key = String(p.id);
+          return [key, { name: p.name, email: p.email }];
+        })
       );
-      const projectsMap = new Map(
-        (projectsResult.data || []).map((p: any) => [
-          p.id,
-          { name: p.name, developer: p.developer, region: p.region },
-        ])
-      );
+      
+      const projectsMap = new Map();
+      (projectsResult.data || []).forEach((p: any) => {
+        const stringKey = String(p.id);
+        // region contains the developer display name (e.g., "Mountain View")
+        projectsMap.set(stringKey, { name: p.name, developer: p.region || '', region: p.region || '' });
+        // Also set with UUID key if different
+        if (p.id !== stringKey) {
+          projectsMap.set(p.id, { name: p.name, developer: p.region || '', region: p.region || '' });
+        }
+      });
 
-      // Join the data
-      const formatted = requestsData.map((item: any) => ({
-        ...item,
-        user: profilesMap.get(item.buyer_user_id) || { name: 'Unknown', email: '' },
-        project: projectsMap.get(item.project_id) || { name: 'Unknown', developer: '', region: '' },
-      }));
+      console.log('🗺️ Projects Map:', {
+        size: projectsMap.size,
+        keys: Array.from(projectsMap.keys()),
+        entries: Array.from(projectsMap.entries()).map(([k, v]: [any, any]) => ({ key: k, name: v.name }))
+      });
+
+      // Format data - fetch project name from projects table
+      const formatted = requestsData.map((item: any) => {
+        const projectIdKey = String(item.project_id);
+        const project = projectsMap.get(projectIdKey) || projectsMap.get(item.project_id);
+        
+        if (!project && item.project_id) {
+          console.warn('⚠️ Project not found for purchase request:', {
+            requestId: item.id,
+            projectId: item.project_id,
+            projectIdKey: projectIdKey,
+            availableProjectKeys: Array.from(projectsMap.keys())
+          });
+        }
+        
+        return {
+          ...item,
+          user: profilesMap.get(String(item.user_id)) || { name: 'Unknown', email: '' },
+          project: project || { name: 'Unknown', developer: '', region: '' },
+        };
+      });
+
+      console.log('✅ Formatted requests:', formatted.slice(0, 3).map((r: any) => ({
+        id: r.id,
+        projectId: r.project_id,
+        projectName: r.project?.name
+      })));
 
       setRequests(formatted);
     } catch (err) {
@@ -158,24 +363,43 @@ export default function PurchaseRequests() {
   const approveRequest = async (requestId: string) => {
     try {
       setProcessing(true);
-      const { error: err } = await (supabase as any).rpc('rpc_approve_request', {
-        p_request: requestId,
-        p_admin_notes: adminNotes || null,
-      });
+      
+      // Call RPC function to approve and assign leads
+      const { data: result, error: rpcError } = await supabase.rpc(
+        'approve_purchase_request_and_assign_leads',
+        {
+          p_request_id: requestId,
+          p_admin_id: currentProfile?.id,
+          p_admin_notes: adminNotes || null,
+        }
+      );
 
-      if (err) throw err;
+      if (rpcError) {
+        console.error('RPC Error:', rpcError);
+        throw new Error(rpcError.message || 'Failed to approve request and assign leads');
+      }
+
+      console.log('✅ Purchase request approved and leads assigned:', result);
 
       await logAudit({
         actor_id: currentProfile?.id || '',
         action: 'approve',
-        entity: 'lead_purchase_requests',
+        entity: 'purchase_requests',
         entity_id: requestId,
+        changes: {
+          leads_assigned: result?.leads_assigned || 0,
+        },
       });
 
       await loadRequests();
       setSelectedRequest(null);
       setAdminNotes('');
+      setReceiptImageUrl(null);
+      
+      // Show success message
+      alert(`Successfully approved request and assigned ${result?.leads_assigned || 0} leads!`);
     } catch (err) {
+      console.error('Approve error:', err);
       setError(err instanceof Error ? err.message : 'Failed to approve request');
     } finally {
       setProcessing(false);
@@ -185,23 +409,29 @@ export default function PurchaseRequests() {
   const rejectRequest = async (requestId: string) => {
     try {
       setProcessing(true);
-      const { error: err } = await (supabase as any).rpc('rpc_reject_request', {
-        p_request: requestId,
-        p_admin_notes: adminNotes || null,
-      });
+      const { error: err } = await supabase
+        .from('purchase_requests')
+        .update({
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejected_reason: adminNotes || null,
+          admin_notes: adminNotes || null,
+        })
+        .eq('id', requestId);
 
       if (err) throw err;
 
       await logAudit({
         actor_id: currentProfile?.id || '',
         action: 'reject',
-        entity: 'lead_purchase_requests',
+        entity: 'purchase_requests',
         entity_id: requestId,
       });
 
       await loadRequests();
       setSelectedRequest(null);
       setAdminNotes('');
+      setReceiptImageUrl(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reject request');
     } finally {
@@ -215,7 +445,7 @@ export default function PurchaseRequests() {
       req.user?.name || '',
       req.project?.name || '',
       req.quantity.toString(),
-      req.total_cost?.toString() || '0',
+      req.total_amount?.toString() || '0',
       req.status,
       new Date(req.created_at).toLocaleDateString(),
     ]);
@@ -265,7 +495,9 @@ export default function PurchaseRequests() {
       render: (_, row) => (
         <div>
           <div className="font-medium text-gray-900">{row.project?.name || 'Unknown'}</div>
-          <div className="text-sm text-gray-600">{row.project?.region}</div>
+          {row.project?.region && (
+            <div className="text-sm text-gray-600">{row.project.region}</div>
+          )}
         </div>
       ),
     },
@@ -276,8 +508,8 @@ export default function PurchaseRequests() {
       render: (value) => <span className="font-medium text-gray-900">{value}</span>,
     },
     {
-      key: 'total_cost',
-      label: 'Total Cost',
+      key: 'total_amount',
+      label: 'Total Amount',
       sortable: true,
       render: (value) => (
         <span className="font-semibold text-gray-900">
@@ -319,7 +551,7 @@ export default function PurchaseRequests() {
   const pendingCount = requests.filter((r) => r.status === 'pending').length;
   const totalRevenue = requests
     .filter((r) => r.status === 'approved' || r.status === 'completed')
-    .reduce((sum, r) => sum + (r.total_cost || 0), 0);
+    .reduce((sum, r) => sum + (r.total_amount || 0), 0);
 
   return (
     <div className="p-8 space-y-6 bg-gray-50 min-h-screen">
@@ -436,8 +668,17 @@ export default function PurchaseRequests() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Project</label>
-                <p className="text-gray-900">{selectedRequest.project?.name}</p>
-                <p className="text-sm text-gray-600">{selectedRequest.project?.developer} - {selectedRequest.project?.region}</p>
+                <p className="text-gray-900 font-semibold">{selectedRequest.project?.name || 'Loading...'}</p>
+                {(selectedRequest.project?.developer || selectedRequest.project?.region) && (
+                  <p className="text-sm text-gray-600">
+                    {selectedRequest.project?.developer || ''} 
+                    {selectedRequest.project?.developer && selectedRequest.project?.region ? ' - ' : ''}
+                    {selectedRequest.project?.region || ''}
+                  </p>
+                )}
+                {selectedRequest.project_id && !selectedRequest.project?.name && (
+                  <p className="text-xs text-gray-500 mt-1">Project ID: {selectedRequest.project_id}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -447,7 +688,7 @@ export default function PurchaseRequests() {
                 <div>
                   <label className="text-sm font-medium text-gray-600">Total Cost</label>
                   <p className="text-gray-900 text-xl font-semibold">
-                    EGP {Number(selectedRequest.total_cost || 0).toLocaleString()}
+                    EGP {Number(selectedRequest.total_amount || 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -461,6 +702,65 @@ export default function PurchaseRequests() {
                   {new Date(selectedRequest.created_at).toLocaleString()}
                 </p>
               </div>
+              {selectedRequest.payment_method && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Payment Method</label>
+                  <p className="text-gray-900 capitalize">{selectedRequest.payment_method}</p>
+                </div>
+              )}
+              {selectedRequest.receipt_url && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600 mb-2 block">Payment Receipt</label>
+                  {loadingReceipt ? (
+                    <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">Loading receipt...</span>
+                    </div>
+                  ) : receiptImageUrl ? (
+                    <div className="space-y-2">
+                      <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                        <img
+                          src={receiptImageUrl}
+                          alt="Payment Receipt"
+                          className="max-w-full h-auto w-full object-contain"
+                          onError={() => {
+                            console.error('Error displaying receipt image');
+                            setReceiptImageUrl(null);
+                          }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = receiptImageUrl;
+                            link.target = '_blank';
+                            link.download = selectedRequest.receipt_file_name || 'receipt.jpg';
+                            link.click();
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Download Receipt
+                        </button>
+                        <button
+                          onClick={() => {
+                            window.open(receiptImageUrl, '_blank');
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Open in New Tab
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">Unable to load receipt image. Please try again later.</p>
+                    </div>
+                  )}
+                </div>
+              )}
               {selectedRequest.admin_notes && (
                 <div>
                   <label className="text-sm font-medium text-gray-600">Admin Notes</label>
@@ -504,6 +804,7 @@ export default function PurchaseRequests() {
                     onClick={() => {
                       setSelectedRequest(null);
                       setAdminNotes('');
+                      setReceiptImageUrl(null);
                     }}
                     className="admin-btn admin-btn-secondary"
                   >

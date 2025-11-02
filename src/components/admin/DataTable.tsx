@@ -25,6 +25,10 @@ interface DataTableProps<T> {
   getRowId?: (row: T) => string;
   loading?: boolean;
   emptyMessage?: string;
+  // External selection control
+  selectedRows?: Set<string>;
+  onSelectionChange?: (selected: Set<string>) => void;
+  showCheckboxes?: boolean;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -39,12 +43,20 @@ export function DataTable<T extends Record<string, any>>({
   getRowId = (row) => row.id || String(row),
   loading = false,
   emptyMessage = 'No data available',
+  selectedRows: externalSelectedRows,
+  onSelectionChange,
+  showCheckboxes = false,
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [internalSelectedRows, setInternalSelectedRows] = useState<Set<string>>(new Set());
+  
+  // Use external selection if provided, otherwise use internal
+  const selectedRows = externalSelectedRows !== undefined ? externalSelectedRows : internalSelectedRows;
+  const setSelectedRows = onSelectionChange || setInternalSelectedRows;
+  const hasSelection = showCheckboxes || bulkActions.length > 0;
 
   // Filter data
   const filteredData = React.useMemo(() => {
@@ -85,19 +97,17 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const toggleRowSelection = (rowId: string) => {
-    setSelectedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(rowId)) {
-        next.delete(rowId);
-      } else {
-        next.add(rowId);
-      }
-      return next;
-    });
+    const next = new Set(selectedRows);
+    if (next.has(rowId)) {
+      next.delete(rowId);
+    } else {
+      next.add(rowId);
+    }
+    setSelectedRows(next);
   };
 
   const toggleAllSelection = () => {
-    if (selectedRows.size === paginatedData.length) {
+    if (selectedRows.size === paginatedData.length && paginatedData.length > 0) {
       setSelectedRows(new Set());
     } else {
       setSelectedRows(new Set(paginatedData.map((row) => getRowId(row))));
@@ -159,10 +169,10 @@ export function DataTable<T extends Record<string, any>>({
           <table className="admin-table">
             <thead>
               <tr>
-                {bulkActions.length > 0 && (
+                {hasSelection && (
                   <th className="w-12">
                     <button onClick={toggleAllSelection} className="p-2 text-gray-600 hover:text-gray-900">
-                      {selectedRows.size === paginatedData.length ? (
+                      {selectedRows.size === paginatedData.length && paginatedData.length > 0 ? (
                         <CheckSquare className="h-5 w-5" />
                       ) : (
                         <Square className="h-5 w-5" />
@@ -192,7 +202,7 @@ export function DataTable<T extends Record<string, any>>({
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + (bulkActions.length > 0 ? 1 : 0)} className="px-4 py-12">
+                  <td colSpan={columns.length + (hasSelection ? 1 : 0)} className="px-4 py-12">
                     <div className="admin-empty-state">
                       <div className="admin-empty-icon">
                         <Search className="h-6 w-6 text-gray-400" />
@@ -207,10 +217,10 @@ export function DataTable<T extends Record<string, any>>({
                   return (
                     <tr
                       key={rowId}
-                      className={`hover:bg-gray-50 transition-colors ${selectedRows.has(rowId) ? 'bg-lime-50' : ''}`}
+                      className={`hover:bg-gray-50 transition-colors ${selectedRows.has(rowId) ? 'bg-blue-50' : ''}`}
                       onClick={() => onRowClick?.(row)}
                     >
-                      {bulkActions.length > 0 && (
+                      {hasSelection && (
                         <td>
                           <button
                             onClick={(e) => {
@@ -220,7 +230,7 @@ export function DataTable<T extends Record<string, any>>({
                             className="p-2 text-gray-600 hover:text-gray-900"
                           >
                             {selectedRows.has(rowId) ? (
-                              <CheckSquare className="h-5 w-5 text-lime-600" />
+                              <CheckSquare className="h-5 w-5 text-blue-600" />
                             ) : (
                               <Square className="h-5 w-5" />
                             )}

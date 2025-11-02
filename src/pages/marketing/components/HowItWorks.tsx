@@ -23,8 +23,8 @@ const HowItWorks = () => {
       number: 2,
       icon: Building,
       title: 'Pick a Project',
-      description: 'Browse available projects and choose leads. Minimum order of 50 leads per project.',
-      details: ['Browse live projects', 'View lead quality metrics', 'Minimum 50 leads'],
+      description: 'Browse available projects and choose leads. Minimum order of 30 leads per project.',
+      details: ['Browse live projects', 'View lead quality metrics', 'Minimum 30 leads'],
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50'
     },

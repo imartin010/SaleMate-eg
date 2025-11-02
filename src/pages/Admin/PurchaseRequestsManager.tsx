@@ -43,10 +43,10 @@ export const PurchaseRequestsManager: React.FC = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('lead_purchase_requests' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .from('purchase_requests')
         .select(`
           *,
-          profiles!buyer_user_id(name, email),
+          profiles!user_id(name, email),
           projects(
             id,
             name,
@@ -166,9 +166,9 @@ export const PurchaseRequestsManager: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm">
-                          <span><strong>{request.number_of_leads}</strong> leads</span>
-                          <span><strong>${request.cpl_price}</strong> per lead</span>
-                          <span><strong>${request.total_price}</strong> total</span>
+                          <span><strong>{request.quantity}</strong> leads</span>
+                          <span><strong>EGP {request.projects?.price_per_lead || 0}</strong> per lead</span>
+                          <span><strong>EGP {request.total_amount}</strong> total</span>
                           <Badge variant="outline">{request.payment_method}</Badge>
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -192,12 +192,16 @@ export const PurchaseRequestsManager: React.FC = () => {
                           <XCircle className="h-4 w-4 mr-1" />
                           Reject
                         </Button>
-                        {request.receipt_file_url && (
+                        {request.receipt_url && (
                           <Button
                             onClick={() => {
                               // Open receipt in new tab
-                              const { data } = supabase.storage.from('receipts').getPublicUrl(request.receipt_file_url);
-                              window.open(data.publicUrl, '_blank');
+                              const { data } = supabase.storage.from('payment-receipts').createSignedUrl(request.receipt_url, 3600);
+                              data.then((result: any) => {
+                                if (result?.data?.signedUrl) {
+                                  window.open(result.data.signedUrl, '_blank');
+                                }
+                              });
                             }}
                             size="sm"
                             variant="outline"
@@ -229,7 +233,7 @@ export const PurchaseRequestsManager: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <span className="font-medium">{request.profiles?.name}</span>
                     <span className="text-sm text-muted-foreground">{request.projects?.name}</span>
-                    <span className="text-sm">{request.number_of_leads} leads</span>
+                    <span className="text-sm">{request.quantity} leads</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(request.status)}
@@ -258,8 +262,8 @@ export const PurchaseRequestsManager: React.FC = () => {
               <div className="bg-muted p-4 rounded-xl space-y-2">
                 <div><strong>Customer:</strong> {reviewDialog.request.profiles?.name} ({reviewDialog.request.profiles?.email})</div>
                 <div><strong>Project:</strong> {reviewDialog.request.projects?.name}</div>
-                <div><strong>Quantity:</strong> {reviewDialog.request.number_of_leads} leads</div>
-                <div><strong>Total Price:</strong> ${reviewDialog.request.total_price}</div>
+                <div><strong>Quantity:</strong> {reviewDialog.request.quantity} leads</div>
+                <div><strong>Total Amount:</strong> EGP {reviewDialog.request.total_amount}</div>
                 <div><strong>Payment Method:</strong> {reviewDialog.request.payment_method}</div>
               </div>
 

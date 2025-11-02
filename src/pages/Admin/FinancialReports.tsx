@@ -47,8 +47,8 @@ export default function FinancialReports() {
 
       // Load revenue data
       const { data: purchases } = await supabase
-        .from('lead_purchase_requests')
-        .select('total_cost, created_at, status')
+        .from('purchase_requests')
+        .select('total_amount, created_at, status')
         .eq('status', 'approved')
         .gte('created_at', startDate.toISOString());
 
@@ -65,7 +65,7 @@ export default function FinancialReports() {
 
       purchases?.forEach((purchase) => {
         const date = new Date(purchase.created_at).toISOString().split('T')[0];
-        revenueMap.set(date, (revenueMap.get(date) || 0) + (purchase.total_cost || 0));
+        revenueMap.set(date, (revenueMap.get(date) || 0) + (purchase.total_amount || 0));
         transactionMap.set(date, (transactionMap.get(date) || 0) + 1);
       });
 
@@ -80,7 +80,7 @@ export default function FinancialReports() {
       setRevenueData(revenueChartData);
 
       // Calculate summary
-      const totalRevenue = purchases?.reduce((sum, p) => sum + (p.total_cost || 0), 0) || 0;
+      const totalRevenue = purchases?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
       const totalTransactions = purchases?.length || 0;
       const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
@@ -88,13 +88,13 @@ export default function FinancialReports() {
       const previousStartDate = new Date(startDate);
       previousStartDate.setDate(previousStartDate.getDate() - days);
       const { data: previousPurchases } = await supabase
-        .from('lead_purchase_requests')
-        .select('total_cost, status')
+        .from('purchase_requests')
+        .select('total_amount, status')
         .eq('status', 'approved')
         .gte('created_at', previousStartDate.toISOString())
         .lt('created_at', startDate.toISOString());
 
-      const previousRevenue = previousPurchases?.reduce((sum, p) => sum + (p.total_cost || 0), 0) || 0;
+      const previousRevenue = previousPurchases?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
       const growthRate = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
       setSummary({
@@ -106,20 +106,20 @@ export default function FinancialReports() {
 
       // Load top users
       const { data: userPurchases } = await supabase
-        .from('lead_purchase_requests')
-        .select('buyer_user_id, total_cost, profiles:buyer_user_id(name, email)')
+        .from('purchase_requests')
+        .select('user_id, total_amount, profiles!user_id(name, email)')
         .eq('status', 'approved')
         .gte('created_at', startDate.toISOString());
 
       const userSpending = new Map<string, { name: string; email: string; total: number }>();
       userPurchases?.forEach((purchase: any) => {
-        const userId = purchase.buyer_user_id;
+        const userId = purchase.user_id;
         const current = userSpending.get(userId) || {
           name: purchase.profiles?.name || 'Unknown',
           email: purchase.profiles?.email || '',
           total: 0,
         };
-        current.total += purchase.total_cost || 0;
+        current.total += purchase.total_amount || 0;
         userSpending.set(userId, current);
       });
 
@@ -131,8 +131,8 @@ export default function FinancialReports() {
 
       // Load top projects
       const { data: projectPurchases } = await supabase
-        .from('lead_purchase_requests')
-        .select('project_id, total_cost, quantity, projects:project_id(name)')
+        .from('purchase_requests')
+        .select('project_id, total_amount, quantity, projects!project_id(name)')
         .eq('status', 'approved')
         .gte('created_at', startDate.toISOString());
 
@@ -144,7 +144,7 @@ export default function FinancialReports() {
           revenue: 0,
           leads: 0,
         };
-        current.revenue += purchase.total_cost || 0;
+        current.revenue += purchase.total_amount || 0;
         current.leads += purchase.quantity || 0;
         projectRevenue.set(projectId, current);
       });

@@ -20,12 +20,13 @@ import { format } from 'date-fns';
 
 interface PurchaseRequest {
   id: string;
-  buyer_user_id: string;
+  user_id: string;
   project_id: string;
-  number_of_leads: number;
-  total_price: number;
+  quantity: number;
+  total_amount: number;
   status: 'pending' | 'approved' | 'rejected';
-  receipt_file_url: string;
+  receipt_url: string;
+  receipt_file_name?: string;
   created_at: string;
   user?: {
     name: string;
@@ -51,9 +52,9 @@ export const PurchaseRequests: React.FC = () => {
     try {
       setLoading(true);
       
-      // First check if lead_purchase_requests table exists
+      // First check if purchase_requests table exists
       const { data: checkData, error: checkError } = await supabase
-        .from('lead_purchase_requests' as any)
+        .from('purchase_requests')
         .select('id')
         .limit(1);
 
@@ -70,7 +71,7 @@ export const PurchaseRequests: React.FC = () => {
 
       // Fetch purchase requests (basic query first)
       const { data, error } = await supabase
-        .from('lead_purchase_requests' as any)
+        .from('purchase_requests')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -88,7 +89,7 @@ export const PurchaseRequests: React.FC = () => {
           const { data: userProfile } = await supabase
             .from('profiles')
             .select('name, email, phone')
-            .eq('id', request.buyer_user_id)
+            .eq('id', request.user_id)
             .single();
 
           // Fetch project
@@ -100,18 +101,19 @@ export const PurchaseRequests: React.FC = () => {
 
           // Generate signed URL for receipt
           let signedUrl = null;
-          if (request.receipt_file_url) {
-            signedUrl = await getReceiptUrl(request.receipt_file_url);
+          if (request.receipt_url) {
+            signedUrl = await getReceiptUrl(request.receipt_url);
           }
 
           return {
             id: request.id,
-            buyer_user_id: request.buyer_user_id,
+            user_id: request.user_id,
             project_id: request.project_id,
-            number_of_leads: request.number_of_leads,
-            total_price: request.total_price,
+            quantity: request.quantity,
+            total_amount: request.total_amount,
             status: request.status,
-            receipt_file_url: request.receipt_file_url,
+            receipt_url: request.receipt_url,
+            receipt_file_name: request.receipt_file_name,
             created_at: request.created_at,
             user: userProfile,
             project: project,
@@ -135,12 +137,12 @@ export const PurchaseRequests: React.FC = () => {
   }, []);
 
   const handleApprove = async (request: PurchaseRequest) => {
-    if (!request.project || request.project.available_leads < request.number_of_leads) {
+    if (!request.project || request.project.available_leads < request.quantity) {
       alert('Not enough leads available for this project!');
       return;
     }
 
-    if (!confirm(`Approve purchase of ${request.number_of_leads} leads for ${request.user?.name}?`)) {
+    if (!confirm(`Approve purchase of ${request.quantity} leads for ${request.user?.name}?`)) {
       return;
     }
 
@@ -150,7 +152,7 @@ export const PurchaseRequests: React.FC = () => {
       // Call RPC function to approve purchase (creates leads, updates project, updates request status)
       const { error } = await (supabase as any).rpc('approve_purchase_request', {
         request_id: request.id,
-        lead_quantity: request.number_of_leads
+        lead_quantity: request.quantity
       });
 
       if (error) throw error;
@@ -174,8 +176,8 @@ export const PurchaseRequests: React.FC = () => {
       setProcessingId(requestId);
 
       const { error } = await supabase
-        .from('lead_purchase_requests' as any)
-        .update({ status: 'rejected' })
+        .from('purchase_requests')
+        .update({ status: 'rejected', rejected_at: new Date().toISOString() })
         .eq('id', requestId);
 
       if (error) throw error;
@@ -347,7 +349,7 @@ export const PurchaseRequests: React.FC = () => {
                     <div className="pl-6 space-y-1 text-sm">
                       <p className="font-medium">{request.project?.name || 'Unknown Project'}</p>
                       <p className="text-gray-600">
-                        Requesting: <span className="font-semibold text-blue-600">{request.number_of_leads} leads</span>
+                        Requesting: <span className="font-semibold text-blue-600">{request.quantity} leads</span>
                       </p>
                       <p className="text-gray-600">
                         Available: <span className="font-semibold">{request.project?.available_leads || 0} leads</span>
@@ -366,17 +368,17 @@ export const PurchaseRequests: React.FC = () => {
                         Price per lead: <span className="font-semibold">{request.project?.price_per_lead || 0} EGP</span>
                       </p>
                       <p className="text-gray-600">
-                        Subtotal: {request.number_of_leads * (request.project?.price_per_lead || 0)} EGP
+                        Subtotal: {request.quantity * (request.project?.price_per_lead || 0)} EGP
                       </p>
                       <p className="text-lg font-bold text-green-600">
-                        Total: {request.total_price} EGP
+                        Total: {request.total_amount} EGP
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Receipt Section */}
-                {request.receipt_file_url && (
+                {request.receipt_url && (
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2 font-semibold text-gray-700">
@@ -386,13 +388,13 @@ export const PurchaseRequests: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedReceipt(request.receipt_file_url)}
+                        onClick={() => setSelectedReceipt(request.receipt_url)}
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         View Receipt
                       </Button>
                     </div>
-                    {selectedReceipt === request.receipt_file_url && request.signedReceiptUrl && (
+                    {selectedReceipt === request.receipt_url && request.signedReceiptUrl && (
                       <div className="mt-3">
                         <img
                           src={request.signedReceiptUrl}
@@ -418,12 +420,12 @@ export const PurchaseRequests: React.FC = () => {
                 )}
 
                 {/* Validation Warning */}
-                {request.status === 'pending' && request.project && request.project.available_leads < request.number_of_leads && (
+                {request.status === 'pending' && request.project && request.project.available_leads < request.quantity && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-red-800">
                       <strong>Warning:</strong> Not enough leads available! 
-                      Project has {request.project.available_leads} leads but {request.number_of_leads} requested.
+                      Project has {request.project.available_leads} leads but {request.quantity} requested.
                     </div>
                   </div>
                 )}
@@ -433,7 +435,7 @@ export const PurchaseRequests: React.FC = () => {
                   <div className="flex items-center gap-3 pt-4 border-t">
                     <Button
                       onClick={() => handleApprove(request)}
-                      disabled={processingId === request.id || !request.project || request.project.available_leads < request.number_of_leads}
+                      disabled={processingId === request.id || !request.project || request.project.available_leads < request.quantity}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       {processingId === request.id ? (

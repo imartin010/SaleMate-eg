@@ -53,7 +53,7 @@ The application comes with pre-seeded demo users:
 ### Core Features
 - **Dashboard:** Overview with stats and quick actions
 - **Lead Management (CRM):** View, edit, and manage your leads
-- **Shop:** Purchase leads from real estate projects (min 50 leads)
+- **Shop:** Purchase leads from real estate projects (min 30 leads)
 - **Community:** Social feed for real estate professionals
 - **Partners:** Higher commission partner information
 - **Settings:** Profile and theme management
@@ -126,7 +126,7 @@ src/
 
 ### Shop Flow
 1. Browse available projects with lead counts
-2. Select quantity (minimum 50 leads)
+2. Select quantity (minimum 30 leads)
 3. Choose payment method
 4. Process mock payment
 5. Leads automatically assigned to user

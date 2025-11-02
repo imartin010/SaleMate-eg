@@ -16,6 +16,9 @@ interface Profile {
   is_banned: boolean;
   created_at: string;
   last_login_at?: string;
+  leads_count?: number;
+  owned_leads_count?: number;
+  assigned_leads_count?: number;
 }
 
 export default function UserManagement() {
@@ -64,7 +67,67 @@ export default function UserManagement() {
         .order('created_at', { ascending: false });
 
       if (err) throw err;
-      setUsers(data || []);
+      
+      // Fetch lead counts for all users efficiently
+      const userIds = (data || []).map(u => u.id);
+      
+      // Batch fetch all owned leads
+      const { data: allOwnedLeads } = await supabase
+        .from('leads')
+        .select('id, buyer_user_id')
+        .in('buyer_user_id', userIds);
+      
+      // Batch fetch all assigned leads
+      const { data: allAssignedLeads } = await supabase
+        .from('leads')
+        .select('id, assigned_to_id')
+        .in('assigned_to_id', userIds);
+      
+      // Create maps for quick lookup
+      const ownedCountsMap: Record<string, number> = {};
+      const assignedCountsMap: Record<string, number> = {};
+      const ownedIdsMap: Record<string, Set<string>> = {};
+      const assignedIdsMap: Record<string, Set<string>> = {};
+      
+      // Initialize maps
+      userIds.forEach(id => {
+        ownedCountsMap[id] = 0;
+        assignedCountsMap[id] = 0;
+        ownedIdsMap[id] = new Set();
+        assignedIdsMap[id] = new Set();
+      });
+      
+      // Count owned leads
+      (allOwnedLeads || []).forEach(lead => {
+        if (lead.buyer_user_id) {
+          ownedCountsMap[lead.buyer_user_id] = (ownedCountsMap[lead.buyer_user_id] || 0) + 1;
+          ownedIdsMap[lead.buyer_user_id].add(lead.id);
+        }
+      });
+      
+      // Count assigned leads
+      (allAssignedLeads || []).forEach(lead => {
+        if (lead.assigned_to_id) {
+          assignedCountsMap[lead.assigned_to_id] = (assignedCountsMap[lead.assigned_to_id] || 0) + 1;
+          assignedIdsMap[lead.assigned_to_id].add(lead.id);
+        }
+      });
+      
+      // Calculate totals for each user
+      const usersWithLeads = (data || []).map(user => {
+        const ownedIds = ownedIdsMap[user.id] || new Set();
+        const assignedIds = assignedIdsMap[user.id] || new Set();
+        const totalUnique = new Set([...ownedIds, ...assignedIds]).size;
+        
+        return {
+          ...user,
+          leads_count: totalUnique,
+          owned_leads_count: ownedCountsMap[user.id] || 0,
+          assigned_leads_count: assignedCountsMap[user.id] || 0,
+        };
+      });
+      
+      setUsers(usersWithLeads);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users');
@@ -212,13 +275,16 @@ export default function UserManagement() {
   };
 
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Role', 'Wallet Balance', 'Status', 'Created At'];
+    const headers = ['Name', 'Email', 'Phone', 'Role', 'Wallet Balance', 'Leads Count', 'Owned Leads', 'Assigned Leads', 'Status', 'Created At'];
     const rows = filteredUsers.map((user) => [
       user.name || '',
       user.email || '',
       user.phone || '',
       user.role || '',
       user.wallet_balance?.toString() || '0',
+      (user.leads_count || 0).toString(),
+      (user.owned_leads_count || 0).toString(),
+      (user.assigned_leads_count || 0).toString(),
       user.is_banned ? 'Banned' : 'Active',
       new Date(user.created_at).toLocaleDateString(),
     ]);
@@ -286,6 +352,30 @@ export default function UserManagement() {
       render: (value) => (
         <span className="font-medium text-gray-900">EGP {Number(value || 0).toLocaleString()}</span>
       ),
+    },
+    {
+      key: 'leads_count',
+      label: 'Leads',
+      sortable: true,
+      render: (value, row) => {
+        const total = row.leads_count || 0;
+        const owned = row.owned_leads_count || 0;
+        const assigned = row.assigned_leads_count || 0;
+        
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-gray-900">{total.toLocaleString()}</span>
+            {total > 0 && (
+              <div className="flex gap-2 text-xs text-gray-600">
+                <span title="Owned/Purchased">{owned} owned</span>
+                {assigned > 0 && (
+                  <span title="Assigned">{assigned} assigned</span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'is_banned',

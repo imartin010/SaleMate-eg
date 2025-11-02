@@ -217,9 +217,9 @@ export const Checkout: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    // For InstaPay, require receipt upload
-    if (paymentMethod === 'instapay' && !receiptFile) {
-      alert('Please upload your InstaPay receipt to confirm payment');
+    // For InstaPay and Card, require receipt upload
+    if ((paymentMethod === 'instapay' || paymentMethod === 'card') && !receiptFile) {
+      alert('Please upload your payment receipt to confirm payment');
       return;
     }
 
@@ -229,8 +229,8 @@ export const Checkout: React.FC = () => {
     try {
       let receiptPath = '';
       
-      // Upload receipt to Supabase Storage if InstaPay
-      if (paymentMethod === 'instapay' && receiptFile) {
+      // Upload receipt to Supabase Storage if InstaPay or Card
+      if ((paymentMethod === 'instapay' || paymentMethod === 'card') && receiptFile) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // Get file extension
@@ -262,20 +262,25 @@ export const Checkout: React.FC = () => {
         }
       }
 
-      // Create purchase request for InstaPay
-      if (paymentMethod === 'instapay' && receiptPath) {
+      // Create purchase request for InstaPay or Card (requires receipt upload)
+      if ((paymentMethod === 'instapay' || paymentMethod === 'card') && receiptPath) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Extract filename from receiptPath
+          const fileName = receiptPath.split('/').pop() || receiptFile?.name || '';
+          
           const { error: requestError } = await supabase
-            .from('lead_purchase_requests' as any)
+            .from('purchase_requests')
             .insert({
-              buyer_user_id: user.id,
+              user_id: user.id,
               project_id: checkoutData.project.id,
-              number_of_leads: checkoutData.quantity,
-              total_price: checkoutData.totalPrice,
-              receipt_file_url: receiptPath,
-              payment_method: 'Instapay' as any,
-              status: 'pending' as any
+              project_name: checkoutData.project.name, // Denormalized for performance
+              quantity: checkoutData.quantity,
+              total_amount: checkoutData.totalPrice,
+              receipt_url: receiptPath,
+              receipt_file_name: fileName,
+              payment_method: paymentMethod === 'instapay' ? 'Instapay' : 'Card',
+              status: 'pending'
             });
 
           if (requestError) {
