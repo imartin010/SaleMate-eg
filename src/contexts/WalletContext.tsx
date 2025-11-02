@@ -12,6 +12,7 @@ interface WalletContextType {
   refreshBalance: () => Promise<void>;
   addToWallet: (amount: number, description?: string) => Promise<boolean>;
   addToWalletWithPayment: (amount: number, paymentMethod: PaymentMethod, description?: string) => Promise<{ success: boolean; error?: string }>;
+  deductFromWallet: (amount: number, description?: string) => Promise<{ success: boolean; error?: string; new_balance?: number }>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);

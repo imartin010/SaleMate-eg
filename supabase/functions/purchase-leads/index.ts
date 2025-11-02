@@ -43,9 +43,9 @@ serve(async (req) => {
     const { project_id, quantity, payment_method } = await req.json()
 
     // Validate inputs
-    if (!project_id || !quantity || quantity < 50) {
+    if (!project_id || !quantity || quantity < 30) {
       return new Response(
-        JSON.stringify({ error: 'Invalid input. Minimum 50 leads required.' }),
+        JSON.stringify({ error: 'Invalid input. Minimum 30 leads required.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

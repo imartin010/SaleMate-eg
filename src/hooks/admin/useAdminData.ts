@@ -28,9 +28,9 @@ export interface AdminStats {
 
 export interface PurchaseRequest {
   id: string;
-  buyer_user_id: string;
+  user_id: string;
   project_id: string;
-  number_of_leads: number;
+  quantity: number;
   total_amount: number;
   status: string;
   created_at: string;
@@ -61,8 +61,9 @@ export function useAdminData() {
         supabase.from('profiles').select('id, name, email, role, created_at').order('created_at', { ascending: false }),
         supabase.from('projects').select('id, name, region, available_leads, price_per_lead, description').order('name'),
         supabase.from('leads').select('id', { count: 'exact', head: true }),
-        (supabase.from('lead_purchase_requests' as any) as any)
-          .select('id, buyer_user_id, project_id, number_of_leads, total_price, status, created_at, profiles!buyer_user_id(name), projects:project_id(name)')
+        supabase
+          .from('purchase_requests')
+          .select('id, user_id, project_id, quantity, total_amount, status, created_at, profiles!user_id(name), projects!project_id(name)')
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
           .then((res: any) => res)
@@ -108,10 +109,10 @@ export function useAdminData() {
       const fetchedRequests: PurchaseRequest[] = (requestsResult && 'data' in requestsResult && requestsResult.data)
         ? requestsResult.data.map((r: any) => ({
             id: r.id,
-            buyer_user_id: r.buyer_user_id,
+            user_id: r.user_id,
             project_id: r.project_id,
-            number_of_leads: r.number_of_leads,
-            total_amount: r.total_price || r.total_amount, // Support both column names for compatibility
+            quantity: r.quantity,
+            total_amount: r.total_amount,
             status: r.status,
             created_at: r.created_at,
             user_name: r.profiles?.name || 'Unknown',
@@ -138,7 +139,7 @@ export function useAdminData() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
           fetchAllData();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_purchase_requests' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_requests' }, () => {
           fetchAllData();
         })
         .subscribe();

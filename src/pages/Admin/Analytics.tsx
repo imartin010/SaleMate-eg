@@ -49,15 +49,15 @@ export default function Analytics() {
 
       // Revenue data
       const { data: purchases } = await supabase
-        .from('lead_purchase_requests')
-        .select('total_cost, created_at, status')
+        .from('purchase_requests')
+        .select('total_amount, created_at, status')
         .eq('status', 'approved')
         .gte('created_at', startDate.toISOString());
 
       const revenueMap = new Map<string, number>();
       purchases?.forEach((purchase) => {
         const date = new Date(purchase.created_at).toISOString().split('T')[0];
-        revenueMap.set(date, (revenueMap.get(date) || 0) + (purchase.total_cost || 0));
+        revenueMap.set(date, (revenueMap.get(date) || 0) + (purchase.total_amount || 0));
       });
 
       const revenueData = Array.from(revenueMap.entries())
@@ -78,8 +78,8 @@ export default function Analytics() {
 
       // Project stats
       const { data: projectPurchases } = await supabase
-        .from('lead_purchase_requests')
-        .select('project_id, total_cost, quantity, projects:project_id(name)')
+        .from('purchase_requests')
+        .select('project_id, total_amount, quantity, projects!project_id(name)')
         .eq('status', 'approved')
         .gte('created_at', startDate.toISOString());
 
@@ -92,7 +92,7 @@ export default function Analytics() {
           revenue: 0,
         };
         current.leads += purchase.quantity || 0;
-        current.revenue += purchase.total_cost || 0;
+        current.revenue += purchase.total_amount || 0;
         projectMap.set(projectId, current);
       });
 

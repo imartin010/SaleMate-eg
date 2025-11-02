@@ -13,7 +13,7 @@ const FAQ = () => {
     },
     {
       question: 'What is the minimum order requirement?',
-      answer: 'The minimum order is 50 leads per project. This ensures you get a substantial volume to work with while maintaining cost-effectiveness. You can purchase leads from multiple projects in a single order if needed.'
+      answer: 'The minimum order is 30 leads per project. This ensures you get a substantial volume to work with while maintaining cost-effectiveness. You can purchase leads from multiple projects in a single order if needed.'
     },
     {
       question: 'How do partner commissions work?',

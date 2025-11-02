@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
+import { useWallet } from '../../contexts/WalletContext';
 import { PageTitle } from '../../components/common/PageTitle';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -19,7 +20,9 @@ import {
   Upload,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Wallet,
+  CreditCard
 } from 'lucide-react';
 // Note: We avoid strict DB typings here to support views/RPC not in generated types
 
@@ -36,16 +39,17 @@ interface Project {
   updated_at?: string;
 }
 
-type PaymentMethod = 'Instapay' | 'VodafoneCash' | 'BankTransfer';
+type PaymentMethod = 'wallet' | 'card' | 'instapay';
 
 interface PurchaseFormData {
   quantity: number;
   paymentMethod: PaymentMethod | 'none';
-  receiptFile: File | null;
+  receiptFile: File | null; // Only required for non-wallet payments
 }
 
 const Shop: React.FC = () => {
   const { user } = useAuthStore();
+  const { balance, loading: walletLoading, refreshBalance } = useWallet();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +58,7 @@ const Shop: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [purchaseForm, setPurchaseForm] = useState<PurchaseFormData>({
-    quantity: 50,
+    quantity: 30,
     paymentMethod: 'none',
     receiptFile: null
   });
@@ -70,92 +74,73 @@ const Shop: React.FC = () => {
     setError(null);
     
     try {
-      // Load from lead_availability view as the source of truth
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: projectData, error: queryError } = await (supabase as any)
-        .from('lead_availability')
-        .select('*');
+      // Load projects directly from projects table
+      const { data: projectData, error: queryError } = await supabase
+        .from('projects')
+        .select(`
+          id,
+          name,
+          region,
+          description,
+          available_leads,
+          price_per_lead,
+          developers:developer_id (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
       
       if (queryError) {
         throw new Error(queryError.message);
       }
-      
-      const extractName = (val: unknown): string => {
-        if (!val) return 'Unknown';
-        if (typeof val === 'string') {
-          const s = val.trim();
-          // JSON with double quotes
-          const m1 = s.match(/"name"\s*:\s*"([^"]+)"/);
-          if (m1?.[1]) return m1[1];
-          // Robust single-quote extractor that tolerates apostrophes inside value
-          const nameKey = s.indexOf("'name'");
-          if (nameKey !== -1) {
-            const colon = s.indexOf(':', nameKey);
-            if (colon !== -1) {
-              const start = s.indexOf("'", colon + 1);
-              if (start !== -1) {
-                // scan for closing quote followed by comma or brace
-                let end = -1;
-                for (let i = start + 1; i < s.length; i++) {
-                  if (s[i] === "'") {
-                    // find next non-space char
-                    let j = i + 1;
-                    while (j < s.length && /\s/.test(s[j])) j++;
-                    if (j >= s.length || s[j] === ',' || s[j] === '}') { end = i; break; }
-                  }
-                }
-                if (end > start + 1) {
-                  return s.slice(start + 1, end);
-                }
-              }
-            }
-          }
-          return s;
-        }
-        if (typeof val === 'object') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const o: any = val;
-          return o.name ?? o.region ?? o.area ?? 'Unknown';
-        }
-        return String(val);
-      };
 
-      const base = (projectData || []).map((p: Record<string, unknown>) => ({
-        project_id: p.project_id,
-        name: extractName(p.name),
-        developer: extractName(p.developer),
-        region: extractName(p.region),
+      const base = (projectData || []).map((p: any) => ({
+        project_id: p.id,
+        name: p.name || 'Unknown Project',
+        developer: p.developers?.name || p.region || 'Unknown Developer',
+        region: p.region || 'Unknown Region',
         description: p.description || '',
         available_leads: Number(p.available_leads || 0),
-        current_cpl: Number(p.current_cpl || 125),
+        current_cpl: Number(p.price_per_lead || 0),
       })) as Project[];
 
       setProjects(base);
     } catch (err: unknown) {
       console.error('Error loading projects:', err);
       setError((err instanceof Error ? err.message : String(err)) || 'Failed to load projects');
-      
-      // Set some mock data as fallback
-      setProjects([
-        {
-          project_id: 'mock-1',
-          name: 'New Cairo Compound',
-          developer: 'Palm Hills',
-          region: 'New Cairo',
-          description: 'Luxury residential compound',
-          available_leads: 150,
-          current_cpl: 125,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ]);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handlePurchase = async () => {
-    if (!selectedProject || !user || !purchaseForm.receiptFile) {
+    if (!selectedProject || !user) {
+      return;
+    }
+
+    // Validate payment method
+    if (purchaseForm.paymentMethod === 'none') {
+      setError('Please select a payment method');
+      return;
+    }
+
+    // Validate quantity
+    if (purchaseForm.quantity < 30) {
+      setError('Minimum 30 leads required');
+      return;
+    }
+
+    // For non-wallet payments, require receipt
+    if (purchaseForm.paymentMethod !== 'wallet' && !purchaseForm.receiptFile) {
+      setError('Please upload payment receipt');
+      return;
+    }
+
+    // Check wallet balance for wallet payments
+    const totalAmount = selectedProject.current_cpl * purchaseForm.quantity;
+    if (purchaseForm.paymentMethod === 'wallet' && balance < totalAmount) {
+      setError(`Insufficient wallet balance. You need ${totalAmount.toFixed(2)} EGP, but have ${balance.toFixed(2)} EGP`);
       return;
     }
 
@@ -163,59 +148,77 @@ const Shop: React.FC = () => {
     setError(null);
 
     try {
-      // 1. Upload receipt file
+      // For wallet payments, use purchase-leads edge function (immediate)
+      if (purchaseForm.paymentMethod === 'wallet') {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('Not authenticated');
+        }
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const response = await fetch(`${supabaseUrl}/functions/v1/purchase-leads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            project_id: selectedProject.project_id,
+            quantity: purchaseForm.quantity,
+            payment_method: 'wallet',
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Purchase failed');
+        }
+
+        // Refresh wallet balance and projects
+        await refreshBalance();
+        await loadProjects();
+
+        setPurchaseSuccess(true);
+        setTimeout(() => {
+          setShowPurchaseDialog(false);
+          setPurchaseSuccess(false);
+          // Redirect to CRM to see purchased leads
+          window.location.href = '/app/crm';
+        }, 2000);
+        return;
+      }
+
+      // For card/instapay payments, upload receipt and create purchase request (requires approval)
       const timestamp = Date.now();
-      const fileName = `${timestamp}_${purchaseForm.receiptFile.name}`;
+      const fileName = `${timestamp}_${purchaseForm.receiptFile!.name}`;
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
-        .upload(filePath, purchaseForm.receiptFile);
+        .upload(filePath, purchaseForm.receiptFile!);
 
       if (uploadError) {
         throw new Error(`Failed to upload receipt: ${uploadError.message}`);
       }
 
-      // 2. Create purchase request
-      if (purchaseForm.paymentMethod === 'none') {
-        throw new Error('Please select a payment method');
-      }
-
-      // Try to create order using RPC function, fallback to direct insert if not available
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: orderError } = await (supabase as any).rpc('rpc_start_order', {
-          p_project: selectedProject.project_id,
-          p_qty: purchaseForm.quantity,
-          p_payment: purchaseForm.paymentMethod as PaymentMethod,
-          p_receipt_url: filePath,
-          p_receipt_name: fileName
+      // Create purchase request (for admin approval)
+      const { error: requestError } = await supabase
+        .from('purchase_requests')
+        .insert({
+          user_id: user.id,
+          project_id: selectedProject.project_id,
+          project_name: selectedProject.name, // Denormalized for performance
+          quantity: purchaseForm.quantity,
+          payment_method: purchaseForm.paymentMethod,
+          total_amount: totalAmount,
+          receipt_url: filePath,
+          receipt_file_name: fileName,
+          status: 'pending',
         });
-        
-        if (orderError) {
-          throw new Error(`Failed to create order: ${orderError.message}`);
-        }
-      } catch {
-        // Fallback: Create order directly in orders table
-        console.log('RPC function not available, using direct insert');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: insertError } = await (supabase as any)
-          .from('orders')
-          .insert({
-            user_id: user.id,
-            project_id: selectedProject.project_id,
-            quantity: purchaseForm.quantity,
-            payment_method: purchaseForm.paymentMethod as PaymentMethod,
-            total_amount: selectedProject.current_cpl * purchaseForm.quantity,
-            payment_reference: `${Date.now()}-${user.id.slice(0, 8)}`,
-            status: 'pending'
-          })
-          .select('id')
-          .single();
-        
-        if (insertError) {
-          throw new Error(`Failed to create order: ${insertError.message}`);
-        }
+
+      if (requestError) {
+        throw new Error(`Failed to create purchase request: ${requestError.message}`);
       }
 
       setPurchaseSuccess(true);
@@ -236,7 +239,7 @@ const Shop: React.FC = () => {
   const openPurchaseDialog = (project: Project) => {
     setSelectedProject(project);
     setPurchaseForm({
-      quantity: 50,
+      quantity: 30,
       paymentMethod: 'none',
       receiptFile: null
     });
@@ -414,10 +417,13 @@ const Shop: React.FC = () => {
           {purchaseSuccess ? (
             <div className="text-center py-6">
               <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Request Submitted!</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                {purchaseForm.paymentMethod === 'wallet' ? 'Purchase Complete!' : 'Request Submitted!'}
+              </h3>
               <p className="text-muted-foreground">
-                Your purchase request has been submitted for admin approval. 
-                You'll be notified once it's processed.
+                {purchaseForm.paymentMethod === 'wallet' 
+                  ? 'Your leads have been assigned to your account. Redirecting to CRM...'
+                  : 'Your purchase request has been submitted for admin approval. You\'ll be notified once it\'s processed.'}
               </p>
             </div>
           ) : (
@@ -441,59 +447,108 @@ const Shop: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">Number of Leads</label>
                 <Input
                   type="number"
-                  min="1"
-                  max={selectedProject?.available_leads || 1}
+                  min="30"
+                  max={selectedProject?.available_leads || 30}
                   value={purchaseForm.quantity}
-                  onChange={(e) => setPurchaseForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
-                  placeholder="Minimum 1 lead"
+                  onChange={(e) => setPurchaseForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 30 }))}
+                  placeholder="Minimum 30 leads"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total: ${((selectedProject?.current_cpl || 0) * purchaseForm.quantity).toFixed(2)}
-                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Price per lead: {selectedProject?.current_cpl || 0} EGP
+                  </p>
+                  <p className="text-sm font-semibold">
+                    Total: {((selectedProject?.current_cpl || 0) * purchaseForm.quantity).toFixed(2)} EGP
+                  </p>
+                </div>
+              </div>
+
+              {/* Wallet Balance Display */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-900">Wallet Balance</span>
+                  </div>
+                  <span className="text-lg font-bold text-blue-600">
+                    {walletLoading ? 'Loading...' : `${balance.toFixed(2)} EGP`}
+                  </span>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">Payment Method</label>
                 <Select 
                   value={purchaseForm.paymentMethod} 
-                  onValueChange={(value) => setPurchaseForm(prev => ({ ...prev, paymentMethod: value as PaymentMethod | 'none' }))}
+                  onValueChange={(value) => {
+                    setPurchaseForm(prev => ({ 
+                      ...prev, 
+                      paymentMethod: value as PaymentMethod | 'none',
+                      receiptFile: value === 'wallet' ? null : prev.receiptFile // Clear receipt for wallet
+                    }));
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select payment method" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>Select payment method</SelectItem>
-                    <SelectItem value="Instapay">Instapay</SelectItem>
-                    <SelectItem value="VodafoneCash">Vodafone Cash</SelectItem>
-                    <SelectItem value="BankTransfer">Bank Transfer</SelectItem>
+                    <SelectItem value="wallet">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4" />
+                        Wallet (Instant)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="card">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Credit/Debit Card
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="instapay">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Instapay
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {purchaseForm.paymentMethod === 'wallet' && balance < ((selectedProject?.current_cpl || 0) * purchaseForm.quantity) && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Insufficient balance. Add funds to your wallet.
+                  </p>
+                )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Payment Receipt</label>
-                <div className="border-2 border-dashed border-muted rounded-lg p-4 text-center">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setPurchaseForm(prev => ({ ...prev, receiptFile: file }));
-                      }
-                    }}
-                    className="hidden"
-                    id="receipt-upload"
-                  />
-                  <label 
-                    htmlFor="receipt-upload" 
-                    className="cursor-pointer text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {purchaseForm.receiptFile ? purchaseForm.receiptFile.name : 'Click to upload receipt'}
-                  </label>
+              {purchaseForm.paymentMethod !== 'wallet' && purchaseForm.paymentMethod !== 'none' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Payment Receipt *</label>
+                  <div className="border-2 border-dashed border-muted rounded-lg p-4 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPurchaseForm(prev => ({ ...prev, receiptFile: file }));
+                        }
+                      }}
+                      className="hidden"
+                      id="receipt-upload"
+                    />
+                    <label 
+                      htmlFor="receipt-upload" 
+                      className="cursor-pointer text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {purchaseForm.receiptFile ? purchaseForm.receiptFile.name : 'Click to upload receipt'}
+                    </label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload receipt for admin approval (may take 1-2 business days)
+                  </p>
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-2">
                 <Button 
@@ -505,18 +560,25 @@ const Shop: React.FC = () => {
                 </Button>
                 <Button 
                   onClick={handlePurchase}
-                  disabled={!purchaseForm.paymentMethod || purchaseForm.paymentMethod === 'none' || !purchaseForm.receiptFile || purchasing || purchaseForm.quantity < 50}
+                  disabled={
+                    purchasing || 
+                    purchaseForm.paymentMethod === 'none' || 
+                    purchaseForm.quantity < 30 ||
+                    purchaseForm.quantity > (selectedProject?.available_leads || 0) ||
+                    (purchaseForm.paymentMethod !== 'wallet' && !purchaseForm.receiptFile) ||
+                    (purchaseForm.paymentMethod === 'wallet' && balance < ((selectedProject?.current_cpl || 0) * purchaseForm.quantity))
+                  }
                   className="flex-1"
                 >
                   {purchasing ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Submitting...
+                      {purchaseForm.paymentMethod === 'wallet' ? 'Processing...' : 'Submitting...'}
                     </>
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      Submit Request
+                      {purchaseForm.paymentMethod === 'wallet' ? 'Purchase Now' : 'Submit Request'}
                     </>
                   )}
                 </Button>

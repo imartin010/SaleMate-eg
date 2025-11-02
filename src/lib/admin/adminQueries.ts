@@ -61,8 +61,8 @@ export async function deleteProject(projectId: string): Promise<void> {
 
 export async function approvePurchaseRequest(requestId: string): Promise<void> {
   const { error } = await supabase
-    .from('lead_purchase_requests')
-    .update({ status: 'approved' })
+    .from('purchase_requests')
+    .update({ status: 'approved', approved_at: new Date().toISOString() })
     .eq('id', requestId);
 
   if (error) {
@@ -72,8 +72,8 @@ export async function approvePurchaseRequest(requestId: string): Promise<void> {
 
 export async function rejectPurchaseRequest(requestId: string): Promise<void> {
   const { error } = await supabase
-    .from('lead_purchase_requests')
-    .update({ status: 'rejected' })
+    .from('purchase_requests')
+    .update({ status: 'rejected', rejected_at: new Date().toISOString() })
     .eq('id', requestId);
 
   if (error) {
