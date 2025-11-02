@@ -255,7 +255,7 @@ export const PurchaseRequestsManager: React.FC = () => {
           
           {reviewDialog.request && (
             <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="bg-muted p-4 rounded-xl space-y-2">
                 <div><strong>Customer:</strong> {reviewDialog.request.profiles?.name} ({reviewDialog.request.profiles?.email})</div>
                 <div><strong>Project:</strong> {reviewDialog.request.projects?.name}</div>
                 <div><strong>Quantity:</strong> {reviewDialog.request.number_of_leads} leads</div>

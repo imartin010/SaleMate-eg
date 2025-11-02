@@ -37,24 +37,39 @@ WHERE project_id IS NULL
 AND EXISTS (SELECT 1 FROM public.projects WHERE project_code = 'DEFAULT');
 
 -- If no DEFAULT project exists, create one
-INSERT INTO public.projects (
-    id,
-    name,
-    developer,
-    region,
-    project_code,
-    available_leads,
-    price_per_lead
-)
-SELECT 
-    gen_random_uuid(),
-    'Default Project',
-    'System',
-    'Default',
-    'DEFAULT',
-    0,
-    0
-WHERE NOT EXISTS (SELECT 1 FROM public.projects WHERE project_code = 'DEFAULT');
+DO $$
+DECLARE
+  v_default_developer_id UUID;
+BEGIN
+  -- Get or create a default developer
+  SELECT id INTO v_default_developer_id FROM public.developers WHERE name = 'System' LIMIT 1;
+  
+  IF v_default_developer_id IS NULL THEN
+    INSERT INTO public.developers (name) VALUES ('System') RETURNING id INTO v_default_developer_id;
+  END IF;
+
+  -- Create default project if it doesn't exist
+  IF NOT EXISTS (SELECT 1 FROM public.projects WHERE project_code = 'DEFAULT') THEN
+    INSERT INTO public.projects (
+      id,
+      name,
+      developer_id,
+      region,
+      project_code,
+      available_leads,
+      price_per_lead
+    )
+    VALUES (
+      gen_random_uuid(),
+      'Default Project',
+      v_default_developer_id,
+      'Default',
+      'DEFAULT',
+      0,
+      0
+    );
+  END IF;
+END $$;
 
 -- Assign remaining NULL leads to DEFAULT project
 UPDATE public.leads 
@@ -248,6 +263,10 @@ CREATE POLICY "Admins can manage ad integrations"
     );
 
 -- Lead Requests: Users can view/create their own
+DROP POLICY IF EXISTS "Users can view their own lead requests" ON public.lead_requests;
+DROP POLICY IF EXISTS "Users can create their own lead requests" ON public.lead_requests;
+DROP POLICY IF EXISTS "Admins can update lead requests" ON public.lead_requests;
+
 CREATE POLICY "Users can view their own lead requests"
     ON public.lead_requests
     FOR SELECT
@@ -270,6 +289,10 @@ CREATE POLICY "Admins can update lead requests"
     ));
 
 -- Wallet Topup Requests: Users can view/create their own
+DROP POLICY IF EXISTS "Users can view their own wallet topup requests" ON public.wallet_topup_requests;
+DROP POLICY IF EXISTS "Users can create their own wallet topup requests" ON public.wallet_topup_requests;
+DROP POLICY IF EXISTS "Admins can update wallet topup requests" ON public.wallet_topup_requests;
+
 CREATE POLICY "Users can view their own wallet topup requests"
     ON public.wallet_topup_requests
     FOR SELECT

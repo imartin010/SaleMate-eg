@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Profile Refresh</title>
+    <style>
+        body { font-family: system-ui; padding: 40px; max-width: 800px; margin: 0 auto; background: #f8fafc; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #1e293b; margin: 0 0 10px 0; }
+        button { background: #3b82f6; color: white; padding: 14px 28px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin: 10px 5px; }
+        button:hover { background: #2563eb; }
+        .danger { background: #ef4444; }
+        .danger:hover { background: #dc2626; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; }
+        .success { color: #22c55e; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔧 Force Profile Refresh</h1>
+        <p>This will clear your cached profile and reload it from the database.</p>
+
+        <div id="status"></div>
+
+        <button onclick="refreshProfile()">🔄 Refresh Profile</button>
+        <button onclick="clearAndReload()" class="danger">🗑️ Clear Cache & Logout</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function refreshProfile() {
+            const status = document.getElementById('status');
+            const result = document.getElementById('result');
+            
+            status.innerHTML = '<p>Refreshing profile...</p>';
+
+            try {
+                // Access the Zustand store from the React app
+                // This will only work if loaded from localhost:5174
+                if (window.location.hostname !== 'localhost') {
+                    status.innerHTML = '<p class="error">⚠️ This page must be opened from localhost:5174</p>';
+                    result.innerHTML = `
+                        <p><strong>Open this URL instead:</strong></p>
+                        <p><a href="http://localhost:5174/force_refresh_profile.html">http://localhost:5174/force_refresh_profile.html</a></p>
+                    `;
+                    return;
+                }
+
+                // Option 1: Clear localStorage and redirect
+                localStorage.removeItem('supabase.auth.token');
+                
+                status.innerHTML = '<p class="success">✅ Auth cache cleared!</p>';
+                result.innerHTML = `
+                    <p><strong>Next steps:</strong></p>
+                    <ol>
+                        <li>You'll be logged out in 3 seconds</li>
+                        <li>Login again with your credentials</li>
+                        <li>Your profile will be refreshed from database</li>
+                        <li>Try accessing /app/admin again</li>
+                    </ol>
+                `;
+
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 3000);
+
+            } catch (error) {
+                status.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+
+        function clearAndReload() {
+            if (confirm('This will logout and clear all local data. Continue?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/auth/login';
+            }
+        }
+    </script>
+</body>
+</html>
+

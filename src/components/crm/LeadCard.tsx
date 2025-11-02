@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MapPin, Building, Calendar, ChevronDown, ChevronUp, Sparkles, Target, Flame, CalendarCheck, TrendingUp, PhoneOff, PhoneMissed, MessageCircle, XCircle, Ban, PowerOff, Wallet } from 'lucide-react';
+import { Phone, Mail, MapPin, Building, Calendar, ChevronDown, ChevronUp, Sparkles, Target, Flame, CalendarCheck, TrendingUp, PhoneOff, PhoneMissed, MessageCircle, XCircle, Ban, PowerOff, Wallet, Briefcase, DollarSign, User, Users } from 'lucide-react';
 import { Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -13,6 +13,8 @@ interface LeadCardProps {
   lead: Lead;
   index: number;
   onUpdateStage: (leadId: string, stage: LeadStage) => void;
+  onEdit?: (lead: Lead) => void;
+  showActions?: boolean;
 }
 
 const STAGES: LeadStage[] = [
@@ -68,9 +70,18 @@ const getStageColor = (stage: LeadStage): string => {
 
 const getPlatformColor = (platform: string): string => {
   const colors: Record<string, string> = {
+    facebook: 'bg-blue-100 text-blue-800',
+    instagram: 'bg-pink-100 text-pink-800',
+    google: 'bg-red-100 text-red-800',
+    tiktok: 'bg-gray-900 text-white',
+    snapchat: 'bg-yellow-100 text-yellow-800',
+    whatsapp: 'bg-green-100 text-green-800',
     Facebook: 'bg-blue-100 text-blue-800',
+    Instagram: 'bg-pink-100 text-pink-800',
     Google: 'bg-red-100 text-red-800',
-    TikTok: 'bg-pink-100 text-pink-800',
+    TikTok: 'bg-gray-900 text-white',
+    Snapchat: 'bg-yellow-100 text-yellow-800',
+    WhatsApp: 'bg-green-100 text-green-800',
     Other: 'bg-gray-100 text-gray-800',
   };
   return colors[platform] || 'bg-gray-100 text-gray-800';
@@ -80,6 +91,8 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   lead,
   index,
   onUpdateStage,
+  onEdit,
+  showActions = true,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -127,12 +140,34 @@ export const LeadCard: React.FC<LeadCardProps> = ({
               {lead.client_phone}
             </a>
           </div>
+          {lead.client_phone2 && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+              <a href={`tel:${lead.client_phone2}`} className="hover:text-blue-600 truncate">
+                {lead.client_phone2}
+              </a>
+            </div>
+          )}
+          {lead.client_phone3 && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+              <a href={`tel:${lead.client_phone3}`} className="hover:text-blue-600 truncate">
+                {lead.client_phone3}
+              </a>
+            </div>
+          )}
           {lead.client_email && (
             <div className="flex items-center text-sm text-gray-600">
               <Mail className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
               <a href={`mailto:${lead.client_email}`} className="hover:text-blue-600 truncate">
                 {lead.client_email}
               </a>
+            </div>
+          )}
+          {lead.company_name && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Briefcase className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+              <span className="truncate">{lead.company_name}</span>
             </div>
           )}
         </div>
@@ -182,23 +217,56 @@ export const LeadCard: React.FC<LeadCardProps> = ({
             {/* Project Details */}
             {lead.project && (
               <div className="flex items-start gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                <Building className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="font-medium text-gray-900">
                     {extractName(lead.project.name)}
                   </div>
                   <div className="text-gray-500">
-                    {extractName(lead.project.region)}
+                    Developer: {extractName(lead.project.region)}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Date */}
+            {/* Budget */}
+            {lead.budget && (
+              <div className="flex items-center gap-2 text-sm">
+                <DollarSign className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="font-medium text-green-600">
+                  Budget: {lead.budget.toLocaleString()} EGP
+                </span>
+              </div>
+            )}
+
+            {/* Owner */}
+            {lead.owner && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span>Owner: {lead.owner.name}</span>
+              </div>
+            )}
+
+            {/* Assigned To */}
+            {lead.assigned_to && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span>Assigned to: {lead.assigned_to.name}</span>
+              </div>
+            )}
+
+            {/* Dates */}
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar className="h-4 w-4 text-gray-400" />
               Created {format(new Date(lead.created_at), 'MMM d, yyyy')}
             </div>
+            
+            {lead.assigned_at && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                Assigned {format(new Date(lead.assigned_at), 'MMM d, yyyy')}
+              </div>
+            )}
 
             {/* Notes */}
             {lead.feedback && (
@@ -211,13 +279,25 @@ export const LeadCard: React.FC<LeadCardProps> = ({
         )}
 
         {/* Actions */}
-        <div className="mt-3 pt-3 border-t">
-          <LeadActions
-            phone={lead.client_phone}
-            name={lead.client_name}
-            compact
-          />
-        </div>
+        {showActions && (
+          <div className="mt-3 pt-3 border-t">
+            <div className="flex items-center gap-2">
+              <LeadActions
+                phone={lead.client_phone}
+                name={lead.client_name}
+                compact
+              />
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(lead)}
+                  className="ml-auto px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
+                >
+                  Edit Details
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </Card>
     </motion.div>
   );
@@ -226,11 +306,15 @@ export const LeadCard: React.FC<LeadCardProps> = ({
 interface LeadCardListProps {
   leads: Lead[];
   onUpdateStage: (leadId: string, stage: LeadStage) => void;
+  onEdit?: (lead: Lead) => void;
+  showActions?: boolean;
 }
 
 export const LeadCardList: React.FC<LeadCardListProps> = ({
   leads,
   onUpdateStage,
+  onEdit,
+  showActions,
 }) => {
   if (leads.length === 0) {
     return (
@@ -252,6 +336,8 @@ export const LeadCardList: React.FC<LeadCardListProps> = ({
           lead={lead}
           index={index}
           onUpdateStage={onUpdateStage}
+          onEdit={onEdit}
+          showActions={showActions}
         />
       ))}
     </div>

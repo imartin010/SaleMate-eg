@@ -249,16 +249,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   async refreshProfile() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return set({ profile: null });
+    if (!user) {
+      console.log('RefreshProfile: No user found');
+      return set({ profile: null });
+    }
     
-    const { data, error } = await supabase
+    console.log('RefreshProfile: Fetching profile for user:', user.id, 'email:', user.email);
+    
+    // Try to find profile by ID first (standard case)
+    let { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
+    
+    // If not found by ID, try by email (fallback for cases where IDs don't match)
+    if (!data && !error && user.email) {
+      console.log('RefreshProfile: Profile not found by ID, trying by email:', user.email);
+      const emailQuery = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("email", user.email)
+        .maybeSingle();
       
-    if (error) set({ error: error.message });
+      if (emailQuery.data) {
+        data = emailQuery.data;
+        error = emailQuery.error;
+        console.log('RefreshProfile: Found profile by email with ID:', data.id);
+      } else if (emailQuery.error) {
+        error = emailQuery.error;
+      }
+    }
+    
+    console.log('RefreshProfile: Data received:', data);
+    console.log('RefreshProfile: Error:', error);
+    console.log('RefreshProfile: Role value:', data?.role);
+      
+    if (error) {
+      console.error('RefreshProfile: Error loading profile:', error);
+      set({ error: error.message });
+    }
+    
     set({ profile: data ?? null });
+    
+    console.log('RefreshProfile: Profile set in store:', data);
+    
+    // If profile found but role is not admin, log warning
+    if (data && data.role !== 'admin' && user.email === 'themartining@gmail.com') {
+      console.warn('⚠️ Warning: Admin user profile role is not "admin". Current role:', data.role);
+    }
   },
 
   async resendConfirmation(email: string) {

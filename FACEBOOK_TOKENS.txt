@@ -1,0 +1,107 @@
+=================================
+FACEBOOK APP TOKENS - SaleMate Lead Capture
+=================================
+
+App ID: 2289673541471522
+App Name: SaleMate Lead Capture
+App URL: https://developers.facebook.com/apps/2289673541471522/
+
+✅ TOKEN 1 OF 3 - FACEBOOK_APP_SECRET:
+688b738745002319ece17c724cd1173c
+
+⏳ TOKEN 2 OF 3 - FACEBOOK_ACCESS_TOKEN:
+[NEEDS TO BE GENERATED - Instructions in Step 3 below]
+
+✅ TOKEN 3 OF 3 - FACEBOOK_VERIFY_TOKEN:
+salemate_verify_2024_secure_webhook_token
+
+=================================
+URGENT - DO THIS FIRST:
+=================================
+
+🚨 ADD TOKENS TO SUPABASE BEFORE VERIFYING WEBHOOK! 🚨
+
+Go to: https://supabase.com/dashboard/project/wkxbhvckmgrmdkdkhnqo/functions/facebook-leads-webhook/settings
+
+Click "+ New secret" and add these 3 environment variables:
+
+1. Name: FACEBOOK_APP_SECRET
+   Value: 688b738745002319ece17c724cd1173c
+
+2. Name: FACEBOOK_VERIFY_TOKEN  
+   Value: salemate_verify_2024_secure_webhook_token
+
+3. Name: FACEBOOK_ACCESS_TOKEN
+   Value: [Generate this in Step 3 below, then add it]
+
+=================================
+STEP 1: ADD TOKENS TO SUPABASE ✅ COMPLETED
+=================================
+
+✅ Tokens added to Supabase Secrets:
+- FACEBOOK_APP_SECRET: 688b738745002319ece17c724cd1173c
+- FACEBOOK_VERIFY_TOKEN: salemate_verify_2024_secure_webhook_token
+
+✅ JWT verification disabled (function is now public)
+
+=================================
+STEP 2: VERIFY WEBHOOK IN FACEBOOK ✅ COMPLETED
+=================================
+
+✅ Webhook verified and saved:
+- Product: Page
+- Callback URL: https://wkxbhvckmgrmdkdkhnqo.supabase.co/functions/v1/facebook-leads-webhook
+- Verify token: salemate_verify_2024_secure_webhook_token
+
+=================================
+STEP 3: GENERATE ACCESS TOKEN ⏳ PENDING
+=================================
+
+1. Go to Graph API Explorer:
+   https://developers.facebook.com/tools/explorer/
+
+2. Select your app "SaleMate Lead Capture" from dropdown
+
+3. Click "Generate Access Token"
+
+4. Grant these permissions:
+   ☑ leads_retrieval (REQUIRED for Lead Ads)
+   ☑ pages_manage_ads
+   ☑ ads_management
+
+5. Copy the token
+
+6. Extend it (make it long-lived):
+   https://developers.facebook.com/tools/accesstoken/
+   
+7. Add the extended token to Supabase as FACEBOOK_ACCESS_TOKEN
+
+=================================
+STEP 4: SUBSCRIBE TO LEADGEN FIELD ✅ COMPLETED
+=================================
+
+✅ leadgen webhook field is now subscribed!
+
+The webhook is fully configured:
+- Product: Page ✅
+- Webhook field: leadgen ✅
+- Status: Subscribed ✅
+
+=================================
+STEP 5: TEST THE INTEGRATION
+=================================
+
+Create a test Lead Ad campaign with name format:
+"001-aliva Test Campaign"
+
+The webhook will:
+1. Receive the lead from Facebook
+2. Extract project code "001"
+3. Store lead in database
+4. Increment available_leads
+
+Verify in SQL Editor:
+SELECT * FROM leads WHERE source = 'facebook' ORDER BY created_at DESC LIMIT 5;
+
+=================================
+

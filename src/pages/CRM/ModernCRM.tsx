@@ -9,9 +9,12 @@ import { FilterBar } from '../../components/crm/FilterBar';
 import { LeadTable } from '../../components/crm/LeadTable';
 import { LeadCardList } from '../../components/crm/LeadCard';
 import { AddLeadModal } from '../../components/crm/AddLeadModal';
+import { EditLeadDialog } from '../../components/crm/EditLeadDialog';
+import { AssignLeadDialog } from '../../components/crm/AssignLeadDialog';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuthStore } from '../../store/auth';
 
 interface Project {
   id: string;
@@ -22,10 +25,16 @@ export default function ModernCRM() {
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads();
   const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters } = useLeadFilters(leads);
   const stats = useLeadStats(leads);
+  const { profile } = useAuthStore();
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [projects, setProjects] = useState<Project[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+
+  const isManager = profile?.role === 'manager';
 
   // Handle window resize
   useEffect(() => {
@@ -70,6 +79,16 @@ export default function ModernCRM() {
     } catch (err) {
       console.error('Error updating feedback:', err);
     }
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+  };
+
+  const handleSaveEdit = async (leadId: string, updates: any) => {
+    await updateLead(leadId, updates);
+    setEditingLead(null);
+    await fetchLeads();
   };
 
   // Loading state
@@ -153,6 +172,7 @@ export default function ModernCRM() {
             <LeadCardList
               leads={filteredLeads}
               onUpdateStage={handleUpdateStage}
+              onEdit={handleEditLead}
             />
           </motion.div>
         ) : (
@@ -180,6 +200,30 @@ export default function ModernCRM() {
           await createLead(leadData);
         }}
       />
+
+      {/* Edit Lead Dialog */}
+      {editingLead && (
+        <EditLeadDialog
+          lead={editingLead}
+          onClose={() => setEditingLead(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
+
+      {/* Assign Lead Dialog (Manager only) */}
+      {showAssignDialog && isManager && (
+        <AssignLeadDialog
+          leadIds={selectedLeads}
+          onClose={() => {
+            setShowAssignDialog(false);
+            setSelectedLeads([]);
+          }}
+          onSuccess={async () => {
+            await fetchLeads();
+            setSelectedLeads([]);
+          }}
+        />
+      )}
     </motion.div>
   );
 }

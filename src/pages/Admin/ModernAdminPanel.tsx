@@ -370,7 +370,7 @@ export default function ModernAdminPanel() {
             </div>
             
             {searchTerm && (
-              <div className="mt-2 max-h-60 overflow-y-auto border rounded-lg bg-white shadow-sm">
+              <div className="mt-2 max-h-60 overflow-y-auto border rounded-xl bg-white shadow-sm">
                 {filteredProjects.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">No projects found</div>
                 ) : (
@@ -400,7 +400,7 @@ export default function ModernAdminPanel() {
             )}
 
             {selectedProjectId && !searchTerm && (
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -429,7 +429,7 @@ export default function ModernAdminPanel() {
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
                 isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
               }`}
             >
@@ -486,7 +486,7 @@ export default function ModernAdminPanel() {
 
           {/* Upload Progress */}
           {uploading && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
               <div className="flex items-center gap-3 mb-2">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                 <span className="font-medium text-blue-900">Uploading leads...</span>
@@ -504,7 +504,7 @@ export default function ModernAdminPanel() {
           )}
 
           {uploadError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
               <div className="flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600" />
                 <span className="text-red-900">{uploadError}</span>
@@ -513,7 +513,7 @@ export default function ModernAdminPanel() {
           )}
 
           {successCount > 0 && !uploading && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <span className="text-green-900">Successfully uploaded {successCount} leads!</span>
@@ -563,7 +563,7 @@ export default function ModernAdminPanel() {
 
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{user.name}</p>
                       <p className="text-sm text-gray-600">{user.email}</p>
@@ -675,7 +675,7 @@ export default function ModernAdminPanel() {
               {/* Project List */}
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {projects.map((project) => (
-                  <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                  <div key={project.id} className="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{project.name}</p>
                       <p className="text-sm text-gray-600">{project.region} • {project.available_leads} leads available</p>

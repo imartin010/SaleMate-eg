@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuthStore } from '../store/auth';
 import { PageTitle } from '../components/common/PageTitle';
+import { BannerDisplay } from '../components/dashboard/BannerDisplay';
 import { 
   BarChart3, 
   Users, 
@@ -99,6 +100,9 @@ const FastDashboard: React.FC = () => {
         />
       </div>
 
+      {/* Top Banner Placement */}
+      <BannerDisplay placement="dashboard_top" />
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {quickStats.map((stat, index) => {
@@ -123,6 +127,9 @@ const FastDashboard: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Grid Banner Placement */}
+      <BannerDisplay placement="dashboard_grid" />
 
       {/* Quick Actions */}
       <div>
