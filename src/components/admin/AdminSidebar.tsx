@@ -1,192 +1,327 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { useAuthStore } from '../../store/auth';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Building2, Database, ShoppingCart,
-  Wallet, BarChart3, LifeBuoy, FileEdit, Settings,
-  Flag, Shield, Mail, MessageSquare, Image, FileText
+  Wallet, BarChart3, HeadphonesIcon, FileText, Settings,
+  Flag, FileSearch, Image, Mail, MessageSquare, Megaphone,
+  ChevronDown, ChevronRight
 } from 'lucide-react';
+import { useAuthStore } from '../../store/auth';
+import { Logo } from '../common/Logo';
 
 interface NavItem {
-  name: string;
-  href: string;
+  label: string;
+  path: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles: string[]; // Roles that can see this item
+  allowedRoles?: string[];
   children?: NavItem[];
 }
 
 const navigation: NavItem[] = [
-  { 
-    name: 'Dashboard', 
-    href: '/admin/dashboard', 
+  {
+    label: 'Dashboard',
+    path: '/app/admin',
     icon: LayoutDashboard,
-    roles: ['admin', 'support']
-  },
-  { 
-    name: 'Users', 
-    href: '/admin/users', 
-    icon: Users,
-    roles: ['admin', 'support']
-  },
-  { 
-    name: 'Projects', 
-    href: '/admin/projects', 
-    icon: Building2,
-    roles: ['admin']
-  },
-  { 
-    name: 'Leads', 
-    href: '/admin/leads', 
-    icon: Database,
-    roles: ['admin']
-  },
-  { 
-    name: 'Purchases', 
-    href: '/admin/purchases', 
-    icon: ShoppingCart,
-    roles: ['admin']
-  },
-  { 
-    name: 'Wallets', 
-    href: '/admin/wallets', 
-    icon: Wallet,
-    roles: ['admin']
-  },
-  { 
-    name: 'Analytics', 
-    href: '/admin/analytics', 
-    icon: BarChart3,
-    roles: ['admin']
-  },
-  { 
-    name: 'Support', 
-    href: '/admin/support', 
-    icon: LifeBuoy,
-    roles: ['admin', 'support']
+    allowedRoles: ['admin'],
   },
   {
-    name: 'CMS',
-    href: '/admin/cms',
-    icon: FileEdit,
-    roles: ['admin'],
+    label: 'Users',
+    path: '/app/admin/users',
+    icon: Users,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Projects',
+    path: '/app/admin/projects',
+    icon: Building2,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Leads',
+    path: '/app/admin/leads',
+    icon: Database,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Purchases',
+    path: '/app/admin/purchases',
+    icon: ShoppingCart,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Wallets',
+    path: '/app/admin/wallets',
+    icon: Wallet,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Analytics',
+    path: '/app/admin/analytics',
+    icon: BarChart3,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Support',
+    path: '/app/admin/support',
+    icon: HeadphonesIcon,
+    allowedRoles: ['admin', 'support'],
+  },
+  {
+    label: 'CMS',
+    path: '/app/admin/cms',
+    icon: FileText,
+    allowedRoles: ['admin'],
     children: [
-      { name: 'Projects', href: '/admin/cms/projects', icon: Building2, roles: ['admin'] },
-      { name: 'Email Templates', href: '/admin/cms/email', icon: Mail, roles: ['admin'] },
-      { name: 'SMS Templates', href: '/admin/cms/sms', icon: MessageSquare, roles: ['admin'] },
-      { name: 'Banners', href: '/admin/cms/banners', icon: Image, roles: ['admin'] },
-      { name: 'Marketing', href: '/admin/cms/marketing', icon: FileText, roles: ['admin'] },
+      {
+        label: 'Projects',
+        path: '/app/admin/cms/projects',
+        icon: Building2,
+      },
+      {
+        label: 'Email Templates',
+        path: '/app/admin/cms/emails',
+        icon: Mail,
+      },
+      {
+        label: 'SMS Templates',
+        path: '/app/admin/cms/sms',
+        icon: MessageSquare,
+      },
+      {
+        label: 'Banners',
+        path: '/app/admin/cms/banners',
+        icon: Megaphone,
+      },
+      {
+        label: 'Marketing',
+        path: '/app/admin/cms/marketing',
+        icon: Image,
+      },
+      {
+        label: 'Settings',
+        path: '/app/admin/cms/settings',
+        icon: Settings,
+      },
     ],
   },
-  { 
-    name: 'Settings', 
-    href: '/admin/settings', 
+  {
+    label: 'System',
+    path: '/app/admin/system',
     icon: Settings,
-    roles: ['admin'],
+    allowedRoles: ['admin'],
     children: [
-      { name: 'General', href: '/admin/settings/general', icon: Settings, roles: ['admin'] },
-      { name: 'Feature Flags', href: '/admin/settings/features', icon: Flag, roles: ['admin'] },
-      { name: 'Security', href: '/admin/settings/security', icon: Shield, roles: ['admin'] },
+      {
+        label: 'Feature Flags',
+        path: '/app/admin/system/flags',
+        icon: Flag,
+      },
+      {
+        label: 'Audit Logs',
+        path: '/app/admin/system/audit',
+        icon: FileSearch,
+      },
     ],
   },
 ];
 
 export const AdminSidebar: React.FC = () => {
+  const location = useLocation();
   const { profile } = useAuthStore();
-  const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({
+    CMS: true,
+    System: true,
+  });
 
-  const toggleExpand = (name: string) => {
-    setExpandedItems(prev => 
-      prev.includes(name) 
-        ? prev.filter(item => item !== name)
-        : [...prev, name]
-    );
+  const toggleExpanded = (label: string) => {
+    setExpanded(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const canSeeItem = (item: NavItem) => {
-    if (!profile) return false;
-    return item.roles.includes(profile.role);
+  const hasAccess = (item: NavItem): boolean => {
+    if (!item.allowedRoles) return true;
+    return item.allowedRoles.includes(profile?.role || '');
   };
 
-  const renderNavItem = (item: NavItem, depth = 0) => {
-    if (!canSeeItem(item)) return null;
-
-    const hasChildren = item.children && item.children.length > 0;
-    const isExpanded = expandedItems.includes(item.name);
-    const Icon = item.icon;
-
-    return (
-      <div key={item.name}>
-        {hasChildren ? (
-          <button
-            onClick={() => toggleExpand(item.name)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors rounded-lg group"
-            style={{ paddingLeft: `${depth * 12 + 16}px` }}
-          >
-            <Icon className="h-5 w-5" />
-            <span className="flex-1 text-left font-medium">{item.name}</span>
-            <svg
-              className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        ) : (
-          <NavLink
-            to={item.href}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium'
-                  : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-              }`
-            }
-            style={{ paddingLeft: `${depth * 12 + 16}px` }}
-          >
-            <Icon className="h-5 w-5" />
-            <span className="font-medium">{item.name}</span>
-          </NavLink>
-        )}
-
-        {/* Render children if expanded */}
-        {hasChildren && isExpanded && (
-          <div className="mt-1">
-            {item.children?.map(child => renderNavItem(child, depth + 1))}
-          </div>
-        )}
-      </div>
-    );
+  const isActive = (path: string): boolean => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700 overflow-y-auto">
-      <div className="p-4">
-        {/* Admin Badge */}
-        <div className="mb-6 p-3 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-lg">
-          <div className="flex items-center gap-2 text-blue-400">
-            <Shield className="h-5 w-5" />
-            <span className="font-semibold text-sm">
-              {profile?.role === 'admin' ? 'Admin Panel' : 'Support Panel'}
-            </span>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="space-y-1">
-          {navigation.map(item => renderNavItem(item))}
-        </nav>
-
-        {/* Footer Info */}
-        <div className="mt-8 pt-4 border-t border-gray-700">
-          <div className="text-xs text-gray-500 px-4">
-            <p>SaleMate Admin</p>
-            <p className="mt-1">v1.0.0</p>
-          </div>
+    <div className="w-20 bg-white border-r border-gray-100 flex flex-col h-full shadow-sm flex-shrink-0" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
+      {/* Logo */}
+      <div className="p-4 border-b border-gray-100 flex justify-center" style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'center' }}>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg" style={{ width: '3rem', height: '3rem', borderRadius: '1rem', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', fontWeight: 'bold', fontSize: '1.25rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span>S</span>
         </div>
       </div>
-    </aside>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+        {navigation.map((item) => {
+          if (!hasAccess(item)) return null;
+
+          const Icon = item.icon;
+          const active = isActive(item.path);
+          const hasChildren = item.children && item.children.length > 0;
+          const isExpanded = expanded[item.label];
+
+          return (
+            <div key={item.path}>
+              {hasChildren ? (
+                <>
+                  <button
+                    onClick={() => toggleExpanded(item.label)}
+                    className={`w-full flex flex-col items-center justify-center gap-1.5 px-2 py-3 rounded-xl transition-all duration-200 min-h-[64px] ${
+                      active
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
+                    title={item.label}
+                    style={{ display: 'flex', flexDirection: 'column', backgroundColor: active ? '#eff6ff' : 'transparent', color: active ? '#2563eb' : '#4b5563' }}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = '#eff6ff';
+                        e.currentTarget.style.color = '#2563eb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#4b5563';
+                      }
+                    }}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                      active
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600'
+                    }`} style={{
+                      width: '2.5rem',
+                      height: '2.5rem',
+                      borderRadius: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: active ? '#3b82f6' : '#f3f4f6',
+                      color: active ? 'white' : '#4b5563',
+                      boxShadow: active ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+                    }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-[10px] font-medium text-center leading-tight">{item.label}</span>
+                  </button>
+
+                  {isExpanded && item.children && (
+                    <div className="ml-2 mt-1 space-y-1 border-l-2 border-blue-100 pl-2" style={{ width: '100%' }}>
+                      {item.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        const childActive = isActive(child.path);
+
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className={`w-full flex flex-col items-center justify-center gap-1.5 px-2 py-2 rounded-xl transition-all duration-200 min-h-[56px] no-underline ${
+                              childActive
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                            }`}
+                            title={child.label}
+                            style={{ display: 'flex', flexDirection: 'column', backgroundColor: childActive ? '#eff6ff' : 'transparent', color: childActive ? '#2563eb' : '#4b5563', textDecoration: 'none' }}
+                            onMouseEnter={(e) => {
+                              if (!childActive) {
+                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                e.currentTarget.style.color = '#2563eb';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!childActive) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = '#4b5563';
+                              }
+                            }}
+                          >
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                              childActive
+                                ? 'bg-blue-500 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-600'
+                            }`} style={{
+                              width: '2.25rem',
+                              height: '2.25rem',
+                              borderRadius: '0.75rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: childActive ? '#3b82f6' : '#f3f4f6',
+                              color: childActive ? 'white' : '#4b5563',
+                              boxShadow: childActive ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+                            }}>
+                              <ChildIcon className="h-4 w-4" />
+                            </div>
+                            <span className="text-[10px] font-medium text-center leading-tight">{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  to={item.path}
+                  className={`w-full flex flex-col items-center justify-center gap-1.5 px-2 py-3 rounded-xl transition-all duration-200 min-h-[64px] no-underline ${
+                    active
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                  }`}
+                  title={item.label}
+                  style={{ display: 'flex', flexDirection: 'column', backgroundColor: active ? '#eff6ff' : 'transparent', color: active ? '#2563eb' : '#4b5563', textDecoration: 'none' }}
+                  onMouseEnter={(e) => {
+                    if (!active) {
+                      e.currentTarget.style.backgroundColor = '#eff6ff';
+                      e.currentTarget.style.color = '#2563eb';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#4b5563';
+                    }
+                  }}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                    active
+                      ? 'bg-blue-500 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600'
+                  }`} style={{
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    borderRadius: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: active ? '#3b82f6' : '#f3f4f6',
+                    color: active ? 'white' : '#4b5563',
+                    boxShadow: active ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+                  }}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-[10px] font-medium text-center leading-tight">{item.label}</span>
+                </Link>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-3 border-t border-gray-100 flex flex-col items-center gap-2" style={{ padding: '0.75rem', borderTop: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-semibold text-sm shadow-md" style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.75rem', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', fontWeight: 600, fontSize: '0.875rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {profile?.name?.charAt(0).toUpperCase() || 'A'}
+        </div>
+        <div className="text-center">
+          <div className="text-xs font-semibold truncate max-w-[60px]" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '60px' }}>{profile?.name || 'Admin'}</div>
+          <div className="text-[10px] capitalize" style={{ fontSize: '10px', color: '#6b7280', textTransform: 'capitalize' }}>{profile?.role || 'admin'}</div>
+        </div>
+      </div>
+    </div>
   );
 };
-

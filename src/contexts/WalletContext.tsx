@@ -143,6 +143,39 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
   };
 
+  const deductFromWallet = async (amount: number, description: string = 'Lead purchase'): Promise<{ success: boolean; error?: string; new_balance?: number }> => {
+    if (!user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    try {
+      setError(null);
+
+      // Call RPC to deduct from wallet
+      const { data, error: deductError } = await supabase.rpc('deduct_from_wallet', {
+        p_user_id: user.id,
+        p_amount: amount,
+        p_description: description,
+      });
+
+      if (deductError) {
+        throw new Error(deductError.message);
+      }
+
+      // Refresh balance
+      await refreshBalance();
+      
+      return { 
+        success: true, 
+        new_balance: data?.new_balance || (balance - amount)
+      };
+    } catch (err: unknown) {
+      const errorMessage = (err instanceof Error ? err.message : String(err)) || 'Failed to deduct from wallet';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   useEffect(() => {
     refreshBalance();
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -153,7 +186,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     error,
     refreshBalance,
     addToWallet,
-    addToWalletWithPayment
+    addToWalletWithPayment,
+    deductFromWallet,
   };
 
   return (

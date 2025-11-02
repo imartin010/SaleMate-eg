@@ -2,33 +2,23 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
 import { AdminTopbar } from '../components/admin/AdminTopbar';
-import { useAuthStore } from '../store/auth';
-import { Navigate } from 'react-router-dom';
 
 export const AdminLayout: React.FC = () => {
-  const { profile } = useAuthStore();
-
-  // Only allow admin and support roles
-  if (!profile || !['admin', 'support'].includes(profile.role)) {
-    return <Navigate to="/app" replace />;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <AdminTopbar />
+    <div className="flex h-screen" style={{ backgroundColor: '#f8fafc' }}>
+      {/* Sidebar */}
+      <AdminSidebar />
 
-      {/* Main Layout with Sidebar */}
-      <div className="flex">
-        {/* Sidebar */}
-        <AdminSidebar />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Topbar */}
+        <AdminTopbar />
 
-        {/* Main Content Area */}
-        <main className="flex-1 ml-64 mt-16 p-8">
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: '#f8fafc' }}>
           <Outlet />
         </main>
       </div>
     </div>
   );
 };
-

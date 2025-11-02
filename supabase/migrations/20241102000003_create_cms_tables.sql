@@ -180,7 +180,7 @@ CREATE INDEX IF NOT EXISTS idx_banner_metrics_event ON public.banner_metrics(eve
 -- ============================================
 
 -- Drop existing function if it exists (to avoid parameter name conflicts)
-DROP FUNCTION IF EXISTS public.is_admin(uuid);
+DROP FUNCTION IF EXISTS public.is_admin(uuid) CASCADE;
 
 CREATE FUNCTION public.is_admin(user_id uuid)
 RETURNS boolean
@@ -212,6 +212,21 @@ ALTER TABLE public.feature_flags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dashboard_banners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.banner_metrics ENABLE ROW LEVEL SECURITY;
+
+-- Drop ALL existing policies
+DROP POLICY IF EXISTS "Admins full access to cms_pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Users can view published cms_pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Admins full access to cms_media" ON public.cms_media;
+DROP POLICY IF EXISTS "Admins full access to templates_email" ON public.templates_email;
+DROP POLICY IF EXISTS "Support can read templates_email" ON public.templates_email;
+DROP POLICY IF EXISTS "Admins full access to templates_sms" ON public.templates_sms;
+DROP POLICY IF EXISTS "Support can read templates_sms" ON public.templates_sms;
+DROP POLICY IF EXISTS "Admins full access to system_settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Admins full access to feature_flags" ON public.feature_flags;
+DROP POLICY IF EXISTS "Admins full access to dashboard_banners" ON public.dashboard_banners;
+DROP POLICY IF EXISTS "Admins full access to audit_logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Admins can view banner metrics" ON public.banner_metrics;
+DROP POLICY IF EXISTS "Users can track banner metrics" ON public.banner_metrics;
 
 -- Admins can do everything
 CREATE POLICY "Admins full access to cms_pages"
@@ -288,6 +303,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop existing triggers
+DROP TRIGGER IF EXISTS update_cms_pages_updated_at ON public.cms_pages;
+DROP TRIGGER IF EXISTS update_templates_email_updated_at ON public.templates_email;
+DROP TRIGGER IF EXISTS update_templates_sms_updated_at ON public.templates_sms;
+DROP TRIGGER IF EXISTS update_system_settings_updated_at ON public.system_settings;
+DROP TRIGGER IF EXISTS update_feature_flags_updated_at ON public.feature_flags;
+DROP TRIGGER IF EXISTS update_dashboard_banners_updated_at ON public.dashboard_banners;
+
+-- Create triggers
 CREATE TRIGGER update_cms_pages_updated_at BEFORE UPDATE ON public.cms_pages
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 

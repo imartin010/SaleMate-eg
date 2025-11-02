@@ -1,71 +1,169 @@
-# 🔧 Signup Fix Guide
+# 🔧 Fix Signup Error - Step by Step
 
 ## Problem
-You're getting "Database error saving new user" when trying to create a new account.
+Getting "Database error saving new user" when trying to signup with:
+- Email: `themartining@gmail.com`
+- Phone: `+201070020058`
 
-## Root Cause
-The database is missing the trigger that automatically creates a profile when a new user signs up.
+## Solution
 
-## 🚀 Quick Fix (Choose One)
+### Step 1: Clean Up Conflicting Records
 
-### Option 1: Run SQL Script (Recommended)
-1. **Go to your Supabase Dashboard**
-2. **Navigate to SQL Editor**
-3. **Copy and paste the contents of `fix_signup_trigger.sql`**
-4. **Click "Run"**
-5. **Try signing up again**
+**Go to Supabase SQL Editor** and run:
 
-### Option 2: Use Test Accounts (Immediate)
-1. **Go to Login page** (`/auth/login`)
-2. **Use these test credentials**:
-   - **Admin**: `admin@salemate.com` / `admin123`
-   - **User**: `user1@salemate.com` / `user123`
-3. **You'll have immediate access with existing leads**
+```sql
+-- Check for existing records
+SELECT * FROM auth.users WHERE email = 'themartining@gmail.com';
+SELECT * FROM public.profiles WHERE email = 'themartining@gmail.com';
 
-### Option 3: Manual Profile Creation
-If you already have a user account but no profile:
-1. **Go to Supabase Dashboard → Table Editor**
-2. **Open the `profiles` table**
-3. **Click "Insert" → "Insert row"**
-4. **Add a row with your user ID and details**
+-- If you see records, delete them:
+DELETE FROM public.profiles WHERE email = 'themartining@gmail.com';
+DELETE FROM auth.users WHERE email = 'themartining@gmail.com';
+```
 
-## 🧪 Test the Fix
+---
 
-After applying the fix:
-1. **Go to Signup page** (`/auth/signup`)
-2. **Fill out the form** with your details
-3. **Click "Create Account"**
-4. **Should work without errors**
+### Step 2: Fix the Signup Trigger
 
-## 🔍 What the Fix Does
+**Run this SQL** in Supabase SQL Editor:
 
-The SQL script creates:
-- ✅ **Database trigger** to auto-create profiles
-- ✅ **RLS policies** for security
-- ✅ **Proper permissions** for all tables
-- ✅ **Fallback profile creation** in the app code
+```sql
+-- Fix the handle_new_user trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    default_manager_id uuid;
+BEGIN
+    -- Try to get admin, but don't fail if none exists
+    SELECT id INTO default_manager_id
+    FROM public.profiles
+    WHERE role = 'admin'
+    LIMIT 1;
 
-## 📱 Alternative: Use Existing Test Data
+    -- Create profile (allows NULL manager_id)
+    INSERT INTO public.profiles (
+        id, name, email, phone, role, wallet_balance, manager_id, created_at, updated_at
+    )
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1), 'User'),
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'phone', NEW.phone, ''),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'user'),
+        0,
+        default_manager_id,
+        now(),
+        now()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET 
+        name = COALESCE(EXCLUDED.name, profiles.name),
+        email = COALESCE(EXCLUDED.email, profiles.email),
+        phone = COALESCE(EXCLUDED.phone, profiles.phone),
+        updated_at = now();
+    
+    RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE WARNING 'Error creating profile: %', SQLERRM;
+        RETURN NEW; -- Don't fail signup
+END;
+$$;
+```
 
-If you just want to test the photo feature:
-1. **Login with test account**: `admin@salemate.com` / `admin123`
-2. **Go to CRM** (`/app/crm`)
-3. **You'll see existing leads with photo upload feature**
+---
 
-## 🆘 Still Having Issues?
+### Step 3: Try Signup Again
 
-If signup still doesn't work:
-1. **Check browser console** for detailed error messages
-2. **Verify Supabase connection** in your environment variables
-3. **Check if the `profiles` table exists** in your database
-4. **Try the test accounts** to verify the system works
+1. **Go to:** `http://localhost:5175/auth/signup`
 
-## ✅ Success Indicators
+2. **Fill in the form:**
+   - Email: `themartining@gmail.com`
+   - Phone: `+201070020058`
+   - Password: (your password)
+   - Name: `Martin`
 
-You'll know it's working when:
-- ✅ Signup form submits without errors
-- ✅ You get redirected to login page
-- ✅ You can login with your new credentials
-- ✅ You see your profile in the CRM
+3. **Complete signup**
 
-The photo upload feature will be available once you have leads in your CRM! 📸
+4. **Verify OTP** if needed
+
+---
+
+### Step 4: Set Admin Role
+
+**After signup succeeds**, run this SQL:
+
+```sql
+-- Set admin role
+UPDATE public.profiles
+SET role = 'admin', updated_at = now()
+WHERE email = 'themartining@gmail.com';
+
+-- Verify
+SELECT id, email, role FROM public.profiles WHERE email = 'themartining@gmail.com';
+```
+
+Should show: `role = 'admin'`
+
+---
+
+### Step 5: Test Admin Access
+
+1. **Logout** (if needed)
+
+2. **Login** with `themartining@gmail.com`
+
+3. **Navigate to:** `http://localhost:5175/app/admin`
+
+4. **You should see:** Admin dashboard ✅
+
+---
+
+## Quick One-Liner Fix
+
+If you just want to fix it quickly, run this in SQL Editor:
+
+```sql
+-- Clean up
+DELETE FROM public.profiles WHERE email = 'themartining@gmail.com';
+DELETE FROM auth.users WHERE email = 'themartining@gmail.com';
+
+-- Fix trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER SECURITY DEFINER SET search_path = public LANGUAGE plpgsql
+AS $$ BEGIN
+    INSERT INTO public.profiles (id, name, email, phone, role, wallet_balance, created_at, updated_at)
+    VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)), NEW.email, COALESCE(NEW.raw_user_meta_data->>'phone', NEW.phone, ''), COALESCE(NEW.raw_user_meta_data->>'role', 'user'), 0, now(), now())
+    ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, updated_at = now();
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RETURN NEW;
+END; $$;
+```
+
+Then try signup again!
+
+---
+
+## Troubleshooting
+
+### Still getting error?
+1. Check browser console (F12) for detailed error
+2. Check Supabase logs for trigger errors
+3. Verify RLS policies allow profile creation
+
+### Signup works but no profile?
+Run this manually:
+```sql
+SELECT id FROM auth.users WHERE email = 'themartining@gmail.com';
+-- Copy the ID, then:
+INSERT INTO public.profiles (id, email, name, role, wallet_balance, created_at, updated_at)
+VALUES (<paste_id>, 'themartining@gmail.com', 'Martin', 'admin', 0, now(), now());
+```
+
+---
+
+That's it! 🎉

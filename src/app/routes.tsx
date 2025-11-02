@@ -2,6 +2,7 @@
 import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './layout/AppLayout';
+import { AdminLayout } from '../layouts/AdminLayout';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
@@ -47,10 +48,28 @@ const SupportPanel = React.lazy(() => import('../pages/Support/SupportPanel'));
 const AdminPanel = React.lazy(() => import('../pages/Admin/ModernAdminPanel'));
 const Settings = React.lazy(() => import('../pages/Settings'));
 
+// NEW ADMIN PANEL PAGES
+const AdminDashboard = React.lazy(() => import('../pages/Admin/AdminDashboard'));
+const UserManagement = React.lazy(() => import('../pages/Admin/UserManagement'));
+const Projects = React.lazy(() => import('../pages/Admin/Projects'));
+const Leads = React.lazy(() => import('../pages/Admin/Leads'));
+const LeadUpload = React.lazy(() => import('../pages/Admin/LeadUpload'));
+const PurchaseRequests = React.lazy(() => import('../pages/Admin/PurchaseRequests'));
+const WalletManagement = React.lazy(() => import('../pages/Admin/WalletManagement'));
+const FinancialReports = React.lazy(() => import('../pages/Admin/FinancialReports'));
+const Analytics = React.lazy(() => import('../pages/Admin/Analytics'));
+const Banners = React.lazy(() => import('../pages/Admin/CMS/Banners'));
+const EmailTemplates = React.lazy(() => import('../pages/Admin/CMS/EmailTemplates'));
+const SMSTemplates = React.lazy(() => import('../pages/Admin/CMS/SMSTemplates'));
+const MarketingContent = React.lazy(() => import('../pages/Admin/CMS/MarketingContent'));
+const PlatformSettings = React.lazy(() => import('../pages/Admin/CMS/PlatformSettings'));
+const AuditLogs = React.lazy(() => import('../pages/Admin/System/AuditLogs'));
+const FeatureFlags = React.lazy(() => import('../pages/Admin/System/FeatureFlags'));
+
 // Fast loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[200px]">
-    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+    <Loader2 className="h-6 w-6 animate-spin text-brand-primary" />
   </div>
 );
 
@@ -173,6 +192,94 @@ export const router = createBrowserRouter([
     path: '/app',
     element: <AuthGuard />,
     children: [
+      // Admin routes with AdminLayout
+      {
+        path: 'admin',
+        element: (
+          <RoleGuard allowedRoles={['admin']}>
+            <AdminLayout />
+          </RoleGuard>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/app/admin/dashboard" replace />,
+          },
+          {
+            path: 'dashboard',
+            element: <SafePage><AdminDashboard /></SafePage>,
+          },
+          {
+            path: 'users',
+            element: <SafePage><UserManagement /></SafePage>,
+          },
+          {
+            path: 'projects',
+            element: <SafePage><Projects /></SafePage>,
+          },
+          {
+            path: 'leads',
+            element: <SafePage><Leads /></SafePage>,
+          },
+          {
+            path: 'leads/upload',
+            element: <SafePage><LeadUpload /></SafePage>,
+          },
+          {
+            path: 'purchases',
+            element: <SafePage><PurchaseRequests /></SafePage>,
+          },
+          {
+            path: 'wallets',
+            element: <SafePage><WalletManagement /></SafePage>,
+          },
+          {
+            path: 'financial',
+            element: <SafePage><FinancialReports /></SafePage>,
+          },
+          {
+            path: 'analytics',
+            element: <SafePage><Analytics /></SafePage>,
+          },
+          {
+            path: 'support',
+            element: <SafePage><SupportPanel /></SafePage>,
+          },
+          {
+            path: 'cms/banners',
+            element: <SafePage><Banners /></SafePage>,
+          },
+          {
+            path: 'cms/projects',
+            element: <Navigate to="/app/admin/projects" replace />,
+          },
+          {
+            path: 'cms/emails',
+            element: <SafePage><EmailTemplates /></SafePage>,
+          },
+          {
+            path: 'cms/sms',
+            element: <SafePage><SMSTemplates /></SafePage>,
+          },
+          {
+            path: 'cms/marketing',
+            element: <SafePage><MarketingContent /></SafePage>,
+          },
+          {
+            path: 'cms/settings',
+            element: <SafePage><PlatformSettings /></SafePage>,
+          },
+          {
+            path: 'system/audit',
+            element: <SafePage><AuditLogs /></SafePage>,
+          },
+          {
+            path: 'system/flags',
+            element: <SafePage><FeatureFlags /></SafePage>,
+          },
+        ],
+      },
+      // Regular app routes with AppLayout
       {
         path: '',
         element: <AppLayout />,
@@ -218,14 +325,6 @@ export const router = createBrowserRouter([
             element: (
               <RoleGuard allowedRoles={['admin', 'support', 'manager', 'user']}>
                 <SafePage><SupportPanel /></SafePage>
-              </RoleGuard>
-            ),
-          },
-          {
-            path: 'admin',
-            element: (
-              <RoleGuard allowedRoles={['admin']}>
-                <SafePage><AdminPanel /></SafePage>
               </RoleGuard>
             ),
           },

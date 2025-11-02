@@ -22,18 +22,31 @@ export interface Lead {
   client_phone2?: string | null;
   client_phone3?: string | null;
   client_job_title?: string | null;
+  company_name?: string | null;
+  budget?: number | null;
   project_id: string;
   source: string;
   stage: LeadStage;
   feedback?: string | null;
   created_at: string;
   updated_at?: string;
+  assigned_at?: string | null;
   buyer_user_id?: string | null;
+  assigned_to_id?: string | null;
+  owner_id?: string | null;
   upload_user_id?: string | null;
   project?: {
     id: string;
     name: string;
     region: string;
+  } | null;
+  owner?: {
+    id: string;
+    name: string;
+  } | null;
+  assigned_to?: {
+    id: string;
+    name: string;
   } | null;
   feedback_history?: FeedbackHistoryEntry[];
 }
@@ -66,6 +79,11 @@ export interface UpdateLeadInput {
   client_name?: string;
   client_phone?: string;
   client_email?: string;
+  client_phone2?: string;
+  client_phone3?: string;
+  client_job_title?: string;
+  company_name?: string;
+  budget?: number;
   project_id?: string;
   source?: string;
   stage?: LeadStage;
@@ -94,6 +112,14 @@ export function useLeads() {
             name,
             region
           ),
+          owner:profiles!leads_owner_id_fkey (
+            id,
+            name
+          ),
+          assigned_to:profiles!leads_assigned_to_id_fkey (
+            id,
+            name
+          ),
           feedback_history:feedback_history (
             id,
             feedback_text,
@@ -104,7 +130,7 @@ export function useLeads() {
             )
           )
         `)
-        .eq('buyer_user_id', user.id)
+        .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .order('created_at', { foreignTable: 'feedback_history', ascending: false });
 
