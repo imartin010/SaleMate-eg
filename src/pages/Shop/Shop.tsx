@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabaseClient';
 import { useWallet } from '../../contexts/WalletContext';
@@ -49,6 +50,7 @@ interface PurchaseFormData {
 
 const Shop: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const { balance, loading: walletLoading, refreshBalance } = useWallet();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,13 @@ const Shop: React.FC = () => {
   };
 
   const handlePurchase = async () => {
-    if (!selectedProject || !user) {
+    if (!selectedProject) {
+      return;
+    }
+
+    // Require login for purchase
+    if (!user) {
+      navigate('/auth/login', { state: { from: { pathname: '/app/shop' } } });
       return;
     }
 
@@ -237,6 +245,12 @@ const Shop: React.FC = () => {
   };
 
   const openPurchaseDialog = (project: Project) => {
+    // Require login to open purchase dialog
+    if (!user) {
+      navigate('/auth/login', { state: { from: { pathname: '/app/shop' } } });
+      return;
+    }
+    
     setSelectedProject(project);
     setPurchaseForm({
       quantity: 30,

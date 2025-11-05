@@ -226,14 +226,13 @@ export const SupportAgentView: React.FC<SupportAgentViewProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6 max-w-7xl">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <Headphones className="h-8 w-8 text-purple-600" />
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 bg-clip-text text-transparent mb-2">
           Support Management Panel
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-gray-600 text-base md:text-lg">
           View and manage all support tickets across the platform
         </p>
       </div>

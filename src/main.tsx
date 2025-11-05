@@ -6,6 +6,7 @@ import { ThemeProvider } from './app/providers/ThemeProvider';
 import { QueryProvider } from './app/providers/QueryProvider';
 import { AuthProvider } from './components/common/AuthProvider';
 import { WalletProvider } from './contexts/WalletContext';
+import { ToastProvider } from './contexts/ToastContext';
 import './index.css';
 
 // Production build - minimal logging
@@ -65,7 +66,9 @@ ReactDOM.createRoot(rootElement).render(
         <ThemeProvider>
           <AuthProvider>
             <WalletProvider>
-              <RouterProvider router={router} />
+              <ToastProvider>
+                <RouterProvider router={router} />
+              </ToastProvider>
             </WalletProvider>
           </AuthProvider>
         </ThemeProvider>

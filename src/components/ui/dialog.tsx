@@ -31,9 +31,17 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-      {children}
-    </div>
+    <>
+      <div 
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-md transition-opacity"
+        onClick={() => onOpenChange?.(false)}
+      />
+      <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto">
+          {children}
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -44,7 +52,7 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg",
+      "fixed left-0 top-0 md:left-[50%] md:top-[50%] z-50 grid w-full h-full md:w-auto md:h-auto md:max-w-lg md:translate-x-[-50%] md:translate-y-[-50%] gap-4 border-0 md:border bg-background md:p-6 md:shadow-lg md:rounded-lg md:duration-200",
       className
     )}
     {...props}

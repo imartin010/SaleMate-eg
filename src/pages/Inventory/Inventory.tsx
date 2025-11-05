@@ -944,15 +944,18 @@ const Inventory: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50/30 via-blue-50/20 to-white">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6 max-w-7xl">
       {/* Header Section */}
       <div className="space-y-4">
-        <PageTitle
-          title="Property Inventory"
-          subtitle="Browse and manage real estate properties from Our Data Science Department"
-          icon={Home}
-          color="teal"
-        />
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 bg-clip-text text-transparent mb-2">
+            Property Inventory
+          </h1>
+          <p className="text-gray-600 text-base md:text-lg">
+            Browse and manage real estate properties from Our Data Science Department
+          </p>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1497,6 +1500,7 @@ const Inventory: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
+      </div>
     </div>
   );
 };

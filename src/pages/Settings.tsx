@@ -194,7 +194,8 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50/30 via-blue-50/20 to-white">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 max-w-7xl">
       {/* Message Display */}
       {message && (
         <div className={`p-4 rounded-lg border ${
@@ -721,6 +722,7 @@ const Settings: React.FC = () => {
             </Button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

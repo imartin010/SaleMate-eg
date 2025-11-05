@@ -246,16 +246,19 @@ const FastMyDeals: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-blue-50/20 to-white">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <div className="text-center space-y-4 mb-6">
-          <PageTitle
-            title="My Deals"
-            subtitle="Manage and track your real estate deals"
-            icon={FileText}
-            color="orange"
-          />
+        <div className="space-y-4 mb-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 bg-clip-text text-transparent mb-2">
+              My Deals
+            </h1>
+            <p className="text-gray-600 text-base md:text-lg">
+              Manage and track your real estate deals
+            </p>
+          </div>
         </div>
         <div className="flex items-center justify-center">
           <button
@@ -750,6 +753,7 @@ const FastMyDeals: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

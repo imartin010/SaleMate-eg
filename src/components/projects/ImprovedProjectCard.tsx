@@ -66,7 +66,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
   const handleProceedToCheckout = () => {
     if (!user) {
-      setError('Please log in to make a purchase');
+      navigate('/auth/login', { state: { from: { pathname: window.location.pathname } } });
       return;
     }
 
@@ -236,8 +236,13 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
           ) : (
             <Button 
               className="w-full h-12 text-base font-semibold" 
-              onClick={() => setShowPurchaseDialog(true)}
-              disabled={!user}
+              onClick={() => {
+                if (!user) {
+                  navigate('/auth/login', { state: { from: { pathname: window.location.pathname } } });
+                } else {
+                  setShowPurchaseDialog(true);
+                }
+              }}
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
               {!user ? 'Login to Purchase' : 'Buy Leads'}

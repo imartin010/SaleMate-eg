@@ -107,6 +107,46 @@ html, body, #root {
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* Blue Gradient Utilities */
+  .gradient-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  }
+
+  .gradient-blue-soft {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+  }
+
+  .text-gradient-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Enhanced Neumorphic Styles */
+  .neumorphic-blue {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: 
+      8px 8px 16px rgba(59, 130, 246, 0.1),
+      -8px -8px 16px rgba(255, 255, 255, 0.9);
+  }
+
+  .neumorphic-blue-inset {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    box-shadow: 
+      inset 4px 4px 8px rgba(59, 130, 246, 0.1),
+      inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+  }
+
+  /* Smooth Motion Utilities */
+  .motion-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .motion-bounce {
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
   
   /* Mobile-first utilities */
   .scrollbar-hide {

@@ -46,20 +46,34 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: fetchError } = await (supabase as any).rpc('get_user_wallet_balance', {
-        p_user_id: user.id
-      });
+      // Try to get balance directly from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('id', user.id)
+        .single();
 
-      if (fetchError) {
-        throw new Error(fetchError.message);
+      if (profileError) {
+        // Fallback to RPC if direct query fails
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error: fetchError } = await (supabase as any).rpc('get_user_wallet_balance', {
+          p_user_id: user.id
+        });
+
+        if (fetchError) {
+          throw new Error(fetchError.message);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setBalance(parseFloat((data as any) || 0));
+      } else {
+        setBalance(parseFloat(profile.wallet_balance || 0));
       }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setBalance((data as any) || 0);
     } catch (err: unknown) {
       console.error('Error fetching wallet balance:', err);
       setError((err instanceof Error ? err.message : String(err)) || 'Failed to fetch wallet balance');
+      // Set balance to 0 on error to prevent UI issues
+      setBalance(0);
     } finally {
       setLoading(false);
     }

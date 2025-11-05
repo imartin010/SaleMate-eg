@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Building2, Database, ShoppingCart,
   Wallet, BarChart3, HeadphonesIcon, FileText, Settings,
   Flag, FileSearch, Image, Mail, MessageSquare, Megaphone,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { Logo } from '../common/Logo';
@@ -46,6 +46,12 @@ const navigation: NavItem[] = [
     label: 'Purchases',
     path: '/app/admin/purchases',
     icon: ShoppingCart,
+    allowedRoles: ['admin'],
+  },
+  {
+    label: 'Lead Requests',
+    path: '/app/admin/lead-requests',
+    icon: ClipboardList,
     allowedRoles: ['admin'],
   },
   {
