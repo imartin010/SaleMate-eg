@@ -231,15 +231,14 @@ export const UserSupportView: React.FC<UserSupportViewProps> = ({ cases, loading
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Ticket className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 bg-clip-text text-transparent mb-2">
             My Support Tickets
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-gray-600 text-base md:text-lg">
             Track and manage your support cases
           </p>
         </div>

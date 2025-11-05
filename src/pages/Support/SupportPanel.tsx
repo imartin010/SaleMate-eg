@@ -36,21 +36,25 @@ const SupportPanel: React.FC = () => {
   // Render appropriate view based on role
   if (isSupportRole) {
     return (
-      <SupportAgentView
-        cases={cases}
-        loading={loading}
-        onUpdateCase={handleUpdateCase}
-        currentUserId={user?.id || ''}
-      />
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/30 via-blue-50/20 to-white">
+        <SupportAgentView
+          cases={cases}
+          loading={loading}
+          onUpdateCase={handleUpdateCase}
+          currentUserId={user?.id || ''}
+        />
+      </div>
     );
   }
 
   return (
-    <UserSupportView
-      cases={cases}
-      loading={loading}
-      onCreateCase={handleCreateCase}
-    />
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/30 via-blue-50/20 to-white">
+      <UserSupportView
+        cases={cases}
+        loading={loading}
+        onCreateCase={handleCreateCase}
+      />
+    </div>
   );
 };
 

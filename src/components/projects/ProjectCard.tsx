@@ -30,7 +30,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const totalAmount = quantity * pricePerLead;
 
   const handlePurchase = async () => {
-    if (!user) return;
+    if (!user) {
+      navigate('/auth/login', { state: { from: { pathname: window.location.pathname } } });
+      return;
+    }
     
     setIsProcessing(true);
     setError(null);
@@ -191,11 +194,17 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         <CardFooter className="p-4 pt-0">
           <Button 
             className="w-full h-12 text-base font-semibold" 
-            onClick={() => setShowPurchaseDialog(true)}
+            onClick={() => {
+              if (!user) {
+                navigate('/auth/login', { state: { from: { pathname: window.location.pathname } } });
+              } else {
+                setShowPurchaseDialog(true);
+              }
+            }}
             disabled={project.availableLeads === 0}
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
-            {project.availableLeads === 0 ? 'Sold Out' : 'Buy Leads'}
+            {!user ? 'Login to Purchase' : (project.availableLeads === 0 ? 'Sold Out' : 'Buy Leads')}
           </Button>
         </CardFooter>
       </Card>

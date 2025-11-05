@@ -305,7 +305,7 @@ const TeamPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50/30 via-indigo-50/20 to-white flex items-center justify-center">
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="h-8 w-8 text-gray-400" />
@@ -322,16 +322,18 @@ const TeamPage: React.FC = () => {
   // MANAGER VIEW
   if (isManager) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50/30 via-indigo-50/20 to-white">
+        <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-7xl">
           {/* Header */}
-          <div className="text-center space-y-4 mb-8">
-            <PageTitle
-              title="My Team"
-              subtitle="Manage your team members and assign leads to maximize productivity."
-              icon={Users}
-              color="pink"
-            />
+          <div className="space-y-4 mb-8">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-700 to-indigo-800 bg-clip-text text-transparent mb-2">
+                My Team
+              </h1>
+              <p className="text-gray-600 text-base md:text-lg">
+                Manage your team members and assign leads to maximize productivity.
+              </p>
+            </div>
           </div>
 
           {/* Stats */}
@@ -671,16 +673,18 @@ const TeamPage: React.FC = () => {
 
   // REGULAR USER VIEW
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/30 via-indigo-50/20 to-white">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-7xl">
         {/* Header */}
-        <div className="text-center space-y-4 mb-8">
-          <PageTitle
-            title="My Team"
-            subtitle={profile?.manager_id ? "View your teammates and pending invitations" : "You're not part of a team yet"}
-            icon={Users}
-            color="pink"
-          />
+        <div className="space-y-4 mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-700 to-indigo-800 bg-clip-text text-transparent mb-2">
+              My Team
+            </h1>
+            <p className="text-gray-600 text-base md:text-lg">
+              {profile?.manager_id ? "View your teammates and pending invitations" : "You're not part of a team yet"}
+            </p>
+          </div>
         </div>
 
         {/* Pending Invitations for User */}

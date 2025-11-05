@@ -4,6 +4,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './layout/AppLayout';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { AuthGuard } from '../components/auth/AuthGuard';
+import { OptionalAuthGuard } from '../components/auth/OptionalAuthGuard';
+import { CheckoutGuard } from '../components/auth/CheckoutGuard';
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
 import { PageErrorBoundary } from '../components/common/PageErrorBoundary';
@@ -31,10 +33,14 @@ import { ContactSupport } from '../pages/Support/ContactSupport';
 // CHECKOUT PAGES
 import { Checkout } from '../pages/Checkout/Checkout';
 
+// PAYMENT PAGES
+import { PaymentCallback } from '../pages/Payment/PaymentCallback';
+
 // DRAFT PAGES: No sidebar (removed - file doesn't exist)
 
 // APP PAGES: Lazy load for performance
-const Dashboard = React.lazy(() => import('../pages/FastDashboard'));
+const AppHome = React.lazy(() => import('../pages/Home'));
+const Dashboard = React.lazy(() => import('../pages/FastDashboard')); // Legacy, will be removed
 const MyLeads = React.lazy(() => import('../pages/CRM/ModernCRM'));
 const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
@@ -55,6 +61,7 @@ const Projects = React.lazy(() => import('../pages/Admin/Projects'));
 const Leads = React.lazy(() => import('../pages/Admin/Leads'));
 const LeadUpload = React.lazy(() => import('../pages/Admin/LeadUpload'));
 const PurchaseRequests = React.lazy(() => import('../pages/Admin/PurchaseRequests'));
+const LeadRequests = React.lazy(() => import('../pages/Admin/LeadRequests'));
 const WalletManagement = React.lazy(() => import('../pages/Admin/WalletManagement'));
 const FinancialReports = React.lazy(() => import('../pages/Admin/FinancialReports'));
 const Analytics = React.lazy(() => import('../pages/Admin/Analytics'));
@@ -87,9 +94,15 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
-  // Main marketing home page
+  // Main app route - redirect root to /app
   {
     path: '/',
+    element: <Navigate to="/app" replace />,
+  },
+  
+  // Marketing home page (moved to /marketing)
+  {
+    path: '/marketing',
     element: (
       <>
         <ScrollToTop />
@@ -151,7 +164,9 @@ export const router = createBrowserRouter([
     element: (
       <>
         <ScrollToTop />
-        <Checkout />
+        <CheckoutGuard>
+          <Checkout />
+        </CheckoutGuard>
       </>
     ),
   },
@@ -188,9 +203,19 @@ export const router = createBrowserRouter([
   // Draft pages (no sidebar) - removed TeamPNL route as file doesn't exist
   
   // Protected routes with AuthGuard
+  // Payment callback route (outside AppLayout to avoid header/nav, but requires auth)
+  {
+    path: '/payment/kashier/callback',
+    element: (
+      <AuthGuard>
+        <PaymentCallback />
+      </AuthGuard>
+    ),
+  },
+  
   {
     path: '/app',
-    element: <AuthGuard />,
+    element: <OptionalAuthGuard />,
     children: [
       // Admin routes with AdminLayout
       {
@@ -228,6 +253,10 @@ export const router = createBrowserRouter([
           {
             path: 'purchases',
             element: <SafePage><PurchaseRequests /></SafePage>,
+          },
+          {
+            path: 'lead-requests',
+            element: <SafePage><LeadRequests /></SafePage>,
           },
           {
             path: 'wallets',
@@ -286,11 +315,15 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <SafePage><Dashboard /></SafePage>,
+            element: <SafePage><AppHome /></SafePage>,
+          },
+          {
+            path: 'home',
+            element: <SafePage><AppHome /></SafePage>,
           },
           {
             path: 'dashboard',
-            element: <SafePage><Dashboard /></SafePage>,
+            element: <SafePage><AppHome /></SafePage>, // Redirect dashboard to home
           },
           {
             path: 'crm',
@@ -338,7 +371,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '*',
-            element: <Navigate to="/app/dashboard" replace />,
+            element: <Navigate to="/app" replace />,
           },
         ],
       },

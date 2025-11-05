@@ -292,7 +292,7 @@ const PartnersPage: React.FC = () => {
 
   const viewInInventory = (project: PartnerProject) => {
     // Navigate to inventory page with compound filter
-    navigate(`/inventory?compound=${encodeURIComponent(project.compound_name)}`);
+    navigate(`/app/inventory?compound=${encodeURIComponent(project.compound_name)}`);
   };
 
   // Return a unique image URL per project. If no image_url is available from DB,
@@ -374,17 +374,19 @@ const PartnersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50/30 via-blue-50/20 to-white">
       {/* Compact Header */}
       <div className="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="text-center space-y-4 mb-4">
-            <PageTitle
-              title="Partner Commissions"
-              subtitle={`Calculate earnings • ${filteredProjects.length} compounds`}
-              icon={Handshake}
-              color="indigo"
-            />
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 bg-clip-text text-transparent mb-2">
+                Partner Commissions
+              </h1>
+              <p className="text-gray-600 text-base md:text-lg">
+                Calculate earnings • {filteredProjects.length} compounds
+              </p>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="relative">

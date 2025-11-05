@@ -23,3 +23,6 @@ echo "Please manually open: https://supabase.com/dashboard/project/wkxbhvckmgrmd
 
 
 
+
+
+

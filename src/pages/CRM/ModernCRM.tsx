@@ -1,52 +1,117 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { 
+  Loader2, AlertCircle, Search, Filter, Plus, Download, 
+  LayoutGrid, List, Phone, Mail, MessageCircle,
+  X, Check, Eye, Edit,
+  RefreshCw, BarChart3, Users, TrendingUp,
+  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign
+} from 'lucide-react';
 import { useLeads, Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { useLeadFilters } from '../../hooks/crm/useLeadFilters';
 import { useLeadStats } from '../../hooks/crm/useLeadStats';
-import { StatsHeader } from '../../components/crm/StatsHeader';
-import { FilterBar } from '../../components/crm/FilterBar';
-import { LeadTable } from '../../components/crm/LeadTable';
-import { LeadCardList } from '../../components/crm/LeadCard';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { supabase } from '../../lib/supabaseClient';
+import { format } from 'date-fns';
 import { AddLeadModal } from '../../components/crm/AddLeadModal';
 import { EditLeadDialog } from '../../components/crm/EditLeadDialog';
-import { AssignLeadDialog } from '../../components/crm/AssignLeadDialog';
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
-import { supabase } from '../../lib/supabaseClient';
-import { useAuthStore } from '../../store/auth';
+import { LeadDetailModal } from '../../components/crm/LeadDetailModal';
 
 interface Project {
   id: string;
   name: string;
 }
 
+type ViewMode = 'table' | 'kanban' | 'cards';
+
+const STAGES: LeadStage[] = [
+  'New Lead',
+  'Potential',
+  'Hot Case',
+  'Meeting Done',
+  'Closed Deal',
+  'No Answer',
+  'Call Back',
+  'Whatsapp',
+  'Non Potential',
+  'Wrong Number',
+  'Switched Off',
+  'Low Budget',
+];
+
+const getStageColor = (stage: LeadStage): string => {
+  const colors: Record<LeadStage, string> = {
+    'New Lead': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Potential': 'bg-purple-100 text-purple-800 border-purple-200',
+    'Hot Case': 'bg-orange-100 text-orange-800 border-orange-200',
+    'Meeting Done': 'bg-green-100 text-green-800 border-green-200',
+    'Closed Deal': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'No Answer': 'bg-gray-100 text-gray-800 border-gray-200',
+    'Call Back': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'Whatsapp': 'bg-green-100 text-green-800 border-green-200',
+    'Non Potential': 'bg-red-100 text-red-800 border-red-200',
+    'Wrong Number': 'bg-red-100 text-red-800 border-red-200',
+    'Switched Off': 'bg-slate-100 text-slate-800 border-slate-200',
+    'Low Budget': 'bg-amber-100 text-amber-800 border-amber-200',
+  };
+  return colors[stage] || 'bg-gray-100 text-gray-800 border-gray-200';
+};
+
 export default function ModernCRM() {
-  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads();
+  const { leads, loading, error, fetchLeads, createLead, updateLead } = useLeads();
   const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters } = useLeadFilters(leads);
   const stats = useLeadStats(leads);
-  const { profile } = useAuthStore();
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [searchQuery, setSearchQuery] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const leadsPerPage = 30;
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const isManager = profile?.role === 'manager';
+  // Enhanced search - search across all fields
+  const searchFilteredLeads = useMemo(() => {
+    if (!searchQuery.trim()) return filteredLeads;
+    
+    const query = searchQuery.toLowerCase();
+    return filteredLeads.filter(lead => 
+      lead.client_name?.toLowerCase().includes(query) ||
+      lead.client_phone?.includes(query) ||
+      lead.client_email?.toLowerCase().includes(query) ||
+      lead.company_name?.toLowerCase().includes(query) ||
+      lead.project?.name?.toLowerCase().includes(query) ||
+      lead.feedback?.toLowerCase().includes(query) ||
+      lead.source?.toLowerCase().includes(query)
+    );
+  }, [filteredLeads, searchQuery]);
 
-  // Handle window resize
+  // Pagination calculations
+  const totalPages = Math.ceil(searchFilteredLeads.length / leadsPerPage);
+  const startIndex = (currentPage - 1) * leadsPerPage;
+  const endIndex = startIndex + leadsPerPage;
+  const paginatedLeads = searchFilteredLeads.slice(startIndex, endIndex);
+
+  // Reset to first page if current page is out of bounds
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Reset selected leads and page when search/filter changes
+  useEffect(() => {
+    setSelectedLeads(new Set());
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [searchQuery, filters]);
 
-  // Fetch projects for filters
+  // Fetch projects
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -61,43 +126,80 @@ export default function ModernCRM() {
         console.error('Error fetching projects:', err);
       }
     };
-
     fetchProjects();
   }, []);
 
-  const handleUpdateStage = async (leadId: string, stage: LeadStage) => {
-    try {
-      await updateLead(leadId, { stage });
-    } catch (err) {
-      console.error('Error updating stage:', err);
+  // Quick contact actions
+  const handleCall = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+  };
+
+  const handleEmail = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
+
+  // Export to CSV
+  const handleExport = () => {
+    const headers = ['Name', 'Phone', 'Email', 'Company', 'Project', 'Stage', 'Source', 'Budget', 'Created At'];
+    const rows = searchFilteredLeads.map(lead => [
+      lead.client_name || '',
+      lead.client_phone || '',
+      lead.client_email || '',
+      lead.company_name || '',
+      lead.project?.name || '',
+      lead.stage || '',
+      lead.source || '',
+      lead.budget?.toString() || '',
+      lead.created_at ? format(new Date(lead.created_at), 'yyyy-MM-dd') : ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Toggle lead selection
+  const toggleLeadSelection = (leadId: string) => {
+    const newSelected = new Set(selectedLeads);
+    if (newSelected.has(leadId)) {
+      newSelected.delete(leadId);
+    } else {
+      newSelected.add(leadId);
     }
+    setSelectedLeads(newSelected);
   };
 
-  const handleUpdateFeedback = async (leadId: string, feedback: string) => {
-    try {
-      await updateLead(leadId, { feedback });
-    } catch (err) {
-      console.error('Error updating feedback:', err);
+  const toggleSelectAll = () => {
+    if (selectedLeads.size === searchFilteredLeads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(searchFilteredLeads.map(l => l.id)));
     }
-  };
-
-  const handleEditLead = (lead: Lead) => {
-    setEditingLead(lead);
-  };
-
-  const handleSaveEdit = async (leadId: string, updates: any) => {
-    await updateLead(leadId, updates);
-    setEditingLead(null);
-    await fetchLeads();
   };
 
   // Loading state
   if (loading && leads.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#257CFF] mx-auto mb-4" />
-          <p className="text-gray-600">Loading your leads...</p>
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 via-blue-50/20 to-white">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading your leads...</p>
+          </div>
         </div>
       </div>
     );
@@ -106,125 +208,1144 @@ export default function ModernCRM() {
   // Error state
   if (error && leads.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="p-8 max-w-md">
-          <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 via-blue-50/20 to-white">
+        <div className="flex items-center justify-center min-h-[400px] px-4">
+          <div className="text-center max-w-md bg-white rounded-2xl p-8 shadow-lg">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Leads</h3>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={fetchLeads} className="bg-[#257CFF] hover:bg-[#1a5fd4]">
+            <Button onClick={fetchLeads} className="bg-indigo-600 hover:bg-indigo-700">
               Try Again
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100,
+        damping: 15,
+      },
+    },
+  };
+
+  const statCardVariants = {
+    hidden: { opacity: 0, scale: 0.8, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        type: "spring" as const,
+        stiffness: 200,
+        damping: 20,
+      },
+    }),
+    hover: {
+      scale: 1.05,
+      y: -5,
+      transition: {
+        type: "spring" as const,
+        stiffness: 400,
+        damping: 25,
+      },
+    },
+  };
+
   return (
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 via-blue-50/20 to-white pb-20 relative overflow-hidden">
+      {/* Animated background elements - reduced on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-10 -left-10 w-48 h-48 md:top-20 md:-left-20 md:w-96 md:h-96 bg-indigo-200/20 rounded-full blur-3xl"
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 25, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="p-4 md:p-6 max-w-[1600px] mx-auto"
-    >
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">My Leads</h1>
-        <p className="text-gray-600">Manage and track your sales leads</p>
+          className="absolute bottom-10 -right-10 w-48 h-48 md:bottom-20 md:-right-20 md:w-96 md:h-96 bg-blue-200/20 rounded-full blur-3xl"
+          animate={{
+            x: [0, -50, 0],
+            y: [0, -25, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </div>
 
-      {/* Stats Header */}
-      <StatsHeader stats={stats} loading={loading} />
-
-      {/* Filter Bar */}
-      <FilterBar
-        filters={filters}
-        onFilterChange={updateFilter}
-        onClearFilters={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        onRefresh={fetchLeads}
-        onAddLead={() => setShowAddModal(true)}
-        projects={projects}
-        loading={loading}
-      />
-
-      {/* Results Count */}
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          Showing <span className="font-semibold">{filteredLeads.length}</span> of{' '}
-          <span className="font-semibold">{leads.length}</span> leads
-        </p>
-      </div>
-
-      {/* Leads View (Responsive) */}
-      <AnimatePresence mode="wait">
-        {isMobile ? (
+      <main className="w-full px-3 py-3 md:container md:mx-auto md:px-6 md:py-8 md:max-w-7xl relative z-10">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-4 md:space-y-6"
+        >
+          {/* Header - Mobile First */}
           <motion.div
-            key="mobile"
+            variants={itemVariants}
+            className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex-1"
+            >
+              <motion.h1 
+                className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 bg-clip-text text-transparent mb-1 md:text-3xl md:mb-2 lg:text-4xl"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                My Leads
+                <motion.span
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  className="inline-block ml-1 md:ml-2"
+                >
+                  <Sparkles className="h-5 w-5 text-indigo-500 inline md:h-6 md:w-6 lg:h-8 lg:w-8" />
+                </motion.span>
+              </motion.h1>
+              <motion.p 
+                className="text-sm text-gray-600 md:text-base lg:text-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <LeadCardList
-              leads={filteredLeads}
-              onUpdateStage={handleUpdateStage}
-              onEdit={handleEditLead}
-            />
+                transition={{ delay: 0.3 }}
+              >
+                Manage and track your sales leads
+              </motion.p>
+            </motion.div>
+
+            <motion.div 
+              className="flex items-center gap-2 w-full md:w-auto"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <motion.div 
+                className="flex-1 md:flex-none"
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  onClick={() => setShowAddModal(true)}
+                  className="w-full md:w-auto rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg shadow-indigo-500/30 relative overflow-hidden group h-11 md:h-auto"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "100%" }}
+                    transition={{ duration: 0.6 }}
+                  />
+                  <Plus className="h-4 w-4 mr-2 relative z-10" />
+                  <span className="relative z-10 text-sm md:text-base">Add Lead</span>
+                </Button>
+              </motion.div>
+              <motion.div 
+                className="md:flex-none"
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="outline"
+                  onClick={handleExport}
+                  className="rounded-xl border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 h-11 w-11 md:h-auto md:w-auto md:px-4"
+                >
+                  <Download className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Export</span>
+                </Button>
+              </motion.div>
+            </motion.div>
           </motion.div>
-        ) : (
+
+          {/* Stats Cards - Mobile First Grid */}
           <motion.div
-            key="desktop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 gap-2 md:gap-4 md:grid-cols-4"
           >
-            <LeadTable
-              leads={filteredLeads}
-              onUpdateStage={handleUpdateStage}
-              onUpdateFeedback={handleUpdateFeedback}
+            {[
+              { label: 'Total Leads', value: stats.totalLeads, icon: Users, color: 'indigo', gradient: 'from-indigo-500 to-indigo-600' },
+              { label: 'Hot Cases', value: stats.hotCases, icon: TrendingUp, color: 'orange', gradient: 'from-orange-500 to-orange-600' },
+              { label: 'Meetings', value: stats.meetings, icon: Check, color: 'emerald', gradient: 'from-emerald-500 to-emerald-600' },
+              { label: 'Quality', value: Math.round(stats.qualityRate), icon: BarChart3, color: 'indigo', gradient: 'from-indigo-500 to-indigo-600', suffix: '%' },
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                custom={index}
+                variants={statCardVariants}
+                whileHover="hover"
+                className="bg-white rounded-xl p-3 md:rounded-2xl md:p-4 lg:p-6 border border-indigo-100 shadow-sm relative overflow-hidden group cursor-pointer"
+              >
+                {/* Animated gradient overlay */}
+                <motion.div
+                  className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-active:opacity-5 md:group-hover:opacity-5 transition-opacity duration-300`}
+                />
+                {/* Shimmer effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
+                />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-1 md:mb-2">
+                    <p className="text-xs text-gray-600 font-medium md:text-sm truncate pr-1">{stat.label}</p>
+                    <motion.div
+                      whileTap={{ rotate: 360, scale: 1.2 }}
+                      className="md:whileHover={{ rotate: 360, scale: 1.2 }}"
+                      transition={{ duration: 0.5 }}
+                    >
+                      <stat.icon className={`h-4 w-4 text-${stat.color}-600 md:h-5 md:w-5`} />
+                    </motion.div>
+                  </div>
+                  <motion.p 
+                    className={`text-xl font-bold bg-gradient-to-r from-${stat.color}-600 to-${stat.color}-700 bg-clip-text text-transparent md:text-2xl lg:text-3xl`}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 200 }}
+                  >
+                    {stat.value}{stat.suffix || ''}
+                  </motion.p>
+                  {/* Animated pulse dot - hidden on mobile */}
+                  <motion.div
+                    className={`hidden md:block absolute top-3 right-3 md:top-4 md:right-4 w-2 h-2 bg-${stat.color}-500 rounded-full`}
+                    animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Search and Filters Bar - Mobile First */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:rounded-2xl md:p-4 lg:p-6 border border-indigo-100 shadow-lg relative overflow-hidden"
+          >
+            {/* Animated border gradient */}
+            <motion.div
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent)',
+                backgroundSize: '200% 100%',
+              }}
+              animate={{
+                backgroundPosition: ['200% 0', '-200% 0'],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "linear",
+              }}
             />
+            <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+              {/* Search - Mobile First */}
+              <motion.div 
+                className="flex-1 relative w-full"
+                whileFocus={{ scale: 1.01 }}
+              >
+                <motion.div
+                  animate={{
+                    rotate: searchQuery ? [0, 10, -10, 0] : 0,
+                  }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 z-10"
+                >
+                  <Search className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                </motion.div>
+                <Input
+                  type="text"
+                  placeholder="Search leads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 md:pl-12 h-11 md:h-12 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 relative z-0 text-sm md:text-base"
+                />
+                {searchQuery && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 z-10"
+                  >
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="p-1 active:bg-gray-100 md:hover:bg-gray-100 rounded-full transition-colors touch-manipulation"
+                    >
+                      <X className="h-4 w-4 text-gray-400" />
+                    </button>
+                  </motion.div>
+                )}
+              </motion.div>
+
+              {/* Quick Filters - Mobile First */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <motion.div 
+                  className="flex-1 md:flex-none"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    variant={showFilters ? 'default' : 'outline'}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="rounded-xl h-11 md:h-12 relative overflow-hidden w-full md:w-auto"
+                  >
+                    <motion.div
+                      animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Filter className="h-4 w-4 mr-2 inline" />
+                    </motion.div>
+                    <span className="text-sm md:text-base">Filters</span>
+                    {hasActiveFilters && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="ml-2 bg-indigo-600 text-white rounded-full px-2 py-0.5 text-xs"
+                      >
+                        {Object.values(filters).filter(Boolean).length}
+                      </motion.span>
+                    )}
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileTap={{ rotate: 180, scale: 0.9 }}
+                  transition={{ duration: 0.5 }}
+                  className="md:whileHover={{ rotate: 180 }}"
+                >
+                  <Button
+                    variant="outline"
+                    onClick={fetchLeads}
+                    className="rounded-xl h-11 w-11 md:h-12 md:w-auto md:px-4 touch-manipulation"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Advanced Filters Panel */}
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -20 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200 space-y-3 md:space-y-4 relative z-10"
+                >
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Stage</label>
+                    <Select
+                      value={filters.stage || 'all'}
+                      onValueChange={(value) => updateFilter('stage', value === 'all' ? undefined : (value as LeadStage))}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Stages</SelectItem>
+                        {STAGES.map(stage => (
+                          <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Project</label>
+                    <Select
+                      value={filters.project || 'all'}
+                      onValueChange={(value) => updateFilter('project', value === 'all' ? undefined : value)}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Projects</SelectItem>
+                        {projects.map(project => (
+                          <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">Platform</label>
+                    <Select
+                      value={filters.platform || 'all'}
+                      onValueChange={(value) => updateFilter('platform', value === 'all' ? undefined : value)}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        <SelectItem value="google">Google</SelectItem>
+                        <SelectItem value="tiktok">TikTok</SelectItem>
+                        <SelectItem value="snapchat">Snapchat</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {hasActiveFilters && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      Clear All Filters
+                    </Button>
+                  </div>
+                )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* View Mode Toggle and Bulk Actions - Mobile First */}
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <p className="text-xs md:text-sm text-gray-600">
+                Showing <span className="font-semibold">{startIndex + 1}</span> - <span className="font-semibold">{Math.min(endIndex, searchFilteredLeads.length)}</span> of{' '}
+                <span className="font-semibold">{searchFilteredLeads.length}</span> leads
+                {searchFilteredLeads.length !== leads.length && (
+                  <span className="text-gray-500"> (filtered from {leads.length})</span>
+                )}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 w-full md:w-auto">
+              {selectedLeads.size > 0 && (
+                <motion.div 
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                >
+                  <span className="text-xs md:text-sm text-gray-600">{selectedLeads.size} selected</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedLeads(new Set())}
+                    className="rounded-xl h-8 w-8 p-0 md:h-auto md:w-auto md:px-3"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              )}
+              <motion.div 
+                className="flex items-center gap-1 bg-white rounded-xl p-1 border border-indigo-100 shadow-sm ml-auto md:ml-0"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="md:whileHover={{ scale: 1.1 }}"
+                >
+                  <Button
+                    variant={viewMode === 'table' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
+                  >
+                    <motion.div
+                      animate={viewMode === 'table' ? { rotate: 0 } : { rotate: -90 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <List className="h-4 w-4" />
+                    </motion.div>
+                    <span className="hidden md:inline ml-2">Table</span>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="md:whileHover={{ scale: 1.1 }}"
+                >
+                  <Button
+                    variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('kanban')}
+                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
+                  >
+                    <motion.div
+                      animate={viewMode === 'kanban' ? { rotate: 0 } : { rotate: 90 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </motion.div>
+                    <span className="hidden md:inline ml-2">Kanban</span>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="md:whileHover={{ scale: 1.1 }}"
+                >
+                  <Button
+                    variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('cards')}
+                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                    <span className="hidden md:inline ml-2">Cards</span>
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Leads Display */}
+          <AnimatePresence mode="wait">
+            {viewMode === 'cards' && (
+              <motion.div
+                key="cards"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 auto-rows-min"
+              >
+                {paginatedLeads.map((lead, index) => {
+                  return (
+                  <motion.div
+                    key={lead.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8, x: -20 }}
+                    transition={{ 
+                      delay: index * 0.03,
+                      type: "spring",
+                      stiffness: 200,
+                      damping: 20
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className="bg-white rounded-xl md:rounded-2xl border border-indigo-100 shadow-sm hover:shadow-lg transition-all relative overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300"
+                    onClick={(e) => {
+                      // Only open modal if clicking on the card itself, not on buttons inside
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button') || target.closest('a') || target.closest('select')) {
+                        return;
+                      }
+                      setDetailLead(lead);
+                    }}
+                  >
+                    {/* Shimmer effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-50/50 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
+                    />
+                    
+                    <div className="p-4 md:p-5 relative z-10">
+                      {/* Header with Stage Badge */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-base md:text-lg mb-1 truncate">
+                            {lead.client_name}
+                          </h3>
+                          {lead.company_name && (
+                            <p className="text-xs md:text-sm text-gray-600 truncate mb-2">
+                              {lead.company_name}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className={getStageColor(lead.stage) + " text-xs px-2 py-0.5 ml-2 flex-shrink-0"}>
+                          {lead.stage}
+                        </Badge>
+                      </div>
+
+                      {/* Project Info */}
+                      {lead.project && (
+                        <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+                          <Building2 className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                          <span className="truncate">{lead.project.name}</span>
+                        </div>
+                      )}
+
+                      {/* Contact Info */}
+                      <div className="space-y-2 mb-3">
+                        {lead.client_phone && (
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Phone className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                            <span className="truncate">{lead.client_phone}</span>
+                          </div>
+                        )}
+                        {lead.client_email && (
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Mail className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                            <span className="truncate text-xs">{lead.client_email}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Budget */}
+                      {lead.budget && (
+                        <div className="flex items-center gap-2 mb-3 text-sm">
+                          <DollarSign className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                          <span className="font-semibold text-gray-900">
+                            EGP {lead.budget.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Quick Actions */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                        {lead.client_phone && (
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCall(lead.client_phone!);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
+                          >
+                            <Phone className="h-3.5 w-3.5" />
+                            <span>Call</span>
+                          </motion.button>
+                        )}
+                        {lead.client_phone && (
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleWhatsApp(lead.client_phone!);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            <span>WhatsApp</span>
+                          </motion.button>
+                        )}
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailLead(lead);
+                          }}
+                          className="px-3 py-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors touch-manipulation"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+                })}
+              </motion.div>
+            )}
+
+            {viewMode === 'table' && (
+              <motion.div
+                key="table"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl border border-indigo-100 shadow-lg overflow-hidden relative"
+              >
+                {/* Animated shimmer on hover */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-100/50 to-transparent opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
+                  style={{ backgroundSize: '200% 100%' }}
+                  animate={{
+                    backgroundPosition: ['200% 0', '-200% 0'],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+                <div className="overflow-x-auto -mx-3 md:mx-0">
+                  <table className="w-full min-w-[640px]">
+                    <thead className="bg-indigo-50 border-b border-indigo-100">
+                      <tr>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={selectedLeads.size === searchFilteredLeads.length && searchFilteredLeads.length > 0}
+                            onChange={toggleSelectAll}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 md:w-auto md:h-auto"
+                          />
+                        </th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden sm:table-cell">Contact</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden md:table-cell">Project</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Stage</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Budget</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      <AnimatePresence>
+                        {paginatedLeads.map((lead, index) => (
+                          <motion.tr
+                            key={lead.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                            transition={{ 
+                              delay: index * 0.03,
+                              type: "spring",
+                              stiffness: 100,
+                              damping: 15
+                            }}
+                            whileHover={{ 
+                              scale: 1.01,
+                              backgroundColor: "rgba(99, 102, 241, 0.05)",
+                              transition: { duration: 0.2 }
+                            }}
+                            className="active:bg-indigo-50/50 md:hover:bg-indigo-50/50 transition-colors relative group touch-manipulation"
+                          >
+                          <td className="px-2 py-2 md:px-4 md:py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedLeads.has(lead.id)}
+                              onChange={() => toggleLeadSelection(lead.id)}
+                              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 md:w-auto md:h-auto"
+                            />
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3">
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm md:text-base">{lead.client_name}</p>
+                              {lead.company_name && (
+                                <p className="text-xs md:text-sm text-gray-500">{lead.company_name}</p>
+                              )}
+                              {/* Mobile: Show contact icons inline */}
+                              <div className="flex items-center gap-2 mt-1 sm:hidden">
+                                {lead.client_phone && (
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleCall(lead.client_phone!)}
+                                    className="text-indigo-600 p-1 rounded-full active:bg-indigo-100 transition-colors touch-manipulation"
+                                    title="Call"
+                                  >
+                                    <Phone className="h-3.5 w-3.5" />
+                                  </motion.button>
+                                )}
+                                {lead.client_phone && (
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleWhatsApp(lead.client_phone!)}
+                                    className="text-green-600 p-1 rounded-full active:bg-green-100 transition-colors touch-manipulation"
+                                    title="WhatsApp"
+                                  >
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                  </motion.button>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3 hidden sm:table-cell">
+                            <div className="flex items-center gap-2">
+                              {lead.client_phone && (
+                                <motion.button
+                                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleCall(lead.client_phone!)}
+                                  className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors touch-manipulation"
+                                  title="Call"
+                                >
+                                  <Phone className="h-4 w-4" />
+                                </motion.button>
+                              )}
+                              {lead.client_phone && (
+                                <motion.button
+                                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleWhatsApp(lead.client_phone!)}
+                                  className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors touch-manipulation"
+                                  title="WhatsApp"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </motion.button>
+                              )}
+                              {lead.client_email && (
+                                <motion.button
+                                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleEmail(lead.client_email!)}
+                                  className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors touch-manipulation"
+                                  title="Email"
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </motion.button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3 hidden md:table-cell">
+                            <p className="text-xs md:text-sm text-gray-900 truncate max-w-[120px] lg:max-w-none">{lead.project?.name || 'N/A'}</p>
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3">
+                            <Select
+                              value={lead.stage}
+                              onValueChange={async (value) => {
+                                await updateLead(lead.id, { stage: value as LeadStage });
+                                // Update the badge immediately without refetching
+                              }}
+                            >
+                              <SelectTrigger className="h-8 md:h-9 rounded-lg border-gray-200 text-xs md:text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STAGES.map(stage => (
+                                  <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3 hidden lg:table-cell">
+                            <p className="text-xs md:text-sm font-medium text-gray-900">
+                              {lead.budget ? `EGP ${lead.budget.toLocaleString()}` : '-'}
+                            </p>
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3">
+                            <div className="flex items-center gap-1 md:gap-2">
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.2 }}
+                                onClick={() => setDetailLead(lead)}
+                                className="text-indigo-600 hover:text-indigo-800 p-1.5 md:p-1 rounded-full active:bg-indigo-100 md:hover:bg-indigo-100 transition-colors touch-manipulation"
+                                title="View Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </motion.button>
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.2 }}
+                                onClick={() => setEditingLead(lead)}
+                                className="text-blue-600 hover:text-blue-800 p-1.5 md:p-1 rounded-full active:bg-blue-100 md:hover:bg-blue-100 transition-colors touch-manipulation"
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </motion.button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {viewMode === 'kanban' && (
+              <motion.div
+                key="kanban"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-x-auto pb-4 -mx-3 md:mx-0"
+              >
+                <div className="flex gap-2 md:gap-4 min-w-max px-3 md:px-0">
+                  {['New Lead', 'Potential', 'Hot Case', 'Meeting Done', 'Closed Deal'].map((stage, colIndex) => {
+                    // Filter leads for this stage from the paginated results
+                    const stageLeads = paginatedLeads.filter(l => l.stage === stage);
+                    // Also get total count for badge
+                    const totalStageLeads = searchFilteredLeads.filter(l => l.stage === stage).length;
+                    return (
+                      <motion.div
+                        key={stage}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: colIndex * 0.1 }}
+                        className="flex-shrink-0 w-64 md:w-72 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl border border-indigo-100 shadow-lg p-3 md:p-4 relative overflow-hidden"
+                      >
+                        {/* Column header with animated gradient */}
+                        <motion.div
+                          className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"
+                          animate={{
+                            backgroundPosition: ['0% 0%', '100% 0%'],
+                          }}
+                          transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                          style={{ backgroundSize: '200% 100%' }}
+                        />
+                        <div className="flex items-center justify-between mb-3 md:mb-4 mt-1">
+                          <h3 className="font-semibold text-gray-900 text-sm md:text-base">{stage}</h3>
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: colIndex * 0.1 + 0.2, type: "spring" }}
+                          >
+                            <Badge className={`${getStageColor(stage as LeadStage)} text-xs px-2 py-0.5`}>
+                              {totalStageLeads}
+                            </Badge>
+                          </motion.div>
+                        </div>
+                        <div className="space-y-2 max-h-[400px] md:max-h-[600px] overflow-y-auto">
+                          <AnimatePresence>
+                            {stageLeads.map((lead, index) => (
+                              <motion.div
+                                key={lead.id}
+                                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8, x: -20 }}
+                                transition={{ 
+                                  delay: index * 0.05,
+                                  type: "spring",
+                                  stiffness: 200,
+                                  damping: 20
+                                }}
+                                whileTap={{ 
+                                  scale: 0.98, 
+                                  y: -2,
+                                }}
+                                whileHover={{ 
+                                  scale: 1.05, 
+                                  y: -4,
+                                  boxShadow: "0px 10px 25px rgba(99, 102, 241, 0.2)"
+                                }}
+                                className="bg-indigo-50 rounded-lg md:rounded-xl p-2.5 md:p-3 border border-indigo-100 active:border-indigo-300 md:hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden group touch-manipulation"
+                                onClick={() => setDetailLead(lead)}
+                              >
+                                {/* Shimmer effect on hover */}
+                                <motion.div
+                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
+                                />
+                                <p className="font-medium text-gray-900 mb-1 relative z-10 text-sm md:text-base">{lead.client_name}</p>
+                                <p className="text-xs text-gray-600 mb-2 relative z-10 truncate">{lead.project?.name}</p>
+                                <div className="flex items-center gap-2 relative z-10">
+                                  {lead.client_phone && (
+                                    <motion.button
+                                      whileTap={{ scale: 0.9 }}
+                                      whileHover={{ scale: 1.3 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCall(lead.client_phone!);
+                                      }}
+                                      className="text-indigo-600 hover:text-indigo-800 p-1.5 md:p-1 rounded-full active:bg-indigo-100 md:hover:bg-indigo-100 touch-manipulation"
+                                    >
+                                      <Phone className="h-3.5 w-3.5 md:h-3 md:w-3" />
+                                    </motion.button>
+                                  )}
+                                  {lead.client_phone && (
+                                    <motion.button
+                                      whileTap={{ scale: 0.9 }}
+                                      whileHover={{ scale: 1.3 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWhatsApp(lead.client_phone!);
+                                      }}
+                                      className="text-green-600 hover:text-green-800 p-1.5 md:p-1 rounded-full active:bg-green-100 md:hover:bg-green-100 touch-manipulation"
+                                    >
+                                      <MessageCircle className="h-3.5 w-3.5 md:h-3 md:w-3" />
+                                    </motion.button>
+                                  )}
+                                </div>
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Add Lead Modal */}
+          {/* Empty State */}
+          {/* Pagination Controls */}
+          {searchFilteredLeads.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 border border-indigo-100 shadow-lg"
+            >
+              <div className="text-xs md:text-sm text-gray-600">
+                Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <motion.div whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-xl h-9 px-3 md:px-4 border-indigo-200 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span className="text-xs md:text-sm">Previous</span>
+                  </Button>
+                </motion.div>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <motion.button
+                        key={pageNum}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-9 h-9 rounded-lg text-xs md:text-sm font-medium transition-all touch-manipulation ${
+                          currentPage === pageNum
+                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-500/30'
+                            : 'bg-white text-gray-700 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200'
+                        }`}
+                      >
+                        {pageNum}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                <motion.div whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-xl h-9 px-3 md:px-4 border-indigo-200 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                  >
+                    <span className="text-xs md:text-sm">Next</span>
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {searchFilteredLeads.length === 0 && !loading && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+              className="text-center py-8 md:py-12 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl border border-indigo-100 shadow-lg relative overflow-hidden px-4"
+            >
+              {/* Animated background pattern */}
+              <motion.div
+                className="absolute inset-0 opacity-5"
+                style={{
+                  backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                }}
+                animate={{
+                  backgroundPosition: ['0 0', '20px 20px'],
+                }}
+                transition={{
+                  duration: 20,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              />
+              <motion.div
+                animate={{
+                  rotate: [0, 360],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                }}
+              >
+                <Users className="h-12 w-12 md:h-16 md:w-16 text-indigo-300 mx-auto mb-3 md:mb-4" />
+              </motion.div>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No leads found</h3>
+              <p className="text-sm md:text-base text-gray-600 mb-4">
+                {searchQuery || hasActiveFilters 
+                  ? 'Try adjusting your search or filters'
+                  : 'Get started by adding your first lead'}
+              </p>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 relative overflow-hidden group"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "100%" }}
+                    transition={{ duration: 0.6 }}
+                  />
+                  <Plus className="h-4 w-4 mr-2 relative z-10" />
+                  <span className="relative z-10">Add Lead</span>
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </motion.div>
+      </main>
+
+      {/* Modals */}
       <AddLeadModal
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={async (leadData) => {
           await createLead(leadData);
+          await fetchLeads();
         }}
       />
 
-      {/* Edit Lead Dialog */}
       {editingLead && (
         <EditLeadDialog
           lead={editingLead}
           onClose={() => setEditingLead(null)}
-          onSave={handleSaveEdit}
+          onSave={async (leadId, updates) => {
+            await updateLead(leadId, updates);
+            setEditingLead(null);
+            await fetchLeads();
+          }}
         />
       )}
 
-      {/* Assign Lead Dialog (Manager only) */}
-      {showAssignDialog && isManager && (
-        <AssignLeadDialog
-          leadIds={selectedLeads}
-          onClose={() => {
-            setShowAssignDialog(false);
-            setSelectedLeads([]);
-          }}
-          onSuccess={async () => {
-            await fetchLeads();
-            setSelectedLeads([]);
-          }}
-        />
-      )}
-    </motion.div>
+      {/* Detail Modal for Table/Kanban views */}
+      <LeadDetailModal
+        lead={detailLead}
+        open={!!detailLead}
+        onClose={() => setDetailLead(null)}
+        onUpdateStage={async (leadId, stage) => {
+          await updateLead(leadId, { stage });
+        }}
+      />
+    </div>
   );
 }
-

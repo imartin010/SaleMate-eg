@@ -15,6 +15,7 @@ import {
   Shield,
   Settings,
   LogOut,
+  LogIn,
   FileText,
   UserCheck,
   RefreshCw,
@@ -71,12 +72,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     return () => clearInterval(interval);
   }, [user, profile]);
 
-  if (!user) return null;
-
   const handleMouseEnter = () => setIsCollapsed(false);
   const handleMouseLeave = () => setIsCollapsed(true);
 
-  const navigation: Array<{
+  // Public navigation items (visible when logged out)
+  const publicNavigation: Array<{
+    name: string;
+    href: string;
+    icon: typeof LayoutDashboard;
+    show: boolean;
+  }> = [
+    {
+      name: 'Dashboard',
+      href: '/app',
+      icon: LayoutDashboard,
+      show: true,
+    },
+    {
+      name: 'Shop',
+      href: '/app/shop',
+      icon: ShoppingCart,
+      show: true,
+    },
+    {
+      name: 'Partners',
+      href: '/app/partners',
+      icon: Handshake,
+      show: true,
+    },
+    {
+      name: 'Inventory',
+      href: '/app/inventory',
+      icon: Package,
+      show: true,
+    },
+  ];
+
+  // Authenticated navigation items (visible when logged in)
+  const authenticatedNavigation: Array<{
     name: string;
     href: string;
     icon: typeof LayoutDashboard;
@@ -145,6 +178,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       show: true,
     },
   ];
+
+  // Use appropriate navigation based on auth status
+  const navigation = user ? authenticatedNavigation : publicNavigation;
 
   const isActive = (href: string) => {
     if (href === '/app') {
@@ -226,57 +262,85 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           })}
       </nav>
       
-      {/* User Profile Section */}
+      {/* User Profile Section or Login Section */}
       <div className={cn(
         'border-t border-white/20 transition-all duration-300',
         isCollapsed ? 'p-2' : 'p-6'
       )}>
-        <div className={cn(
-          'mb-4 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-300',
-          isCollapsed ? 'p-2' : 'p-4'
-        )}>
-          <div className={cn(
-            'mb-3 flex items-center gap-3',
-            isCollapsed ? 'justify-center' : ''
-          )}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-bg text-white font-bold text-lg">
-              {(profile?.name || user?.email || 'U').charAt(0).toUpperCase()}
-            </div>
-            {!isCollapsed && (
-              <div>
-                <p className="text-sm font-semibold text-foreground">{profile?.name || user?.email || 'User'}</p>
-                <p className="text-xs text-muted-foreground">{user?.email || 'No email'}</p>
+        {user ? (
+          <>
+            <div className={cn(
+              'mb-4 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-300',
+              isCollapsed ? 'p-2' : 'p-4'
+            )}>
+              <div className={cn(
+                'mb-3 flex items-center gap-3',
+                isCollapsed ? 'justify-center' : ''
+              )}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-bg text-white font-bold text-lg">
+                  {(profile?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                </div>
+                {!isCollapsed && (
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{profile?.name || user?.email || 'User'}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email || 'No email'}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-400"></div>
-              <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+              {!isCollapsed && (
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-400"></div>
+                  <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
+                  <button
+                    onClick={refreshProfile}
+                    className="ml-auto p-1 rounded hover:bg-white/20 transition-colors"
+                    title="Refresh profile"
+                  >
+                    <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-2">
               <button
-                onClick={refreshProfile}
-                className="ml-auto p-1 rounded hover:bg-white/20 transition-colors"
-                title="Refresh profile"
+                onClick={signOut}
+                className={cn(
+                  'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105',
+                  isCollapsed ? 'justify-center px-2' : 'px-4'
+                )}
+                title={isCollapsed ? 'Logout' : undefined}
               >
-                <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                {!isCollapsed && <span>Logout</span>}
               </button>
             </div>
-          )}
-        </div>
-        
-                <div className="space-y-2">
-          <button
-            onClick={signOut}
-            className={cn(
-              'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105',
-              isCollapsed ? 'justify-center px-2' : 'px-4'
-            )}
-            title={isCollapsed ? 'Logout' : undefined}
-          >
-            <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
-        </div>
+          </>
+        ) : (
+          <div className="space-y-2">
+            <Link
+              to="/auth/login"
+              className={cn(
+                'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-primary hover:scale-105',
+                isCollapsed ? 'justify-center px-2' : 'px-4'
+              )}
+              title={isCollapsed ? 'Login' : undefined}
+            >
+              <LogIn className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              {!isCollapsed && <span>Login</span>}
+            </Link>
+            <Link
+              to="/auth/signup"
+              className={cn(
+                'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300 hover:from-blue-700 hover:to-indigo-700 hover:scale-105',
+                isCollapsed ? 'justify-center px-2' : 'px-4'
+              )}
+              title={isCollapsed ? 'Sign Up' : undefined}
+            >
+              {!isCollapsed && <span>Sign Up</span>}
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
