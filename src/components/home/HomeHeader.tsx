@@ -6,12 +6,12 @@ import { Logo } from '../common/Logo';
 import { useAuthStore } from '../../store/auth';
 import { cn } from '../../lib/cn';
 import { supabase } from '../../lib/supabaseClient';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 export const HomeHeader: React.FC = () => {
   const { profile, user } = useAuthStore();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const scrollCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -19,19 +19,6 @@ export const HomeHeader: React.FC = () => {
   const userInitials = profile?.name 
     ? profile.name.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
-
-  // Fetch notification count
-  useEffect(() => {
-    const fetchNotificationCount = async () => {
-      // TODO: Replace with actual notifications query when available
-      // For now, just set to 0
-      setNotificationCount(0);
-    };
-    
-    if (user) {
-      fetchNotificationCount();
-    }
-  }, [user]);
 
   // Scroll detection - blend header with wallet section at top, white background when scrolled
   useEffect(() => {
@@ -244,51 +231,16 @@ export const HomeHeader: React.FC = () => {
             </div>
 
             {/* Notifications - Right (Mobile Only) */}
-            <button
-              className={cn(
-                "relative p-2 rounded-full transition-colors duration-200",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-                "hover:bg-gray-100"
-              )}
-              aria-label="Notifications"
-            >
-              <Bell className="h-6 w-6 text-gray-900" />
-              {notificationCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
-                >
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </motion.span>
-              )}
-            </button>
+            <NotificationBell />
           </div>
         </div>
       </header>
 
       {/* Desktop Notification Bell - Fixed Position */}
       <div className="hidden md:block fixed top-4 right-4 z-50">
-        <button
-          className={cn(
-            "relative p-2 rounded-full transition-colors duration-200",
-            "bg-white shadow-lg border border-gray-200",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-            "hover:bg-gray-50"
-          )}
-          aria-label="Notifications"
-        >
-          <Bell className="h-6 w-6 text-gray-900" />
-          {notificationCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
-            >
-              {notificationCount > 9 ? '9+' : notificationCount}
-            </motion.span>
-          )}
-        </button>
+        <div className="bg-white shadow-lg border border-gray-200 rounded-full">
+          <NotificationBell />
+        </div>
       </div>
     </>
   );
