@@ -86,19 +86,26 @@ export async function createBanner(
   userId?: string
 ) {
   try {
+    console.log('💾 Creating banner with data:', banner);
+    console.log('🖼️ Image URL in createBanner:', banner.image_url);
+    
     const { data, error } = await supabase
       .from('dashboard_banners')
       .insert({
         ...banner,
+        image_url: banner.image_url || null, // Explicitly include image_url
         created_by: userId,
       })
       .select()
       .single();
 
     if (error) {
-      console.error('Create banner error:', error);
+      console.error('❌ Create banner error:', error);
       return null;
     }
+
+    console.log('✅ Banner created successfully:', data);
+    console.log('🖼️ Image URL in created banner:', data.image_url);
 
     // Log audit
     if (userId) {
@@ -113,7 +120,7 @@ export async function createBanner(
 
     return data;
   } catch (error) {
-    console.error('Create banner exception:', error);
+    console.error('❌ Create banner exception:', error);
     return null;
   }
 }
@@ -127,17 +134,26 @@ export async function updateBanner(
   userId?: string
 ) {
   try {
+    console.log('💾 Updating banner:', id, 'with data:', updates);
+    console.log('🖼️ Image URL in updateBanner:', updates.image_url);
+    
     const { data, error } = await supabase
       .from('dashboard_banners')
-      .update(updates)
+      .update({
+        ...updates,
+        image_url: updates.image_url !== undefined ? updates.image_url : undefined, // Preserve existing if not provided
+      })
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error('Update banner error:', error);
+      console.error('❌ Update banner error:', error);
       return null;
     }
+
+    console.log('✅ Banner updated successfully:', data);
+    console.log('🖼️ Image URL in updated banner:', data.image_url);
 
     // Log audit
     if (userId) {
@@ -152,7 +168,7 @@ export async function updateBanner(
 
     return data;
   } catch (error) {
-    console.error('Update banner exception:', error);
+    console.error('❌ Update banner exception:', error);
     return null;
   }
 }
