@@ -123,9 +123,23 @@ serve(async (req) => {
     }
 
     // Create Supabase admin client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseServiceKey
+      });
+      return new Response(
+        JSON.stringify({ success: false, error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      supabaseUrl,
+      supabaseServiceKey,
       {
         auth: {
           autoRefreshToken: false,
@@ -174,23 +188,25 @@ serve(async (req) => {
     const messagingServiceSid = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
 
     if (!accountSid || !authToken || !messagingServiceSid) {
-      console.error('Missing Twilio configuration');
-      
-      // In development, log the OTP to console
+      console.error('Missing Twilio configuration - Running in development mode');
       console.log('===================================');
       console.log('📱 DEVELOPMENT MODE - OTP CODE');
       console.log('===================================');
       console.log('Phone:', phone);
       console.log('OTP Code:', otpCode);
       console.log('Purpose:', purpose);
-      console.log('Expires:', expiresAt.toLocaleString());
+      console.log('Expires:', expiresAt.toISOString());
       console.log('===================================');
+      
+      // Update rate limiting even in dev mode
+      updateRateLimit(identifier);
       
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Development mode: OTP logged to console',
-          dev_otp: otpCode // Only in dev mode
+          dev_otp: otpCode, // Return OTP for development/testing
+          expires_in: 300
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -231,8 +247,18 @@ serve(async (req) => {
     if (!twilioResponse.ok) {
       const twilioError = await twilioResponse.text();
       console.error('Twilio error:', twilioError);
+      
+      // Try to parse error for better debugging
+      let errorDetails = 'Failed to send verification code';
+      try {
+        const errorJson = JSON.parse(twilioError);
+        errorDetails = errorJson.message || errorJson.error || errorDetails;
+      } catch {
+        errorDetails = twilioError.substring(0, 200); // Limit error length
+      }
+      
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to send verification code' }),
+        JSON.stringify({ success: false, error: errorDetails }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -251,8 +277,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Send OTP error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ success: false, error: 'Internal server error' }),
+      JSON.stringify({ 
+        success: false, 
+        error: 'Internal server error',
+        details: errorMessage // Include details for debugging
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

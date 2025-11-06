@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Loader2, AlertCircle, Search, Filter, Plus, Download, 
   LayoutGrid, List, Phone, Mail, MessageCircle,
-  X, Check, Eye, Edit,
+  X, Check, Eye, Edit, Briefcase,
   RefreshCw, BarChart3, Users, TrendingUp,
   Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign
 } from 'lucide-react';
@@ -61,6 +62,7 @@ const getStageColor = (stage: LeadStage): string => {
 };
 
 export default function ModernCRM() {
+  const navigate = useNavigate();
   const { leads, loading, error, fetchLeads, createLead, updateLead } = useLeads();
   const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters } = useLeadFilters(leads);
   const stats = useLeadStats(leads);
@@ -756,13 +758,14 @@ export default function ModernCRM() {
                     whileTap={{ scale: 0.98 }}
                     className="bg-white rounded-xl md:rounded-2xl border border-indigo-100 shadow-sm hover:shadow-lg transition-all relative overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300"
                     onClick={(e) => {
-                      // Only open modal if clicking on the card itself, not on buttons inside
+                      // Click on card goes to Case Manager (not detail modal)
                       const target = e.target as HTMLElement;
                       if (target.closest('button') || target.closest('a') || target.closest('select')) {
                         return;
                       }
-                      setDetailLead(lead);
+                      navigate(`/app/crm/case/${lead.id}`);
                     }}
+                    data-testid="lead-card"
                   >
                     {/* Shimmer effect */}
                     <motion.div
@@ -849,17 +852,6 @@ export default function ModernCRM() {
                             <span>WhatsApp</span>
                           </motion.button>
                         )}
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDetailLead(lead);
-                          }}
-                          className="px-3 py-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors touch-manipulation"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </motion.button>
                       </div>
                     </div>
                   </motion.div>
@@ -1038,20 +1030,31 @@ export default function ModernCRM() {
                               <motion.button
                                 whileTap={{ scale: 0.9 }}
                                 whileHover={{ scale: 1.2 }}
-                                onClick={() => setDetailLead(lead)}
-                                className="text-indigo-600 hover:text-indigo-800 p-1.5 md:p-1 rounded-full active:bg-indigo-100 md:hover:bg-indigo-100 transition-colors touch-manipulation"
-                                title="View Details"
+                                onClick={() => navigate(`/app/crm/case/${lead.id}`)}
+                                className="text-purple-600 hover:text-purple-800 p-1.5 md:p-1 rounded-full active:bg-purple-100 md:hover:bg-purple-100 transition-colors touch-manipulation"
+                                title="Manage Case"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Briefcase className="h-4 w-4" />
                               </motion.button>
                               <motion.button
                                 whileTap={{ scale: 0.9 }}
                                 whileHover={{ scale: 1.2 }}
-                                onClick={() => setEditingLead(lead)}
-                                className="text-blue-600 hover:text-blue-800 p-1.5 md:p-1 rounded-full active:bg-blue-100 md:hover:bg-blue-100 transition-colors touch-manipulation"
-                                title="Edit"
+                                onClick={() => handleCall(lead.client_phone || '')}
+                                disabled={!lead.client_phone}
+                                className="text-indigo-600 hover:text-indigo-800 p-1.5 md:p-1 rounded-full active:bg-indigo-100 md:hover:bg-indigo-100 transition-colors touch-manipulation disabled:opacity-50"
+                                title="Call"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Phone className="h-4 w-4" />
+                              </motion.button>
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.2 }}
+                                onClick={() => handleWhatsApp(lead.client_phone || '')}
+                                disabled={!lead.client_phone}
+                                className="text-green-600 hover:text-green-800 p-1.5 md:p-1 rounded-full active:bg-green-100 md:hover:bg-green-100 transition-colors touch-manipulation disabled:opacity-50"
+                                title="WhatsApp"
+                              >
+                                <MessageCircle className="h-4 w-4" />
                               </motion.button>
                             </div>
                           </td>
