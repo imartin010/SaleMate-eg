@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DashboardBanner } from '../../lib/data/banners';
 import { trackBannerImpression, trackBannerClick } from '../../lib/data/banners';
 import { useAuthStore } from '../../store/auth';
@@ -17,58 +17,114 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
 
   useEffect(() => {
     loadBanners();
-  }, [placement]);
+  }, [placement, profile?.role, profile?.id]);
 
   const loadBanners = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading banners for placement:', placement);
+      console.log('👤 Current user role:', profile?.role);
       
-      // Try to load from edge function first, fallback to direct query
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/banners-resolve`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({ placement }),
+      // Import supabase client directly
+      const { supabase } = await import('../../lib/supabaseClient');
+      const now = new Date().toISOString();
+      console.log('📅 Current date/time:', now);
+      
+      // Build query with proper date filtering
+      let query = supabase
+        .from('dashboard_banners')
+        .select('*')
+        .eq('placement', placement)
+        .eq('status', 'live');
+      
+      // Don't filter by dates in the query - we'll do it client-side
+      // This is more reliable for date comparisons
+      query = query.order('priority', { ascending: true })
+                   .order('created_at', { ascending: false });
+      
+      const limit = placement === 'home_banner' || placement === 'dashboard_top' ? 10 : 5;
+      query = query.limit(limit);
+      
+      console.log('🔎 Executing query for placement:', placement);
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('❌ Banner query error:', error);
+        setBanners([]);
+        return;
+      }
+      
+      console.log('📊 Raw banners from database:', data?.length || 0, data);
+      
+      if (!data || data.length === 0) {
+        console.log('⚠️ No banners found in database for placement:', placement);
+        setBanners([]);
+        return;
+      }
+      
+      // Client-side filtering for dates and audience
+      const filtered = data.filter(banner => {
+        console.log('🔍 Checking banner:', banner.title, {
+          start_at: banner.start_at,
+          end_at: banner.end_at,
+          audience: banner.audience,
+          status: banner.status
+        });
+        
+        // Check date range
+        const nowDate = new Date();
+        
+        if (banner.start_at) {
+          const startDate = new Date(banner.start_at);
+          if (startDate > nowDate) {
+            console.log('❌ Banner not started yet:', banner.title);
+            return false;
           }
-        );
-
-        const result = await response.json();
-        
-        if (result.banners) {
-          const limitedBanners = result.banners.slice(0, 3); // Limit to 3 banners for carousel
-          setBanners(limitedBanners);
-          
-          // Track impressions
-          limitedBanners.forEach((banner: DashboardBanner) => {
-            if (profile?.id) {
-              trackBannerImpression(banner.id, profile.id);
-            }
-          });
         }
-      } catch (edgeError) {
-        console.warn('Edge function failed, trying direct query:', edgeError);
-        // Fallback: query directly from Supabase
-        const { supabase } = await import('../../lib/supabase');
-        const limit = placement === 'home_banner' ? 3 : 1; // Fetch up to 3 for home_banner carousel
-        const { data, error } = await supabase
-          .from('dashboard_banners')
-          .select('*')
-          .eq('placement', placement)
-          .eq('status', 'live')
-          .order('priority', { ascending: true })
-          .limit(limit);
         
-        if (!error && data) {
-          setBanners(data);
+        if (banner.end_at) {
+          const endDate = new Date(banner.end_at);
+          if (endDate < nowDate) {
+            console.log('❌ Banner already ended:', banner.title);
+            return false;
+          }
         }
+        
+        // Check audience (role) if specified
+        if (banner.audience && Array.isArray(banner.audience) && banner.audience.length > 0) {
+          if (!profile?.role) {
+            console.log('❌ No user role, banner requires audience:', banner.title);
+            return false;
+          }
+          if (!banner.audience.includes(profile.role)) {
+            console.log('❌ User role not in audience:', banner.title, 'user role:', profile.role, 'audience:', banner.audience);
+            return false;
+          }
+        }
+        
+        console.log('✅ Banner passes all filters:', banner.title);
+        return true;
+      });
+      
+      console.log('✅ Filtered banners:', filtered.length, filtered);
+      
+      if (filtered.length > 0) {
+        const limitedBanners = filtered.slice(0, 3); // Limit to 3 banners for carousel
+        setBanners(limitedBanners);
+        
+        // Track impressions
+        limitedBanners.forEach((banner: DashboardBanner) => {
+          if (profile?.id) {
+            trackBannerImpression(banner.id, profile.id);
+          }
+        });
+      } else {
+        console.log('⚠️ No banners passed the filters');
+        setBanners([]);
       }
     } catch (error) {
-      console.error('Load banners error:', error);
+      console.error('❌ Load banners error:', error);
+      setBanners([]);
     } finally {
       setLoading(false);
     }
@@ -80,7 +136,8 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
     }
 
     if (banner.cta_url) {
-      window.open(banner.cta_url, '_blank');
+      // Navigate to the CTA URL in a new tab
+      window.open(banner.cta_url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -96,14 +153,14 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
   // Filter out dismissed banners
   const visibleBanners = banners.filter(b => !dismissedBanners.has(b.id));
 
-  // Filter banners for home_banner placement (up to 3)
-  const displayBanners = placement === 'home_banner' 
+  // Filter banners for home_banner and dashboard_top placement (up to 3)
+  const displayBanners = (placement === 'home_banner' || placement === 'dashboard_top')
     ? visibleBanners.slice(0, 3) 
     : visibleBanners;
 
-  // Auto-advance slides for home_banner carousel
+  // Auto-advance slides for home_banner and dashboard_top carousel
   useEffect(() => {
-    if (placement !== 'home_banner' || displayBanners.length <= 1) return;
+    if ((placement !== 'home_banner' && placement !== 'dashboard_top') || displayBanners.length <= 1) return;
     
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % displayBanners.length);
@@ -113,8 +170,8 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
   }, [placement, displayBanners.length]);
 
   // Render based on placement
-  // home_banner always renders (even if no banners), so check it first
-  if (placement === 'home_banner') {
+  // dashboard_top and home_banner always render (even if no banners), so check them first
+  if (placement === 'home_banner' || placement === 'dashboard_top') {
     
     // Always render the banner block, even if no banner is configured
     return (
@@ -135,16 +192,53 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
               >
                 {displayBanners.map((banner, index) => (
                   <div key={banner.id} className="min-w-full relative">
-                    {/* Banner Image */}
+                    {/* Banner Image - Clickable */}
                     {banner.image_url ? (
-                      <div className="relative w-full h-48 md:h-64 overflow-hidden">
-                        <img
-                          src={banner.image_url}
-                          alt={banner.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {/* Gradient overlay for text readability */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                      <div className="relative w-full h-48 md:h-64 overflow-hidden group">
+                        <button
+                          onClick={() => handleClick(banner)}
+                          className="w-full h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          aria-label={banner.cta_url ? `Open ${banner.title || 'banner'}` : banner.title || 'Banner'}
+                        >
+                          <img
+                            src={banner.image_url}
+                            alt={banner.title || 'Banner'}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={async (e) => {
+                              console.error('❌ Image failed to load:', banner.image_url);
+                              const target = e.target as HTMLImageElement;
+                              
+                              // Try to get public URL if it's a storage path
+                              if (banner.image_url && !banner.image_url.startsWith('http')) {
+                                try {
+                                  const { supabase } = await import('../../lib/supabaseClient');
+                                  const { data } = supabase.storage
+                                    .from('public')
+                                    .getPublicUrl(banner.image_url);
+                                  console.log('🔄 Trying public URL:', data.publicUrl);
+                                  target.src = data.publicUrl;
+                                } catch (error) {
+                                  console.error('❌ Failed to get public URL:', error);
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = '<div class="w-full h-full bg-gradient-to-r from-red-500 via-red-600 to-red-700 flex items-center justify-center"><p class="text-white/80 text-sm">Image failed to load</p></div>';
+                                  }
+                                }
+                              } else {
+                                // Show error placeholder
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = '<div class="w-full h-full bg-gradient-to-r from-red-500 via-red-600 to-red-700 flex items-center justify-center"><p class="text-white/80 text-sm">Image failed to load</p></div>';
+                                }
+                              }
+                            }}
+                            onLoad={() => {
+                              console.log('✅ Image loaded successfully:', banner.image_url);
+                            }}
+                          />
+                        </button>
                       </div>
                     ) : (
                       <div className="w-full h-48 md:h-64 lg:h-80 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center">
@@ -193,41 +287,6 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
                 </div>
               )}
             </div>
-
-            {/* Banner Content (for current slide) */}
-            {displayBanners[currentSlide] && (
-              <div className="relative p-4 md:p-6 lg:p-8">
-                <button
-                  onClick={() => handleDismiss(displayBanners[currentSlide].id)}
-                  className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-colors z-10"
-                  aria-label="Dismiss banner"
-                >
-                  <X className="h-4 w-4 text-gray-700" />
-                </button>
-
-                <div className="pr-12">
-                  {displayBanners[currentSlide].title && (
-                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-                      {displayBanners[currentSlide].title}
-                    </h3>
-                  )}
-                  {displayBanners[currentSlide].subtitle && (
-                    <p className="text-sm md:text-base text-gray-600 mb-4">
-                      {displayBanners[currentSlide].subtitle}
-                    </p>
-                  )}
-                  {displayBanners[currentSlide].cta_label && (
-                    <button
-                      onClick={() => handleClick(displayBanners[currentSlide])}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 text-sm"
-                    >
-                      {displayBanners[currentSlide].cta_label}
-                      {displayBanners[currentSlide].cta_url && <ExternalLink className="h-4 w-4" />}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
           </>
         ) : (
           // Placeholder when no banner is configured
@@ -248,87 +307,94 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
   if (visibleBanners.length === 0) return null;
 
   if (placement === 'dashboard_top') {
-    // Hero banner (show first one only)
+    // Hero banner (show first one only) - Image only, clickable
     const banner = visibleBanners[0];
     
     return (
-      <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg overflow-hidden shadow-xl">
-        {banner.image_url && (
-          <img
-            src={banner.image_url}
-            alt={banner.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-20"
-          />
-        )}
-        
-        <div className="relative p-8">
-          <button
-            onClick={() => handleDismiss(banner.id)}
-            className="absolute top-4 right-4 p-1 text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div className="max-w-2xl">
-            <h2 className="text-3xl font-bold text-white mb-2">{banner.title}</h2>
-            {banner.subtitle && (
-              <p className="text-lg text-white/90 mb-6">{banner.subtitle}</p>
-            )}
-            {banner.cta_label && (
-              <button
-                onClick={() => handleClick(banner)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-              >
-                {banner.cta_label}
-                {banner.cta_url && <ExternalLink className="h-4 w-4" />}
-              </button>
-            )}
+      <div className="relative rounded-lg overflow-hidden shadow-xl group">
+        {banner.image_url ? (
+          <>
+            <button
+              onClick={() => handleClick(banner)}
+              className="w-full h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label={banner.cta_url ? `Open ${banner.title || 'banner'}` : banner.title || 'Banner'}
+            >
+              <img
+                src={banner.image_url}
+                alt={banner.title || 'Banner'}
+                className="w-full h-64 md:h-80 object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={async (e) => {
+                  console.error('❌ Image failed to load:', banner.image_url);
+                  const target = e.target as HTMLImageElement;
+                  
+                  if (banner.image_url && !banner.image_url.startsWith('http')) {
+                    try {
+                      const { supabase } = await import('../../lib/supabaseClient');
+                      const { data } = supabase.storage
+                        .from('public')
+                        .getPublicUrl(banner.image_url);
+                      target.src = data.publicUrl;
+                    } catch (error) {
+                      console.error('❌ Failed to get public URL:', error);
+                    }
+                  }
+                }}
+              />
+            </button>
+          </>
+        ) : (
+          <div className="w-full h-64 md:h-80 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center">
+            <p className="text-white/80 text-sm">No image uploaded</p>
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
   if (placement === 'dashboard_grid') {
-    // Grid cards (show up to 3)
+    // Grid cards (show up to 3) - Image only, clickable
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleBanners.slice(0, 3).map((banner) => (
           <div
             key={banner.id}
-            className="relative bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
-            onClick={() => handleClick(banner)}
+            className="relative bg-white rounded-lg shadow-lg overflow-hidden group"
           >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDismiss(banner.id);
-              }}
-              className="absolute top-2 right-2 p-1 bg-black/50 text-white hover:bg-black/70 rounded-full transition-colors z-10"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            {banner.image_url && (
-              <img
-                src={banner.image_url}
-                alt={banner.title}
-                className="w-full h-48 object-cover"
-              />
+            {banner.image_url ? (
+              <>
+                <button
+                  onClick={() => handleClick(banner)}
+                  className="w-full h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-label={banner.cta_url ? `Open ${banner.title || 'banner'}` : banner.title || 'Banner'}
+                >
+                  <img
+                    src={banner.image_url}
+                    alt={banner.title || 'Banner'}
+                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={async (e) => {
+                      console.error('❌ Image failed to load:', banner.image_url);
+                      const target = e.target as HTMLImageElement;
+                      
+                      if (banner.image_url && !banner.image_url.startsWith('http')) {
+                        try {
+                          const { supabase } = await import('../../lib/supabaseClient');
+                          const { data } = supabase.storage
+                            .from('public')
+                            .getPublicUrl(banner.image_url);
+                          target.src = data.publicUrl;
+                        } catch (error) {
+                          console.error('❌ Failed to get public URL:', error);
+                        }
+                      }
+                    }}
+                  />
+                </button>
+              </>
+            ) : (
+              <div className="w-full h-48 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center">
+                <p className="text-white/80 text-sm">No image uploaded</p>
+              </div>
             )}
-
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{banner.title}</h3>
-              {banner.subtitle && (
-                <p className="text-gray-600 mb-4">{banner.subtitle}</p>
-              )}
-              {banner.cta_label && (
-                <div className="flex items-center gap-2 text-blue-600 font-semibold">
-                  {banner.cta_label}
-                  {banner.cta_url && <ExternalLink className="h-4 w-4" />}
-                </div>
-              )}
-            </div>
           </div>
         ))}
       </div>

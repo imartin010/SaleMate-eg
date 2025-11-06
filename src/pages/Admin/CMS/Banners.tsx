@@ -56,13 +56,26 @@ export default function Banners() {
   };
 
   const handleSave = async (bannerData: Partial<DashboardBanner>) => {
-    if (editingBanner) {
-      await updateBanner(editingBanner.id, bannerData, profile?.id);
-    } else {
-      await createBanner(bannerData as Omit<DashboardBanner, 'id' | 'created_at' | 'updated_at'>, profile?.id);
+    try {
+      if (editingBanner) {
+        const result = await updateBanner(editingBanner.id, bannerData, profile?.id);
+        if (!result) {
+          alert('Failed to update banner. Please try again.');
+          return;
+        }
+      } else {
+        const result = await createBanner(bannerData as Omit<DashboardBanner, 'id' | 'created_at' | 'updated_at'>, profile?.id);
+        if (!result) {
+          alert('Failed to create banner. Please check the form and try again.');
+          return;
+        }
+      }
+      setShowEditor(false);
+      loadBanners();
+    } catch (error) {
+      console.error('Error saving banner:', error);
+      alert('An error occurred while saving the banner. Please try again.');
     }
-    setShowEditor(false);
-    loadBanners();
   };
 
   if (loading) {
@@ -257,17 +270,59 @@ const BannerEditor: React.FC<BannerEditorProps> = ({ banner, onSave, onClose }) 
     if (!file) return;
 
     setUploading(true);
-    const result = await uploadCMSImage(file, formData.title, profile?.id);
-    setUploading(false);
-
-    if (result.success && result.url) {
-      setFormData({ ...formData, image_url: result.url });
+    console.log('📤 Uploading image:', file.name);
+    
+    try {
+      const result = await uploadCMSImage(file, formData.title, profile?.id);
+      console.log('📤 Upload result:', result);
+      
+      if (result.success && result.url) {
+        console.log('✅ Image uploaded successfully, URL:', result.url);
+        setFormData({ ...formData, image_url: result.url });
+      } else {
+        console.error('❌ Upload failed:', result.error);
+        alert(`Image upload failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('❌ Upload exception:', error);
+      alert(`Image upload error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Validate required fields
+    if (!formData.title || !formData.title.trim()) {
+      alert('Please enter a title for the banner.');
+      return;
+    }
+    
+    if (!formData.placement) {
+      alert('Please select a placement for the banner.');
+      return;
+    }
+    
+    // Ensure priority is a valid number
+    const priority = formData.priority && !isNaN(formData.priority) ? formData.priority : 100;
+    
+    // Prepare the data
+    const bannerToSave = {
+      ...formData,
+      priority,
+      title: formData.title.trim(),
+      subtitle: formData.subtitle?.trim() || '',
+      cta_label: formData.cta_label?.trim() || '',
+      cta_url: formData.cta_url?.trim() || '',
+      image_url: formData.image_url || '', // Explicitly include image_url
+    };
+    
+    console.log('💾 Saving banner with data:', bannerToSave);
+    console.log('🖼️ Image URL being saved:', bannerToSave.image_url);
+    
+    await onSave(bannerToSave);
   };
 
   const toggleAudience = (role: string) => {
@@ -280,8 +335,8 @@ const BannerEditor: React.FC<BannerEditorProps> = ({ banner, onSave, onClose }) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
           <h2 className="text-2xl font-bold text-gray-900">
             {banner ? 'Edit Banner' : 'Create Banner'}
@@ -431,7 +486,13 @@ const BannerEditor: React.FC<BannerEditorProps> = ({ banner, onSave, onClose }) 
               <input
                 type="datetime-local"
                 value={formData.start_at ? new Date(formData.start_at).toISOString().slice(0, 16) : ''}
-                onChange={(e) => setFormData({ ...formData, start_at: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    start_at: value ? new Date(value).toISOString() : undefined 
+                  });
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -442,7 +503,13 @@ const BannerEditor: React.FC<BannerEditorProps> = ({ banner, onSave, onClose }) 
               <input
                 type="datetime-local"
                 value={formData.end_at ? new Date(formData.end_at).toISOString().slice(0, 16) : ''}
-                onChange={(e) => setFormData({ ...formData, end_at: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    end_at: value ? new Date(value).toISOString() : undefined 
+                  });
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -455,11 +522,15 @@ const BannerEditor: React.FC<BannerEditorProps> = ({ banner, onSave, onClose }) 
             </label>
             <input
               type="number"
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+              value={formData.priority || ''}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 100 : parseInt(e.target.value, 10);
+                setFormData({ ...formData, priority: isNaN(value) ? 100 : value });
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
               min="1"
               max="999"
+              placeholder="100"
             />
           </div>
 
