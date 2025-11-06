@@ -23,7 +23,7 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
     try {
       setLoading(true);
       console.log('🔍 Loading banners for placement:', placement);
-      console.log('👤 Current user role:', profile?.role);
+      console.log('👤 Current user:', profile ? `Logged in as ${profile.role}` : 'Not logged in');
       
       // Import supabase client directly
       const { supabase } = await import('../../lib/supabaseClient');
@@ -91,15 +91,21 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
         }
         
         // Check audience (role) if specified
+        // If audience is empty or not specified, show to everyone (including non-logged-in users)
         if (banner.audience && Array.isArray(banner.audience) && banner.audience.length > 0) {
+          // If user is not logged in and banner has audience restrictions, skip it
           if (!profile?.role) {
-            console.log('❌ No user role, banner requires audience:', banner.title);
+            console.log('ℹ️ Non-logged-in user, banner has audience restrictions:', banner.title);
             return false;
           }
+          // If user is logged in but their role is not in the audience, skip it
           if (!banner.audience.includes(profile.role)) {
             console.log('❌ User role not in audience:', banner.title, 'user role:', profile.role, 'audience:', banner.audience);
             return false;
           }
+        } else {
+          // No audience restrictions = show to everyone (logged in or not)
+          console.log('✅ Banner has no audience restrictions, showing to all:', banner.title);
         }
         
         console.log('✅ Banner passes all filters:', banner.title);
