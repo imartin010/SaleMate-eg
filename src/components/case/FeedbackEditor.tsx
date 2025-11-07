@@ -62,10 +62,14 @@ export function FeedbackEditor({ leadId, currentStage, onSubmit }: FeedbackEdito
         });
 
         // Update feedback with AI coach response
-        await supabase
+        const { error: updateError } = await supabase
           .from('case_feedback')
           .update({ ai_coach: JSON.stringify(aiResponse) })
           .eq('id', feedbackData.id);
+
+        if (updateError) {
+          console.error('Failed to store AI coaching:', updateError);
+        }
       } catch (aiError) {
         console.error('AI coaching failed:', aiError);
         // Continue even if AI fails

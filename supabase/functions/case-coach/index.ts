@@ -74,11 +74,11 @@ Provide a detailed coaching response with:
    - Suggested action type (CALL_NOW, PUSH_MEETING, CHANGE_FACE, etc.)
    - Recommended timing in minutes (if time-sensitive)
 
-2. **Follow-up Script**: Ready-to-use script for phone call or WhatsApp message (keep it professional but conversational for Egyptian market)
+2. **Follow-up Script**: Ready-to-use script for phone call or WhatsApp message written in Egyptian Arabic (dialectal Arabic using Arabic script). Keep it professional but conversational for the local market.
 
 3. **Risk Flags**: Any concerns (e.g., "Low engagement", "Budget mismatch", "Wrong timing", "Needs immediate attention")
 
-**Important**: Consider the Egyptian real estate market context, typical buyer behavior, and cultural communication styles.
+**Important**: Consider the Egyptian real estate market context, typical buyer behavior, and cultural communication styles. The follow-up script must be in Egyptian Arabic (Arabic script), not English or Modern Standard Arabic.
 
 Respond in valid JSON format with this exact structure:
 {
