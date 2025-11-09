@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { HomeHeader } from '../../components/home/HomeHeader';
+import { ComplianceHeader } from '../../components/common/ComplianceHeader';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
@@ -17,6 +18,9 @@ export const AppLayout: React.FC = () => {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Public compliance header */}
+        <ComplianceHeader />
+
         {/* HomeHeader - Used for all pages */}
         <HomeHeader />
         

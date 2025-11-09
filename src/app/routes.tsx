@@ -26,6 +26,10 @@ import HomeArabic from '../pages/marketing/HomeArabic';
 import { TermsAndConditions } from '../pages/Legal/TermsAndConditions';
 import { RefundPolicy } from '../pages/Legal/RefundPolicy';
 import { PrivacyPolicy } from '../pages/Legal/PrivacyPolicy';
+import { ContactUs } from '../pages/Public/ContactUs';
+import { PrivacyPolicyPublic } from '../pages/Public/PrivacyPolicyPublic';
+import { DeliveryPolicy } from '../pages/Public/DeliveryPolicy';
+import { RefundPolicyPublic } from '../pages/Public/RefundPolicyPublic';
 
 // SUPPORT PAGES
 import { ContactSupport } from '../pages/Support/ContactSupport';
@@ -112,6 +116,53 @@ export const router = createBrowserRouter([
     ),
   },
   
+  // Public compliance pages with temporary header
+  {
+    path: '/public/contact',
+    element: (
+      <>
+        <ScrollToTop />
+        <ContactUs />
+      </>
+    ),
+  },
+  {
+    path: '/public/privacy-policy',
+    element: (
+      <>
+        <ScrollToTop />
+        <PrivacyPolicyPublic />
+      </>
+    ),
+  },
+  {
+    path: '/public/delivery-policy',
+    element: (
+      <>
+        <ScrollToTop />
+        <Navigate to="/public/delivery-and-shipping-policy" replace />
+      </>
+    ),
+  },
+  {
+    path: '/public/delivery-and-shipping-policy',
+    element: (
+      <>
+        <ScrollToTop />
+        <DeliveryPolicy />
+      </>
+    ),
+  },
+  {
+    path: '/public/refund-policy',
+    element: (
+      <>
+        <ScrollToTop />
+        <RefundPolicyPublic />
+      </>
+    ),
+  },
+
   // Arabic marketing home page
   {
     path: '/ar',
