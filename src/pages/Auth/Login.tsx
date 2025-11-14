@@ -33,6 +33,10 @@ export default function Login() {
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [otpError, setOtpError] = useState<string>();
+  const [challengeId, setChallengeId] = useState<string>();
+  const [devOtp, setDevOtp] = useState<string>();
+  const [otpHelperMessage, setOtpHelperMessage] = useState<string>();
+  const [otpExpiresIn, setOtpExpiresIn] = useState<number>();
 
   const {
     register,
@@ -96,6 +100,22 @@ export default function Login() {
       return;
     }
 
+    if (!result.challengeId) {
+      setOtpError('Failed to start verification. Please try again.');
+      return;
+    }
+
+    setChallengeId(result.challengeId);
+    setDevOtp(result.devOtp);
+    setOtpHelperMessage(
+      result.message || (result.fallback ? 'SMS delivery is temporarily unavailable. Use the code shown below.' : undefined)
+    );
+    if (result.expiresIn) {
+      setOtpExpiresIn(result.expiresIn);
+    } else {
+      setOtpExpiresIn(undefined);
+    }
+
     // Move to OTP step
     setStep('otp');
   };
@@ -107,9 +127,16 @@ export default function Login() {
     setOtpError(undefined);
     setVerifyingOTP(true);
 
+    if (!challengeId) {
+      setVerifyingOTP(false);
+      setOtpError('Verification session expired. Please request a new code.');
+      return;
+    }
+
     const success = await signInWith2FA(
       formData.email,
       formData.password,
+      challengeId,
       otp,
       formData.rememberMe
     );
@@ -117,6 +144,10 @@ export default function Login() {
     setVerifyingOTP(false);
 
     if (success) {
+      setChallengeId(undefined);
+      setDevOtp(undefined);
+      setOtpHelperMessage(undefined);
+      setOtpExpiresIn(undefined);
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
       setTimeout(() => {
         navigate(from, { replace: true });
@@ -134,6 +165,18 @@ export default function Login() {
     
     if (!result.success) {
       setOtpError(result.error);
+      return;
+    }
+
+    if (result.challengeId) {
+      setChallengeId(result.challengeId);
+    }
+    setDevOtp(result.devOtp);
+    setOtpHelperMessage(
+      result.message || (result.fallback ? 'SMS delivery is temporarily unavailable. Use the code shown below.' : undefined)
+    );
+    if (result.expiresIn) {
+      setOtpExpiresIn(result.expiresIn);
     }
   };
 
@@ -141,6 +184,10 @@ export default function Login() {
     setStep('credentials');
     setOtpError(undefined);
     clearError();
+    setChallengeId(undefined);
+    setDevOtp(undefined);
+    setOtpHelperMessage(undefined);
+    setOtpExpiresIn(undefined);
   };
 
   const handleResendConfirmation = async () => {
@@ -175,13 +222,32 @@ export default function Login() {
             </p>
           </div>
 
+          {(otpHelperMessage || devOtp) && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
+              {otpHelperMessage && (
+                <p className="text-sm mb-2">{otpHelperMessage}</p>
+              )}
+              {devOtp && (
+                <p className="text-sm">
+                  Use this verification code:{' '}
+                  <span className="font-semibold font-mono text-base tracking-widest">{devOtp}</span>
+                </p>
+              )}
+              {otpExpiresIn && (
+                <p className="text-xs mt-2 text-amber-700">
+                  Code expires in approximately {Math.max(1, Math.round(otpExpiresIn / 60))} minutes.
+                </p>
+              )}
+            </div>
+          )}
+
           <OTPInput
             length={6}
             onComplete={handleOTPComplete}
             onResend={handleResendOTP}
             isVerifying={verifyingOTP}
             error={otpError}
-            expiresInSeconds={300}
+            expiresInSeconds={otpExpiresIn ?? 300}
           />
 
           <button

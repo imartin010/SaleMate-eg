@@ -24,6 +24,10 @@ export const OTPInput: React.FC<OTPInputProps> = ({
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  useEffect(() => {
+    setTimeLeft(expiresInSeconds);
+  }, [expiresInSeconds]);
+
   // Main expiration timer
   useEffect(() => {
     if (timeLeft <= 0) {

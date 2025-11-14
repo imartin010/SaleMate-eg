@@ -56,8 +56,8 @@ export function useNotifications(): UseNotificationsReturn {
         {
           event: '*',
           schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          table: 'notification_events',
+          filter: `target_profile_id=eq.${user.id}`,
         },
         () => {
           fetchNotifications();

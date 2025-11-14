@@ -6,6 +6,7 @@ import { PageTitle } from '../components/common/PageTitle';
 import { useAuthStore } from '../store/auth';
 import { supabase } from "../lib/supabaseClient"
 import { formatDate } from '../lib/format';
+import { BackendAuditPanel } from '../components/admin/BackendAuditPanel';
 import { 
   User, 
   Mail, 
@@ -722,6 +723,11 @@ const Settings: React.FC = () => {
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* Backend Connection Audit */}
+      <div className="mt-8">
+        <BackendAuditPanel />
       </div>
       </div>
     </div>

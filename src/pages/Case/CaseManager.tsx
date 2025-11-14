@@ -43,7 +43,7 @@ export default function CaseManager() {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Case</h3>
           <p className="text-gray-600 mb-4">{error || 'Case not found'}</p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={() => navigate('/crm')} variant="outline">
+            <Button onClick={() => navigate('/app/crm')} variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to CRM
             </Button>

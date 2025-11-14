@@ -508,7 +508,7 @@ User creates ticket → Support reviews → Assigned to agent
 - Lead purchase requests
 - Columns: id, user_id, project_id, quantity, total_amount, status, created_at
 
-**otp_verifications** ✅ (NEW)
+**otp_challenges / otp_attempts** ✅ (NEW)
 - Phone OTP verification codes
 - Columns: id, phone, code_hash, attempts, verified, purpose, expires_at, created_at
 

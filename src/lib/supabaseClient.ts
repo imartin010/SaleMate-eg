@@ -19,6 +19,59 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+const supportThreadSelect = `
+  *,
+  creator:profiles!support_threads_created_by_profile_id_fkey (
+    id,
+    name,
+    email,
+    role
+  ),
+  assignee:profiles!support_threads_assigned_to_profile_id_fkey (
+    id,
+    name,
+    email,
+    role
+  )
+`;
+
+const mapSupportThreadToLegacyCase = (thread: any) => ({
+  id: thread.id,
+  subject: thread.subject,
+  topic: thread.topic,
+  issue: thread.issue,
+  status: thread.status,
+  priority: thread.priority,
+  created_by: thread.created_by_profile_id,
+  assigned_to: thread.assigned_to_profile_id,
+  description: thread.context?.description ?? null,
+  created_at: thread.created_at,
+  updated_at: thread.updated_at,
+  creator: thread.creator ?? null,
+  assignee: thread.assignee ?? null,
+});
+
+const supportMessageSelect = `
+  *,
+  user:profiles!support_messages_author_profile_id_fkey (
+    id,
+    name,
+    email,
+    role
+  )
+`;
+
+const mapSupportMessageToLegacyReply = (message: any) => ({
+  id: message.id,
+  case_id: message.thread_id,
+  user_id: message.author_profile_id,
+  message: message.body,
+  is_internal_note: message.message_type === 'internal',
+  created_at: message.created_at,
+  updated_at: message.updated_at,
+  user: message.user ?? null,
+});
+
 // Add a function to bypass RLS for profile fetching
 export const fetchProfileBypassRLS = async (userId: string) => {
   try {
@@ -67,19 +120,46 @@ export const fetchProfileBypassRLS = async (userId: string) => {
 };
 
 // OTP Functions
-export async function sendOTP(phone: string): Promise<{ success: boolean; error?: string }> {
+export async function sendOTP(phone: string, context: string = 'signup'): Promise<{
+  success: boolean;
+  error?: string;
+  challengeId?: string;
+  devOtp?: string;
+  fallback?: boolean;
+  message?: string;
+  expiresIn?: number;
+  resendCooldown?: number;
+  provider?: string;
+}> {
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/auth-otp/auth/request-otp`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/otp-request`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseAnonKey}`,
       },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phone, context }),
     });
 
     const result = await response.json();
-    return result;
+
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error || 'Failed to send OTP',
+      };
+    }
+
+    return {
+      success: true,
+      challengeId: result.challenge_id,
+      devOtp: result.dev_otp,
+      fallback: result.fallback,
+      message: result.message,
+      expiresIn: result.expires_in,
+      resendCooldown: result.resend_cooldown,
+      provider: result.provider,
+    };
   } catch (error) {
     console.error('Send OTP error:', error);
     return { success: false, error: 'Network error' };
@@ -87,23 +167,33 @@ export async function sendOTP(phone: string): Promise<{ success: boolean; error?
 }
 
 export async function verifyOTP(
-  phone: string, 
-  code: string, 
-  email?: string, 
-  name?: string
-): Promise<{ success: boolean; error?: string; session?: Record<string, unknown> }> {
+  challengeId: string,
+  code: string,
+): Promise<{ success: boolean; error?: string; context?: string; verifiedAt?: string }> {
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/auth-otp/auth/verify-otp`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/otp-verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseAnonKey}`,
       },
-      body: JSON.stringify({ phone, code, email, name }),
+      body: JSON.stringify({ challengeId, code }),
     });
 
     const result = await response.json();
-    return result;
+
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error || 'Invalid verification code',
+      };
+    }
+
+    return {
+      success: true,
+      context: result.context,
+      verifiedAt: result.verified_at,
+    };
   } catch (error) {
     console.error('Verify OTP error:', error);
     return { success: false, error: 'Network error' };
@@ -310,13 +400,13 @@ export async function getUserOrders(userId: string) {
 export async function getUserSupportCases(userId: string) {
   try {
     const { data, error } = await supabase
-      .from('support_cases')
-      .select('*')
-      .or(`created_by.eq.${userId},assigned_to.eq.${userId}`)
+      .from('support_threads')
+      .select(supportThreadSelect)
+      .or(`created_by_profile_id.eq.${userId},assigned_to_profile_id.eq.${userId}`)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data
+    return (data ?? []).map(mapSupportThreadToLegacyCase)
   } catch (error) {
     console.error('Error getting support cases:', error)
     throw error
@@ -335,18 +425,31 @@ export async function createSupportCase(
 ) {
   try {
     const { data, error } = await supabase
-      .from('support_cases')
+      .from('support_threads')
       .insert({
-        created_by: createdBy,
+        created_by_profile_id: createdBy,
         subject,
-        description,
         topic,
-        issue
+        issue,
+        context: { description },
+        status: 'open',
+        priority: 'medium'
       })
-      .select()
+      .select(supportThreadSelect)
+      .single()
 
     if (error) throw error
-    return data
+
+    if (description) {
+      await supabase.from('support_messages').insert({
+        thread_id: data.id,
+        author_profile_id: createdBy,
+        message_type: 'user',
+        body: description
+      })
+    }
+
+    return mapSupportThreadToLegacyCase(data)
   } catch (error) {
     console.error('Error creating support case:', error)
     throw error
@@ -359,16 +462,12 @@ export async function createSupportCase(
 export async function getAllSupportCases() {
   try {
     const { data, error } = await supabase
-      .from('support_cases')
-      .select(`
-        *,
-        creator:profiles!support_cases_created_by_fkey(id, name, email, role),
-        assignee:profiles!support_cases_assigned_to_fkey(id, name, email, role)
-      `)
+      .from('support_threads')
+      .select(supportThreadSelect)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data
+    return (data ?? []).map(mapSupportThreadToLegacyCase)
   } catch (error) {
     console.error('Error getting all support cases:', error)
     throw error
@@ -388,14 +487,22 @@ export async function updateSupportCase(
   }
 ) {
   try {
+    const updatePayload: Record<string, unknown> = {};
+
+    if (updates.status !== undefined) updatePayload.status = updates.status;
+    if (updates.topic !== undefined) updatePayload.topic = updates.topic;
+    if (updates.issue !== undefined) updatePayload.issue = updates.issue;
+    if (updates.assigned_to !== undefined) updatePayload.assigned_to_profile_id = updates.assigned_to;
+
     const { data, error } = await supabase
-      .from('support_cases')
-      .update(updates)
+      .from('support_threads')
+      .update(updatePayload)
       .eq('id', caseId)
-      .select()
+      .select(supportThreadSelect)
+      .single()
 
     if (error) throw error
-    return data
+    return mapSupportThreadToLegacyCase(data)
   } catch (error) {
     console.error('Error updating support case:', error)
     throw error
@@ -413,17 +520,18 @@ export async function createSupportCaseReply(
 ) {
   try {
     const { data, error } = await supabase
-      .from('support_case_replies')
+      .from('support_messages')
       .insert({
-        case_id: caseId,
-        user_id: userId,
-        message,
-        is_internal_note: isInternalNote
+        thread_id: caseId,
+        author_profile_id: userId,
+        body: message,
+        message_type: isInternalNote ? 'internal' : 'user'
       })
-      .select()
+      .select(supportMessageSelect)
+      .single()
 
     if (error) throw error
-    return data
+    return mapSupportMessageToLegacyReply(data)
   } catch (error) {
     console.error('Error creating support case reply:', error)
     throw error
@@ -436,21 +544,13 @@ export async function createSupportCaseReply(
 export async function getSupportCaseReplies(caseId: string) {
   try {
     const { data, error } = await supabase
-      .from('support_case_replies')
-      .select(`
-        *,
-        user:profiles!support_case_replies_user_id_fkey (
-          id,
-          name,
-          email,
-          role
-        )
-      `)
-      .eq('case_id', caseId)
+      .from('support_messages')
+      .select(supportMessageSelect)
+      .eq('thread_id', caseId)
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return data
+    return (data ?? []).map(mapSupportMessageToLegacyReply)
   } catch (error) {
     console.error('Error fetching support case replies:', error)
     throw error
@@ -463,10 +563,10 @@ export async function getSupportCaseReplies(caseId: string) {
 export async function getSupportCaseReplyCount(caseId: string) {
   try {
     const { count, error } = await supabase
-      .from('support_case_replies')
+      .from('support_messages')
       .select('*', { count: 'exact', head: true })
-      .eq('case_id', caseId)
-      .eq('is_internal_note', false)
+      .eq('thread_id', caseId)
+      .neq('message_type', 'internal')
 
     if (error) throw error
     return count || 0
@@ -482,17 +582,13 @@ export async function getSupportCaseReplyCount(caseId: string) {
 export async function getUserSupportCasesWithDetails(userId: string) {
   try {
     const { data, error } = await supabase
-      .from('support_cases')
-      .select(`
-        *,
-        creator:profiles!support_cases_created_by_fkey(id, name, email, role),
-        assignee:profiles!support_cases_assigned_to_fkey(id, name, email, role)
-      `)
-      .eq('created_by', userId)
+      .from('support_threads')
+      .select(supportThreadSelect)
+      .eq('created_by_profile_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data
+    return (data ?? []).map(mapSupportThreadToLegacyCase)
   } catch (error) {
     console.error('Error getting user support cases with details:', error)
     throw error

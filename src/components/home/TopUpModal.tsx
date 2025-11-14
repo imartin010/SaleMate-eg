@@ -23,7 +23,6 @@ const paymentMethods: { value: PaymentMethod; label: string; icon: React.Compone
 ];
 
 const quickAmounts = [5000, 10000, 15000, 20000, 25000, 50000];
-const MINIMUM_AMOUNT = 5000;
 
 export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { user } = useAuthStore();
@@ -89,11 +88,6 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
     const amountValue = parseFloat(amount);
     if (!amount || isNaN(amountValue) || amountValue <= 0) {
       setError('Please enter a valid amount');
-      return;
-    }
-
-    if (amountValue < MINIMUM_AMOUNT) {
-      setError(`Minimum top-up amount is ${MINIMUM_AMOUNT.toLocaleString()} EGP`);
       return;
     }
 
@@ -377,15 +371,12 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
                           setAmount(e.target.value);
                           setError(null);
                         }}
-                        placeholder={`Minimum ${MINIMUM_AMOUNT.toLocaleString()} EGP`}
-                        min={MINIMUM_AMOUNT}
+                        placeholder="Enter amount (EGP)"
+                        min="0.01"
                         step="0.01"
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         disabled={isSubmitting}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Minimum amount: {MINIMUM_AMOUNT.toLocaleString()} EGP
-                      </p>
                       
                       {/* Quick Amount Buttons */}
                       <div className="grid grid-cols-3 gap-2 mt-3">

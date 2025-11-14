@@ -36,6 +36,8 @@ enable_signup = true
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
+# Time (in seconds) that email OTP codes remain valid.
+otp_expiry = 900
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

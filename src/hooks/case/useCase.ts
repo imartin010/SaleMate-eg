@@ -43,33 +43,93 @@ export function useCase(leadId: string): UseCaseReturn {
       setLoading(true);
       setError(null);
 
-      // Fetch lead details
-      const { data: leadData, error: leadError } = await supabase
+      // Fetch lead details - try with project join first
+      const query = supabase
         .from('leads')
         .select(`
           *,
-          project:projects(id, name, region),
-          owner:profiles!leads_owner_id_fkey(id, name),
-          assigned_to:profiles!leads_assigned_to_id_fkey(id, name)
+          project:projects(id, name, region)
         `)
         .eq('id', leadId)
         .single();
 
-      if (leadError) throw leadError;
-      setLead(leadData as Lead);
+      const { data: leadData, error: leadError } = await query;
+
+      if (leadError) {
+        // If the query fails, try a simpler query without joins
+        console.warn('Failed to fetch lead with joins, trying simpler query:', leadError);
+        const { data: simpleLeadData, error: simpleLeadError } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', leadId)
+          .single();
+
+        if (simpleLeadError) throw simpleLeadError;
+        
+        // Transform simple data
+        const transformedLead = {
+          ...simpleLeadData,
+          project: null,
+          owner: null,
+          assigned_to: null,
+        } as Lead;
+        
+        setLead(transformedLead);
+      } else {
+        // Transform the data to extract nested project info
+        const transformedLead = {
+          ...leadData,
+          project: leadData.project ? {
+            ...leadData.project,
+            name: typeof leadData.project.name === 'object' && leadData.project.name !== null
+              ? (leadData.project.name.name || JSON.stringify(leadData.project.name))
+              : leadData.project.name,
+            region: typeof leadData.project.region === 'object' && leadData.project.region !== null
+              ? (leadData.project.region.name || JSON.stringify(leadData.project.region))
+              : leadData.project.region,
+          } : null,
+          owner: null,
+          assigned_to: null,
+        } as Lead;
+        
+        setLead(transformedLead);
+      }
 
       // Fetch case feedback, actions, faces, and matches in parallel
-      const [feedbackData, actionsData, facesData, matchesData] = await Promise.all([
+      const [feedbackResult, actionsResult, facesResult, matchesResult] = await Promise.allSettled([
         getCaseFeedback(leadId),
         getCaseActions(leadId),
         getCaseFaces(leadId),
         getInventoryMatches(leadId),
       ]);
 
-      setFeedback(feedbackData || []);
-      setActions(actionsData || []);
-      setFaces(facesData || []);
-      setMatches(matchesData || []);
+      if (feedbackResult.status === 'fulfilled') {
+        setFeedback(feedbackResult.value || []);
+      } else {
+        console.warn('Failed to load case feedback:', feedbackResult.reason);
+        setFeedback([]);
+      }
+
+      if (actionsResult.status === 'fulfilled') {
+        setActions(actionsResult.value || []);
+      } else {
+        console.warn('Failed to load case actions:', actionsResult.reason);
+        setActions([]);
+      }
+
+      if (facesResult.status === 'fulfilled') {
+        setFaces(facesResult.value || []);
+      } else {
+        console.warn('Failed to load case faces:', facesResult.reason);
+        setFaces([]);
+      }
+
+      if (matchesResult.status === 'fulfilled') {
+        setMatches(matchesResult.value || []);
+      } else {
+        console.warn('Failed to load inventory matches:', matchesResult.reason);
+        setMatches([]);
+      }
     } catch (err) {
       console.error('Error fetching case data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch case data');
@@ -112,8 +172,12 @@ export function useCase(leadId: string): UseCaseReturn {
         filter: `lead_id=eq.${leadId}`,
       },
       async () => {
-        const data = await getCaseFeedback(leadId);
-        setFeedback(data || []);
+        try {
+          const data = await getCaseFeedback(leadId);
+          setFeedback(data || []);
+        } catch (err) {
+          console.warn('Realtime update failed for case feedback:', err);
+        }
       }
     );
 
@@ -127,8 +191,12 @@ export function useCase(leadId: string): UseCaseReturn {
         filter: `lead_id=eq.${leadId}`,
       },
       async () => {
-        const data = await getCaseActions(leadId);
-        setActions(data || []);
+        try {
+          const data = await getCaseActions(leadId);
+          setActions(data || []);
+        } catch (err) {
+          console.warn('Realtime update failed for case actions:', err);
+        }
       }
     );
 
@@ -142,8 +210,12 @@ export function useCase(leadId: string): UseCaseReturn {
         filter: `lead_id=eq.${leadId}`,
       },
       async () => {
-        const data = await getCaseFaces(leadId);
-        setFaces(data || []);
+        try {
+          const data = await getCaseFaces(leadId);
+          setFaces(data || []);
+        } catch (err) {
+          console.warn('Realtime update failed for case faces:', err);
+        }
       }
     );
 
@@ -157,8 +229,12 @@ export function useCase(leadId: string): UseCaseReturn {
         filter: `lead_id=eq.${leadId}`,
       },
       async () => {
-        const data = await getInventoryMatches(leadId);
-        setMatches(data || []);
+        try {
+          const data = await getInventoryMatches(leadId);
+          setMatches(data || []);
+        } catch (err) {
+          console.warn('Realtime update failed for inventory matches:', err);
+        }
       }
     );
 

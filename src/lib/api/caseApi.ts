@@ -8,6 +8,7 @@ import type {
   CaseAction,
   CaseFace,
   InventoryMatch,
+  Notification,
 } from '../../types/case';
 
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1';
@@ -171,13 +172,35 @@ export async function notifyUser(params: {
  */
 export async function getCaseFeedback(leadId: string) {
   const { data, error } = await supabase
-    .from('case_feedback')
-    .select('*')
+    .from('lead_events')
+    .select(`
+      id,
+      lead_id,
+      stage,
+      summary,
+      payload,
+      actor_profile_id,
+      created_at
+    `)
     .eq('lead_id', leadId)
+    .eq('event_type', 'feedback')
+    .contains('payload', { source: 'case_feedback' })
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+
+  return (data ?? []).map((event) => {
+    const payload = (event as any)?.payload ?? {};
+    return {
+      id: event.id,
+      lead_id: event.lead_id,
+      stage: event.stage ?? 'N/A',
+      feedback: event.summary ?? payload.feedback_text ?? '',
+      ai_coach: payload.ai_coach ?? undefined,
+      created_by: event.actor_profile_id ?? '',
+      created_at: event.created_at,
+    } satisfies CaseFeedback;
+  });
 }
 
 /**
@@ -185,13 +208,51 @@ export async function getCaseFeedback(leadId: string) {
  */
 export async function getCaseActions(leadId: string) {
   const { data, error } = await supabase
-    .from('case_actions')
-    .select('*')
+    .from('lead_tasks')
+    .select(`
+      id,
+      lead_id,
+      created_by_profile_id,
+      task_type,
+      status,
+      due_at,
+      completed_at,
+      payload,
+      created_at
+    `)
     .eq('lead_id', leadId)
+    .contains('payload', { source: 'case_actions' })
     .order('due_at', { ascending: true, nullsFirst: false });
 
   if (error) throw error;
-  return data;
+  return (data ?? []).map((task) => {
+    const payload = (task as any)?.payload ?? {};
+    const originalActionType = payload.action_type ?? task.task_type ?? 'custom';
+    const rawStatus = (task.status ?? '').toString().toLowerCase();
+
+    const statusMap: Record<string, CaseActionStatus> = {
+      completed: 'DONE',
+      cancelled: 'SKIPPED',
+      skipped: 'SKIPPED',
+      expired: 'EXPIRED',
+      overdue: 'EXPIRED',
+      in_progress: 'PENDING',
+      pending: 'PENDING',
+    };
+
+    return {
+      id: task.id,
+      lead_id: task.lead_id,
+      action_type: String(originalActionType).toUpperCase() as CaseAction['action_type'],
+      payload: (payload.payload ?? payload) as Record<string, unknown>,
+      due_at: task.due_at ?? undefined,
+      status: statusMap[rawStatus] ?? 'PENDING',
+      created_by: task.created_by_profile_id ?? '',
+      created_at: task.created_at,
+      completed_at: task.completed_at ?? undefined,
+      notified_at: payload.notified_at ?? undefined,
+    } satisfies CaseAction;
+  });
 }
 
 /**
@@ -199,17 +260,27 @@ export async function getCaseActions(leadId: string) {
  */
 export async function getCaseFaces(leadId: string) {
   const { data, error } = await supabase
-    .from('case_faces')
+    .from('lead_transfers')
     .select(`
       *,
-      from_agent_profile:profiles!case_faces_from_agent_fkey(name, email),
-      to_agent_profile:profiles!case_faces_to_agent_fkey(name, email)
+      from_agent_profile:profiles!lead_transfers_from_profile_id_fkey(name, email),
+      to_agent_profile:profiles!lead_transfers_to_profile_id_fkey(name, email)
     `)
     .eq('lead_id', leadId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return (data ?? []).map((transfer) => ({
+    id: transfer.id,
+    lead_id: transfer.lead_id,
+    from_agent: transfer.from_profile_id ?? undefined,
+    to_agent: transfer.to_profile_id,
+    reason: transfer.reason ?? undefined,
+    created_by: transfer.created_by_profile_id ?? '',
+    created_at: transfer.created_at,
+    from_agent_profile: transfer.from_agent_profile ?? undefined,
+    to_agent_profile: transfer.to_agent_profile ?? undefined,
+  })) as CaseFace[];
 }
 
 /**
@@ -217,13 +288,22 @@ export async function getCaseFaces(leadId: string) {
  */
 export async function getInventoryMatches(leadId: string) {
   const { data, error } = await supabase
-    .from('inventory_matches')
+    .from('lead_recommendations')
     .select('*')
     .eq('lead_id', leadId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  return (data ?? []).map((match) => ({
+    id: match.id,
+    lead_id: match.lead_id,
+    filters: match.filters ?? {},
+    result_count: match.result_count ?? 0,
+    top_units: match.top_units ?? [],
+    recommendation: match.recommendation ?? undefined,
+    created_by: match.generated_by_profile_id ?? '',
+    created_at: match.created_at,
+  })) as InventoryMatch[];
 }
 
 /**
@@ -231,14 +311,25 @@ export async function getInventoryMatches(leadId: string) {
  */
 export async function getNotifications(userId: string, limit = 50) {
   const { data, error } = await supabase
-    .from('notifications')
+    .from('notification_events')
     .select('*')
-    .eq('user_id', userId)
+    .eq('target_profile_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
-  return data;
+  return (data ?? []).map((notification) => ({
+    id: notification.id,
+    user_id: notification.target_profile_id,
+    title: notification.title,
+    body: notification.body,
+    url: notification.metadata?.url ?? undefined,
+    channels: notification.channels ?? [],
+    status: notification.status,
+    read_at: notification.read_at ?? undefined,
+    sent_at: notification.sent_at ?? undefined,
+    created_at: notification.created_at,
+  })) as Notification[];
 }
 
 /**
@@ -246,7 +337,7 @@ export async function getNotifications(userId: string, limit = 50) {
  */
 export async function markNotificationRead(notificationId: string) {
   const { data, error } = await supabase
-    .from('notifications')
+    .from('notification_events')
     .update({ status: 'read', read_at: new Date().toISOString() })
     .eq('id', notificationId)
     .select()
@@ -261,9 +352,9 @@ export async function markNotificationRead(notificationId: string) {
  */
 export async function markAllNotificationsRead(userId: string) {
   const { error } = await supabase
-    .from('notifications')
+    .from('notification_events')
     .update({ status: 'read', read_at: new Date().toISOString() })
-    .eq('user_id', userId)
+    .eq('target_profile_id', userId)
     .eq('status', 'sent');
 
   if (error) throw error;

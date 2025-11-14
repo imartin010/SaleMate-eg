@@ -66,24 +66,25 @@ class PaymentGatewayService {
         return { success: false, error: 'Amount must be greater than 0' };
       }
 
-      if (request.amount < 5000 && request.transactionType === 'wallet_topup') {
-        return { success: false, error: 'Minimum top-up amount is 5000 EGP' };
-      }
-
       // Create transaction record in database
+      // Note: payment_method, transaction_type, reference_id, and test_mode are computed columns from metadata, so we put them in metadata instead
+      const transactionMetadata = {
+        ...(request.metadata || {}),
+        payment_method: request.paymentMethod,
+        transaction_type: request.transactionType,
+        reference_id: request.referenceId || null,
+        test_mode: this.TEST_MODE,
+      };
+
       const { data: transaction, error: transactionError } = await supabase
         .from('payment_transactions')
         .insert({
           user_id: request.userId,
           amount: request.amount,
           currency: request.currency || 'EGP',
-          payment_method: request.paymentMethod,
           gateway: request.gateway,
           status: 'pending',
-          transaction_type: request.transactionType,
-          reference_id: request.referenceId || null,
-          metadata: request.metadata || null,
-          test_mode: this.TEST_MODE,
+          metadata: transactionMetadata,
         })
         .select()
         .single();

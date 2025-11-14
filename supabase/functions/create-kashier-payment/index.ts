@@ -100,9 +100,12 @@ serve(async (req) => {
     // Production Mode - Create Kashier Order
     // Generate order hash (HMAC-SHA256)
     const orderId = `order_${body.transaction_id}_${Date.now()}`;
-    const amountInCents = Math.round(body.amount * 100); // Convert to piasters (Egyptian cents)
+    // Kashier expects amount in the smallest currency unit (piasters/cents for EGP)
+    // So 100 EGP = 10000 piasters
+    const amountInCents = Math.round(body.amount * 100);
     
     // Kashier order hash format: merchantId:amount:currency:orderId:secretKey
+    // Amount in hash must be in smallest currency unit (piasters)
     const hashString = `${kashierMerchantId}:${amountInCents}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
     
     // Create HMAC-SHA256 hash using Web Crypto API
@@ -126,10 +129,13 @@ serve(async (req) => {
     const orderHash = hashHex;
 
     // Build Kashier payment URL
+    // IMPORTANT: Both hash and URL amount must use the SAME format (piasters/cents)
+    // Kashier verifies the hash by recalculating it using the amount from the URL
+    // If they don't match, you get "Forbidden request" error
     const kashierBaseUrl = 'https://checkout.kashier.io';
     const paymentUrl = new URL(kashierBaseUrl);
     paymentUrl.searchParams.set('merchantId', kashierMerchantId);
-    paymentUrl.searchParams.set('amount', amountInCents.toString());
+    paymentUrl.searchParams.set('amount', amountInCents.toString()); // Use piasters to match hash calculation
     paymentUrl.searchParams.set('currency', body.currency.toUpperCase());
     paymentUrl.searchParams.set('orderId', orderId);
     paymentUrl.searchParams.set('hash', orderHash);

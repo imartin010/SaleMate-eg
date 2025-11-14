@@ -8,7 +8,7 @@ Successfully rebuilt the complete authentication system for SaleMate with phone 
 ### 1. Database Schema & Migrations ✅
 
 #### New Tables
-- **`otp_verifications`** - Stores OTP codes with hashing, expiration, and attempt tracking
+- **`otp_challenges` / `otp_attempts`** - Stores hashed OTP challenges and attempt history (supports rate limiting & auditing)
   - Phone number indexing
   - Auto-cleanup for expired OTPs
   - Purpose-based OTP (signup, 2FA, reset)

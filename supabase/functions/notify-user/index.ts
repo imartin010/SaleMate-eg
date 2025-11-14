@@ -39,15 +39,20 @@ serve(async (req) => {
     }
 
     // Insert notification
+    const metadata = url ? { url } : {};
+
     const { data, error } = await supabase
-      .from('notifications')
+      .from('notification_events')
       .insert({
-        user_id: userId,
+        target_profile_id: userId,
+        context: 'system',
+        context_id: null,
         title,
         body,
-        url,
         channels,
-        status: 'pending',
+        metadata,
+        status: channels.includes('inapp') ? 'sent' : 'pending',
+        sent_at: channels.includes('inapp') ? new Date().toISOString() : null,
       })
       .select()
       .single();
@@ -61,13 +66,6 @@ serve(async (req) => {
     }
 
     // If inapp notification, mark as sent immediately
-    if (channels.includes('inapp')) {
-      await supabase
-        .from('notifications')
-        .update({ sent_at: new Date().toISOString(), status: 'sent' })
-        .eq('id', data.id);
-    }
-
     console.log(`✅ Notification created for user ${userId}: ${title}`);
 
     return new Response(
