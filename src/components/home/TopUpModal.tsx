@@ -37,6 +37,13 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
   const [success, setSuccess] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const selectedPaymentMethod = paymentMethods.find(m => m.value === paymentMethod);
+  const paymentTestModeEnv = import.meta.env.VITE_PAYMENT_TEST_MODE;
+  const isCardTestMode =
+    paymentTestModeEnv !== 'false' &&
+    paymentTestModeEnv !== 'False' &&
+    paymentTestModeEnv !== 'FALSE';
+  const hasKashierKey = Boolean(import.meta.env.VITE_KASHIER_PAYMENT_KEY);
+  const defaultGateway: PaymentGateway = !isCardTestMode && hasKashierKey ? 'kashier' : 'test';
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,6 +118,9 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
         setIsProcessingPayment(true);
         
         // Create wallet top-up request first
+        // Determine environment configuration once for reuse
+        const gateway = defaultGateway;
+
         const { data: topupRequest, error: topupError } = await supabase
           .from('wallet_topup_requests')
           .insert({
@@ -118,7 +128,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
             amount: amountValue,
             payment_method: 'Card', // Card payment via gateway
             status: 'pending',
-            gateway: 'test', // Test mode
+            gateway,
             receipt_file_url: null, // Card payments don't require receipts
           })
           .select()
@@ -127,23 +137,6 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
         if (topupError || !topupRequest) {
           throw new Error(`Failed to create top-up request: ${topupError?.message}`);
         }
-
-        // Determine gateway - use Kashier if configured and test mode is disabled
-        // Check for 'false' in multiple case variations
-        const isTestModeDisabled = 
-          import.meta.env.VITE_PAYMENT_TEST_MODE === 'false' ||
-          import.meta.env.VITE_PAYMENT_TEST_MODE === 'False' ||
-          import.meta.env.VITE_PAYMENT_TEST_MODE === 'FALSE';
-        
-        const useKashier = import.meta.env.VITE_KASHIER_PAYMENT_KEY && isTestModeDisabled;
-        const gateway: PaymentGateway = useKashier ? 'kashier' : 'test';
-        
-        console.log('Payment Gateway Selection:', {
-          hasKashierKey: !!import.meta.env.VITE_KASHIER_PAYMENT_KEY,
-          testModeEnv: import.meta.env.VITE_PAYMENT_TEST_MODE,
-          isTestModeDisabled,
-          selectedGateway: gateway,
-        });
 
         // Create payment via gateway
         const paymentResult = await PaymentGatewayService.createPayment({
@@ -548,8 +541,14 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
                     <p className="text-xs text-gray-500 text-center">
                       {paymentMethod === 'card' ? (
                         <>
-                          <span className="font-semibold text-blue-600">Test Mode:</span> Payments are processed instantly. 
-                          Your wallet will be updated immediately after successful payment.
+                          {defaultGateway === 'test' ? (
+                            <>
+                              <span className="font-semibold text-blue-600">Test Mode:</span> Payments are processed instantly.
+                              Your wallet will be updated immediately after successful payment.
+                            </>
+                          ) : (
+                            'You will be redirected to our secure Kashier payment page to complete the transaction.'
+                          )}
                         </>
                       ) : (
                         'Your request will be reviewed by our team within 1-2 business days. You\'ll receive a notification once it\'s approved.'
