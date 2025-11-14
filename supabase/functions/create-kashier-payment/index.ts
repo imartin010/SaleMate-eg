@@ -44,9 +44,23 @@ serve(async (req) => {
     // Log for debugging
     console.log('PAYMENT_TEST_MODE env value:', paymentTestModeEnv);
     console.log('testMode determined as:', testMode);
-    const kashierPaymentKey = Deno.env.get('KASHIER_PAYMENT_KEY') || 'd02f9fd0-d7c3-408e-84ac-c4c3ae6fe8a2';
-    const kashierSecretKey = Deno.env.get('KASHIER_SECRET_KEY') || '86d1f6ad6358c144a45b9cd918522f71$ea45afd990143d51dce936af207a94ff9ef7bf30f2fbed1a185625a490094ebd7eb1ec264e521ca9ea91a925dd95b8fe';
-    const kashierMerchantId = Deno.env.get('KASHIER_MERCHANT_ID') || 'MID-40169-389';
+    
+    // Get Kashier credentials from environment variables (must be set in Supabase Edge Function secrets)
+    const kashierPaymentKey = Deno.env.get('KASHIER_PAYMENT_KEY');
+    const kashierSecretKey = Deno.env.get('KASHIER_SECRET_KEY');
+    const kashierMerchantId = Deno.env.get('KASHIER_MERCHANT_ID');
+    
+    // Validate required credentials
+    if (!kashierSecretKey || !kashierMerchantId) {
+      console.error('Missing Kashier credentials:', {
+        hasSecretKey: !!kashierSecretKey,
+        hasMerchantId: !!kashierMerchantId,
+      });
+      return new Response(
+        JSON.stringify({ error: 'Kashier credentials not configured. Please set KASHIER_SECRET_KEY and KASHIER_MERCHANT_ID in Edge Function secrets.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     const baseUrl = Deno.env.get('BASE_URL') || 'https://your-project.supabase.co';
 
     if (!supabaseUrl || !supabaseServiceKey) {
@@ -100,13 +114,17 @@ serve(async (req) => {
     // Production Mode - Create Kashier Order
     // Generate order hash (HMAC-SHA256)
     const orderId = `order_${body.transaction_id}_${Date.now()}`;
-    // Kashier expects amount in the smallest currency unit (piasters/cents for EGP)
-    // So 100 EGP = 10000 piasters
-    const amountInCents = Math.round(body.amount * 100);
+    
+    // According to Kashier documentation, amount should be in BASE currency (EGP) for both hash and URL
+    // Format: merchantId:amount:currency:orderId:secretKey
+    // Example: MID-1234:100:EGP:order_xxx:secret_key (100 EGP, not 10000 piasters)
+    const amount = body.amount.toString(); // Use base currency amount
     
     // Kashier order hash format: merchantId:amount:currency:orderId:secretKey
-    // Amount in hash must be in smallest currency unit (piasters)
-    const hashString = `${kashierMerchantId}:${amountInCents}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
+    const hashString = `${kashierMerchantId}:${amount}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
+    
+    // Log hash string for debugging (without secret key)
+    console.log('Hash string (masked):', `${kashierMerchantId}:${amount}:${body.currency.toUpperCase()}:${orderId}:***`);
     
     // Create HMAC-SHA256 hash using Web Crypto API
     const encoder = new TextEncoder();
@@ -129,13 +147,13 @@ serve(async (req) => {
     const orderHash = hashHex;
 
     // Build Kashier payment URL
-    // IMPORTANT: Both hash and URL amount must use the SAME format (piasters/cents)
+    // IMPORTANT: Both hash and URL amount must use the SAME format (base currency)
     // Kashier verifies the hash by recalculating it using the amount from the URL
     // If they don't match, you get "Forbidden request" error
     const kashierBaseUrl = 'https://checkout.kashier.io';
     const paymentUrl = new URL(kashierBaseUrl);
     paymentUrl.searchParams.set('merchantId', kashierMerchantId);
-    paymentUrl.searchParams.set('amount', amountInCents.toString()); // Use piasters to match hash calculation
+    paymentUrl.searchParams.set('amount', amount); // Use base currency to match hash calculation
     paymentUrl.searchParams.set('currency', body.currency.toUpperCase());
     paymentUrl.searchParams.set('orderId', orderId);
     paymentUrl.searchParams.set('hash', orderHash);
