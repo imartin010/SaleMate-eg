@@ -112,48 +112,47 @@ serve(async (req) => {
     }
 
     // Production Mode - Create Kashier Order
-    // Generate order hash (HMAC-SHA256)
+    // Generate order hash (SHA256)
     const orderId = `order_${body.transaction_id}_${Date.now()}`;
     
-    // According to Kashier documentation, amount should be in BASE currency (EGP) for both hash and URL
+    // According to Kashier documentation, amount should be in PIASTERS (cents) for EGP
     // Format: merchantId:amount:currency:orderId:secretKey
-    // Example: MID-1234:100:EGP:order_xxx:secret_key (100 EGP, not 10000 piasters)
-    const amount = body.amount.toString(); // Use base currency amount
+    // Example: MID-1234:10000:EGP:order_xxx:secret_key (10000 piasters = 100 EGP)
+    // Convert EGP to piasters (multiply by 100)
+    const amountInPiasters = Math.round(body.amount * 100).toString();
     
     // Kashier order hash format: merchantId:amount:currency:orderId:secretKey
-    const hashString = `${kashierMerchantId}:${amount}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
+    // Note: Kashier uses SHA256 (not HMAC-SHA256) of the hash string
+    const hashString = `${kashierMerchantId}:${amountInPiasters}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
     
     // Log hash string for debugging (without secret key)
-    console.log('Hash string (masked):', `${kashierMerchantId}:${amount}:${body.currency.toUpperCase()}:${orderId}:***`);
+    console.log('Hash calculation:', {
+      merchantId: kashierMerchantId,
+      amountInPiasters,
+      amountInEGP: body.amount,
+      currency: body.currency.toUpperCase(),
+      orderId,
+      hashStringMasked: `${kashierMerchantId}:${amountInPiasters}:${body.currency.toUpperCase()}:${orderId}:***`
+    });
     
-    // Create HMAC-SHA256 hash using Web Crypto API
+    // Create SHA256 hash (not HMAC) - Kashier expects SHA256 of the hash string
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(kashierSecretKey);
     const messageData = encoder.encode(hashString);
     
-    // Import key for HMAC
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    // Sign the message
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const hashArray = Array.from(new Uint8Array(signature));
+    // Hash the message using SHA-256
+    const hashBuffer = await crypto.subtle.digest('SHA-256', messageData);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     const orderHash = hashHex;
 
     // Build Kashier payment URL
-    // IMPORTANT: Both hash and URL amount must use the SAME format (base currency)
+    // IMPORTANT: Both hash and URL amount must use the SAME format (piasters)
     // Kashier verifies the hash by recalculating it using the amount from the URL
     // If they don't match, you get "Forbidden request" error
     const kashierBaseUrl = 'https://checkout.kashier.io';
     const paymentUrl = new URL(kashierBaseUrl);
     paymentUrl.searchParams.set('merchantId', kashierMerchantId);
-    paymentUrl.searchParams.set('amount', amount); // Use base currency to match hash calculation
+    paymentUrl.searchParams.set('amount', amountInPiasters); // Use piasters to match hash calculation
     paymentUrl.searchParams.set('currency', body.currency.toUpperCase());
     paymentUrl.searchParams.set('orderId', orderId);
     paymentUrl.searchParams.set('hash', orderHash);
