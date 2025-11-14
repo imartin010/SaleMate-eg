@@ -10,16 +10,33 @@ interface AuthState {
   profile: Profile | null;
   loading: boolean;
   error?: string;
+  initialized: boolean;
   init(): Promise<void>;
   signUpEmail(name: string, email: string, password: string, phone?: string): Promise<boolean>;
-  signUpWithOTP(name: string, email: string, phone: string, password: string, otp: string): Promise<boolean>;
+  signUpWithOTP(name: string, email: string, phone: string, password: string, challengeId: string, otp: string): Promise<boolean>;
   signInEmail(email: string, password: string, rememberMe?: boolean): Promise<boolean>;
-  signInWith2FA(email: string, password: string, otp: string, rememberMe?: boolean): Promise<boolean>;
+  signInWith2FA(email: string, password: string, challengeId: string, otp: string, rememberMe?: boolean): Promise<boolean>;
   signOut(): Promise<void>;
   refreshProfile(): Promise<void>;
   resendConfirmation(email: string): Promise<boolean>;
-  sendOTP(phone: string, purpose?: string): Promise<{ success: boolean; error?: string }>;
-  verifyOTP(phone: string, code: string, purpose?: string): Promise<{ success: boolean; error?: string }>;
+  sendOTP(phone: string, context?: string): Promise<{
+    success: boolean;
+    error?: string;
+    challengeId?: string;
+    devOtp?: string;
+    fallback?: boolean;
+    message?: string;
+    expiresIn?: number;
+    resendCooldown?: number;
+    provider?: string;
+  }>;
+  verifyOTP(challengeId: string, code: string): Promise<{
+    success: boolean;
+    error?: string;
+    attemptsRemaining?: number;
+    context?: string;
+    verifiedAt?: string;
+  }>;
   // Legacy methods for compatibility
   loadUserProfile(user: unknown): Promise<void>;
   resetPassword(email: string): Promise<boolean>;
@@ -31,18 +48,54 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   loading: true,
+  initialized: false,
   
   async init() {
-    set({ loading: true });
-    const { data: { user } } = await supabase.auth.getUser();
-    set({ user: user ?? null });
-    if (user) await get().refreshProfile();
-    supabase.auth.onAuthStateChange(async (_e, session) => {
-      set({ user: session?.user ?? null });
-      if (session?.user) await get().refreshProfile();
-      else set({ profile: null });
-    });
-    set({ loading: false });
+    if (get().initialized && !get().loading) {
+      return;
+    }
+
+    set({ loading: true, error: undefined });
+
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error) {
+        // "Auth session missing" is expected when user is not logged in - don't treat as error
+        if (error.message !== 'Auth session missing!') {
+          console.error('Auth init: getUser error', error);
+          set({ error: error.message });
+        }
+        set({ user: null, profile: null });
+      } else {
+        set({ user: user ?? null });
+        if (user) {
+          await get().refreshProfile();
+        } else {
+          set({ profile: null });
+        }
+      }
+
+      if (!get().initialized) {
+        supabase.auth.onAuthStateChange(async (_e, session) => {
+          set({ user: session?.user ?? null });
+          if (session?.user) {
+            await get().refreshProfile();
+          } else {
+            set({ profile: null });
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Auth init failed', err);
+      set({
+        error: err instanceof Error ? err.message : 'Failed to initialize auth',
+        user: null,
+        profile: null,
+      });
+    } finally {
+      set({ loading: false, initialized: true });
+    }
   },
   
   async signUpEmail(name, email, password, phone) {
@@ -86,12 +139,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return true;
   },
   
-  async signUpWithOTP(name, email, phone, password, otp) {
+  async signUpWithOTP(name, email, phone, password, challengeId, otp) {
     set({ error: undefined, loading: true });
     
     try {
       // First verify the OTP
-      const verifyResult = await get().verifyOTP(phone, otp, 'signup');
+      console.log('🔐 Verifying OTP', { challengeId, otp });
+      const verifyResult = await get().verifyOTP(challengeId, otp);
+      console.log('✅ Verify OTP result', verifyResult);
       if (!verifyResult.success) {
         set({ error: verifyResult.error || 'OTP verification failed', loading: false });
         return false;
@@ -181,7 +236,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return true;
   },
 
-  async signInWith2FA(email, password, otp, rememberMe = false) {
+  async signInWith2FA(email, password, challengeId, otp, rememberMe = false) {
     set({ error: undefined, loading: true });
 
     try {
@@ -209,7 +264,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Verify OTP
-      const verifyResult = await get().verifyOTP(profile.phone, otp, '2fa');
+      const verifyResult = await get().verifyOTP(challengeId, otp);
       if (!verifyResult.success) {
         // Sign out since 2FA failed
         await supabase.auth.signOut();
@@ -249,6 +304,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   async refreshProfile() {
     const { data: { user } } = await supabase.auth.getUser();
+    set({ user: user ?? null });
     if (!user) {
       console.log('RefreshProfile: No user found');
       return set({ profile: null });
@@ -346,51 +402,71 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: undefined });
   },
 
-  async sendOTP(phone: string, purpose: string = 'signup') {
+  async sendOTP(phone: string, context: string = 'signup') {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/otp-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ phone, purpose }),
+        body: JSON.stringify({ phone, context }),
       });
 
       const result = await response.json();
       
       if (!response.ok || !result.success) {
+        console.error('sendOTP failed', result);
         return { success: false, error: result.error || 'Failed to send OTP' };
       }
 
-      return { success: true };
+      console.log('📨 OTP response', result);
+      return { 
+        success: true,
+        challengeId: result.challenge_id as string | undefined,
+        devOtp: result.dev_otp,
+        fallback: result.fallback === true,
+        message: result.message,
+        expiresIn: typeof result.expires_in === 'number' ? result.expires_in : undefined,
+        resendCooldown: typeof result.resend_cooldown === 'number' ? result.resend_cooldown : undefined,
+        provider: result.provider,
+      };
     } catch (error) {
       console.error('Send OTP error:', error);
       return { success: false, error: 'Network error. Please try again.' };
     }
   },
 
-  async verifyOTP(phone: string, code: string, purpose: string = 'signup') {
+  async verifyOTP(challengeId: string, code: string) {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-otp`, {
+      console.log('📤 Sending verify-otp request', { challengeId });
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/otp-verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ phone, code, purpose }),
+        body: JSON.stringify({ challengeId, code }),
       });
 
       const result = await response.json();
       
       if (!response.ok || !result.success) {
-        return { success: false, error: result.error || 'Invalid verification code' };
+        return { 
+          success: false, 
+          error: result.error || 'Invalid verification code',
+          attemptsRemaining: result.attempts_remaining,
+        };
       }
 
-      return { success: true };
+      return { 
+        success: true,
+        context: result.context,
+        verifiedAt: result.verified_at,
+      };
     } catch (error) {
       console.error('Verify OTP error:', error);
-      return { success: false, error: 'Network error. Please try again.' };
+      return { success: false, error: 'Internal server error. Please try again.' };
     }
   },
 }));

@@ -115,7 +115,7 @@ ADMIN (You) ✅
 
 ### Database
 - ✅ 2 migrations applied
-- ✅ `otp_verifications` table created
+- ✅ `otp_challenges` / `otp_attempts` tables created
 - ✅ `profiles` enhanced with new fields
 - ✅ RPC functions deployed
 - ✅ RLS policies configured

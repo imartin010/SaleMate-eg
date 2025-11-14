@@ -70,7 +70,7 @@ A comprehensive payment gateway system has been implemented to support wallet to
 ### Card Payment Flow (Test Mode)
 
 1. User selects "Debit/Credit Card" payment method
-2. User enters amount (minimum 5,000 EGP)
+2. User enters amount (any amount > 0)
 3. User clicks "Pay Now"
 4. System creates `wallet_topup_request` record
 5. System creates `payment_transaction` record
@@ -230,7 +230,7 @@ The system handles:
 
 1. Open Top Up Modal
 2. Select "Debit/Credit Card"
-3. Enter amount (minimum 5,000 EGP)
+3. Enter amount (any amount > 0)
 4. Click "Pay Now"
 5. Verify wallet balance updates instantly
 

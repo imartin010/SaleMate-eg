@@ -77,6 +77,7 @@ const MarketingContent = React.lazy(() => import('../pages/Admin/CMS/MarketingCo
 const PlatformSettings = React.lazy(() => import('../pages/Admin/CMS/PlatformSettings'));
 const AuditLogs = React.lazy(() => import('../pages/Admin/System/AuditLogs'));
 const FeatureFlags = React.lazy(() => import('../pages/Admin/System/FeatureFlags'));
+const BackendAudit = React.lazy(() => import('../pages/Admin/BackendAudit'));
 
 // Fast loading component
 const PageLoader = () => (
@@ -262,6 +263,17 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <PaymentCallback />
       </AuthGuard>
+    ),
+  },
+  
+  // Backend Audit - Accessible without auth to diagnose issues (outside /app to avoid AppLayout)
+  {
+    path: '/backend-audit',
+    element: (
+      <>
+        <ScrollToTop />
+        <SafePage><BackendAudit /></SafePage>
+      </>
     ),
   },
   

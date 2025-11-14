@@ -8,6 +8,7 @@ export interface FeedbackHistoryEntry {
   user_id: string;
   feedback_text: string;
   created_at: string;
+  updated_at?: string | null;
   user?: {
     name: string;
     email: string;
@@ -103,7 +104,8 @@ export function useLeads() {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      // First, try to fetch leads with all joins
+      let query = supabase
         .from('leads')
         .select(`
           *,
@@ -119,32 +121,36 @@ export function useLeads() {
           assigned_to:profiles!leads_assigned_to_id_fkey (
             id,
             name
-          ),
-          feedback_history:feedback_history (
-            id,
-            feedback_text,
-            created_at,
-            user:profiles (
-              name,
-              email
-            )
           )
         `)
         .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
-        .order('created_at', { foreignTable: 'feedback_history', ascending: false });
+        .order('created_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
+      const { data, error: fetchError } = await query;
 
-      // Debug: Log the first lead's project data
-      if (data && data.length > 0) {
-        console.log('🔍 First lead project data:', {
-          raw: data[0].project,
-          nameType: typeof data[0].project?.name,
-          nameValue: data[0].project?.name,
-          regionType: typeof data[0].project?.region,
-          regionValue: data[0].project?.region,
-        });
+      if (fetchError) {
+        // If the query fails, try a simpler query without joins
+        console.warn('Failed to fetch leads with joins, trying simpler query:', fetchError);
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('leads')
+          .select('*')
+          .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
+          .order('created_at', { ascending: false });
+
+        if (simpleError) throw simpleError;
+        
+        // Transform simple data
+        const transformedData = (simpleData || []).map((lead: any) => ({
+          ...lead,
+          project: null, // Will be fetched separately if needed
+          owner: null,
+          assigned_to: null,
+          feedback_history: [],
+        }));
+
+        setLeads(transformedData as Lead[]);
+        setLoading(false);
+        return;
       }
 
       // Transform the data to extract nested names
@@ -160,18 +166,75 @@ export function useLeads() {
             : originalProject.region,
         } : null;
 
-        console.log('📝 Transform:', {
-          original: originalProject,
-          transformed: transformedProject
-        });
-
         return {
           ...lead,
           project: transformedProject,
+          owner: lead.owner || null,
+          assigned_to: lead.assigned_to || null,
+          feedback_history: [] as FeedbackHistoryEntry[],
         };
       });
 
-      setLeads(transformedData as Lead[]);
+      const leadIds = transformedData.map((lead) => lead.id).filter(Boolean);
+
+      let feedbackHistoryMap: Record<string, FeedbackHistoryEntry[]> = {};
+
+      if (leadIds.length > 0) {
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from('lead_events')
+          .select(`
+            id,
+            lead_id,
+            actor_profile_id,
+            payload,
+            summary,
+            created_at,
+            actor:profiles!lead_events_actor_profile_id_fkey (
+              id,
+              name,
+              email
+            )
+          `)
+          .in('lead_id', leadIds)
+          .eq('event_type', 'feedback')
+          .contains('payload', { source: 'feedback_history' })
+          .order('created_at', { ascending: false });
+
+        if (feedbackError) {
+          console.warn('Failed to load feedback history from lead_events:', feedbackError);
+        } else if (feedbackData) {
+          feedbackHistoryMap = feedbackData.reduce<Record<string, FeedbackHistoryEntry[]>>((acc, event) => {
+            const payload = (event as any)?.payload ?? {};
+            const feedbackEntry: FeedbackHistoryEntry = {
+              id: event.id,
+              lead_id: event.lead_id,
+              user_id: event.actor_profile_id ?? '',
+              feedback_text: payload.feedback_text ?? event.summary ?? '',
+              created_at: event.created_at,
+              updated_at: payload.updated_at ?? null,
+              user: event.actor
+                ? {
+                    name: event.actor.name ?? 'Unknown User',
+                    email: event.actor.email ?? '',
+                  }
+                : null,
+            };
+
+            if (!acc[event.lead_id]) {
+              acc[event.lead_id] = [];
+            }
+            acc[event.lead_id].push(feedbackEntry);
+            return acc;
+          }, {});
+        }
+      }
+
+      const leadsWithFeedback = transformedData.map((lead) => ({
+        ...lead,
+        feedback_history: feedbackHistoryMap[lead.id] ?? [],
+      }));
+
+      setLeads(leadsWithFeedback as Lead[]);
     } catch (err) {
       console.error('Error fetching leads:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch leads');

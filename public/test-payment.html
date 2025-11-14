@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Gateway Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .test-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .test-item label {
+            font-weight: 500;
+            color: #333;
+            flex: 1;
+        }
+        .status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #e7f3ff;
+            color: #004085;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Payment Gateway Test Suite</h1>
+        <p class="subtitle">Comprehensive testing for payment gateway functionality</p>
+
+        <div class="info">
+            <strong>ℹ️ Instructions:</strong><br>
+            1. Make sure you're logged into the application<br>
+            2. Open browser console (F12) to see detailed logs<br>
+            3. Click "Run All Tests" button below<br>
+            4. Review results and fix any failures
+        </div>
+
+        <div class="test-section">
+            <h2>1. Database Tables</h2>
+            <div class="test-item">
+                <label>payment_transactions table exists</label>
+                <span class="status pending" id="test-table-tx">Pending</span>
+            </div>
+            <div class="test-item">
+                <label>wallet_topup_requests table exists</label>
+                <span class="status pending" id="test-table-topup">Pending</span>
+            </div>
+            <div class="test-item">
+                <label>profiles table with wallet_balance exists</label>
+                <span class="status pending" id="test-table-profile">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Environment Configuration</h2>
+            <div class="test-item">
+                <label>Payment Test Mode</label>
+                <span class="status pending" id="test-env-testmode">Pending</span>
+            </div>
+            <div class="test-item">
+                <label>Kashier Payment Key</label>
+                <span class="status pending" id="test-env-kashier">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Edge Functions</h2>
+            <div class="test-item">
+                <label>create-kashier-payment function</label>
+                <span class="status pending" id="test-edge-kashier">Pending</span>
+            </div>
+            <div class="test-item">
+                <label>payment-webhook function</label>
+                <span class="status pending" id="test-edge-webhook">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. RPC Functions</h2>
+            <div class="test-item">
+                <label>process_payment_and_topup function</label>
+                <span class="status pending" id="test-rpc-process">Pending</span>
+            </div>
+        </div>
+
+        <button id="runTests" onclick="runAllTests()">Run All Tests</button>
+
+        <div class="result" id="testResult"></div>
+    </div>
+
+    <script type="module">
+        // Import Supabase client
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        // Get Supabase URL and key from window (set by your app)
+        // Or use environment variables if available
+        const supabaseUrl = window.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = window.SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+            document.getElementById('testResult').innerHTML = 
+                '<div class="result error show">❌ Supabase credentials not found. Please set window.SUPABASE_URL and window.SUPABASE_ANON_KEY in your app, or ensure environment variables are available.</div>';
+        } else {
+            window.supabase = createClient(supabaseUrl, supabaseKey);
+        }
+
+        window.runAllTests = async function() {
+            const button = document.getElementById('runTests');
+            button.disabled = true;
+            button.textContent = 'Running Tests...';
+
+            const results = {
+                passed: 0,
+                failed: 0
+            };
+
+            // Test 1: Database Tables
+            try {
+                const { error: txError } = await window.supabase
+                    .from('payment_transactions')
+                    .select('id')
+                    .limit(1);
+                updateTest('test-table-tx', !txError, txError);
+                if (!txError) results.passed++; else results.failed++;
+            } catch (e) {
+                updateTest('test-table-tx', false, e);
+                results.failed++;
+            }
+
+            try {
+                const { error: topupError } = await window.supabase
+                    .from('wallet_topup_requests')
+                    .select('id')
+                    .limit(1);
+                updateTest('test-table-topup', !topupError, topupError);
+                if (!topupError) results.passed++; else results.failed++;
+            } catch (e) {
+                updateTest('test-table-topup', false, e);
+                results.failed++;
+            }
+
+            try {
+                const { error: profileError } = await window.supabase
+                    .from('profiles')
+                    .select('id, wallet_balance')
+                    .limit(1);
+                updateTest('test-table-profile', !profileError, profileError);
+                if (!profileError) results.passed++; else results.failed++;
+            } catch (e) {
+                updateTest('test-table-profile', false, e);
+                results.failed++;
+            }
+
+            // Test 2: Environment
+            const testMode = import.meta.env.VITE_PAYMENT_TEST_MODE !== undefined;
+            updateTest('test-env-testmode', testMode);
+            if (testMode) results.passed++; else results.failed++;
+
+            const kashierKey = import.meta.env.VITE_KASHIER_PAYMENT_KEY;
+            updateTest('test-env-kashier', !!kashierKey);
+            if (kashierKey) results.passed++; else results.failed++;
+
+            // Test 3: Edge Functions
+            try {
+                const { error: kashierError } = await window.supabase.functions.invoke('create-kashier-payment', {
+                    body: { amount: 1000, currency: 'EGP', payment_method: 'card', transaction_id: 'test' }
+                });
+                // Function exists if we get auth error, not 404
+                const exists = kashierError && !kashierError.message?.includes('not found') && !kashierError.message?.includes('404');
+                updateTest('test-edge-kashier', exists || !kashierError);
+                if (exists || !kashierError) results.passed++; else results.failed++;
+            } catch (e) {
+                updateTest('test-edge-kashier', false, e);
+                results.failed++;
+            }
+
+            try {
+                const { error: webhookError } = await window.supabase.functions.invoke('payment-webhook', {
+                    body: { transaction_id: 'test', status: 'completed' }
+                });
+                const exists = webhookError && !webhookError.message?.includes('not found') && !webhookError.message?.includes('404');
+                updateTest('test-edge-webhook', exists || !webhookError);
+                if (exists || !webhookError) results.passed++; else results.failed++;
+            } catch (e) {
+                updateTest('test-edge-webhook', false, e);
+                results.failed++;
+            }
+
+            // Test 4: RPC Function
+            try {
+                // This will fail without proper auth, but we're checking if function exists
+                const { error: rpcError } = await window.supabase.rpc('process_payment_and_topup', {
+                    p_transaction_id: '00000000-0000-0000-0000-000000000000',
+                    p_status: 'completed'
+                });
+                // Function exists if we get a specific error, not "function does not exist"
+                const exists = rpcError && !rpcError.message?.includes('does not exist') && !rpcError.message?.includes('not found');
+                updateTest('test-rpc-process', exists || !rpcError);
+                if (exists || !rpcError) results.passed++; else results.failed++;
+            } catch (e) {
+                updateTest('test-rpc-process', false, e);
+                results.failed++;
+            }
+
+            // Show results
+            const total = results.passed + results.failed;
+            const successRate = total > 0 ? ((results.passed / total) * 100).toFixed(1) : 0;
+            const resultDiv = document.getElementById('testResult');
+            
+            if (results.failed === 0) {
+                resultDiv.className = 'result success show';
+                resultDiv.innerHTML = `
+                    <strong>✅ All Tests Passed!</strong><br>
+                    Passed: ${results.passed} | Failed: ${results.failed}<br>
+                    Success Rate: ${successRate}%<br><br>
+                    Your payment gateway is ready to use! 🎉
+                `;
+            } else {
+                resultDiv.className = 'result error show';
+                resultDiv.innerHTML = `
+                    <strong>⚠️ Some Tests Failed</strong><br>
+                    Passed: ${results.passed} | Failed: ${results.failed}<br>
+                    Success Rate: ${successRate}%<br><br>
+                    Please review the failed tests above and fix any issues.
+                `;
+            }
+
+            button.disabled = false;
+            button.textContent = 'Run All Tests Again';
+        };
+
+        function updateTest(elementId, passed, error = null) {
+            const element = document.getElementById(elementId);
+            if (passed) {
+                element.className = 'status pass';
+                element.textContent = '✅ Pass';
+            } else {
+                element.className = 'status fail';
+                element.textContent = '❌ Fail' + (error ? `: ${error.message || error}` : '');
+            }
+        }
+    </script>
+</body>
+</html>
+

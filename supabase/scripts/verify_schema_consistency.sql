@@ -82,36 +82,99 @@ DECLARE
 BEGIN
     missing_fks := ARRAY[]::TEXT[];
     
-    -- Check leads.buyer_user_id FK
+    -- Core lead relationships
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE constraint_schema = 'public' 
-        AND constraint_name = 'leads_buyer_user_id_fkey'
-        AND table_name = 'leads'
+        AND constraint_name = 'lead_events_lead_id_fkey'
+        AND table_name = 'lead_events'
     ) THEN
-        missing_fks := array_append(missing_fks, 'leads.buyer_user_id → profiles.id');
+        missing_fks := array_append(missing_fks, 'lead_events.lead_id → leads.id');
     END IF;
-    
-    -- Check feedback_history.user_id FK
+
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE constraint_schema = 'public' 
-        AND constraint_name = 'feedback_history_user_id_fkey'
-        AND table_name = 'feedback_history'
+        AND constraint_name = 'lead_tasks_lead_id_fkey'
+        AND table_name = 'lead_tasks'
     ) THEN
-        missing_fks := array_append(missing_fks, 'feedback_history.user_id → profiles.id');
+        missing_fks := array_append(missing_fks, 'lead_tasks.lead_id → leads.id');
     END IF;
-    
-    -- Check lead_purchase_requests.buyer_user_id FK
+
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE constraint_schema = 'public' 
-        AND constraint_name = 'lead_purchase_requests_buyer_user_id_fkey'
-        AND table_name = 'lead_purchase_requests'
+        AND constraint_name = 'lead_labels_lead_id_fkey'
+        AND table_name = 'lead_labels'
     ) THEN
-        missing_fks := array_append(missing_fks, 'lead_purchase_requests.buyer_user_id → auth.users.id');
+        missing_fks := array_append(missing_fks, 'lead_labels.lead_id → leads.id');
     END IF;
-    
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'lead_transfers_lead_id_fkey'
+        AND table_name = 'lead_transfers'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'lead_transfers.lead_id → leads.id');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'lead_recommendations_lead_id_fkey'
+        AND table_name = 'lead_recommendations'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'lead_recommendations.lead_id → leads.id');
+    END IF;
+
+    -- Commerce & wallets
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'lead_commerce_profile_id_fkey'
+        AND table_name = 'lead_commerce'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'lead_commerce.profile_id → profiles.id');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'profile_wallets_profile_id_fkey'
+        AND table_name = 'profile_wallets'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'profile_wallets.profile_id → profiles.id');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'wallet_entries_wallet_id_fkey'
+        AND table_name = 'wallet_entries'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'wallet_entries.wallet_id → profile_wallets.id');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'payment_operations_profile_id_fkey'
+        AND table_name = 'payment_operations'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'payment_operations.profile_id → profiles.id');
+    END IF;
+
+    -- Support threads
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_schema = 'public' 
+        AND constraint_name = 'support_messages_thread_id_fkey'
+        AND table_name = 'support_messages'
+    ) THEN
+        missing_fks := array_append(missing_fks, 'support_messages.thread_id → support_threads.id');
+    END IF;
+
     IF array_length(missing_fks, 1) > 0 THEN
         RAISE NOTICE '❌ Missing foreign key constraints:';
         RAISE NOTICE '   %', array_to_string(missing_fks, E'\n   ');
@@ -134,9 +197,11 @@ BEGIN
         SELECT tablename FROM pg_tables 
         WHERE schemaname = 'public' 
         AND tablename IN (
-            'leads', 'lead_purchase_requests', 'lead_batches', 
-            'feedback_history', 'support_cases', 'user_wallets',
-            'wallet_transactions', 'projects', 'developers'
+            'leads', 'lead_events', 'lead_tasks', 'lead_labels',
+            'lead_transfers', 'lead_recommendations', 'lead_commerce',
+            'marketing_assets', 'marketing_metrics', 'notification_events',
+            'profile_wallets', 'wallet_entries', 'payment_operations',
+            'support_threads', 'support_messages'
         )
     LOOP
         IF NOT EXISTS (
@@ -170,9 +235,11 @@ BEGIN
         SELECT tablename FROM pg_tables 
         WHERE schemaname = 'public' 
         AND tablename IN (
-            'leads', 'lead_purchase_requests', 'lead_batches', 
-            'feedback_history', 'support_cases', 'user_wallets',
-            'wallet_transactions', 'projects', 'developers', 'partners'
+            'leads', 'lead_events', 'lead_tasks', 'lead_labels',
+            'lead_transfers', 'lead_recommendations', 'lead_commerce',
+            'marketing_assets', 'marketing_metrics', 'notification_events',
+            'profile_wallets', 'wallet_entries', 'payment_operations',
+            'support_threads', 'support_messages'
         )
     LOOP
         IF NOT EXISTS (
@@ -193,95 +260,40 @@ BEGIN
     END IF;
 END $$;
 
--- STEP 5: Check for table name consistency
+-- STEP 5: Confirm legacy tables are fully migrated (no base tables remain)
 -- ============================================
 
 DO $$
 DECLARE
-    table_checks TEXT[];
+    legacy_base_tables TEXT[];
+    tbl TEXT;
 BEGIN
-    table_checks := ARRAY[]::TEXT[];
-    
-    -- Check if lead_purchase_requests exists (should use this, not purchase_requests)
-    IF EXISTS (
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'purchase_requests'
-    ) THEN
-        table_checks := array_append(table_checks, '⚠️  Both purchase_requests and lead_purchase_requests exist - consider migrating');
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'lead_purchase_requests'
-    ) THEN
-        table_checks := array_append(table_checks, '❌ lead_purchase_requests table does not exist');
-    ELSE
-        table_checks := array_append(table_checks, '✅ lead_purchase_requests table exists');
-    END IF;
-    
-    RAISE NOTICE 'Table consistency checks:';
-    RAISE NOTICE '%', array_to_string(table_checks, E'\n');
-END $$;
+    legacy_base_tables := ARRAY[]::TEXT[];
 
--- STEP 6: Check column names in lead_purchase_requests
--- ============================================
+    FOR tbl IN
+        SELECT unnest(ARRAY[
+            'feedback_history','case_feedback','lead_activities','lead_reminders',
+            'case_actions','case_faces','inventory_matches','lead_tags',
+            'lead_requests','purchase_requests','dashboard_banners','banner_metrics',
+            'notifications','user_wallets','wallet_transactions','payment_transactions',
+            'wallet_topup_requests','support_cases','support_case_replies'
+        ])
+    LOOP
+        IF EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_name = tbl
+              AND table_type = 'BASE TABLE'
+        ) THEN
+            legacy_base_tables := array_append(legacy_base_tables, tbl);
+        END IF;
+    END LOOP;
 
-DO $$
-DECLARE
-    col_checks TEXT[];
-BEGIN
-    col_checks := ARRAY[]::TEXT[];
-    
-    -- Check for buyer_user_id (correct)
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'lead_purchase_requests' 
-        AND column_name = 'buyer_user_id'
-    ) THEN
-        col_checks := array_append(col_checks, '✅ buyer_user_id column exists');
+    IF array_length(legacy_base_tables, 1) > 0 THEN
+        RAISE NOTICE '⚠️  Legacy base tables still present: %', array_to_string(legacy_base_tables, ', ');
     ELSE
-        col_checks := array_append(col_checks, '❌ buyer_user_id column missing');
+        RAISE NOTICE '✅ All legacy tables have been migrated to the consolidated schema.';
     END IF;
-    
-    -- Check for number_of_leads (correct)
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'lead_purchase_requests' 
-        AND column_name = 'number_of_leads'
-    ) THEN
-        col_checks := array_append(col_checks, '✅ number_of_leads column exists');
-    ELSE
-        col_checks := array_append(col_checks, '❌ number_of_leads column missing (might be lead_count)');
-    END IF;
-    
-    -- Check for total_price (correct)
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'lead_purchase_requests' 
-        AND column_name = 'total_price'
-    ) THEN
-        col_checks := array_append(col_checks, '✅ total_price column exists');
-    ELSE
-        col_checks := array_append(col_checks, '❌ total_price column missing (might be total_amount)');
-    END IF;
-    
-    -- Warn if user_id exists (incorrect - should be buyer_user_id)
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'lead_purchase_requests' 
-        AND column_name = 'user_id'
-    ) THEN
-        col_checks := array_append(col_checks, '⚠️  user_id column exists (should be buyer_user_id)');
-    END IF;
-    
-    RAISE NOTICE 'Lead purchase requests column checks:';
-    RAISE NOTICE '%', array_to_string(col_checks, E'\n');
 END $$;
 
 -- ============================================
@@ -291,6 +303,14 @@ END $$;
 SELECT 
     'Schema Consistency Check Complete' as status,
     'Review the notices above for any issues' as message;
+
+
+
+
+
+
+
+
 
 
 

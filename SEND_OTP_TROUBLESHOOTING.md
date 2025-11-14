@@ -39,16 +39,16 @@ The function also needs Supabase credentials (usually auto-set, but verify).
 - **Alphanumeric sender issue**: The function tries to use "SaleMate" as sender for Egypt numbers - this requires a paid Twilio account with alphanumeric sender ID registration
 
 ### 4. Database Error
-The function stores OTP in `otp_verifications` table. Check:
-- Table exists
-- RLS policies allow service role inserts
-- Table schema matches expected format
+The new flow stores challenges in `otp_challenges` (and attempts in `otp_attempts`). Check:
+- Tables exist
+- RLS policies allow service role inserts/updates
+- Table schema matches expected format (`status`, `provider`, `code_hash`, etc.)
 
 ## Quick Fix Steps
 
 ### Step 1: Check Supabase Edge Function Logs
 1. Go to: https://supabase.com/dashboard/project/wkxbhvckmgrmdkdkhnqo/functions
-2. Click on `send-otp`
+2. Click on `otp-request` (and `otp-verify` if needed)
 3. Click "Logs" tab
 4. Look for error messages
 
@@ -71,23 +71,25 @@ If Twilio credentials are missing, the function should:
 - Return `dev_otp` in response
 - Still work for testing
 
-### Step 4: Redeploy Function (After Fixing Secrets)
+### Step 4: Redeploy Functions (After Fixing Secrets)
 ```bash
 cd "/Users/martin2/Desktop/Sale Mate Final"
-supabase functions deploy send-otp
+supabase functions deploy otp-request
+supabase functions deploy otp-verify
 ```
 
 ## Expected Behavior
 
 ### Development Mode (No Twilio Credentials)
-- Function logs OTP to console
-- Returns `{ success: true, dev_otp: "123456" }`
-- OTP is stored in database
+- `otp-request` logs OTP to console
+- Returns `{ success: true, challenge_id, dev_otp: "123456" }`
+- Challenge row is inserted into `otp_challenges`
 
 ### Production Mode (With Twilio Credentials)
-- Function sends SMS via Twilio
-- Returns `{ success: true, message: "Verification code sent successfully" }`
-- OTP is stored in database
+- `otp-request` sends SMS via Twilio
+- Returns `{ success: true, challenge_id, message: "Verification code sent successfully" }`
+- Challenge row is inserted into `otp_challenges`
+- `otp-verify` validates the code, updates status to `verified`, and records an entry in `otp_attempts`
 
 ## Common Error Messages
 
@@ -95,7 +97,7 @@ supabase functions deploy send-otp
 |-------|-------|-----|
 | "Failed to send verification code" | Twilio API call failed | Check Twilio credentials, balance, phone verification |
 | "Server configuration error" | Missing SUPABASE_URL or SERVICE_ROLE_KEY | These should be auto-set, check Supabase dashboard |
-| "Failed to store verification code" | Database error | Check `otp_verifications` table exists and RLS policies |
+| "Failed to store verification code" | Database error | Check `otp_challenges` table exists and RLS policies |
 | "Too many requests" | Rate limiting | Wait 30 seconds between requests |
 
 ## Next Steps
