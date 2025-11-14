@@ -286,6 +286,14 @@ class PaymentGatewayService {
     request: PaymentRequest
   ): Promise<PaymentResponse> {
     try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const successUrl = origin
+        ? `${origin}/payment/kashier/callback?status=success&transactionId=${transactionId}`
+        : undefined;
+      const failureUrl = origin
+        ? `${origin}/payment/kashier/callback?status=failed&transactionId=${transactionId}`
+        : undefined;
+
       // Call Edge Function to create Kashier payment
       const { data, error } = await supabase.functions.invoke('create-kashier-payment', {
         body: {
@@ -298,6 +306,8 @@ class PaymentGatewayService {
             transaction_type: request.transactionType,
             reference_id: request.referenceId,
           },
+          success_url: successUrl,
+          failure_url: failureUrl,
         },
       });
 

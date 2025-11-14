@@ -12,18 +12,73 @@ const corsHeaders = {
 
 interface KashierPaymentRequest {
   amount: number;
-  currency: string;
-  payment_method: string;
+  currency?: string;
   transaction_id: string;
   metadata?: Record<string, unknown>;
+  payment_method?: string;
+  success_url?: string;
+  failure_url?: string;
+}
+
+const REQUIRED_ENV_VARS = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'KASHIER_MERCHANT_ID',
+  'KASHIER_PAYMENT_KEY',
+  'KASHIER_SECRET_KEY',
+] as const;
+
+const PAYMENT_URL = 'https://checkout.kashier.io';
+
+function getEnv() {
+  const missing: string[] = [];
+  const values = {} as Record<typeof REQUIRED_ENV_VARS[number], string>;
+
+  for (const key of REQUIRED_ENV_VARS) {
+    const value = Deno.env.get(key);
+    if (!value) {
+      missing.push(key);
+    } else {
+      values[key] = value;
+    }
+  }
+
+  if (missing.length) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  return values;
+}
+
+function isTestMode() {
+  const paymentTestModeEnv = Deno.env.get('PAYMENT_TEST_MODE');
+  return paymentTestModeEnv !== 'false' && paymentTestModeEnv !== 'False' && paymentTestModeEnv !== 'FALSE';
+}
+
+async function generateOrderHash(
+  merchantId: string,
+  paymentKey: string,
+  orderId: string,
+  amount: string,
+  currency: string,
+) {
+  const payload = `${merchantId}:${amount}:${currency}:${orderId}:${paymentKey}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(payload);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 200, 
-      headers: corsHeaders 
-    });
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 
   try {
@@ -31,149 +86,102 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    // Read PAYMENT_TEST_MODE - default to true (test mode) if not set
-    const paymentTestModeEnv = Deno.env.get('PAYMENT_TEST_MODE');
-    const testMode = paymentTestModeEnv !== 'false' && paymentTestModeEnv !== 'False' && paymentTestModeEnv !== 'FALSE';
-    
-    // Log for debugging
-    console.log('PAYMENT_TEST_MODE env value:', paymentTestModeEnv);
-    console.log('testMode determined as:', testMode);
-    
-    // Get Kashier credentials from environment variables (must be set in Supabase Edge Function secrets)
-    const kashierPaymentKey = Deno.env.get('KASHIER_PAYMENT_KEY');
-    const kashierSecretKey = Deno.env.get('KASHIER_SECRET_KEY');
-    const kashierMerchantId = Deno.env.get('KASHIER_MERCHANT_ID');
-    
-    // Validate required credentials
-    if (!kashierSecretKey || !kashierMerchantId) {
-      console.error('Missing Kashier credentials:', {
-        hasSecretKey: !!kashierSecretKey,
-        hasMerchantId: !!kashierMerchantId,
-      });
-      return new Response(
-        JSON.stringify({ error: 'Kashier credentials not configured. Please set KASHIER_SECRET_KEY and KASHIER_MERCHANT_ID in Edge Function secrets.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    const baseUrl = Deno.env.get('BASE_URL') || 'https://your-project.supabase.co';
+    const env = getEnv();
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
+    const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
     const body: KashierPaymentRequest = await req.json();
-
-    // Validate request
-    if (!body.amount || body.amount <= 0) {
+    const amount = Number(body.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
       return new Response(
-        JSON.stringify({ error: 'Invalid amount' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid amount. Amount must be greater than zero.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // Test Mode - Generate mock payment URL
+    if (!body.transaction_id) {
+      return new Response(
+        JSON.stringify({ error: 'transaction_id is required.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const currency = (body.currency || 'EGP').toUpperCase();
+    const baseUrl = Deno.env.get('BASE_URL') || env.SUPABASE_URL;
+    const testMode = isTestMode();
+
     if (testMode) {
-      const mockOrderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const mockPaymentUrl = `${baseUrl}/payment/kashier/test?orderId=${mockOrderId}&transactionId=${body.transaction_id}`;
+      const mockOrderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const mockRedirect = `${baseUrl.replace(/\/$/, '')}/payment/kashier/test?orderId=${mockOrderId}&transactionId=${body.transaction_id}`;
 
       return new Response(
         JSON.stringify({
           success: true,
-          orderId: mockOrderId,
-          redirectUrl: mockPaymentUrl,
-          transactionId: body.transaction_id,
           testMode: true,
+          redirectUrl: mockRedirect,
+          orderId: mockOrderId,
+          transactionId: body.transaction_id,
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    // Production Mode - Create Kashier Order
-    // Generate order hash (SHA256)
+    const amountString = amount.toFixed(2).replace(/\.00$/, '');
     const orderId = `order_${body.transaction_id}_${Date.now()}`;
-    
-    // According to Kashier documentation, amount should be in PIASTERS (cents) for EGP
-    // Format: merchantId:amount:currency:orderId:secretKey
-    // Example: MID-1234:10000:EGP:order_xxx:secret_key (10000 piasters = 100 EGP)
-    // Convert EGP to piasters (multiply by 100)
-    const amountInPiasters = Math.round(body.amount * 100).toString();
-    
-    // Kashier order hash format: merchantId:amount:currency:orderId:secretKey
-    // IMPORTANT: Use the FULL secret key (including the $ character)
-    const hashString = `${kashierMerchantId}:${amountInPiasters}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
-    
-    // Log hash string for debugging (mask the secret key)
-    console.log('Hash calculation:', {
-      merchantId: kashierMerchantId,
-      amountInPiasters,
-      amountInEGP: body.amount,
-      currency: body.currency.toUpperCase(),
+    const orderHash = await generateOrderHash(
+      env.KASHIER_MERCHANT_ID,
+      env.KASHIER_PAYMENT_KEY,
       orderId,
-      secretKeyLength: kashierSecretKey.length,
-      secretKeyHasDollar: kashierSecretKey.includes('$'),
-      hashStringMasked: `${kashierMerchantId}:${amountInPiasters}:${body.currency.toUpperCase()}:${orderId}:***`
-    });
-    
-    // Create SHA256 hash of the hash string (not HMAC)
-    const encoder = new TextEncoder();
-    const messageData = encoder.encode(hashString);
-    
-    // Hash the message using SHA-256
-    const hashBuffer = await crypto.subtle.digest('SHA-256', messageData);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    const orderHash = hashHex;
+      amountString,
+      currency,
+    );
 
-    // Build Kashier payment URL
-    // IMPORTANT: Both hash and URL amount must use the SAME format (piasters)
-    // Kashier verifies the hash by recalculating it using the amount from the URL
-    // If they don't match, you get "Forbidden request" error
-    const kashierBaseUrl = 'https://checkout.kashier.io';
-    const paymentUrl = new URL(kashierBaseUrl);
-    paymentUrl.searchParams.set('merchantId', kashierMerchantId);
-    paymentUrl.searchParams.set('amount', amountInPiasters); // Use piasters to match hash calculation
-    paymentUrl.searchParams.set('currency', body.currency.toUpperCase());
+    console.log('Kashier order created', {
+      merchantId: env.KASHIER_MERCHANT_ID,
+      orderId,
+      amountString,
+      amount,
+      currency,
+      paymentKeyLength: env.KASHIER_PAYMENT_KEY.length,
+      hashPreview: `${orderHash.slice(0, 8)}...`,
+    });
+
+    const paymentUrl = new URL(PAYMENT_URL);
+    paymentUrl.searchParams.set('merchantId', env.KASHIER_MERCHANT_ID);
+    paymentUrl.searchParams.set('paymentKey', env.KASHIER_PAYMENT_KEY);
+    paymentUrl.searchParams.set('amount', amountString);
+    paymentUrl.searchParams.set('currency', currency);
     paymentUrl.searchParams.set('orderId', orderId);
     paymentUrl.searchParams.set('hash', orderHash);
-    paymentUrl.searchParams.set('mode', testMode ? 'test' : 'live'); // Use 'live' for production
-    paymentUrl.searchParams.set('allowedMethods', 'card,wallet'); // card, wallet, bank, etc.
-    // Use baseUrl for redirect, or construct from request origin
-    const appUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
-    paymentUrl.searchParams.set('redirect', `${appUrl}/payment/kashier/callback?transactionId=${body.transaction_id}`);
+    paymentUrl.searchParams.set('mode', 'live');
+    paymentUrl.searchParams.set('allowedMethods', 'card,wallet');
+
+    const appUrl = baseUrl.replace(/\/$/, '');
+    const successRedirect = body.success_url || `${appUrl}/payment/kashier/callback?status=success&transactionId=${body.transaction_id}`;
+    const failureRedirect = body.failure_url || `${appUrl}/payment/kashier/callback?status=failed&transactionId=${body.transaction_id}`;
+    paymentUrl.searchParams.set('redirect', successRedirect);
+    paymentUrl.searchParams.set('errorRedirect', failureRedirect);
 
     return new Response(
       JSON.stringify({
         success: true,
-        orderId: orderId,
-        redirectUrl: paymentUrl.toString(),
-        transactionId: body.transaction_id,
-        hash: orderHash,
         testMode: false,
+        orderId,
+        transactionId: body.transaction_id,
+        redirectUrl: paymentUrl.toString(),
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
     console.error('Kashier payment error:', error);
@@ -181,7 +189,7 @@ serve(async (req) => {
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Failed to create Kashier payment',
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });
