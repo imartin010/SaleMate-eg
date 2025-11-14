@@ -128,10 +128,22 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
           throw new Error(`Failed to create top-up request: ${topupError?.message}`);
         }
 
-        // Determine gateway - use Kashier if configured, otherwise test mode
-        const useKashier = import.meta.env.VITE_KASHIER_PAYMENT_KEY && 
-                          import.meta.env.VITE_PAYMENT_TEST_MODE === 'false';
+        // Determine gateway - use Kashier if configured and test mode is disabled
+        // Check for 'false' in multiple case variations
+        const isTestModeDisabled = 
+          import.meta.env.VITE_PAYMENT_TEST_MODE === 'false' ||
+          import.meta.env.VITE_PAYMENT_TEST_MODE === 'False' ||
+          import.meta.env.VITE_PAYMENT_TEST_MODE === 'FALSE';
+        
+        const useKashier = import.meta.env.VITE_KASHIER_PAYMENT_KEY && isTestModeDisabled;
         const gateway: PaymentGateway = useKashier ? 'kashier' : 'test';
+        
+        console.log('Payment Gateway Selection:', {
+          hasKashierKey: !!import.meta.env.VITE_KASHIER_PAYMENT_KEY,
+          testModeEnv: import.meta.env.VITE_PAYMENT_TEST_MODE,
+          isTestModeDisabled,
+          selectedGateway: gateway,
+        });
 
         // Create payment via gateway
         const paymentResult = await PaymentGatewayService.createPayment({

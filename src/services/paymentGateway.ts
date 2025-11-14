@@ -50,7 +50,11 @@ export interface PaymentTransaction {
 }
 
 class PaymentGatewayService {
-  private static readonly TEST_MODE = import.meta.env.VITE_PAYMENT_TEST_MODE !== 'false';
+  // Test mode is disabled if explicitly set to 'false', otherwise defaults to true for safety
+  private static readonly TEST_MODE = 
+    import.meta.env.VITE_PAYMENT_TEST_MODE !== 'false' && 
+    import.meta.env.VITE_PAYMENT_TEST_MODE !== 'False' && 
+    import.meta.env.VITE_PAYMENT_TEST_MODE !== 'FALSE';
   private static readonly STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
   private static readonly PAYMOB_API_KEY = import.meta.env.VITE_PAYMOB_API_KEY || '';
   private static readonly KASHIER_PAYMENT_KEY = import.meta.env.VITE_KASHIER_PAYMENT_KEY || '';
@@ -98,10 +102,15 @@ class PaymentGatewayService {
       }
 
       // Process payment based on gateway
+      // IMPORTANT: Only use test mode if gateway is explicitly 'test' OR if TEST_MODE is enabled
+      // If gateway is 'kashier' and TEST_MODE is false, use Kashier even if TEST_MODE was true
       let paymentResult: PaymentResponse;
 
-      if (request.gateway === 'test' || this.TEST_MODE) {
-        // Test mode - simulate payment
+      if (request.gateway === 'test') {
+        // Explicitly requested test gateway - simulate payment
+        paymentResult = await this.processTestPayment(transaction.id, request);
+      } else if (this.TEST_MODE && request.gateway !== 'kashier') {
+        // Test mode enabled and not using Kashier - simulate payment
         paymentResult = await this.processTestPayment(transaction.id, request);
       } else if (request.gateway === 'stripe') {
         paymentResult = await this.processStripePayment(transaction.id, request);
