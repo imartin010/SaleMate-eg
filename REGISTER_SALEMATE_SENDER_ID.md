@@ -34,3 +34,4 @@ If the above options don't work:
 
 The code is already configured to use "SaleMate" as the sender. Once it's registered in Twilio, it will automatically work. Until then, it will fall back to your phone number.
 
+
