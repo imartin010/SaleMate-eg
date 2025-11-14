@@ -122,20 +122,22 @@ serve(async (req) => {
     const amountInPiasters = Math.round(body.amount * 100).toString();
     
     // Kashier order hash format: merchantId:amount:currency:orderId:secretKey
-    // Note: Kashier uses SHA256 (not HMAC-SHA256) of the hash string
+    // IMPORTANT: Use the FULL secret key (including the $ character)
     const hashString = `${kashierMerchantId}:${amountInPiasters}:${body.currency.toUpperCase()}:${orderId}:${kashierSecretKey}`;
     
-    // Log hash string for debugging (without secret key)
+    // Log hash string for debugging (mask the secret key)
     console.log('Hash calculation:', {
       merchantId: kashierMerchantId,
       amountInPiasters,
       amountInEGP: body.amount,
       currency: body.currency.toUpperCase(),
       orderId,
+      secretKeyLength: kashierSecretKey.length,
+      secretKeyHasDollar: kashierSecretKey.includes('$'),
       hashStringMasked: `${kashierMerchantId}:${amountInPiasters}:${body.currency.toUpperCase()}:${orderId}:***`
     });
     
-    // Create SHA256 hash (not HMAC) - Kashier expects SHA256 of the hash string
+    // Create SHA256 hash of the hash string (not HMAC)
     const encoder = new TextEncoder();
     const messageData = encoder.encode(hashString);
     
