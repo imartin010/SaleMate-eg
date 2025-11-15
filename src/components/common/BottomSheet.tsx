@@ -50,11 +50,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           'animate-in slide-in-from-bottom duration-300',
           className
         )}
-        style={{ maxHeight }}
+        style={{ maxHeight, ...(className?.includes('!inset-x-') ? {} : {}) }}
       >
         {/* Header */}
         {title && (
-          <div className="sticky top-0 bg-background border-b border-border px-4 py-4 flex justify-between items-center z-10">
+          <div className={cn(
+            "sticky top-0 bg-background border-b border-border px-4 py-4 flex justify-between items-center z-10",
+            className?.includes('!rounded-2xl') && "rounded-t-2xl"
+          )}>
             <h2 className="text-xl font-semibold text-foreground">{title}</h2>
             <button
               onClick={onClose}
