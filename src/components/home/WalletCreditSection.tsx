@@ -48,14 +48,21 @@ const WalletCreditSection: React.FC = React.memo(() => {
 
         {/* Circular Icon Actions - Responsive */}
         <div className="flex items-center justify-center gap-4 md:gap-6 pt-4 md:pt-6">
-          {/* Top Up Button - GREEN */}
+          {/* Top Up Button - GREEN with Glow Effect */}
           <button
             onClick={() => setShowTopUpModal(true)}
             className="flex flex-col items-center gap-1.5 md:gap-2 group"
             aria-label="Top Up Wallet"
           >
-            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300">
-              <Plus className="h-6 w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
+            <div className="relative w-12 h-12 md:w-16 md:h-16">
+              {/* Glowing ring animation - outer glow */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 opacity-60 blur-lg glow-pulse"></div>
+              {/* Glowing ring animation - inner glow */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-300 to-teal-300 opacity-40 blur-md glow-pulse-delayed"></div>
+              {/* Main button */}
+              <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 ring-2 ring-emerald-300/60 ring-offset-2 ring-offset-blue-50">
+                <Plus className="h-6 w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
+              </div>
             </div>
             <span className="text-xs md:text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">
               Top Up
