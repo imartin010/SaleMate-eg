@@ -46,33 +46,45 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Get balance using the consolidated payments table
-      // Use the get_wallet_balance function
-      const { data, error: balanceError } = await supabase.rpc('get_wallet_balance', {
-        p_profile_id: user.id
-      });
+      // Get balance directly from profiles.wallet_balance column
+      // This is updated by the payment gateway system (process_payment_and_topup RPC)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('id', user.id)
+        .single();
 
-      if (balanceError) {
-        // Fallback: compute balance from payments table directly
-        const { data: deposits } = await supabase
-          .from('payments')
-          .select('amount')
-          .eq('profile_id', user.id)
-          .eq('status', 'completed')
-          .in('entry_type', ['deposit', 'refund', 'adjustment']);
+      if (profileError) {
+        // Fallback: try using get_wallet_balance RPC function
+        const { data, error: balanceError } = await supabase.rpc('get_wallet_balance', {
+          p_profile_id: user.id
+        });
 
-        const { data: withdrawals } = await supabase
-          .from('payments')
-          .select('amount')
-          .eq('profile_id', user.id)
-          .eq('status', 'completed')
-          .in('entry_type', ['withdrawal', 'payment']);
+        if (balanceError) {
+          // Final fallback: compute balance from payments table directly
+          const { data: deposits } = await supabase
+            .from('payments')
+            .select('amount')
+            .eq('profile_id', user.id)
+            .eq('status', 'completed')
+            .in('entry_type', ['deposit', 'refund', 'adjustment']);
 
-        const depositTotal = deposits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
-        const withdrawalTotal = withdrawals?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
-        setBalance(depositTotal - withdrawalTotal);
+          const { data: withdrawals } = await supabase
+            .from('payments')
+            .select('amount')
+            .eq('profile_id', user.id)
+            .eq('status', 'completed')
+            .in('entry_type', ['withdrawal', 'payment']);
+
+          const depositTotal = deposits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
+          const withdrawalTotal = withdrawals?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
+          setBalance(depositTotal - withdrawalTotal);
+        } else {
+          setBalance(parseFloat((data as number) || 0));
+        }
       } else {
-        setBalance(parseFloat((data as number) || 0));
+        // Use wallet_balance from profiles table (primary source for payment gateway)
+        setBalance(parseFloat((profile.wallet_balance || 0).toString()));
       }
     } catch (err: unknown) {
       console.error('Error fetching wallet balance:', err);
