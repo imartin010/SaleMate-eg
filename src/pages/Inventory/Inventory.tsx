@@ -9,6 +9,9 @@ import { supabase } from "../../lib/supabaseClient"
 import { BRDataProperty, BRDataPropertyFilters, BRDataPropertySort } from '../../types';
 import { formatCurrency, formatNumber } from '../../lib/format';
 import { PropertyDetailsModal } from '../../components/inventory/PropertyDetailsModal';
+import { EmptyState } from '../../components/common/EmptyState';
+import { BottomSheet } from '../../components/common/BottomSheet';
+import { SkeletonList } from '../../components/common/SkeletonCard';
 import {
   Search,
   Filter,
@@ -833,7 +836,16 @@ const Inventory: React.FC = () => {
     </div>
   );
 
-  if (loading) {
+  if (loading && properties.length === 0) {
+    return (
+      <div className="space-y-8 px-4 py-6">
+        <SkeletonList count={8} />
+      </div>
+    );
+  }
+  
+  // Legacy loading skeleton - keep for reference but hidden
+  if (false && loading) {
     return (
       <div className="space-y-8">
         {/* Header Skeleton */}
@@ -1031,16 +1043,34 @@ const Inventory: React.FC = () => {
 
         {/* Filter Controls */}
         <div className="flex items-center justify-between">
+          {/* Desktop Filter Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="text-primary hover:text-primary"
+            className="hidden md:flex text-primary hover:text-primary"
           >
             <Filter className="h-4 w-4 mr-2" />
             Advanced Filters
             {hasActiveFilters && (
               <span className="ml-1 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                {Object.keys(filters).filter(key => 
+                  filters[key as keyof BRDataPropertyFilters] !== undefined && 
+                  filters[key as keyof BRDataPropertyFilters] !== ''
+                ).length}
+              </span>
+            )}
+          </Button>
+          {/* Mobile Filter Button */}
+          <Button
+            variant={hasActiveFilters ? 'default' : 'outline'}
+            onClick={() => setShowFilters(true)}
+            className="md:hidden h-12 w-12 min-w-[48px] min-h-[48px] rounded-xl"
+            aria-label="Filters"
+          >
+            <Filter className="h-5 w-5" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
                 {Object.keys(filters).filter(key => 
                   filters[key as keyof BRDataPropertyFilters] !== undefined && 
                   filters[key as keyof BRDataPropertyFilters] !== ''
@@ -1085,9 +1115,9 @@ const Inventory: React.FC = () => {
           </div>
         </div>
 
-        {/* Advanced Filters Panel */}
+        {/* Advanced Filters Panel - Desktop Only */}
         {showFilters && (
-          <Card className="card-modern p-6 space-y-6">
+          <Card className="hidden md:block card-modern p-6 space-y-6">
             {/* Location & Developer Filters */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Location & Developer</h3>
@@ -1473,26 +1503,95 @@ const Inventory: React.FC = () => {
 
       {/* Empty State */}
       {properties.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Home className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {hasActiveFilters ? 'No properties found' : 'No properties available'}
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            {hasActiveFilters 
-              ? 'Try adjusting your search criteria or filters.'
-              : 'There are currently no properties in the inventory.'
-            }
-          </p>
-          {hasActiveFilters && (
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          title={hasActiveFilters ? 'No properties found' : 'No properties available'}
+          description={hasActiveFilters 
+            ? 'Try adjusting your search criteria or filters'
+            : 'There are currently no properties in the inventory'}
+          ctaText={hasActiveFilters ? 'Clear Filters' : undefined}
+          onCtaClick={hasActiveFilters ? clearFilters : undefined}
+        />
       )}
+
+      {/* Mobile Filters Bottom Sheet */}
+      <BottomSheet
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        title="Advanced Filters"
+        footer={
+          <div className="space-y-3">
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="mobile"
+                onClick={() => {
+                  clearFilters();
+                  setShowFilters(false);
+                }}
+                className="w-full"
+              >
+                Clear All Filters
+              </Button>
+            )}
+            <Button
+              size="mobile"
+              onClick={() => setShowFilters(false)}
+              className="w-full"
+            >
+              Apply Filters
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Mobile filter content - simplified version of desktop filters */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Compound</label>
+            <select
+              value={filters.compound || ''}
+              onChange={(e) => setFilters({ ...filters, compound: e.target.value || undefined })}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]"
+            >
+              <option value="">All Compounds</option>
+              {filterOptions.compounds.map(compound => (
+                <option key={compound} value={compound}>
+                  {compound}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+            <select
+              value={filters.area || ''}
+              onChange={(e) => setFilters({ ...filters, area: e.target.value || undefined })}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]"
+            >
+              <option value="">All Areas</option>
+              {filterOptions.areas.map(area => (
+                <option key={area} value={area}>
+                  {area}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Developer</label>
+            <select
+              value={filters.developer || ''}
+              onChange={(e) => setFilters({ ...filters, developer: e.target.value || undefined })}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]"
+            >
+              <option value="">All Developers</option>
+              {filterOptions.developers.map(developer => (
+                <option key={developer} value={developer}>
+                  {developer}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Property Details Modal */}
       <PropertyDetailsModal
