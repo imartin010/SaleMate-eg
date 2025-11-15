@@ -187,15 +187,15 @@ const TeamPage: React.FC = () => {
       if (!profile?.email) return;
 
       const { data, error: fetchError } = await supabase
-        .from('team_invitations')
+        .from('team_members')
         .select(`
           *,
-          manager:profiles!team_invitations_manager_id_fkey(name, email)
+          manager:profiles!team_members_invited_by_fkey(name, email)
         `)
-        .eq('invitee_email', profile.email)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+        .eq('invited_email', profile.email)
+        .eq('status', 'invited')
+        .gt('invitation_expires_at', new Date().toISOString())
+        .order('joined_at', { ascending: false });
 
       if (fetchError) {
         console.error('Error fetching my invitations:', fetchError);

@@ -61,7 +61,7 @@ export default function LeadRequests() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: projectData, error: projectError } = await (supabase as any)
             .from('projects')
-            .select('id, name, region, developers:developers ( name )')
+            .select('id, name, region, developer:entities!projects_developer_id_fkey ( name )')
             .eq('id', selectedRequest.project_id)
             .single();
 
@@ -70,7 +70,7 @@ export default function LeadRequests() {
               ...prev,
               project: {
                 name: projectData.name || '',
-                developer: projectData.developers?.name || 'Unknown',
+                developer: projectData.developer?.name || 'Unknown',
                 region: projectData.region || 'Unknown'
               }
             } : null);
@@ -160,7 +160,7 @@ export default function LeadRequests() {
           p.id,
           {
             name: p.name || 'Unknown',
-            developer: p.developers?.name || 'Unknown',
+            developer: p.developer?.name || 'Unknown',
             region: p.region || 'Unknown'
           }
         ])

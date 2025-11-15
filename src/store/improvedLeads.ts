@@ -58,7 +58,7 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
             id,
             name,
             region,
-            developers:developers ( name )
+            developer:entities!projects_developer_id_fkey ( name )
           )
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
@@ -114,7 +114,7 @@ export const useImprovedLeadStore = create<LeadsState>((set, get) => ({
         project: leadData.projects ? {
           id: (leadData.projects as Record<string, unknown>).id as string,
           name: (leadData.projects as Record<string, unknown>).name as string,
-          developer: ((leadData.projects as Record<string, unknown>)?.developers as Record<string, unknown>)?.name as string ?? 'Unknown',
+          developer: ((leadData.projects as Record<string, unknown>)?.developer as Record<string, unknown>)?.name as string ?? 'Unknown',
           region: (leadData.projects as Record<string, unknown>).region as string
         } : undefined
       };
