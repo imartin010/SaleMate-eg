@@ -51,7 +51,7 @@ export const PurchaseRequestsManager: React.FC = () => {
             id,
             name,
             region,
-            developers:developers ( name )
+            developer:entities!projects_developer_id_fkey ( name )
           )
         `)
         .order('created_at', { ascending: true });
@@ -162,7 +162,7 @@ export const PurchaseRequestsManager: React.FC = () => {
                           <Building className="h-4 w-4 text-muted-foreground" />
                           <span>{request.projects?.name || 'Unknown Project'}</span>
                           <span className="text-sm text-muted-foreground">
-                            {request.projects?.developers?.name || 'Unknown'} • {request.projects?.region}
+                            {request.projects?.developer?.name || 'Unknown'} • {request.projects?.region}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm">

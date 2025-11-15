@@ -80,7 +80,7 @@ export const ImprovedShop: React.FC = () => {
           price_per_lead,
           available_leads,
           cover_image,
-          developers:developers ( name )
+          developer:entities!projects_developer_id_fkey ( name )
         `)
         .gt('available_leads', 0) // Only show projects with available leads
         .order('available_leads', { ascending: false }); // Order by available leads descending
@@ -117,8 +117,8 @@ export const ImprovedShop: React.FC = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const base: Project[] = (projectsData as any[]).map((p: Record<string, unknown>) => {
           const name = extractName(p.name);
-          const developers = p.developers as Record<string, unknown> | undefined;
-          const developer = extractName(developers?.name ?? p.developer);
+          const developerEntity = p.developer as Record<string, unknown> | undefined;
+          const developer = extractName(developerEntity?.name ?? p.developer);
           const region = extractName(p.region);
           // Prefer a clean description; if it looks like JSON, replace with developer tagline
           const desc = typeof p.description === 'string' && /['"]name['"]\s*:/.test(p.description)

@@ -103,13 +103,13 @@ serve(async (req) => {
     // Generate a unique token
     const token = crypto.randomUUID();
 
-    // Check if invitation already exists
+    // Check if invitation already exists in team_members
     const { data: existingInvitation } = await supabaseClient
-      .from('team_invitations')
+      .from('team_members')
       .select('*')
-      .eq('manager_id', user.id)
-      .eq('invitee_email', invitee_email.toLowerCase())
-      .eq('status', 'pending')
+      .eq('invited_by', user.id)
+      .eq('invited_email', invitee_email.toLowerCase())
+      .eq('status', 'invited')
       .maybeSingle();
 
     let invitation;
@@ -118,29 +118,59 @@ serve(async (req) => {
     if (existingInvitation) {
       // Update existing invitation with new token
       const { data, error } = await supabaseClient
-        .from('team_invitations')
+        .from('team_members')
         .update({
-          token: token,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString(),
+          invitation_token: token,
+          invitation_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         })
-        .eq('id', existingInvitation.id)
+        .eq('team_id', existingInvitation.team_id)
+        .eq('profile_id', existingInvitation.profile_id || '00000000-0000-0000-0000-000000000000')
         .select()
         .single();
       
       invitation = data;
       inviteError = error;
     } else {
-      // Create new invitation
+      // Create new invitation in team_members
+      // First, get or create a team for this manager
+      const { data: teamData } = await supabaseClient
+        .from('teams')
+        .select('id')
+        .eq('owner_profile_id', user.id)
+        .maybeSingle();
+      
+      let teamId = teamData?.id;
+      if (!teamId) {
+        const { data: newTeam } = await supabaseClient
+          .from('teams')
+          .insert({
+            name: `${user.user_metadata?.name || user.email}'s Team`,
+            owner_profile_id: user.id,
+            team_type: 'sales'
+          })
+          .select('id')
+          .single();
+        teamId = newTeam?.id;
+      }
+      
+      if (!teamId) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to create team' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const { data, error } = await supabaseClient
-        .from('team_invitations')
+        .from('team_members')
         .insert({
-          manager_id: user.id,
-          invitee_email: invitee_email.toLowerCase(),
-          invitee_user_id: existingUser?.id || null,
-          token: token,
-          status: 'pending',
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          team_id: teamId,
+          profile_id: existingUser?.id || null,
+          invited_by: user.id,
+          invited_email: invitee_email.toLowerCase(),
+          invitation_token: token,
+          status: 'invited',
+          invitation_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'agent'
         })
         .select()
         .single();

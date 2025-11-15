@@ -166,10 +166,11 @@ export const useTeamStore = create<TeamState>((set, get) => ({
       if (!user?.user) return;
 
       const { data, error } = await supabase
-        .from('team_invitations')
+        .from('team_members')
         .select('*')
-        .eq('manager_id', user.user.id)
-        .order('created_at', { ascending: false });
+        .eq('invited_by', user.user.id)
+        .eq('status', 'invited')
+        .order('joined_at', { ascending: false });
 
       if (error) {
         set({ error: error.message });
