@@ -169,12 +169,16 @@ export default function WalletManagement() {
 
         if (err2) throw err2;
 
-        // Create transaction record
-        await supabase.from('wallet_transactions').insert({
-          user_id: request.user_id,
+        // Create payment record
+        await supabase.from('payments').insert({
+          profile_id: request.user_id,
+          operation_type: 'topup_request',
+          entry_type: 'deposit',
+          status: 'completed',
           amount: request.amount,
-          type: 'topup',
+          currency: 'EGP',
           description: `Wallet top-up via ${request.payment_method}`,
+          reference_type: 'commerce',
           reference_id: requestId,
         });
       }

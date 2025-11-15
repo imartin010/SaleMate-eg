@@ -42,13 +42,14 @@ serve(async (req) => {
     const metadata = url ? { url } : {};
 
     const { data, error } = await supabase
-      .from('notification_events')
+      .from('notifications')
       .insert({
         target_profile_id: userId,
         context: 'system',
         context_id: null,
         title,
         body,
+        url,
         channels,
         metadata,
         status: channels.includes('inapp') ? 'sent' : 'pending',

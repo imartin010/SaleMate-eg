@@ -32,7 +32,8 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
       
       // Build query with proper date filtering
       let query = supabase
-        .from('dashboard_banners')
+        .from('content')
+        .eq('content_type', 'banner')
         .select('*')
         .eq('placement', placement)
         .eq('status', 'live');

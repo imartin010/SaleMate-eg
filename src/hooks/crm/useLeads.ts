@@ -181,49 +181,47 @@ export function useLeads() {
 
       if (leadIds.length > 0) {
         const { data: feedbackData, error: feedbackError } = await supabase
-          .from('lead_events')
+          .from('activities')
           .select(`
             id,
             lead_id,
             actor_profile_id,
+            body,
             payload,
-            summary,
             created_at,
-            actor:profiles!lead_events_actor_profile_id_fkey (
+            actor:profiles!activities_actor_profile_id_fkey (
               id,
               name,
               email
             )
           `)
           .in('lead_id', leadIds)
-          .eq('event_type', 'feedback')
-          .contains('payload', { source: 'feedback_history' })
+          .eq('activity_type', 'feedback')
           .order('created_at', { ascending: false });
 
         if (feedbackError) {
           console.warn('Failed to load feedback history from lead_events:', feedbackError);
         } else if (feedbackData) {
-          feedbackHistoryMap = feedbackData.reduce<Record<string, FeedbackHistoryEntry[]>>((acc, event) => {
-            const payload = (event as any)?.payload ?? {};
+          feedbackHistoryMap = feedbackData.reduce<Record<string, FeedbackHistoryEntry[]>>((acc, activity) => {
             const feedbackEntry: FeedbackHistoryEntry = {
-              id: event.id,
-              lead_id: event.lead_id,
-              user_id: event.actor_profile_id ?? '',
-              feedback_text: payload.feedback_text ?? event.summary ?? '',
-              created_at: event.created_at,
-              updated_at: payload.updated_at ?? null,
-              user: event.actor
+              id: activity.id,
+              lead_id: activity.lead_id,
+              user_id: activity.actor_profile_id ?? '',
+              feedback_text: activity.body ?? '',
+              created_at: activity.created_at,
+              updated_at: activity.updated_at ?? null,
+              user: activity.actor
                 ? {
-                    name: event.actor.name ?? 'Unknown User',
-                    email: event.actor.email ?? '',
+                    name: activity.actor.name ?? 'Unknown User',
+                    email: activity.actor.email ?? '',
                   }
                 : null,
             };
 
-            if (!acc[event.lead_id]) {
-              acc[event.lead_id] = [];
+            if (!acc[activity.lead_id]) {
+              acc[activity.lead_id] = [];
             }
-            acc[event.lead_id].push(feedbackEntry);
+            acc[activity.lead_id].push(feedbackEntry);
             return acc;
           }, {});
         }

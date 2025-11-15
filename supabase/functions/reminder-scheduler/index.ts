@@ -19,21 +19,22 @@ serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // Fetch all pending actions that are due
+    // Fetch all pending tasks that are due
     const { data: dueActions, error: fetchError } = await supabase
-      .from('case_actions')
+      .from('activities')
       .select(`
         id,
         lead_id,
-        action_type,
         payload,
         due_at,
-        created_by,
-        leads!inner(client_name, buyer_user_id, assigned_to_id, owner_id)
+        actor_profile_id,
+        assignee_profile_id,
+        leads!inner(client_name, buyer_user_id, assigned_to_id)
       `)
-      .eq('status', 'PENDING')
+      .eq('activity_type', 'task')
+      .eq('task_status', 'pending')
       .lte('due_at', now)
-      .is('notified_at', null);
+      .is('payload->notified_at', null);
 
     if (fetchError) throw fetchError;
 
@@ -55,7 +56,9 @@ serve(async (req) => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const lead = action.leads as any;
-        const targetUserId = lead?.buyer_user_id || lead?.assigned_to_id || lead?.owner_id || action.created_by;
+        const payload = (action.payload || {}) as any;
+        const actionType = payload.action_type || 'CUSTOM';
+        const targetUserId = action.assignee_profile_id || action.actor_profile_id || lead?.buyer_user_id || lead?.assigned_to_id;
 
         if (!targetUserId) {
           console.warn(`⚠️ No user ID found for action ${action.id}`);
@@ -72,8 +75,8 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             userId: targetUserId,
-            title: getActionTitle(action.action_type),
-            body: getActionBody(action.action_type, lead?.client_name),
+            title: getActionTitle(actionType),
+            body: getActionBody(actionType, lead?.client_name),
             url: `/crm/case/${action.lead_id}`,
             channels: ['inapp'],
           }),
@@ -87,8 +90,10 @@ serve(async (req) => {
 
         // Mark action as notified
         await supabase
-          .from('case_actions')
-          .update({ notified_at: new Date().toISOString() })
+          .from('activities')
+          .update({ 
+            payload: { ...payload, notified_at: new Date().toISOString() }
+          })
           .eq('id', action.id);
 
         notified++;

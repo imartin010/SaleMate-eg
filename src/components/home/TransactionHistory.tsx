@@ -58,11 +58,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = React.memo(
     setError(null);
 
     try {
-      // Query wallet_transactions (if table exists)
+      // Query payments table (wallet entries)
       const { data: transactionsData, error: transactionsError } = await supabase
-        .from('wallet_transactions')
+        .from('payments')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('profile_id', user.id)
+        .not('entry_type', 'is', null) // Only wallet entries
         .order('created_at', { ascending: false })
         .limit(50);
 
