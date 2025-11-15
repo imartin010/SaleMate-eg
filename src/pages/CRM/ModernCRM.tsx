@@ -792,12 +792,12 @@ export default function ModernCRM() {
                       </div>
 
                       {/* Project Info */}
-                      {lead.project && (
-                        <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
-                          <Building2 className="h-4 w-4 text-indigo-600 flex-shrink-0" />
-                          <span className="truncate">{lead.project.name}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 mb-3 text-sm">
+                        <Building2 className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                        <span className={`truncate ${lead.project ? 'text-gray-900 font-medium' : 'text-gray-400 italic'}`}>
+                          {lead.project?.name || 'No Project'}
+                        </span>
+                      </div>
 
                       {/* Contact Info */}
                       <div className="space-y-2 mb-3">
@@ -897,7 +897,7 @@ export default function ModernCRM() {
                         </th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden sm:table-cell">Contact</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden md:table-cell">Project</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Project</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Stage</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Budget</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
@@ -1000,8 +1000,13 @@ export default function ModernCRM() {
                               )}
                             </div>
                           </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3 hidden md:table-cell">
-                            <p className="text-xs md:text-sm text-gray-900 truncate max-w-[120px] lg:max-w-none">{lead.project?.name || 'N/A'}</p>
+                          <td className="px-2 py-2 md:px-4 md:py-3">
+                            <div className="flex items-center gap-1.5">
+                              <Building2 className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0 hidden sm:inline" />
+                              <p className={`text-xs md:text-sm truncate max-w-[120px] lg:max-w-none ${lead.project ? 'text-gray-900 font-medium' : 'text-gray-400 italic'}`}>
+                                {lead.project?.name || 'No Project'}
+                              </p>
+                            </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3">
                             <Select
@@ -1147,7 +1152,12 @@ export default function ModernCRM() {
                                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
                                 />
                                 <p className="font-medium text-gray-900 mb-1 relative z-10 text-sm md:text-base">{lead.client_name}</p>
-                                <p className="text-xs text-gray-600 mb-2 relative z-10 truncate">{lead.project?.name}</p>
+                                <div className="flex items-center gap-1.5 mb-2 relative z-10">
+                                  <Building2 className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0" />
+                                  <p className={`text-xs truncate ${lead.project ? 'text-gray-700 font-medium' : 'text-gray-400 italic'}`}>
+                                    {lead.project?.name || 'No Project'}
+                                  </p>
+                                </div>
                                 <div className="flex items-center gap-2 relative z-10">
                                   {lead.client_phone && (
                                     <motion.button

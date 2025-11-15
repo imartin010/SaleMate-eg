@@ -105,11 +105,12 @@ export function useLeads() {
       setError(null);
 
       // First, try to fetch leads with all joins
+      // Try multiple join syntaxes - Supabase PostgREST can be finicky with foreign keys
       let query = supabase
         .from('leads')
         .select(`
           *,
-          project:projects (
+          projects (
             id,
             name,
             region
@@ -131,6 +132,7 @@ export function useLeads() {
       if (fetchError) {
         // If the query fails, try a simpler query without joins
         console.warn('Failed to fetch leads with joins, trying simpler query:', fetchError);
+        console.error('Join error details:', JSON.stringify(fetchError, null, 2));
         const { data: simpleData, error: simpleError } = await supabase
           .from('leads')
           .select('*')
@@ -139,10 +141,36 @@ export function useLeads() {
 
         if (simpleError) throw simpleError;
         
-        // Transform simple data
+        // Fetch projects separately if join failed
+        const projectIds = [...new Set((simpleData || []).map((l: any) => l.project_id).filter(Boolean))];
+        let projectsMap: Record<string, { id: string; name: string; region: string }> = {};
+        
+        if (projectIds.length > 0) {
+          const { data: projectsData, error: projectsError } = await supabase
+            .from('projects')
+            .select('id, name, region')
+            .in('id', projectIds);
+          
+          if (!projectsError && projectsData) {
+            projectsMap = projectsData.reduce((acc, p: any) => {
+              acc[p.id] = {
+                id: p.id,
+                name: typeof p.name === 'object' && p.name !== null
+                  ? (p.name.name || JSON.stringify(p.name))
+                  : (p.name || ''),
+                region: typeof p.region === 'object' && p.region !== null
+                  ? (p.region.name || JSON.stringify(p.region))
+                  : (p.region || ''),
+              };
+              return acc;
+            }, {} as Record<string, { id: string; name: string; region: string }>);
+          }
+        }
+        
+        // Transform simple data with manually joined projects
         const transformedData = (simpleData || []).map((lead: any) => ({
           ...lead,
-          project: null, // Will be fetched separately if needed
+          project: lead.project_id ? (projectsMap[lead.project_id] || null) : null,
           owner: null,
           assigned_to: null,
           feedback_history: [],
@@ -155,15 +183,28 @@ export function useLeads() {
 
       // Transform the data to extract nested names
       const transformedData = (data || []).map((lead: any) => {
-        const originalProject = lead.project;
-        const transformedProject = originalProject ? {
-          ...originalProject,
-          name: typeof originalProject.name === 'object' && originalProject.name !== null
-            ? (originalProject.name.name || JSON.stringify(originalProject.name))
-            : originalProject.name,
-          region: typeof originalProject.region === 'object' && originalProject.region !== null
-            ? (originalProject.region.name || JSON.stringify(originalProject.region))
-            : originalProject.region,
+        // Handle project - Supabase returns it as 'projects' (could be array or object)
+        // For one-to-one relationships, it's usually an object, but can be an array
+        const originalProject = lead.projects;
+        
+        // Debug logging for first lead to understand the structure
+        if (lead.id && !originalProject && lead.project_id) {
+          console.warn(`Lead ${lead.id} has project_id ${lead.project_id} but no project data in join`);
+        }
+        
+        // If it's an array, take the first element (shouldn't happen for one-to-one, but handle it)
+        const projectData = Array.isArray(originalProject) 
+          ? (originalProject.length > 0 ? originalProject[0] : null)
+          : originalProject;
+        
+        const transformedProject = projectData ? {
+          id: projectData.id,
+          name: typeof projectData.name === 'object' && projectData.name !== null
+            ? (projectData.name.name || JSON.stringify(projectData.name))
+            : (projectData.name || ''),
+          region: typeof projectData.region === 'object' && projectData.region !== null
+            ? (projectData.region.name || JSON.stringify(projectData.region))
+            : (projectData.region || ''),
         } : null;
 
         return {
