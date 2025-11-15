@@ -48,15 +48,16 @@ serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // Get live banners
+    // Get live banners from content table
     let query = supabaseClient
-      .from('dashboard_banners')
+      .from('content')
       .select('*')
+      .eq('content_type', 'banner')
       .eq('status', 'live')
       .or(`start_at.is.null,start_at.lte.${now}`)
       .or(`end_at.is.null,end_at.gte.${now}`)
-      .order('priority', { ascending: true })
-      .order('start_at', { ascending: false });
+      .order('metadata->priority', { ascending: true, nullsLast: true })
+      .order('start_at', { ascending: false, nullsFirst: true });
 
     if (placement) {
       query = query.eq('placement', placement);
@@ -68,13 +69,27 @@ serve(async (req) => {
       throw error;
     }
 
-    // Filter by audience (role)
+    // Filter by audience (role) and transform to match old format
     const eligible = (banners || []).filter(banner => {
-      if (banner.audience && banner.audience.length > 0) {
-        return banner.audience.includes(profile?.role || 'user');
+      const audience = banner.audience as any;
+      if (audience && Array.isArray(audience) && audience.length > 0) {
+        return audience.includes(profile?.role || 'user');
+      }
+      // Also check metadata.visibility_rules for backward compatibility
+      const visibilityRules = (banner.metadata as any)?.visibility_rules;
+      if (visibilityRules && Array.isArray(visibilityRules) && visibilityRules.length > 0) {
+        return visibilityRules.includes(profile?.role || 'user');
       }
       return true; // Empty audience = show to all
-    });
+    }).map(banner => ({
+      ...banner,
+      subtitle: banner.body,
+      image_url: (banner.cta as any)?.image_url,
+      cta_label: (banner.cta as any)?.cta_label,
+      cta_url: (banner.cta as any)?.cta_url,
+      priority: (banner.metadata as any)?.priority,
+      visibility_rules: (banner.metadata as any)?.visibility_rules,
+    }));
 
     return new Response(
       JSON.stringify({ banners: eligible }),

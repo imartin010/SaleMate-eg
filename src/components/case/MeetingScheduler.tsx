@@ -28,31 +28,37 @@ export function MeetingScheduler({ leadId, onScheduled }: MeetingSchedulerProps)
       const reminder24h = new Date(meetingTime - 24 * 60 * 60 * 1000).toISOString();
       const reminder2h = new Date(meetingTime - 2 * 60 * 60 * 1000).toISOString();
 
-      // Create meeting action
-      await supabase.from('case_actions').insert([
+      // Create meeting actions in activities table
+      await supabase.from('activities').insert([
         {
           lead_id: leadId,
-          action_type: 'PUSH_MEETING',
-          payload: { meeting_date: meetingDate, scheduled: true },
-          status: 'DONE',
-          created_by: user.id,
+          activity_type: 'task',
+          task_type: 'meeting',
+          task_status: 'completed',
+          actor_profile_id: user.id,
+          assignee_profile_id: user.id,
+          payload: { action_type: 'PUSH_MEETING', meeting_date: meetingDate, scheduled: true },
           completed_at: new Date().toISOString(),
         },
         {
           lead_id: leadId,
-          action_type: 'REMIND_MEETING',
-          payload: { meeting_date: meetingDate, reminder: '24h' },
+          activity_type: 'task',
+          task_type: 'meeting',
+          task_status: 'pending',
+          actor_profile_id: user.id,
+          assignee_profile_id: user.id,
+          payload: { action_type: 'REMIND_MEETING', meeting_date: meetingDate, reminder: '24h' },
           due_at: reminder24h,
-          status: 'PENDING',
-          created_by: user.id,
         },
         {
           lead_id: leadId,
-          action_type: 'REMIND_MEETING',
-          payload: { meeting_date: meetingDate, reminder: '2h' },
+          activity_type: 'task',
+          task_type: 'meeting',
+          task_status: 'pending',
+          actor_profile_id: user.id,
+          assignee_profile_id: user.id,
+          payload: { action_type: 'REMIND_MEETING', meeting_date: meetingDate, reminder: '2h' },
           due_at: reminder2h,
-          status: 'PENDING',
-          created_by: user.id,
         },
       ]);
 

@@ -33,15 +33,28 @@ serve(async (req) => {
           dueAt = new Date(Date.now() + dueInMinutes * 60 * 1000).toISOString();
         }
 
+        // Map action type to task type
+        const taskTypeMap: Record<string, string> = {
+          'CALL_NOW': 'follow_up',
+          'PUSH_MEETING': 'meeting',
+          'REMIND_MEETING': 'meeting',
+          'CHANGE_FACE': 'custom',
+          'ASK_FOR_REFERRALS': 'follow_up',
+        };
+        
+        const taskType = taskTypeMap[actionType] || 'custom';
+
         const { data, error } = await supabase
-          .from('case_actions')
+          .from('activities')
           .insert({
             lead_id: leadId,
-            action_type: actionType,
-            payload: payload || null,
+            activity_type: 'task',
+            task_type: taskType,
+            task_status: 'pending',
+            actor_profile_id: userId,
+            assignee_profile_id: userId,
+            payload: { action_type: actionType, ...(payload || {}) },
             due_at: dueAt,
-            status: 'PENDING',
-            created_by: userId,
           })
           .select()
           .single();
@@ -84,10 +97,27 @@ serve(async (req) => {
         if (status) updates.status = status;
         if (status === 'DONE') updates.completed_at = new Date().toISOString();
 
+        // Map status updates
+        const activityUpdates: Record<string, unknown> = {};
+        if (status) {
+          const statusMap: Record<string, string> = {
+            'DONE': 'completed',
+            'COMPLETED': 'completed',
+            'SKIPPED': 'cancelled',
+            'CANCELLED': 'cancelled',
+            'PENDING': 'pending',
+          };
+          activityUpdates.task_status = statusMap[status] || 'pending';
+          if (status === 'DONE' || status === 'COMPLETED') {
+            activityUpdates.completed_at = new Date().toISOString();
+          }
+        }
+
         const { data, error } = await supabase
-          .from('case_actions')
-          .update(updates)
+          .from('activities')
+          .update(activityUpdates)
           .eq('id', actionId)
+          .eq('activity_type', 'task')
           .select()
           .single();
 

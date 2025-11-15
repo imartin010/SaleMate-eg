@@ -45,15 +45,16 @@ serve(async (req) => {
 
     const fromAgentId = lead?.assigned_to_id;
 
-    // Record face change
+    // Record face change in activities table
     const { data: faceChange, error: faceError } = await supabase
-      .from('case_faces')
+      .from('activities')
       .insert({
         lead_id: leadId,
-        from_agent: fromAgentId,
-        to_agent: toAgentId,
+        activity_type: 'transfer',
+        from_profile_id: fromAgentId,
+        to_profile_id: toAgentId,
         reason,
-        created_by: userId,
+        actor_profile_id: userId,
       })
       .select()
       .single();

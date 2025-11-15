@@ -106,11 +106,13 @@ serve(async (req) => {
       currency: unit.currency || 'EGP',
     }));
 
-    // Store match result
+    // Store match result in activities table
     const { data: matchResult, error: matchError } = await supabase
-      .from('inventory_matches')
+      .from('activities')
       .insert({
         lead_id: leadId,
+        activity_type: 'recommendation',
+        actor_profile_id: userId,
         filters: {
           totalBudget,
           downPayment,
@@ -122,7 +124,6 @@ serve(async (req) => {
         result_count: resultCount,
         top_units: topUnits,
         recommendation,
-        created_by: userId,
       })
       .select()
       .single();
