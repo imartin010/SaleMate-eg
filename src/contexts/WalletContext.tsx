@@ -46,28 +46,33 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Try to get balance directly from profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('id', user.id)
-        .single();
+      // Get balance using the consolidated payments table
+      // Use the get_wallet_balance function
+      const { data, error: balanceError } = await supabase.rpc('get_wallet_balance', {
+        p_profile_id: user.id
+      });
 
-      if (profileError) {
-        // Fallback to RPC if direct query fails
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error: fetchError } = await (supabase as any).rpc('get_user_wallet_balance', {
-          p_user_id: user.id
-        });
+      if (balanceError) {
+        // Fallback: compute balance from payments table directly
+        const { data: deposits } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('profile_id', user.id)
+          .eq('status', 'completed')
+          .in('entry_type', ['deposit', 'refund', 'adjustment']);
 
-        if (fetchError) {
-          throw new Error(fetchError.message);
-        }
+        const { data: withdrawals } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('profile_id', user.id)
+          .eq('status', 'completed')
+          .in('entry_type', ['withdrawal', 'payment']);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setBalance(parseFloat((data as any) || 0));
+        const depositTotal = deposits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
+        const withdrawalTotal = withdrawals?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
+        setBalance(depositTotal - withdrawalTotal);
       } else {
-        setBalance(parseFloat(profile.wallet_balance || 0));
+        setBalance(parseFloat((data as number) || 0));
       }
     } catch (err: unknown) {
       console.error('Error fetching wallet balance:', err);

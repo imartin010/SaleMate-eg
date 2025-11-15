@@ -83,17 +83,16 @@ const PartnersPage: React.FC = () => {
     
     try {
       console.log('🏢 Loading partner projects...');
-      // Fetch from project_partner_commissions and join projects and partners
-      // This assumes FKs: project_partner_commissions.project_id -> projects.id
-      // and project_partner_commissions.partner_id -> partners.id
+      // Fetch from commerce table (consolidated from project_partner_commissions)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: queryError } = await ((supabase as unknown as { from: (table: string) => any })
-        .from('project_partner_commissions')
+        .from('commerce')
         .select(`
           commission_rate,
-          projects:projects ( id, name, region, developer_id, cover_image, developers:developers ( name ) ),
-          partners:partners ( name )
-        `));
+          projects:projects ( id, name, region, developer_id, cover_image, developer:entities!projects_developer_id_fkey ( name ) ),
+          partner:entities!commerce_partner_id_fkey ( name )
+        `)
+        .eq('commerce_type', 'commission'));
 
       if (queryError) {
         throw new Error(`Database error: ${queryError.message}`);
@@ -120,7 +119,7 @@ const PartnersPage: React.FC = () => {
       type Row = {
         commission_rate: number | null;
         projects: { id: string; name: string | null; region: unknown; cover_image?: string | null } | null;
-        partners: { name: string | null } | null;
+        partner: { name: string | null } | null;
       };
 
       const byProject = new Map<string, PartnerProject>();
@@ -137,11 +136,9 @@ const PartnersPage: React.FC = () => {
           // Normalize developer name with multiple fallbacks
           let developerName = 'Unknown';
           const projects = row.projects as Record<string, unknown>;
-          const developers = projects?.developers as Record<string, unknown> | undefined;
-          const dnameRel = developers?.name as string | undefined;
-          if (dnameRel && typeof dnameRel === 'string') {
-            developerName = dnameRel;
-          }
+          const developerEntity = (projects?.developer as Record<string, unknown>) || null;
+          developerName = extractName(developerEntity?.name);
+          // Developer name already extracted from developer entity
           byProject.set(pid, {
             id: 0, // not used in UI for keys; using pid via map key instead
             compound_name: compoundName,
@@ -167,7 +164,7 @@ const PartnersPage: React.FC = () => {
         }
 
         const proj = byProject.get(pid)!;
-        const partnerName = (row.partners?.name ?? '').toLowerCase();
+        const partnerName = (row.partner?.name ?? '').toLowerCase();
         const rate = row.commission_rate ?? 0;
 
         // Map known partner names to fields

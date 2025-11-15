@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '../../components/ui/input';
-import { Select } from '../../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ImprovedProjectCard } from '../../components/projects/ImprovedProjectCard';
@@ -9,6 +9,9 @@ import { WalletDisplay } from '../../components/wallet/WalletDisplay';
 import { supabase } from "../../lib/supabaseClient"
 import { useAuthStore } from '../../store/auth';
 import { Project } from '../../types';
+import { EmptyState } from '../../components/common/EmptyState';
+import { BottomSheet } from '../../components/common/BottomSheet';
+import { SkeletonList } from '../../components/common/SkeletonCard';
 import { 
   Search, 
   ShoppingCart,
@@ -26,7 +29,8 @@ import {
   MessageSquare,
   Plus,
   Send,
-  CheckCircle
+  CheckCircle,
+  Filter
 } from 'lucide-react';
 
 export const ImprovedShop: React.FC = () => {
@@ -39,6 +43,7 @@ export const ImprovedShop: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'leads' | 'region' | 'price'>('leads');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [showRequestSection, setShowRequestSection] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [requestFormData, setRequestFormData] = useState({
     projectName: '',
     leadsAmount: '',
@@ -75,7 +80,7 @@ export const ImprovedShop: React.FC = () => {
           price_per_lead,
           available_leads,
           cover_image,
-          developers:developers ( name )
+          developer:entities!projects_developer_id_fkey ( name )
         `)
         .gt('available_leads', 0) // Only show projects with available leads
         .order('available_leads', { ascending: false }); // Order by available leads descending
@@ -112,8 +117,8 @@ export const ImprovedShop: React.FC = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const base: Project[] = (projectsData as any[]).map((p: Record<string, unknown>) => {
           const name = extractName(p.name);
-          const developers = p.developers as Record<string, unknown> | undefined;
-          const developer = extractName(developers?.name ?? p.developer);
+          const developerEntity = p.developer as Record<string, unknown> | undefined;
+          const developer = extractName(developerEntity?.name ?? p.developer);
           const region = extractName(p.region);
           // Prefer a clean description; if it looks like JSON, replace with developer tagline
           const desc = typeof p.description === 'string' && /['"]name['"]\s*:/.test(p.description)
@@ -195,17 +200,12 @@ export const ImprovedShop: React.FC = () => {
   const hasActiveFilters = searchTerm || regionFilter || sortBy !== 'leads';
   const totalAvailableLeads = filteredAndSortedProjects.reduce((sum, p) => sum + p.availableLeads, 0);
 
-  if (loading) {
+  if (loading && projects.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50/30 via-blue-50/20 to-white flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading premium projects...</p>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-b from-blue-50/30 via-blue-50/20 to-white">
+        <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-7xl">
+          <SkeletonList count={6} />
+        </div>
       </div>
     );
   }
@@ -291,19 +291,30 @@ export const ImprovedShop: React.FC = () => {
           transition={{ duration: 0.3, delay: 0.3 }}
           className="space-y-4"
         >
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <Input
-              placeholder="Search projects by name, developer, or region..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 h-14 text-base rounded-2xl border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
+          {/* Search Bar with Filter Button - Mobile */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                placeholder="Search projects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 h-12 md:h-14 text-base rounded-2xl border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
+            </div>
+            {/* Filter Button - Mobile Only */}
+            <Button
+              variant={hasActiveFilters ? 'default' : 'outline'}
+              onClick={() => setShowFilters(true)}
+              className="md:hidden h-12 w-12 min-w-[48px] min-h-[48px] rounded-2xl"
+              aria-label="Filters"
+            >
+              <Filter className="h-5 w-5" />
+            </Button>
           </div>
 
-          {/* Quick Filters */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {/* Quick Filters - Desktop Only */}
+          <div className="hidden md:flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <Button
               variant={!regionFilter ? 'default' : 'outline'}
               size="sm"
@@ -333,9 +344,9 @@ export const ImprovedShop: React.FC = () => {
             ))}
           </div>
 
-          {/* Clear Filters Button */}
+          {/* Clear Filters Button - Desktop Only */}
           {hasActiveFilters && (
-            <div className="flex justify-end">
+            <div className="hidden md:flex justify-end">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -347,6 +358,74 @@ export const ImprovedShop: React.FC = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Mobile Filters Bottom Sheet */}
+        <BottomSheet
+          open={showFilters}
+          onClose={() => setShowFilters(false)}
+          title="Filters"
+          footer={
+            <div className="space-y-3">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="mobile"
+                  onClick={() => {
+                    clearFilters();
+                    setShowFilters(false);
+                  }}
+                  className="w-full"
+                >
+                  Clear All Filters
+                </Button>
+              )}
+              <Button
+                size="mobile"
+                onClick={() => setShowFilters(false)}
+                className="w-full"
+              >
+                Apply Filters
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
+              <Select
+                value={regionFilter || 'all'}
+                onValueChange={(value) => setRegionFilter(value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All Regions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {regions.map(region => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+              <Select
+                value={sortBy}
+                onValueChange={(value) => setSortBy(value as typeof sortBy)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="leads">Most Leads</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="region">Region</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </BottomSheet>
 
         {/* Results Summary */}
         <motion.div
@@ -390,31 +469,17 @@ export const ImprovedShop: React.FC = () => {
 
         {/* Empty State */}
         {filteredAndSortedProjects.length === 0 && !loading && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-12"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Building className="h-8 w-8 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects found</h3>
-            <p className="text-gray-600 mb-4">
-              {hasActiveFilters 
-                ? 'Try adjusting your search criteria or filters.'
-                : 'Check back later for new premium projects with available leads.'
-              }
-            </p>
-            {hasActiveFilters && (
-              <Button 
-                variant="outline" 
-                onClick={clearFilters}
-                className="rounded-xl border-blue-200 hover:bg-blue-50"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </motion.div>
+          <EmptyState
+            title="No projects found"
+            description={hasActiveFilters 
+              ? "Try adjusting your search criteria or filters"
+              : "Check back later for new premium projects with available leads"}
+            ctaText={hasActiveFilters ? "Clear Filters" : undefined}
+            onCtaClick={hasActiveFilters ? () => {
+              clearFilters();
+              setShowFilters(false);
+            } : undefined}
+          />
         )}
 
         {/* Request Leads Section */}

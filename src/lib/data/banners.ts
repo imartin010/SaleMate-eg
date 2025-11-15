@@ -38,9 +38,9 @@ export interface BannerViewer {
 export async function getAllBanners() {
   try {
     const { data, error } = await supabase
-      .from('dashboard_banners')
+      .from('content')
       .select('*')
-      .order('priority', { ascending: true })
+      .eq('content_type', 'banner')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -61,9 +61,10 @@ export async function getAllBanners() {
 export async function getBanner(id: string) {
   try {
     const { data, error } = await supabase
-      .from('dashboard_banners')
+      .from('content')
       .select('*')
       .eq('id', id)
+      .eq('content_type', 'banner')
       .single();
 
     if (error) {
@@ -90,11 +91,26 @@ export async function createBanner(
     console.log('🖼️ Image URL in createBanner:', banner.image_url);
     
     const { data, error } = await supabase
-      .from('dashboard_banners')
+      .from('content')
       .insert({
-        ...banner,
-        image_url: banner.image_url || null, // Explicitly include image_url
-        created_by: userId,
+        content_type: 'banner',
+        title: banner.title,
+        body: banner.subtitle,
+        placement: banner.placement,
+        audience: banner.audience ? JSON.parse(JSON.stringify(banner.audience)) : {},
+        status: banner.status || 'draft',
+        start_at: banner.start_at,
+        end_at: banner.end_at,
+        cta: {
+          cta_label: banner.cta_label,
+          cta_url: banner.cta_url,
+          image_url: banner.image_url || null,
+        },
+        created_by_profile_id: userId,
+        metadata: {
+          priority: banner.priority,
+          visibility_rules: banner.visibility_rules,
+        },
       })
       .select()
       .single();
@@ -137,13 +153,59 @@ export async function updateBanner(
     console.log('💾 Updating banner:', id, 'with data:', updates);
     console.log('🖼️ Image URL in updateBanner:', updates.image_url);
     
+    // Build update object for content table
+    const contentUpdate: any = {
+      content_type: 'banner',
+    };
+    
+    if (updates.title !== undefined) contentUpdate.title = updates.title;
+    if (updates.subtitle !== undefined) contentUpdate.body = updates.subtitle;
+    if (updates.placement !== undefined) contentUpdate.placement = updates.placement;
+    if (updates.audience !== undefined) contentUpdate.audience = updates.audience;
+    if (updates.status !== undefined) contentUpdate.status = updates.status;
+    if (updates.start_at !== undefined) contentUpdate.start_at = updates.start_at;
+    if (updates.end_at !== undefined) contentUpdate.end_at = updates.end_at;
+    
+    // Handle CTA and image_url
+    if (updates.cta_label !== undefined || updates.cta_url !== undefined || updates.image_url !== undefined) {
+      // Get existing banner to merge CTA
+      const { data: existing } = await supabase
+        .from('content')
+        .select('cta')
+        .eq('id', id)
+        .eq('content_type', 'banner')
+        .single();
+      
+      const existingCta = existing?.cta || {};
+      contentUpdate.cta = {
+        ...existingCta,
+        cta_label: updates.cta_label !== undefined ? updates.cta_label : existingCta.cta_label,
+        cta_url: updates.cta_url !== undefined ? updates.cta_url : existingCta.cta_url,
+        image_url: updates.image_url !== undefined ? updates.image_url : existingCta.image_url,
+      };
+    }
+    
+    if (updates.priority !== undefined || updates.visibility_rules !== undefined) {
+      const { data: existing } = await supabase
+        .from('content')
+        .select('metadata')
+        .eq('id', id)
+        .eq('content_type', 'banner')
+        .single();
+      
+      const existingMetadata = existing?.metadata || {};
+      contentUpdate.metadata = {
+        ...existingMetadata,
+        priority: updates.priority !== undefined ? updates.priority : existingMetadata.priority,
+        visibility_rules: updates.visibility_rules !== undefined ? updates.visibility_rules : existingMetadata.visibility_rules,
+      };
+    }
+    
     const { data, error } = await supabase
-      .from('dashboard_banners')
-      .update({
-        ...updates,
-        image_url: updates.image_url !== undefined ? updates.image_url : undefined, // Preserve existing if not provided
-      })
+      .from('content')
+      .update(contentUpdate)
       .eq('id', id)
+      .eq('content_type', 'banner')
       .select()
       .single();
 
@@ -179,9 +241,10 @@ export async function updateBanner(
 export async function deleteBanner(id: string, userId?: string) {
   try {
     const { error } = await supabase
-      .from('dashboard_banners')
+      .from('content')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('content_type', 'banner');
 
     if (error) {
       console.error('Delete banner error:', error);
@@ -218,12 +281,13 @@ export async function resolveBannersForViewer(
 
     // Get live banners
     let query = supabase
-      .from('dashboard_banners')
+      .from('content')
       .select('*')
+      .eq('content_type', 'banner')
       .eq('status', 'live')
       .or(`start_at.is.null,start_at.lte.${now}`)
       .or(`end_at.is.null,end_at.gte.${now}`)
-      .order('priority', { ascending: true })
+      .order('metadata->priority', { ascending: true, nullsLast: true })
       .order('start_at', { ascending: false, nullsFirst: true });
 
     if (placement) {

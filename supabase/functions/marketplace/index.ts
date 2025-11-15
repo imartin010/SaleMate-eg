@@ -114,18 +114,25 @@ serve(async (req) => {
       const cpl_price = projectData.cpl_price
       const total_price = cpl_price * number_of_leads
 
-      // Create purchase request
+      // Create purchase request in commerce table
       const { data: purchaseRequest, error: requestError } = await supabaseClient
-        .from('lead_purchase_requests')
+        .from('commerce')
         .insert({
-          buyer_user_id: user.id,
+          commerce_type: 'purchase',
+          profile_id: user.id,
           project_id,
-          number_of_leads,
-          cpl_price,
-          total_price,
-          receipt_file_url,
+          quantity: number_of_leads,
+          amount: total_price,
+          currency: 'EGP',
+          payment_method: 'Manual',
+          receipt_url: receipt_file_url,
           receipt_file_name,
-          status: 'pending'
+          status: 'pending',
+          metadata: {
+            cpl_price,
+            receipt_file_url,
+            receipt_file_name,
+          }
         })
         .select(`
           id,
@@ -173,23 +180,24 @@ serve(async (req) => {
       }
 
       const { data: requests, error } = await supabaseClient
-        .from('lead_purchase_requests')
+        .from('commerce')
         .select(`
           id,
-          number_of_leads,
-          cpl_price,
-          total_price,
+          quantity,
+          amount,
           status,
           admin_notes,
           created_at,
           approved_at,
           rejected_at,
+          metadata,
           projects (
             name,
             developer
           )
         `)
-        .eq('buyer_user_id', user.id)
+        .eq('profile_id', user.id)
+        .eq('commerce_type', 'purchase')
         .order('created_at', { ascending: false })
 
       if (error) {

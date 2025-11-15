@@ -9,6 +9,9 @@ import { supabase } from "../../lib/supabaseClient"
 import { BRDataProperty, BRDataPropertyFilters, BRDataPropertySort } from '../../types';
 import { formatCurrency, formatNumber } from '../../lib/format';
 import { PropertyDetailsModal } from '../../components/inventory/PropertyDetailsModal';
+import { EmptyState } from '../../components/common/EmptyState';
+import { BottomSheet } from '../../components/common/BottomSheet';
+import { SkeletonList } from '../../components/common/SkeletonCard';
 import {
   Search,
   Filter,
@@ -560,6 +563,24 @@ const Inventory: React.FC = () => {
     setSelectedProperty(null);
   };
 
+  // Helper function to extract name from compound/area/developer
+  const extractName = (value: unknown): string => {
+    if (!value) return '-';
+    if (typeof value === 'object' && value !== null && 'name' in value) {
+      return (value as { name: string }).name || '-';
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value.replace(/'/g, '"'));
+        return parsed.name || value;
+      } catch {
+        return value;
+      }
+    }
+    return '-';
+  };
+
+  // Table View
   const renderPropertyTable = () => (
     <div className="card-modern overflow-hidden">
       <div className="overflow-x-auto">
@@ -611,51 +632,15 @@ const Inventory: React.FC = () => {
             {properties.map((property) => (
               <tr key={property.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {(() => {
-                    const compound = property.compound as Record<string, unknown>;
-                    if (compound?.name) return compound.name;
-                    if (typeof compound === 'string') {
-                      try {
-                        const parsed = JSON.parse((compound as string).replace(/'/g, '"'));
-                        return parsed.name || '-';
-                      } catch {
-                        return compound;
-                      }
-                    }
-                    return '-';
-                  })()}
+                  {extractName(property.compound)}
                 </td>
                 
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {(() => {
-                    const developer = property.developer as Record<string, unknown>;
-                    if (developer?.name) return developer.name;
-                    if (typeof developer === 'string') {
-                      try {
-                        const parsed = JSON.parse((developer as string).replace(/'/g, '"'));
-                        return parsed.name || '-';
-                      } catch {
-                        return developer;
-                      }
-                    }
-                    return '-';
-                  })()}
+                  {extractName(property.developer)}
                 </td>
                 
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {(() => {
-                    const area = property.area as Record<string, unknown>;
-                    if (area?.name) return area.name;
-                    if (typeof area === 'string') {
-                      try {
-                        const parsed = JSON.parse((area as string).replace(/'/g, '"'));
-                        return parsed.name || '-';
-                      } catch {
-                        return area;
-                      }
-                    }
-                    return '-';
-                  })()}
+                  {extractName(property.area)}
                 </td>
                 
                 <td className="px-4 py-4 whitespace-nowrap">
@@ -688,26 +673,11 @@ const Inventory: React.FC = () => {
                 
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex flex-col gap-1">
-                    {(() => {
-                      let propertyTypeName = null;
-                      const propertyType = property.property_type as Record<string, unknown>;
-                      if (propertyType?.name) {
-                        propertyTypeName = propertyType.name;
-                      } else if (typeof propertyType === 'string') {
-                        try {
-                          const parsed = JSON.parse((propertyType as string).replace(/'/g, '"'));
-                          propertyTypeName = parsed.name;
-                        } catch {
-                          propertyTypeName = propertyType;
-                        }
-                      }
-                      
-                      return propertyTypeName && (
-                        <Badge variant="secondary" className="text-xs w-fit">
-                          {propertyTypeName}
-                        </Badge>
-                      );
-                    })()}
+                    {extractName(property.property_type) !== '-' && (
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        {extractName(property.property_type)}
+                      </Badge>
+                    )}
                     {property.finishing && (
                       <Badge 
                         variant="outline" 
@@ -833,7 +803,16 @@ const Inventory: React.FC = () => {
     </div>
   );
 
-  if (loading) {
+  if (loading && properties.length === 0) {
+    return (
+      <div className="space-y-8 px-4 py-6">
+        <SkeletonList count={8} />
+      </div>
+    );
+  }
+  
+  // Legacy loading skeleton - keep for reference but hidden
+  if (false && loading) {
     return (
       <div className="space-y-8">
         {/* Header Skeleton */}
@@ -945,7 +924,7 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/30 via-blue-50/20 to-white">
-      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 md:px-6 md:py-8 space-y-4 md:space-y-6 max-w-7xl">
       {/* Header Section */}
       <div className="space-y-4">
         <div>
@@ -1404,9 +1383,9 @@ const Inventory: React.FC = () => {
       </div>
 
       {/* Results Summary */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-1">
         <p className="text-sm text-muted-foreground">
-          Showing <span className="font-semibold text-foreground">{properties.length}</span> of{' '}
+          <span className="font-semibold text-foreground">{formatNumber(properties.length)}</span> of{' '}
           <span className="font-semibold text-foreground">{formatNumber(totalCount)}</span> properties
         </p>
         {hasActiveFilters && (
@@ -1414,6 +1393,16 @@ const Inventory: React.FC = () => {
             Filtered
           </Badge>
         )}
+      </div>
+
+      {/* Desktop Recommendation Banner - Mobile Only */}
+      <div className="md:hidden bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Info className="h-5 w-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-800 font-medium">
+            Desktop view is recommended in inventory for better experience
+          </p>
+        </div>
       </div>
 
       {/* Properties Table */}
@@ -1473,26 +1462,95 @@ const Inventory: React.FC = () => {
 
       {/* Empty State */}
       {properties.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Home className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {hasActiveFilters ? 'No properties found' : 'No properties available'}
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            {hasActiveFilters 
-              ? 'Try adjusting your search criteria or filters.'
-              : 'There are currently no properties in the inventory.'
-            }
-          </p>
-          {hasActiveFilters && (
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          title={hasActiveFilters ? 'No properties found' : 'No properties available'}
+          description={hasActiveFilters 
+            ? 'Try adjusting your search criteria or filters'
+            : 'There are currently no properties in the inventory'}
+          ctaText={hasActiveFilters ? 'Clear Filters' : undefined}
+          onCtaClick={hasActiveFilters ? clearFilters : undefined}
+        />
       )}
+
+      {/* Mobile Filters Bottom Sheet */}
+      <BottomSheet
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        title="Advanced Filters"
+        footer={
+          <div className="space-y-3">
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="mobile"
+                onClick={() => {
+                  clearFilters();
+                  setShowFilters(false);
+                }}
+                className="w-full"
+              >
+                Clear All Filters
+              </Button>
+            )}
+            <Button
+              size="mobile"
+              onClick={() => setShowFilters(false)}
+              className="w-full"
+            >
+              Apply Filters
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Mobile filter content - simplified version of desktop filters */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Compound</label>
+            <select
+              value={filters.compound || ''}
+              onChange={(e) => setFilters({ ...filters, compound: e.target.value || undefined })}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]"
+            >
+              <option value="">All Compounds</option>
+              {filterOptions.compounds.map(compound => (
+                <option key={compound} value={compound}>
+                  {compound}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+            <select
+              value={filters.area || ''}
+              onChange={(e) => setFilters({ ...filters, area: e.target.value || undefined })}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]"
+            >
+              <option value="">All Areas</option>
+              {filterOptions.areas.map(area => (
+                <option key={area} value={area}>
+                  {area}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Developer</label>
+            <select
+              value={filters.developer || ''}
+              onChange={(e) => setFilters({ ...filters, developer: e.target.value || undefined })}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]"
+            >
+              <option value="">All Developers</option>
+              {filterOptions.developers.map(developer => (
+                <option key={developer} value={developer}>
+                  {developer}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Property Details Modal */}
       <PropertyDetailsModal

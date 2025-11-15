@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Users, DollarSign, Database, ShoppingCart, Wallet, Ticket } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { SkeletonList } from '../../components/common/SkeletonCard';
 
 interface KPIData {
   totalUsers: number;
@@ -214,15 +215,8 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="animate-pulse space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
-            ))}
-          </div>
-          <div className="h-96 bg-gray-200 rounded-xl"></div>
-        </div>
+      <div className="p-4 md:p-8">
+        <SkeletonList count={8} />
       </div>
     );
   }
