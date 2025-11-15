@@ -12,11 +12,28 @@ import { useToast } from '../../contexts/ToastContext';
 export const PaymentCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { refreshBalance } = useWallet();
-  const { showSuccess, showError } = useToast();
-  
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState<string>('Processing payment...');
+  
+  // Get wallet and toast hooks with error handling
+  let refreshBalance: (() => Promise<void>) | undefined;
+  let showSuccess: ((message: string) => void) | undefined;
+  let showError: ((message: string) => void) | undefined;
+  
+  try {
+    const wallet = useWallet();
+    refreshBalance = wallet.refreshBalance;
+  } catch (error) {
+    console.error('PaymentCallback: Error getting wallet context', error);
+  }
+  
+  try {
+    const toast = useToast();
+    showSuccess = toast.showSuccess;
+    showError = toast.showError;
+  } catch (error) {
+    console.error('PaymentCallback: Error getting toast context', error);
+  }
   
   const transactionId = searchParams.get('transactionId');
   const statusParam = searchParams.get('status'); // 'success' or 'failed' from Kashier
@@ -38,6 +55,11 @@ export const PaymentCallback: React.FC = () => {
         console.error('PaymentCallback: Transaction ID not found');
         setStatus('error');
         setMessage('Transaction ID not found');
+        // Redirect anyway after 3 seconds
+        setTimeout(() => {
+          console.log('PaymentCallback: No transaction ID, redirecting to home');
+          navigate('/app/home', { replace: true });
+        }, 3000);
         return;
       }
 
@@ -85,19 +107,23 @@ export const PaymentCallback: React.FC = () => {
           setMessage('Payment successful! Your wallet has been topped up.');
           
           // Refresh wallet balance
-          try {
-            await refreshBalance();
-            console.log('PaymentCallback: Balance refreshed');
-          } catch (refreshError) {
-            console.error('PaymentCallback: Error refreshing balance', refreshError);
-            // Continue anyway - balance will update on next page load
+          if (refreshBalance) {
+            try {
+              await refreshBalance();
+              console.log('PaymentCallback: Balance refreshed');
+            } catch (refreshError) {
+              console.error('PaymentCallback: Error refreshing balance', refreshError);
+              // Continue anyway - balance will update on next page load
+            }
           }
           
           // Show success toast
-          try {
-            showSuccess('Payment successful! Your wallet balance has been updated.');
-          } catch (toastError) {
-            console.error('PaymentCallback: Error showing toast', toastError);
+          if (showSuccess) {
+            try {
+              showSuccess('Payment successful! Your wallet balance has been updated.');
+            } catch (toastError) {
+              console.error('PaymentCallback: Error showing toast', toastError);
+            }
           }
           
           // Redirect to home after 2 seconds (reduced for better UX)
@@ -110,10 +136,12 @@ export const PaymentCallback: React.FC = () => {
           console.error('PaymentCallback: Payment failed', result);
           setStatus('error');
           setMessage(result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
-          try {
-            showError(result.error || 'Payment processing failed');
-          } catch (toastError) {
-            console.error('PaymentCallback: Error showing error toast', toastError);
+          if (showError) {
+            try {
+              showError(result.error || 'Payment processing failed');
+            } catch (toastError) {
+              console.error('PaymentCallback: Error showing error toast', toastError);
+            }
           }
           
           // Redirect to home after 5 seconds
@@ -130,17 +158,32 @@ export const PaymentCallback: React.FC = () => {
             ? error.message 
             : 'An error occurred while processing your payment. Please contact support if the payment was deducted.'
         );
-        showError('Payment processing error');
+        if (showError) {
+          try {
+            showError('Payment processing error');
+          } catch (toastError) {
+            console.error('PaymentCallback: Error showing error toast', toastError);
+          }
+        }
         
-        // Redirect to home after 5 seconds
+        // Redirect to home after 3 seconds
         setTimeout(() => {
-          navigate('/app/home');
-        }, 5000);
+          console.log('PaymentCallback: Error occurred, redirecting to home');
+          navigate('/app/home', { replace: true });
+        }, 3000);
       }
     };
 
-    processPayment();
-  }, [transactionId, statusParam, paymentStatusParam, orderId, paymentId, navigate, refreshBalance, showSuccess, showError]);
+    // Add a safety timeout - if nothing happens after 10 seconds, redirect anyway
+    const safetyTimeout = setTimeout(() => {
+      console.warn('PaymentCallback: Safety timeout triggered, redirecting to home');
+      navigate('/app/home', { replace: true });
+    }, 10000);
+
+    processPayment().finally(() => {
+      clearTimeout(safetyTimeout);
+    });
+  }, [transactionId, statusParam, paymentStatusParam, orderId, paymentId, navigate]);
 
   // Always render something, even if there's an error
   return (
