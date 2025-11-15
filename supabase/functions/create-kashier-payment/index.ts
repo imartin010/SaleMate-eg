@@ -57,16 +57,27 @@ function isTestMode() {
 
 async function generateOrderHash(
   merchantId: string,
-  paymentKey: string,
+  apiKey: string,
   orderId: string,
   amount: string,
   currency: string,
 ) {
-  const payload = `${merchantId}:${amount}:${currency}:${orderId}:${paymentKey}`;
+  // Kashier hash format: HMAC-SHA256(paymentApiKey, "/?payment=mid.orderId.amount.currency")
+  const path = `/?payment=${merchantId}.${orderId}.${amount}.${currency}`;
   const encoder = new TextEncoder();
-  const data = encoder.encode(payload);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const keyData = encoder.encode(apiKey);
+  const messageData = encoder.encode(path);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  return Array.from(new Uint8Array(signature)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 serve(async (req) => {
