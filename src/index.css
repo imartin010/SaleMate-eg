@@ -213,4 +213,25 @@ html, body, #root {
   
   .rotate-y-180 {
     transform: rotateY(180deg);
-  }}
+  }
+  
+  /* Top Up Button Glow Animation */
+  @keyframes glow-pulse {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
+  }
+  
+  .glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  .glow-pulse-delayed {
+    animation: glow-pulse 2s ease-in-out infinite 0.3s;
+  }
+}
