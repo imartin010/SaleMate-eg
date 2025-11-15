@@ -20,6 +20,10 @@ import { format } from 'date-fns';
 import { AddLeadModal } from '../../components/crm/AddLeadModal';
 import { EditLeadDialog } from '../../components/crm/EditLeadDialog';
 import { LeadDetailModal } from '../../components/crm/LeadDetailModal';
+import { EmptyState } from '../../components/common/EmptyState';
+import { BottomSheet } from '../../components/common/BottomSheet';
+import { FloatingActionButton } from '../../components/common/FloatingActionButton';
+import { SkeletonList } from '../../components/common/SkeletonCard';
 
 interface Project {
   id: string;
@@ -197,11 +201,8 @@ export default function ModernCRM() {
   if (loading && leads.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 via-blue-50/20 to-white">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
-            <p className="text-gray-600">Loading your leads...</p>
-          </div>
+        <div className="px-4 py-8">
+          <SkeletonList count={5} />
         </div>
       </div>
     );
@@ -556,7 +557,7 @@ export default function ModernCRM() {
               </div>
             </div>
 
-            {/* Advanced Filters Panel */}
+            {/* Advanced Filters Panel - Desktop */}
             <AnimatePresence>
               {showFilters && (
                 <motion.div
@@ -564,7 +565,7 @@ export default function ModernCRM() {
                   animate={{ opacity: 1, height: 'auto', y: 0 }}
                   exit={{ opacity: 0, height: 0, y: -20 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200 space-y-3 md:space-y-4 relative z-10"
+                  className="hidden md:block mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200 space-y-3 md:space-y-4 relative z-10"
                 >
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
                   <div>
@@ -1257,7 +1258,114 @@ export default function ModernCRM() {
             </motion.div>
           )}
 
+          {/* Mobile Filters Bottom Sheet - Only on Mobile */}
+          <BottomSheet
+            open={showFilters}
+            onClose={() => setShowFilters(false)}
+            title="Filters"
+            footer={
+              <div className="space-y-3">
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    size="mobile"
+                    onClick={() => {
+                      clearFilters();
+                      setShowFilters(false);
+                    }}
+                    className="w-full"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+                <Button
+                  size="mobile"
+                  onClick={() => setShowFilters(false)}
+                  className="w-full"
+                >
+                  Apply Filters
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+                <Select
+                  value={filters.stage || 'all'}
+                  onValueChange={(value) => updateFilter('stage', value === 'all' ? undefined : (value as LeadStage))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Stages</SelectItem>
+                    {STAGES.map(stage => (
+                      <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
+                <Select
+                  value={filters.project || 'all'}
+                  onValueChange={(value) => updateFilter('project', value === 'all' ? undefined : value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Projects</SelectItem>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Platform</label>
+                <Select
+                  value={filters.platform || 'all'}
+                  onValueChange={(value) => updateFilter('platform', value === 'all' ? undefined : value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                    <SelectItem value="google">Google</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
+                    <SelectItem value="snapchat">Snapchat</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </BottomSheet>
+
           {searchFilteredLeads.length === 0 && !loading && (
+            <EmptyState
+              title="No leads found"
+              description={hasActiveFilters 
+                ? "Try adjusting your filters to see more leads"
+                : leads.length === 0
+                ? "Start shopping to get your first leads"
+                : "No leads match your search criteria"}
+              ctaText={leads.length === 0 ? "Browse Shop" : "Clear Filters"}
+              onCtaClick={leads.length === 0 
+                ? () => navigate('/app/shop')
+                : () => {
+                    clearFilters();
+                    setSearchQuery('');
+                  }}
+            />
+          )}
+
+          {/* Legacy Empty State - Keep for reference but hidden */}
+          {false && searchFilteredLeads.length === 0 && !loading && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1339,6 +1447,12 @@ export default function ModernCRM() {
           }}
         />
       )}
+
+      {/* Floating Action Button for Add Lead - Mobile Only */}
+      <FloatingActionButton
+        onClick={() => setShowAddModal(true)}
+        aria-label="Add Lead"
+      />
 
       {/* Detail Modal for Table/Kanban views */}
       <LeadDetailModal
