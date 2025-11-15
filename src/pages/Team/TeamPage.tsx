@@ -29,6 +29,9 @@ import {
   DialogTitle 
 } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
+import { EmptyState } from '../../components/common/EmptyState';
+import { FloatingActionButton } from '../../components/common/FloatingActionButton';
+import { SkeletonList } from '../../components/common/SkeletonCard';
 
 interface Invitation {
   id: string;
@@ -508,29 +511,16 @@ const TeamPage: React.FC = () => {
 
           {/* Team Members Table */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading team members...</p>
-              </div>
+            <div className="px-4 py-8">
+              <SkeletonList count={5} />
             </div>
           ) : members.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300 p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No team members yet</h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Start building your team by inviting members via email.
-              </p>
-              <Button
-                onClick={() => setShowAddModal(true)}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl hover:shadow-lg transition-all duration-300"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite Your First Member
-              </Button>
-            </div>
+            <EmptyState
+              title="No team members yet"
+              description="Start building your team by inviting members via email"
+              ctaText="Invite Your First Member"
+              onCtaClick={() => setShowAddModal(true)}
+            />
           ) : (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -791,22 +781,14 @@ const TeamPage: React.FC = () => {
             </div>
 
             {loadingTeammates ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading teammates...</p>
-                </div>
+              <div className="px-4 py-8">
+                <SkeletonList count={3} />
               </div>
             ) : teammates.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No teammates yet</h3>
-                <p className="text-gray-600">
-                  You're the first member of this team. More teammates will appear here when they join.
-                </p>
-              </div>
+              <EmptyState
+                title="No teammates yet"
+                description="You're the first member of this team. More teammates will appear here when they join"
+              />
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -874,17 +856,20 @@ const TeamPage: React.FC = () => {
 
         {/* No Team Message */}
         {!profile?.manager_id && myInvitations.length === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">You're not part of a team</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              When a manager invites you to their team, you'll see the invitation here and can choose to accept it.
-            </p>
-          </div>
+          <EmptyState
+            title="You're not part of a team"
+            description="When a manager invites you to their team, you'll see the invitation here and can choose to accept it"
+          />
         )}
       </div>
+
+      {/* Floating Action Button for Invite Member - Mobile Only (Managers) */}
+      {isManager && (
+        <FloatingActionButton
+          onClick={() => setShowAddModal(true)}
+          aria-label="Invite Team Member"
+        />
+      )}
     </div>
   );
 };
