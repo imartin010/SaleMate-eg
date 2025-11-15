@@ -19,7 +19,8 @@ export const PaymentCallback: React.FC = () => {
   const [message, setMessage] = useState<string>('Processing payment...');
   
   const transactionId = searchParams.get('transactionId');
-  const paymentStatus = searchParams.get('status'); // 'success' or 'failed' from Kashier
+  const statusParam = searchParams.get('status'); // 'success' or 'failed' from Kashier
+  const paymentStatusParam = searchParams.get('paymentStatus'); // 'SUCCESS' or 'FAILED' from Kashier
   const orderId = searchParams.get('orderId'); // From Kashier
   const paymentId = searchParams.get('paymentId'); // From Kashier
 
@@ -33,15 +34,26 @@ export const PaymentCallback: React.FC = () => {
 
       try {
         // Determine payment status from URL params
-        // Kashier returns 'status=success' or 'status=failed' in the redirect URL
+        // Kashier returns 'status=success' or 'paymentStatus=SUCCESS' in the redirect URL
         let paymentStatusToUse: 'completed' | 'failed' = 'failed';
         
-        if (paymentStatus === 'success' || paymentStatus === 'completed') {
+        // Check both status and paymentStatus parameters (Kashier uses both)
+        const isSuccess = 
+          statusParam?.toLowerCase() === 'success' || 
+          statusParam?.toLowerCase() === 'completed' ||
+          paymentStatusParam?.toUpperCase() === 'SUCCESS';
+        
+        const isFailed = 
+          statusParam?.toLowerCase() === 'failed' || 
+          statusParam?.toLowerCase() === 'error' ||
+          paymentStatusParam?.toUpperCase() === 'FAILED';
+        
+        if (isSuccess) {
           paymentStatusToUse = 'completed';
-        } else if (paymentStatus === 'failed' || paymentStatus === 'error') {
+        } else if (isFailed) {
           paymentStatusToUse = 'failed';
         } else {
-          // If no status in URL, check if paymentId exists (Kashier success indicator)
+          // If no status in URL, check if paymentId or orderId exists (Kashier success indicator)
           if (paymentId || orderId) {
             paymentStatusToUse = 'completed';
           }
@@ -53,6 +65,8 @@ export const PaymentCallback: React.FC = () => {
           paymentStatusToUse
         );
 
+        // Check if payment was successful (either newly processed or already processed)
+        // The RPC may return success=true even if transaction was already processed
         if (result.success && paymentStatusToUse === 'completed') {
           setStatus('success');
           setMessage('Payment successful! Your wallet has been topped up.');
@@ -63,11 +77,12 @@ export const PaymentCallback: React.FC = () => {
           // Show success toast
           showSuccess('Payment successful! Your wallet balance has been updated.');
           
-          // Redirect to home after 3 seconds
+          // Redirect to home after 2 seconds (reduced for better UX)
           setTimeout(() => {
             navigate('/app/home');
-          }, 3000);
+          }, 2000);
         } else {
+          // Only show error if payment actually failed
           setStatus('error');
           setMessage(result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
           showError(result.error || 'Payment processing failed');
@@ -95,7 +110,7 @@ export const PaymentCallback: React.FC = () => {
     };
 
     processPayment();
-  }, [transactionId, paymentStatus, orderId, paymentId, navigate, refreshBalance, showSuccess, showError]);
+  }, [transactionId, statusParam, paymentStatusParam, orderId, paymentId, navigate, refreshBalance, showSuccess, showError]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white flex items-center justify-center p-4">
