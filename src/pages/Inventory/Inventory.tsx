@@ -33,6 +33,9 @@ import {
   Palette,
   Waves,
   Armchair,
+  Maximize2,
+  Layers,
+  Calendar,
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 20;
@@ -563,8 +566,237 @@ const Inventory: React.FC = () => {
     setSelectedProperty(null);
   };
 
+  // Helper function to extract name from compound/area/developer
+  const extractName = (value: unknown): string => {
+    if (!value) return '-';
+    if (typeof value === 'object' && value !== null && 'name' in value) {
+      return (value as { name: string }).name || '-';
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value.replace(/'/g, '"'));
+        return parsed.name || value;
+      } catch {
+        return value;
+      }
+    }
+    return '-';
+  };
+
+  // Mobile Property Card Component
+  const renderMobilePropertyCard = (property: BRDataProperty) => {
+    const compoundName = extractName(property.compound);
+    const areaName = extractName(property.area);
+    const developerName = extractName(property.developer);
+    const propertyTypeName = extractName(property.property_type);
+    
+    return (
+      <div
+        key={property.id}
+        className="relative bg-white rounded-2xl shadow-lg overflow-hidden mb-4 transform transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
+        onClick={() => handleViewProperty(property)}
+      >
+        {/* Hero Image Section */}
+        <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-teal-100 via-blue-50 to-purple-50">
+          {property.image ? (
+            <img
+              src={property.image}
+              alt={`${compoundName} - ${property.unit_number || property.unit_id}`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Home className="h-20 w-20 text-teal-300" />
+            </div>
+          )}
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          
+          {/* Status Badges - Top Right */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            {property.is_launch && (
+              <Badge className="bg-orange-500 text-white text-xs px-3 py-1.5 shadow-lg flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                Launch
+              </Badge>
+            )}
+            {property.offers && (
+              <Badge className="bg-green-500 text-white text-xs px-3 py-1.5 shadow-lg">
+                Special Offer
+              </Badge>
+            )}
+          </div>
+          
+          {/* Price Badge - Top Left */}
+          <div className="absolute top-3 left-3">
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
+              <div className="text-xs text-gray-600 font-medium mb-0.5">Price</div>
+              <div className="text-lg font-bold text-teal-700">
+                {property.price_in_egp ? 
+                  formatCurrency(property.price_in_egp, property.currency || 'EGP') : 
+                  'On Request'
+                }
+              </div>
+            </div>
+          </div>
+          
+          {/* Quick Info Bar - Bottom of Image */}
+          <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {property.number_of_bedrooms !== undefined && (
+                  <div className="flex items-center gap-1.5">
+                    <Bed className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-gray-800">{property.number_of_bedrooms}</span>
+                  </div>
+                )}
+                {property.number_of_bathrooms !== undefined && (
+                  <div className="flex items-center gap-1.5">
+                    <Bath className="h-4 w-4 text-cyan-600" />
+                    <span className="text-sm font-semibold text-gray-800">{property.number_of_bathrooms}</span>
+                  </div>
+                )}
+                {property.unit_area && (
+                  <div className="flex items-center gap-1.5">
+                    <Maximize2 className="h-4 w-4 text-purple-600" />
+                    <span className="text-sm font-semibold text-gray-800">{formatNumber(property.unit_area)} m²</span>
+                  </div>
+                )}
+              </div>
+              {property.floor_number !== undefined && (
+                <div className="flex items-center gap-1.5 bg-teal-50 px-3 py-1 rounded-full">
+                  <Layers className="h-3.5 w-3.5 text-teal-600" />
+                  <span className="text-xs font-semibold text-teal-700">Floor {property.floor_number}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Content Section */}
+        <div className="p-5 space-y-4">
+          {/* Location & Developer */}
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 truncate">
+                  {compoundName}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-600 truncate">{areaName}</span>
+                </div>
+              </div>
+            </div>
+            
+            {developerName !== '-' && (
+              <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">{developerName}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Unit Info */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Unit</div>
+              <div className="text-base font-semibold text-gray-900">
+                {property.unit_number || property.unit_id || 'N/A'}
+                {property.building_number && (
+                  <span className="text-gray-500 font-normal"> • Bldg {property.building_number}</span>
+                )}
+              </div>
+            </div>
+            {property.price_per_meter && (
+              <div className="text-right">
+                <div className="text-xs text-gray-500 mb-1">Price/m²</div>
+                <div className="text-sm font-semibold text-teal-600">
+                  {formatCurrency(property.price_per_meter, property.currency || 'EGP')}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Property Type & Finishing */}
+          <div className="flex flex-wrap items-center gap-2">
+            {propertyTypeName && propertyTypeName !== '-' && (
+              <Badge variant="secondary" className="text-xs px-3 py-1">
+                {propertyTypeName}
+              </Badge>
+            )}
+            {property.finishing && (
+              <Badge 
+                variant="outline" 
+                className={`text-xs px-3 py-1 flex items-center gap-1.5 ${
+                  property.finishing.toLowerCase() === 'finished' 
+                    ? 'border-green-500 text-green-700 bg-green-50' 
+                    : property.finishing.toLowerCase() === 'furnished'
+                    ? 'border-purple-500 text-purple-700 bg-purple-50'
+                    : property.finishing.toLowerCase() === 'semi finished' || property.finishing.toLowerCase() === 'semi-finished' || property.finishing.toLowerCase() === 'semi_finished'
+                    ? 'border-orange-500 text-orange-700 bg-orange-50'
+                    : property.finishing.toLowerCase() === 'flexi finished' || property.finishing.toLowerCase() === 'flexi_finished'
+                    ? 'border-blue-500 text-blue-700 bg-blue-50'
+                    : property.finishing.toLowerCase() === 'not finished' || property.finishing.toLowerCase() === 'not_finished'
+                    ? 'border-red-500 text-red-700 bg-red-50'
+                    : ''
+                }`}
+              >
+                {property.finishing.toLowerCase() === 'finished' && (
+                  <Palette className="h-3 w-3" />
+                )}
+                {property.finishing.toLowerCase() === 'furnished' && (
+                  <Armchair className="h-3 w-3" />
+                )}
+                {(property.finishing.toLowerCase() === 'semi finished' || property.finishing.toLowerCase() === 'semi-finished' || property.finishing.toLowerCase() === 'semi_finished') && (
+                  <PieChart className="h-3 w-3" />
+                )}
+                {(property.finishing.toLowerCase() === 'flexi finished' || property.finishing.toLowerCase() === 'flexi_finished') && (
+                  <Waves className="h-3 w-3" />
+                )}
+                {(property.finishing.toLowerCase() === 'not finished' || property.finishing.toLowerCase() === 'not_finished') && (
+                  <Construction className="h-3 w-3" />
+                )}
+                {property.finishing}
+              </Badge>
+            )}
+            {property.sale_type && (
+              <Badge variant="outline" className="text-xs px-3 py-1">
+                {property.sale_type}
+              </Badge>
+            )}
+          </div>
+          
+          {/* Ready By Date */}
+          {property.ready_by && (
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <span className="text-sm text-gray-600">
+                Ready by {new Date(property.ready_by).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+          )}
+          
+          {/* Action Button */}
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewProperty(property);
+            }}
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+          >
+            <Eye className="h-5 w-5 mr-2" />
+            View Full Details
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Desktop Table View
   const renderPropertyTable = () => (
-    <div className="card-modern overflow-hidden">
+    <div className="card-modern overflow-hidden hidden md:block">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
@@ -614,51 +846,15 @@ const Inventory: React.FC = () => {
             {properties.map((property) => (
               <tr key={property.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {(() => {
-                    const compound = property.compound as Record<string, unknown>;
-                    if (compound?.name) return compound.name;
-                    if (typeof compound === 'string') {
-                      try {
-                        const parsed = JSON.parse((compound as string).replace(/'/g, '"'));
-                        return parsed.name || '-';
-                      } catch {
-                        return compound;
-                      }
-                    }
-                    return '-';
-                  })()}
+                  {extractName(property.compound)}
                 </td>
                 
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {(() => {
-                    const developer = property.developer as Record<string, unknown>;
-                    if (developer?.name) return developer.name;
-                    if (typeof developer === 'string') {
-                      try {
-                        const parsed = JSON.parse((developer as string).replace(/'/g, '"'));
-                        return parsed.name || '-';
-                      } catch {
-                        return developer;
-                      }
-                    }
-                    return '-';
-                  })()}
+                  {extractName(property.developer)}
                 </td>
                 
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {(() => {
-                    const area = property.area as Record<string, unknown>;
-                    if (area?.name) return area.name;
-                    if (typeof area === 'string') {
-                      try {
-                        const parsed = JSON.parse((area as string).replace(/'/g, '"'));
-                        return parsed.name || '-';
-                      } catch {
-                        return area;
-                      }
-                    }
-                    return '-';
-                  })()}
+                  {extractName(property.area)}
                 </td>
                 
                 <td className="px-4 py-4 whitespace-nowrap">
@@ -691,26 +887,11 @@ const Inventory: React.FC = () => {
                 
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex flex-col gap-1">
-                    {(() => {
-                      let propertyTypeName = null;
-                      const propertyType = property.property_type as Record<string, unknown>;
-                      if (propertyType?.name) {
-                        propertyTypeName = propertyType.name;
-                      } else if (typeof propertyType === 'string') {
-                        try {
-                          const parsed = JSON.parse((propertyType as string).replace(/'/g, '"'));
-                          propertyTypeName = parsed.name;
-                        } catch {
-                          propertyTypeName = propertyType;
-                        }
-                      }
-                      
-                      return propertyTypeName && (
-                        <Badge variant="secondary" className="text-xs w-fit">
-                          {propertyTypeName}
-                        </Badge>
-                      );
-                    })()}
+                    {extractName(property.property_type) !== '-' && (
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        {extractName(property.property_type)}
+                      </Badge>
+                    )}
                     {property.finishing && (
                       <Badge 
                         variant="outline" 
@@ -957,7 +1138,7 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/30 via-blue-50/20 to-white">
-      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 md:px-6 md:py-8 space-y-4 md:space-y-6 max-w-7xl">
       {/* Header Section */}
       <div className="space-y-4">
         <div>
@@ -1007,11 +1188,11 @@ const Inventory: React.FC = () => {
 
       {/* Search and Filters */}
       <div className="space-y-4">
-        {/* Search Bar */}
-        <div className="space-y-2">
+        {/* Sticky Search Bar - Mobile */}
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 -mx-4 px-4 py-3 md:static md:bg-transparent md:border-0 md:mx-0 md:py-0 md:space-y-2">
           {/* URL Filter Indicator */}
           {searchParams.get('compound') && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-800">
@@ -1031,18 +1212,18 @@ const Inventory: React.FC = () => {
           )}
           
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground md:h-4 md:w-4" />
             <Input
-              placeholder="Search by unit ID, unit number, building number, compound, developer, or area..."
+              placeholder="Search properties..."
               value={filters.search || ''}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="pl-10 h-12 text-base"
+              className="pl-10 md:pl-10 h-12 md:h-12 text-base"
             />
           </div>
         </div>
 
         {/* Filter Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           {/* Desktop Filter Button */}
           <Button
             variant="ghost"
@@ -1061,25 +1242,48 @@ const Inventory: React.FC = () => {
               </span>
             )}
           </Button>
-          {/* Mobile Filter Button */}
-          <Button
-            variant={hasActiveFilters ? 'default' : 'outline'}
-            onClick={() => setShowFilters(true)}
-            className="md:hidden h-12 w-12 min-w-[48px] min-h-[48px] rounded-xl"
-            aria-label="Filters"
-          >
-            <Filter className="h-5 w-5" />
-            {hasActiveFilters && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                {Object.keys(filters).filter(key => 
-                  filters[key as keyof BRDataPropertyFilters] !== undefined && 
-                  filters[key as keyof BRDataPropertyFilters] !== ''
-                ).length}
-              </span>
-            )}
-          </Button>
           
-          <div className="flex items-center gap-2">
+          {/* Mobile Filter & Sort Row */}
+          <div className="flex items-center gap-2 md:hidden w-full">
+            <Button
+              variant={hasActiveFilters ? 'default' : 'outline'}
+              onClick={() => setShowFilters(true)}
+              className="h-12 flex-1 min-w-[48px] rounded-xl"
+              aria-label="Filters"
+            >
+              <Filter className="h-5 w-5 mr-2" />
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {Object.keys(filters).filter(key => 
+                    filters[key as keyof BRDataPropertyFilters] !== undefined && 
+                    filters[key as keyof BRDataPropertyFilters] !== ''
+                  ).length}
+                </span>
+              )}
+            </Button>
+            
+            <div className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-xl px-3 py-2.5 flex-1">
+              <ArrowUpDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+              <select
+                value={`${sort.field}-${sort.direction}`}
+                onChange={(e) => {
+                  const [field, direction] = e.target.value.split('-') as [BRDataPropertySort['field'], BRDataPropertySort['direction']];
+                  setSort({ field, direction });
+                }}
+                className="text-sm bg-transparent border-0 w-full focus:outline-none focus:ring-0"
+              >
+                <option value="created_at-desc">Newest</option>
+                <option value="price_in_egp-asc">Price: Low to High</option>
+                <option value="price_in_egp-desc">Price: High to Low</option>
+                <option value="unit_area-desc">Largest</option>
+                <option value="unit_area-asc">Smallest</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* Desktop Sort & Clear */}
+          <div className="hidden md:flex items-center gap-2">
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
                 Clear All
@@ -1434,9 +1638,9 @@ const Inventory: React.FC = () => {
       </div>
 
       {/* Results Summary */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-1">
         <p className="text-sm text-muted-foreground">
-          Showing <span className="font-semibold text-foreground">{properties.length}</span> of{' '}
+          <span className="font-semibold text-foreground">{formatNumber(properties.length)}</span> of{' '}
           <span className="font-semibold text-foreground">{formatNumber(totalCount)}</span> properties
         </p>
         {hasActiveFilters && (
@@ -1446,20 +1650,31 @@ const Inventory: React.FC = () => {
         )}
       </div>
 
-      {/* Properties Table */}
-      {properties.length > 0 && renderPropertyTable()}
+      {/* Properties - Mobile Cards / Desktop Table */}
+      {properties.length > 0 && (
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4 pb-6">
+            {properties.map((property) => renderMobilePropertyCard(property))}
+          </div>
+          
+          {/* Desktop Table View */}
+          {renderPropertyTable()}
+        </>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-2">
+        <div className="flex items-center justify-center space-x-2 pb-6 md:pb-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
+            className="h-11 md:h-9"
           >
             <ChevronLeft className="h-4 w-4" />
-            Previous
+            <span className="hidden md:inline ml-1">Previous</span>
           </Button>
           
           <div className="flex items-center space-x-1">
@@ -1481,7 +1696,7 @@ const Inventory: React.FC = () => {
                   variant={currentPage === pageNum ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePageChange(pageNum)}
-                  className="w-10 h-10 p-0"
+                  className="w-11 h-11 md:w-10 md:h-10 p-0"
                 >
                   {pageNum}
                 </Button>
@@ -1494,8 +1709,9 @@ const Inventory: React.FC = () => {
             size="sm"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
+            className="h-11 md:h-9"
           >
-            Next
+            <span className="hidden md:inline mr-1">Next</span>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

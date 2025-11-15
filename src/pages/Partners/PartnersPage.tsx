@@ -90,7 +90,7 @@ const PartnersPage: React.FC = () => {
         .select(`
           commission_rate,
           projects:projects ( id, name, region, developer_id, cover_image, developer:entities!projects_developer_id_fkey ( name ) ),
-          partner:entities ( name )
+          partner:entities!commerce_partner_id_fkey ( name )
         `)
         .eq('commerce_type', 'commission'));
 
