@@ -162,78 +162,34 @@ export function useCase(leadId: string): UseCaseReturn {
       }
     );
 
-    // Subscribe to case_feedback changes
+    // Subscribe to activities changes (consolidated table)
+    // Listen for all activity types and update relevant state
     channel.on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
-        table: 'case_feedback',
+        table: 'activities',
         filter: `lead_id=eq.${leadId}`,
       },
-      async () => {
+      async (payload) => {
         try {
-          const data = await getCaseFeedback(leadId);
-          setFeedback(data || []);
+          const activityType = (payload.new as any)?.activity_type;
+          if (activityType === 'feedback') {
+            const data = await getCaseFeedback(leadId);
+            setFeedback(data || []);
+          } else if (activityType === 'task') {
+            const data = await getCaseActions(leadId);
+            setActions(data || []);
+          } else if (activityType === 'transfer') {
+            const data = await getCaseFaces(leadId);
+            setFaces(data || []);
+          } else if (activityType === 'recommendation') {
+            const data = await getInventoryMatches(leadId);
+            setMatches(data || []);
+          }
         } catch (err) {
-          console.warn('Realtime update failed for case feedback:', err);
-        }
-      }
-    );
-
-    // Subscribe to case_actions changes
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'case_actions',
-        filter: `lead_id=eq.${leadId}`,
-      },
-      async () => {
-        try {
-          const data = await getCaseActions(leadId);
-          setActions(data || []);
-        } catch (err) {
-          console.warn('Realtime update failed for case actions:', err);
-        }
-      }
-    );
-
-    // Subscribe to case_faces changes
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'case_faces',
-        filter: `lead_id=eq.${leadId}`,
-      },
-      async () => {
-        try {
-          const data = await getCaseFaces(leadId);
-          setFaces(data || []);
-        } catch (err) {
-          console.warn('Realtime update failed for case faces:', err);
-        }
-      }
-    );
-
-    // Subscribe to inventory_matches changes
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'inventory_matches',
-        filter: `lead_id=eq.${leadId}`,
-      },
-      async () => {
-        try {
-          const data = await getInventoryMatches(leadId);
-          setMatches(data || []);
-        } catch (err) {
-          console.warn('Realtime update failed for inventory matches:', err);
+          console.warn('Realtime update failed for activities:', err);
         }
       }
     );

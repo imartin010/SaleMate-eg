@@ -122,14 +122,16 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
         const gateway = defaultGateway;
 
         const { data: topupRequest, error: topupError } = await supabase
-          .from('wallet_topup_requests')
+          .from('commerce')
           .insert({
-            user_id: user.id,
+            commerce_type: 'topup',
+            profile_id: user.id,
             amount: amountValue,
+            currency: 'EGP',
             payment_method: 'Card', // Card payment via gateway
             status: 'pending',
-            gateway,
-            receipt_file_url: null, // Card payments don't require receipts
+            receipt_url: null, // Card payments don't require receipts
+            metadata: { gateway },
           })
           .select()
           .single();
@@ -229,15 +231,17 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
 
       // Create top-up request
       const { error: requestError } = await supabase
-        .from('wallet_topup_requests')
+        .from('commerce')
         .insert({
-          user_id: user.id,
+          commerce_type: 'topup',
+          profile_id: user.id,
           amount: parseFloat(amount),
-          receipt_file_url: publicUrl,
+          currency: 'EGP',
+          receipt_url: publicUrl,
           receipt_file_name: receiptFile.name,
           payment_method: paymentMethodEnum,
           status: 'pending',
-          gateway: 'manual',
+          metadata: { gateway: 'manual' },
         });
 
       if (requestError) {

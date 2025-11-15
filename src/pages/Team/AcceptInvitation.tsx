@@ -45,12 +45,13 @@ const AcceptInvitation: React.FC = () => {
   const fetchInvitation = async () => {
     try {
       const { data, error: fetchError } = await supabase
-        .from('team_invitations')
+        .from('team_members')
         .select(`
           *,
-          manager:profiles!team_invitations_manager_id_fkey(name)
+          manager:profiles!team_members_invited_by_fkey(name)
         `)
-        .eq('token', token)
+        .eq('invitation_token', token)
+        .eq('status', 'invited')
         .single();
 
       if (fetchError || !data) {
@@ -60,13 +61,13 @@ const AcceptInvitation: React.FC = () => {
       }
 
       // Check if invitation is valid
-      if (data.status !== 'pending') {
+      if (data.status !== 'invited') {
         setError('This invitation has already been processed');
         setLoading(false);
         return;
       }
 
-      if (new Date(data.expires_at) < new Date()) {
+      if (data.invitation_expires_at && new Date(data.invitation_expires_at) < new Date()) {
         setError('This invitation has expired');
         setLoading(false);
         return;
@@ -79,14 +80,18 @@ const AcceptInvitation: React.FC = () => {
         .eq('id', user?.id)
         .single();
 
-      if (profile?.email !== data.invitee_email) {
+      if (profile?.email !== data.invited_email) {
         setError('This invitation is not for your account');
         setLoading(false);
         return;
       }
 
       setInvitation({
-        ...data,
+        id: data.team_id + '-' + (data.profile_id || 'pending'),
+        manager_id: data.invited_by || '',
+        invitee_email: data.invited_email || '',
+        status: data.status,
+        expires_at: data.invitation_expires_at || '',
         manager_name: (data.manager as any)?.name || 'Unknown Manager',
       });
       setLoading(false);

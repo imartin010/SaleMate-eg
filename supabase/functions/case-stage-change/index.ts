@@ -54,13 +54,15 @@ serve(async (req) => {
       case 'New Lead': {
         // Create CALL_NOW action with 15-minute SLA
         const dueAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-        await supabase.from('case_actions').insert({
+        await supabase.from('activities').insert({
           lead_id: leadId,
-          action_type: 'CALL_NOW',
-          payload: { sla: '15m' },
+          activity_type: 'task',
+          task_type: 'follow_up',
+          task_status: 'pending',
+          actor_profile_id: userId,
+          assignee_profile_id: userId,
           due_at: dueAt,
-          status: 'PENDING',
-          created_by: userId,
+          payload: { action_type: 'CALL_NOW', sla: '15m' },
         });
 
         // Send notification
@@ -81,12 +83,14 @@ serve(async (req) => {
       case 'Potential': {
         // Save feedback if provided
         if (feedback) {
-          await supabase.from('case_feedback').insert({
+          const { data: feedbackData } = await supabase.from('activities').insert({
             lead_id: leadId,
+            activity_type: 'feedback',
+            event_type: 'feedback',
+            actor_profile_id: userId,
             stage: newStage,
-            feedback,
-            created_by: userId,
-          });
+            body: feedback,
+          }).select().single();
 
           // Call AI coach
           const coachResponse = await fetch(`${supabaseUrl}/functions/v1/case-coach`, {
@@ -99,21 +103,24 @@ serve(async (req) => {
             }),
           });
 
-          if (coachResponse.ok) {
+          if (coachResponse.ok && feedbackData) {
             const coachData = await coachResponse.json();
             // Update feedback with AI coach recommendations
-            await supabase.from('case_feedback').update({ 
+            await supabase.from('activities').update({ 
               ai_coach: JSON.stringify(coachData.data) 
-            }).eq('lead_id', leadId).eq('feedback', feedback);
+            }).eq('id', feedbackData.id);
           }
         }
 
         // Create PUSH_MEETING action
-        await supabase.from('case_actions').insert({
+        await supabase.from('activities').insert({
           lead_id: leadId,
-          action_type: 'PUSH_MEETING',
-          status: 'PENDING',
-          created_by: userId,
+          activity_type: 'task',
+          task_type: 'meeting',
+          task_status: 'pending',
+          actor_profile_id: userId,
+          assignee_profile_id: userId,
+          payload: { action_type: 'PUSH_MEETING' },
         });
 
         // If meeting date provided, create reminders
@@ -122,22 +129,26 @@ serve(async (req) => {
           const reminder24h = new Date(meetingTime - 24 * 60 * 60 * 1000).toISOString();
           const reminder2h = new Date(meetingTime - 2 * 60 * 60 * 1000).toISOString();
 
-          await supabase.from('case_actions').insert([
+          await supabase.from('activities').insert([
             {
               lead_id: leadId,
-              action_type: 'REMIND_MEETING',
-              payload: { meeting_date: meetingDate, reminder: '24h' },
+              activity_type: 'task',
+              task_type: 'meeting',
+              task_status: 'pending',
+              actor_profile_id: userId,
+              assignee_profile_id: userId,
+              payload: { action_type: 'REMIND_MEETING', meeting_date: meetingDate, reminder: '24h' },
               due_at: reminder24h,
-              status: 'PENDING',
-              created_by: userId,
             },
             {
               lead_id: leadId,
-              action_type: 'REMIND_MEETING',
-              payload: { meeting_date: meetingDate, reminder: '2h' },
+              activity_type: 'task',
+              task_type: 'meeting',
+              task_status: 'pending',
+              actor_profile_id: userId,
+              assignee_profile_id: userId,
+              payload: { action_type: 'REMIND_MEETING', meeting_date: meetingDate, reminder: '2h' },
               due_at: reminder2h,
-              status: 'PENDING',
-              created_by: userId,
             },
           ]);
         }
@@ -147,21 +158,25 @@ serve(async (req) => {
       case 'Non Potential': {
         // Save feedback if provided
         if (feedback) {
-          await supabase.from('case_feedback').insert({
+          await supabase.from('activities').insert({
             lead_id: leadId,
+            activity_type: 'feedback',
+            event_type: 'feedback',
+            actor_profile_id: userId,
             stage: newStage,
-            feedback,
-            created_by: userId,
+            body: feedback,
           });
         }
 
         // Create CHANGE_FACE action
-        await supabase.from('case_actions').insert({
+        await supabase.from('activities').insert({
           lead_id: leadId,
-          action_type: 'CHANGE_FACE',
-          payload: { reason: 'Verify non potential classification' },
-          status: 'PENDING',
-          created_by: userId,
+          activity_type: 'task',
+          task_type: 'custom',
+          task_status: 'pending',
+          actor_profile_id: userId,
+          assignee_profile_id: userId,
+          payload: { action_type: 'CHANGE_FACE', reason: 'Verify non potential classification' },
         });
         break;
       }
@@ -186,34 +201,41 @@ serve(async (req) => {
 
       case 'EOI': {
         // Expression of Interest - suggest face change for pre-launch reinforcement
-        await supabase.from('case_actions').insert({
+        await supabase.from('activities').insert({
           lead_id: leadId,
-          action_type: 'CHANGE_FACE',
-          payload: { reason: 'Pre-launch reinforcement - second opinion' },
-          status: 'PENDING',
-          created_by: userId,
+          activity_type: 'task',
+          task_type: 'custom',
+          task_status: 'pending',
+          actor_profile_id: userId,
+          assignee_profile_id: userId,
+          payload: { action_type: 'CHANGE_FACE', reason: 'Pre-launch reinforcement - second opinion' },
         });
         break;
       }
 
       case 'Closed Deal': {
         // Create ASK_FOR_REFERRALS action immediately
-        await supabase.from('case_actions').insert({
+        await supabase.from('activities').insert({
           lead_id: leadId,
-          action_type: 'ASK_FOR_REFERRALS',
-          status: 'PENDING',
-          created_by: userId,
+          activity_type: 'task',
+          task_type: 'follow_up',
+          task_status: 'pending',
+          actor_profile_id: userId,
+          assignee_profile_id: userId,
+          payload: { action_type: 'ASK_FOR_REFERRALS' },
         });
 
         // Create follow-up referral request for 30 days later
         const followupDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        await supabase.from('case_actions').insert({
+        await supabase.from('activities').insert({
           lead_id: leadId,
-          action_type: 'ASK_FOR_REFERRALS',
-          payload: { followup: '30d' },
+          activity_type: 'task',
+          task_type: 'follow_up',
+          task_status: 'pending',
+          actor_profile_id: userId,
+          assignee_profile_id: userId,
+          payload: { action_type: 'ASK_FOR_REFERRALS', followup: '30d' },
           due_at: followupDate,
-          status: 'PENDING',
-          created_by: userId,
         });
 
         // Send congratulations notification

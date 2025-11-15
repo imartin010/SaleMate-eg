@@ -221,24 +221,22 @@ serve(async (req) => {
           // GET /admin-commissions - Get all commissions for admin
           if (req.method === 'GET' && path === 'admin-commissions') {
             const { data: commissions, error } = await supabaseClient
-              .from('project_partner_commissions')
+              .from('commerce')
               .select(`
                 id,
                 commission_rate,
-                is_active,
+                status,
                 created_at,
                 updated_at,
                 projects (
                   id,
                   name,
-                  developer
+                  developer:entities!projects_developer_id_fkey ( name )
                 ),
-                partners (
-                  id,
-                  name
-                )
+                partner:entities ( id, name )
               `)
-              .eq('is_active', true)
+              .eq('commerce_type', 'commission')
+              .eq('status', 'approved')
               .order('created_at', { ascending: false })
 
             if (error) {

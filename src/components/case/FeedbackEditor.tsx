@@ -33,14 +33,16 @@ export function FeedbackEditor({ leadId, currentStage, onSubmit }: FeedbackEdito
         .eq('id', leadId)
         .single();
 
-      // Save feedback
+      // Save feedback to activities table
       const { data: feedbackData, error: feedbackError } = await supabase
-        .from('case_feedback')
+        .from('activities')
         .insert({
           lead_id: leadId,
+          activity_type: 'feedback',
+          event_type: 'feedback',
+          actor_profile_id: user.id,
           stage: currentStage,
-          feedback,
-          created_by: user.id,
+          body: feedback,
         })
         .select()
         .single();
@@ -63,7 +65,7 @@ export function FeedbackEditor({ leadId, currentStage, onSubmit }: FeedbackEdito
 
         // Update feedback with AI coach response
         const { error: updateError } = await supabase
-          .from('case_feedback')
+          .from('activities')
           .update({ ai_coach: JSON.stringify(aiResponse) })
           .eq('id', feedbackData.id);
 

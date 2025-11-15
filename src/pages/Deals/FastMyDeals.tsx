@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
 // import { supabase } from "../../lib/supabaseClient" // Temporarily disabled - deals table not implemented
 import { PageTitle } from '../../components/common/PageTitle';
+import { EmptyState } from '../../components/common/EmptyState';
+import { BottomSheet } from '../../components/common/BottomSheet';
+import { FloatingActionButton } from '../../components/common/FloatingActionButton';
+import { SkeletonList } from '../../components/common/SkeletonCard';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { 
   Plus, 
   FileText, 
@@ -9,21 +16,18 @@ import {
   DollarSign, 
   Building, 
   User, 
- 
-
   CheckCircle,
   Clock,
   AlertCircle,
   Edit,
   Trash2,
   Eye,
-
   Search,
   Download,
   Upload,
   Briefcase,
-
-  Award
+  Award,
+  Filter
 } from 'lucide-react';
 
 interface Deal {
@@ -56,6 +60,7 @@ const FastMyDeals: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [formData, setFormData] = useState({
     deal_type: 'EOI' as 'EOI' | 'Reservation' | 'Contract',
@@ -236,10 +241,9 @@ const FastMyDeals: React.FC = () => {
 
   if (loading && deals.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your deals...</p>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-blue-50/20 to-white">
+        <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 max-w-7xl">
+          <SkeletonList count={6} />
         </div>
       </div>
     );
@@ -260,14 +264,15 @@ const FastMyDeals: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-center">
-          <button
+        {/* Desktop Create Button */}
+        <div className="hidden md:flex items-center justify-center">
+          <Button
             onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-5 w-5 mr-2" />
             Create New Deal
-          </button>
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -342,54 +347,94 @@ const FastMyDeals: React.FC = () => {
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
+          <div className="flex-1 flex gap-2">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search deals..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10 h-12 md:h-10"
               />
             </div>
+            {/* Mobile Filter Button */}
+            <Button
+              variant={statusFilter !== 'all' ? 'default' : 'outline'}
+              onClick={() => setShowFilters(true)}
+              className="md:hidden h-12 w-12 min-w-[48px] min-h-[48px] rounded-xl"
+              aria-label="Filters"
+            >
+              <Filter className="h-5 w-5" />
+            </Button>
           </div>
-          <select
+          {/* Desktop Filter */}
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onValueChange={setStatusFilter}
+            className="hidden md:block"
           >
-            <option value="all">All Status</option>
-            <option value="Reservation">Reservation</option>
-            <option value="Contracted">Contracted</option>
-            <option value="Collected">Collected</option>
-            <option value="Ready to payout">Ready to Payout</option>
-          </select>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Reservation">Reservation</SelectItem>
+              <SelectItem value="Contracted">Contracted</SelectItem>
+              <SelectItem value="Collected">Collected</SelectItem>
+              <SelectItem value="Ready to payout">Ready to Payout</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Mobile Filters Bottom Sheet */}
+        <BottomSheet
+          open={showFilters}
+          onClose={() => setShowFilters(false)}
+          title="Filters"
+          footer={
+            <Button
+              size="mobile"
+              onClick={() => setShowFilters(false)}
+              className="w-full"
+            >
+              Apply Filters
+            </Button>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Reservation">Reservation</SelectItem>
+                  <SelectItem value="Contracted">Contracted</SelectItem>
+                  <SelectItem value="Collected">Collected</SelectItem>
+                  <SelectItem value="Ready to payout">Ready to Payout</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </BottomSheet>
       </div>
 
       {/* Deals Grid */}
       {filteredDeals.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No deals found</h3>
-          <p className="text-gray-600 mb-6">
-            {deals.length === 0 
-              ? "You haven't created any deals yet. Start by creating your first deal!"
-              : "No deals match your current filters."
-            }
-          </p>
-          {deals.length === 0 && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              Create Your First Deal
-            </button>
-          )}
-        </div>
+        <EmptyState
+          title="No deals found"
+          description={deals.length === 0 
+            ? "You haven't created any deals yet. Start by creating your first deal!"
+            : "No deals match your current filters"}
+          ctaText={deals.length === 0 ? "Create Your First Deal" : undefined}
+          onCtaClick={deals.length === 0 ? () => setShowCreateModal(true) : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDeals.map((deal) => (
@@ -754,6 +799,12 @@ const FastMyDeals: React.FC = () => {
         </div>
       )}
       </div>
+
+      {/* Floating Action Button for Create Deal - Mobile Only */}
+      <FloatingActionButton
+        onClick={() => setShowCreateModal(true)}
+        aria-label="Create Deal"
+      />
     </div>
   );
 };

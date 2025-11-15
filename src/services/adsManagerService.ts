@@ -1,6 +1,12 @@
 /**
  * Facebook Ads Manager Integration Service
- * Extracts project codes from campaign names and assigns leads to projects
+ * 
+ * Uses project_code from projects table for Facebook campaign integration.
+ * Each project has a unique project_code (e.g., "001", "002", "003") that is used
+ * in Facebook campaign names to automatically route leads to the correct project.
+ * 
+ * Campaign naming format: "PROJ001 - Campaign Name" or "001 - Campaign Name"
+ * The service extracts the code and matches it to projects.project_code
  */
 
 import { supabase } from '../lib/supabaseClient';

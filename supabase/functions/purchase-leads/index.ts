@@ -151,15 +151,34 @@ serve(async (req) => {
       })
       .eq('id', project_id)
 
-    // Log purchase
+    // Create commerce record
     await supabaseAdmin
-      .from('audit_logs')
+      .from('commerce')
       .insert({
-        actor_id: user.id,
+        commerce_type: 'purchase',
+        profile_id: user.id,
+        project_id: project_id,
+        quantity: quantity,
+        amount: totalAmount,
+        currency: 'EGP',
+        payment_method: payment_method,
+        status: 'completed',
+        metadata: {
+          project_name: project.name,
+          lead_ids: leadIds,
+        },
+      })
+
+    // Log purchase in system_logs
+    await supabaseAdmin
+      .from('system_logs')
+      .insert({
+        log_type: 'audit',
+        actor_profile_id: user.id,
         action: 'create',
-        entity: 'purchase',
+        entity_type: 'commerce',
         entity_id: project_id,
-        changes: {
+        details: {
           quantity,
           total_amount: totalAmount,
           payment_method,

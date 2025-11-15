@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { StickySubmitButton } from '../../components/common/StickySubmitButton';
 import { ArrowLeft, Mail, Phone, MessageCircle, Clock, Send, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -151,7 +152,7 @@ export const ContactSupport: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form id="support-form" onSubmit={handleSubmit} className="space-y-6 pb-20 md:pb-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,7 +253,7 @@ export const ContactSupport: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between pt-4">
+                <div className="hidden md:flex items-center justify-between pt-4">
                   <p className="text-sm text-gray-500">
                     * Required fields
                   </p>
@@ -262,6 +263,13 @@ export const ContactSupport: React.FC = () => {
                   </Button>
                 </div>
               </form>
+              
+              {/* Mobile Sticky Submit Button */}
+              <StickySubmitButton
+                label="Send Message"
+                loading={false}
+                form="support-form"
+              />
             </div>
           </div>
         </div>

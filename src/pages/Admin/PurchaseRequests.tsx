@@ -51,8 +51,8 @@ export default function PurchaseRequests() {
     loadRequests();
     
       const channel = supabase
-      .channel('purchase_requests_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_requests' }, () => {
+      .channel('commerce_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'commerce', filter: 'commerce_type=eq.purchase' }, () => {
         loadRequests();
       })
       .subscribe();
@@ -175,10 +175,11 @@ export default function PurchaseRequests() {
         console.warn('Admin access required for purchase requests');
       }
       
-      // Fetch purchase requests first
+      // Fetch purchase requests from commerce table
       const { data: requestsData, error: requestsErr } = await supabase
-        .from('purchase_requests')
+        .from('commerce')
         .select('*')
+        .eq('commerce_type', 'purchase')
         .order('created_at', { ascending: false });
 
       if (requestsErr) {
@@ -410,14 +411,14 @@ export default function PurchaseRequests() {
     try {
       setProcessing(true);
       const { error: err } = await supabase
-        .from('purchase_requests')
+        .from('commerce')
         .update({
           status: 'rejected',
-          rejected_at: new Date().toISOString(),
           rejected_reason: adminNotes || null,
           admin_notes: adminNotes || null,
         })
-        .eq('id', requestId);
+        .eq('id', requestId)
+        .eq('commerce_type', 'purchase');
 
       if (err) throw err;
 
