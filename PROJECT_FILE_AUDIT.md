@@ -247,13 +247,47 @@ These are likely one-time migration/fix scripts that may have been used during d
 
 ## 4. Deprecated (Pending Deletion)
 
-*This section will be populated after deprecation step*
+*No files currently in deprecation phase*
 
 ---
 
 ## 5. Deleted Files (Confirmed Unused)
 
-*This section will be populated after deletion step*
+**Date Deleted:** 2025-01-27  
+**Commit:** a245991 (chore: snapshot before file cleanup)
+
+### Backup/Alternative Main Files (7 files)
+1. ✅ `src/main-backup.tsx` - Backup variant, not imported
+2. ✅ `src/main-debug.tsx` - Debug variant, not imported
+3. ✅ `src/main-fixed.tsx` - Fixed variant, not imported
+4. ✅ `src/main-minimal.tsx` - Minimal variant, not imported
+5. ✅ `src/main-simple.tsx` - Simple variant, not imported
+6. ✅ `src/main-test.tsx` - Test variant, not imported
+7. ✅ `src/main-working.tsx` - Working variant, not imported
+
+### Backup Route Files (1 file)
+8. ✅ `src/app/routes.tsx.backup` - Backup route configuration, not imported
+
+### Unused Page Components (8 files)
+9. ✅ `src/pages/SimpleCRM.tsx` - Replaced by ModernCRM.tsx
+10. ✅ `src/pages/SimpleShop.tsx` - Replaced by ImprovedShop.tsx
+11. ✅ `src/pages/Deals/MyDeals.tsx` - Replaced by FastMyDeals.tsx
+12. ✅ `src/pages/Shop/Shop.tsx` - Replaced by ImprovedShop.tsx
+13. ✅ `src/pages/Shop/EnhancedShop.tsx` - Replaced by ImprovedShop.tsx
+14. ✅ `src/pages/Partners/Partners.tsx` - Replaced by PartnersPage.tsx
+15. ✅ `src/pages/Admin/PurchaseRequestsManager.tsx` - Replaced by PurchaseRequests.tsx
+
+### Unused Components (3 files)
+16. ✅ `src/components/common/LogoTest.tsx` - Test component, not imported
+17. ✅ `src/components/common/ProfileDebug.tsx` - Debug component, commented out in AppLayout
+18. ✅ `src/components/common/TestConnection.tsx` - Test component, commented out in AppLayout
+
+**Total Files Deleted:** 18 files
+
+**Verification:**
+- ✅ Build passed after deletion
+- ✅ Typecheck passed after deletion
+- ✅ No runtime errors detected
 
 ---
 
@@ -305,11 +339,32 @@ These are likely one-time migration/fix scripts that may have been used during d
 ## 8. Summary Statistics
 
 - **Total Files Audited:** ~500+ files
-- **Confirmed Unused (High Confidence):** 18 files
-- **Potentially Unused (Medium Confidence):** ~150+ files (scripts)
+- **Confirmed Unused (High Confidence):** 18 files ✅ **DELETED**
+- **Potentially Unused (Medium Confidence):** ~150+ files (scripts) - **KEPT** (may be needed for future migrations)
 - **Files to Keep:** All configs, migrations, active source files
+
+### Cleanup Results
+- ✅ **18 unused files successfully removed**
+- ✅ **Build verified:** Application builds successfully
+- ✅ **Typecheck verified:** No TypeScript errors
+- ✅ **No breaking changes:** Application remains functional
 
 ---
 
-**Note:** This audit is conservative. When in doubt, files are kept rather than deleted to prevent breaking the application.
+## 9. Recommendations
+
+### Immediate Actions Completed
+- ✅ Removed backup/alternative main files
+- ✅ Removed unused page components
+- ✅ Removed unused test/debug components
+
+### Future Considerations
+1. **Root-level Scripts:** Consider archiving one-time migration scripts to `archive/scripts/` directory
+2. **SQL Fix Scripts:** Consider archiving one-time database fix scripts (FIX_*.sql) to `archive/sql/`
+3. **Legacy Dashboard:** `FastDashboard.tsx` is marked as "Legacy, will be removed" - monitor for removal opportunity
+4. **Code Quality:** Address pre-existing lint warnings (unused variables, any types) in separate cleanup
+
+---
+
+**Note:** This audit was conservative. When in doubt, files were kept rather than deleted to prevent breaking the application. Only files with 100% confidence of being unused were removed.
 
