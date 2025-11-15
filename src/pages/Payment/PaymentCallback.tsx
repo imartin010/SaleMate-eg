@@ -26,7 +26,16 @@ export const PaymentCallback: React.FC = () => {
 
   useEffect(() => {
     const processPayment = async () => {
+      console.log('PaymentCallback: Starting payment processing', {
+        transactionId,
+        statusParam,
+        paymentStatusParam,
+        orderId,
+        paymentId
+      });
+
       if (!transactionId) {
+        console.error('PaymentCallback: Transaction ID not found');
         setStatus('error');
         setMessage('Transaction ID not found');
         return;
@@ -60,40 +69,61 @@ export const PaymentCallback: React.FC = () => {
         }
 
         // Confirm payment via RPC
+        console.log('PaymentCallback: Calling confirmPayment', { transactionId, paymentStatusToUse });
         const result = await PaymentGatewayService.confirmPayment(
           transactionId,
           paymentStatusToUse
         );
 
+        console.log('PaymentCallback: confirmPayment result', result);
+
         // Check if payment was successful (either newly processed or already processed)
         // The RPC may return success=true even if transaction was already processed
         if (result.success && paymentStatusToUse === 'completed') {
+          console.log('PaymentCallback: Payment successful, refreshing balance and redirecting');
           setStatus('success');
           setMessage('Payment successful! Your wallet has been topped up.');
           
           // Refresh wallet balance
-          await refreshBalance();
+          try {
+            await refreshBalance();
+            console.log('PaymentCallback: Balance refreshed');
+          } catch (refreshError) {
+            console.error('PaymentCallback: Error refreshing balance', refreshError);
+            // Continue anyway - balance will update on next page load
+          }
           
           // Show success toast
-          showSuccess('Payment successful! Your wallet balance has been updated.');
+          try {
+            showSuccess('Payment successful! Your wallet balance has been updated.');
+          } catch (toastError) {
+            console.error('PaymentCallback: Error showing toast', toastError);
+          }
           
           // Redirect to home after 2 seconds (reduced for better UX)
           setTimeout(() => {
-            navigate('/app/home');
+            console.log('PaymentCallback: Redirecting to /app/home');
+            navigate('/app/home', { replace: true });
           }, 2000);
         } else {
           // Only show error if payment actually failed
+          console.error('PaymentCallback: Payment failed', result);
           setStatus('error');
           setMessage(result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
-          showError(result.error || 'Payment processing failed');
+          try {
+            showError(result.error || 'Payment processing failed');
+          } catch (toastError) {
+            console.error('PaymentCallback: Error showing error toast', toastError);
+          }
           
           // Redirect to home after 5 seconds
           setTimeout(() => {
-            navigate('/app/home');
+            console.log('PaymentCallback: Redirecting to /app/home (error case)');
+            navigate('/app/home', { replace: true });
           }, 5000);
         }
       } catch (error) {
-        console.error('Payment callback error:', error);
+        console.error('PaymentCallback: Payment callback error:', error);
         setStatus('error');
         setMessage(
           error instanceof Error 
@@ -112,6 +142,7 @@ export const PaymentCallback: React.FC = () => {
     processPayment();
   }, [transactionId, statusParam, paymentStatusParam, orderId, paymentId, navigate, refreshBalance, showSuccess, showError]);
 
+  // Always render something, even if there's an error
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white flex items-center justify-center p-4">
       <div className="max-w-md w-full">
