@@ -124,12 +124,20 @@ class PaymentGatewayService {
 
       // Update transaction with gateway response
       if (paymentResult.success && paymentResult.transactionId) {
+        // Determine status based on gateway type:
+        // - redirectUrl: User needs to complete payment on gateway -> 'processing'
+        // - clientSecret: Client-side confirmation needed -> 'processing'  
+        // - Neither: Test/instant payment -> can remain 'pending' until webhook/callback confirms
+        const newStatus = (paymentResult.redirectUrl || paymentResult.clientSecret) 
+          ? 'processing' 
+          : 'pending';
+        
         await supabase
           .from('payment_transactions')
           .update({
             gateway_transaction_id: paymentResult.transactionId,
             gateway_payment_intent_id: paymentResult.paymentIntentId || null,
-            status: paymentResult.clientSecret ? 'processing' : 'completed',
+            status: newStatus,
           })
           .eq('id', transaction.id);
       } else {
