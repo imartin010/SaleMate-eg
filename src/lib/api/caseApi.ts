@@ -364,3 +364,105 @@ export async function markAllNotificationsRead(userId: string) {
   if (error) throw error;
 }
 
+/**
+ * Chat Interface Functions
+ */
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+/**
+ * Initialize chat with AI's first message
+ */
+export async function initializeChat(
+  leadId: string,
+  params: {
+    lead: { id: string; name: string; phone?: string; project_id?: string };
+    stage: string;
+  }
+): Promise<ChatMessage | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-chat', {
+      body: {
+        method: 'INITIALIZE',
+        leadId,
+        ...params,
+      },
+    });
+
+    if (error) {
+      console.error('Chat initialization error:', error);
+      return null;
+    }
+
+    return data.message;
+  } catch (error) {
+    console.error('Error initializing chat:', error);
+    return null;
+  }
+}
+
+/**
+ * Send a chat message and get AI response
+ */
+export async function sendChatMessage(
+  leadId: string,
+  params: {
+    message: string;
+    lead: { id: string; name: string; phone?: string; project_id?: string };
+    stage: string;
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+  }
+): Promise<ChatMessage | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-chat', {
+      body: {
+        method: 'SEND',
+        leadId,
+        ...params,
+      },
+    });
+
+    if (error) {
+      console.error('Chat send error:', error);
+      throw new Error(error.message || 'Failed to send message');
+    }
+
+    return data.message;
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get chat messages for a lead
+ */
+export async function getChatMessages(leadId: string): Promise<ChatMessage[]> {
+  const { data, error } = await supabase
+    .from('activities')
+    .select('id, body, created_at, payload')
+    .eq('lead_id', leadId)
+    .eq('activity_type', 'chat')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching chat messages:', error);
+    return [];
+  }
+
+  return (data ?? []).map((activity) => {
+    const payload = (activity.payload ?? {}) as any;
+    return {
+      id: activity.id,
+      role: payload.role || 'user',
+      content: activity.body || '',
+      created_at: activity.created_at,
+    } as ChatMessage;
+  });
+}
+
