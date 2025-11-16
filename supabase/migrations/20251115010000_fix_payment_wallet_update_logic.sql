@@ -1,9 +1,13 @@
--- Fix process_payment_and_topup to allow wallet update even if status is already completed
--- The issue: If transaction status is already 'completed' (e.g., from webhook), 
+-- CRITICAL WALLET UPDATE FUNCTION - Fix process_payment_and_topup for idempotent wallet crediting
+--
+-- PROBLEM SOLVED:
+-- If transaction status is already 'completed' (e.g., from webhook),
 -- the function was returning early and wallet balance was never updated.
--- 
--- Fix: Check if wallet was already updated by checking completed_at timestamp.
+--
+-- SOLUTION:
+-- Check if wallet was already updated by checking completed_at timestamp.
 -- Only skip processing if status is completed AND completed_at is already set.
+-- This ensures wallet gets credited exactly once, even if webhook + callback both fire.
 
 CREATE OR REPLACE FUNCTION process_payment_and_topup(
     p_transaction_id uuid,
@@ -29,11 +33,13 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Transaction not found');
     END IF;
     
-    -- Check if wallet was already updated by checking completed_at
-    -- If completed_at is NULL, wallet hasn't been updated yet
+    -- IDEMPOTENCY CHECK - Critical for preventing double crediting
+    -- completed_at is only set when wallet balance is actually updated
+    -- If completed_at exists, wallet was already credited - don't credit again
     v_wallet_updated := (v_transaction.completed_at IS NOT NULL);
-    
-    -- Only prevent processing if status is already completed AND wallet was already updated
+
+    -- Only skip if BOTH status indicates completion AND wallet was already updated
+    -- This allows re-processing failed transactions or updating status without double crediting
     IF v_transaction.status IN ('completed', 'failed', 'cancelled') AND v_wallet_updated THEN
         RETURN jsonb_build_object('success', true, 'message', 'Transaction already processed', 'transaction_id', p_transaction_id, 'status', p_status);
     END IF;
@@ -46,9 +52,10 @@ BEGIN
         completed_at = CASE WHEN p_status = 'completed' AND completed_at IS NULL THEN now() ELSE completed_at END
     WHERE id = p_transaction_id;
     
-    -- If completed and is wallet topup, update wallet (only if not already updated)
+    -- WALLET CREDIT - Only credit if payment completed and wallet not already updated
+    -- This is the SINGLE POINT where wallet balance increases for top-ups
     IF p_status = 'completed' AND v_transaction.transaction_type = 'wallet_topup' AND NOT v_wallet_updated THEN
-        -- Update wallet balance
+        -- CRITICAL: Update wallet balance - this is the source of truth
         UPDATE profiles
         SET wallet_balance = wallet_balance + v_transaction.amount
         WHERE id = v_transaction.user_id;

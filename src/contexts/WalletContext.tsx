@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuthStore } from '../store/auth';
-import { PaymentService, PaymentRequest } from '../services/paymentService';
+import PaymentGatewayService, { PaymentGateway } from '../services/paymentGateway';
 import { PaymentMethod } from '../types';
 
 interface WalletContextType {
@@ -135,40 +135,71 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       setError(null);
 
       // Validate amount
-      const validation = PaymentService.validateAmount(amount);
-      if (!validation.valid) {
-        return { success: false, error: validation.error };
+      if (amount <= 0) {
+        return { success: false, error: 'Amount must be greater than 0' };
       }
 
-      // Process payment
-      const paymentRequest: PaymentRequest = {
-        amount,
-        paymentMethod,
-        description,
-        userId: user.id
-      };
+      // Map PaymentMethod to gateway-specific values
+      let gateway: PaymentGateway = 'test';
+      let paymentMethodForGateway: 'card' | 'instapay' | 'bank_transfer' = 'card';
 
-      const paymentResult = await PaymentService.processWalletPayment(paymentRequest);
-
-      if (!paymentResult.success) {
-        return { success: false, error: paymentResult.error };
+      // Determine gateway and payment method based on environment and method
+      if (paymentMethod === 'card') {
+        // Use Kashier for card payments if available, otherwise test
+        const hasKashierKey = Boolean(import.meta.env.VITE_KASHIER_PAYMENT_KEY);
+        gateway = (!import.meta.env.VITE_PAYMENT_TEST_MODE || import.meta.env.VITE_PAYMENT_TEST_MODE === 'false') && hasKashierKey ? 'kashier' : 'test';
+        paymentMethodForGateway = 'card';
+      } else if (paymentMethod === 'instapay') {
+        gateway = 'test'; // Instapay uses manual approval for now
+        paymentMethodForGateway = 'instapay';
+      } else if (paymentMethod === 'bank_transfer') {
+        gateway = 'test'; // Bank transfer uses manual approval for now
+        paymentMethodForGateway = 'bank_transfer';
       }
 
-      // Add to wallet after successful payment
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: addError } = await (supabase as any).rpc('add_to_wallet', {
-        p_user_id: user.id,
-        p_amount: amount,
-        p_description: `${description} (${paymentResult.transactionId})`
-      });
+      // For manual payment methods (instapay, bank_transfer), this should create commerce requests
+      // For card payments, this should go through the gateway system
+      if (paymentMethod === 'card') {
+        // Process card payment through gateway
+        const paymentResult = await PaymentGatewayService.createPayment({
+          amount,
+          currency: 'EGP',
+          paymentMethod: paymentMethodForGateway,
+          gateway,
+          transactionType: 'wallet_topup',
+          userId: user.id,
+          metadata: {
+            description,
+            payment_method: paymentMethodForGateway,
+            transaction_type: 'wallet_topup'
+          }
+        });
 
-      if (addError) {
-        throw new Error(addError.message);
+        if (!paymentResult.success) {
+          return { success: false, error: paymentResult.error };
+        }
+
+        // For test gateway, confirm payment immediately
+        if (gateway === 'test') {
+          const confirmResult = await PaymentGatewayService.confirmPayment(
+            paymentResult.transactionId!,
+            'completed'
+          );
+
+          if (!confirmResult.success) {
+            return { success: false, error: confirmResult.error };
+          }
+        }
+
+        // For Kashier, the callback/webhook will handle confirmation
+        // Refresh balance to get updated amount
+        await refreshBalance();
+        return { success: true };
+      } else {
+        // Manual payment methods - create commerce request for approval
+        // This is handled by TopUpModal for manual methods
+        return { success: false, error: 'Manual payment methods should use TopUpModal' };
       }
-
-      // Refresh balance after successful addition
-      await refreshBalance();
-      return { success: true };
     } catch (err: unknown) {
       console.error('Error adding to wallet with payment:', err);
       return { success: false, error: (err instanceof Error ? err.message : String(err)) || 'Payment processing failed' };

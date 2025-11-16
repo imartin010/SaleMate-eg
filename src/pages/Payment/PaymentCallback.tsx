@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import PaymentGatewayService from '../../services/paymentGateway';
-import { useWallet } from '../../contexts/WalletContext';
-import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Payment Callback Page
@@ -14,26 +12,6 @@ export const PaymentCallback: React.FC = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState<string>('Processing payment...');
-  
-  // Get wallet and toast hooks with error handling
-  let refreshBalance: (() => Promise<void>) | undefined;
-  let showSuccess: ((message: string) => void) | undefined;
-  let showError: ((message: string) => void) | undefined;
-  
-  try {
-    const wallet = useWallet();
-    refreshBalance = wallet.refreshBalance;
-  } catch (error) {
-    console.error('PaymentCallback: Error getting wallet context', error);
-  }
-  
-  try {
-    const toast = useToast();
-    showSuccess = toast.showSuccess;
-    showError = toast.showError;
-  } catch (error) {
-    console.error('PaymentCallback: Error getting toast context', error);
-  }
   
   const transactionId = searchParams.get('transactionId');
   const statusParam = searchParams.get('status'); // 'success' or 'failed' from Kashier
@@ -99,54 +77,26 @@ export const PaymentCallback: React.FC = () => {
 
         console.log('PaymentCallback: confirmPayment result', result);
 
-        // Check if payment was successful (either newly processed or already processed)
-        // The RPC may return success=true even if transaction was already processed
+        // Check if payment was successful
         if (result.success && paymentStatusToUse === 'completed') {
-          console.log('PaymentCallback: Payment successful, refreshing balance and redirecting');
+          console.log('PaymentCallback: Payment successful, redirecting');
           setStatus('success');
           setMessage('Payment successful! Your wallet has been topped up.');
-          
-          // Refresh wallet balance
-          if (refreshBalance) {
-            try {
-              await refreshBalance();
-              console.log('PaymentCallback: Balance refreshed');
-            } catch (refreshError) {
-              console.error('PaymentCallback: Error refreshing balance', refreshError);
-              // Continue anyway - balance will update on next page load
-            }
-          }
-          
-          // Show success toast
-          if (showSuccess) {
-            try {
-              showSuccess('Payment successful! Your wallet balance has been updated.');
-            } catch (toastError) {
-              console.error('PaymentCallback: Error showing toast', toastError);
-            }
-          }
-          
-          // Redirect to home after 2 seconds (reduced for better UX)
+
+          // Redirect to home after 2 seconds
           setTimeout(() => {
             console.log('PaymentCallback: Redirecting to /app/home');
             navigate('/app/home', { replace: true });
           }, 2000);
         } else {
-          // Only show error if payment actually failed
-          console.error('PaymentCallback: Payment failed', result);
+          // Payment failed or processing error
+          console.error('PaymentCallback: Payment failed or processing error', { result, paymentStatusToUse });
           setStatus('error');
           setMessage(result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
-          if (showError) {
-            try {
-              showError(result.error || 'Payment processing failed');
-            } catch (toastError) {
-              console.error('PaymentCallback: Error showing error toast', toastError);
-            }
-          }
-          
+
           // Redirect to home after 5 seconds
           setTimeout(() => {
-            console.log('PaymentCallback: Redirecting to /app/home (error case)');
+            console.log('PaymentCallback: Error redirect to /app/home');
             navigate('/app/home', { replace: true });
           }, 5000);
         }
@@ -154,18 +104,11 @@ export const PaymentCallback: React.FC = () => {
         console.error('PaymentCallback: Payment callback error:', error);
         setStatus('error');
         setMessage(
-          error instanceof Error 
-            ? error.message 
+          error instanceof Error
+            ? error.message
             : 'An error occurred while processing your payment. Please contact support if the payment was deducted.'
         );
-        if (showError) {
-          try {
-            showError('Payment processing error');
-          } catch (toastError) {
-            console.error('PaymentCallback: Error showing error toast', toastError);
-          }
-        }
-        
+
         // Redirect to home after 3 seconds
         setTimeout(() => {
           console.log('PaymentCallback: Error occurred, redirecting to home');
@@ -176,7 +119,7 @@ export const PaymentCallback: React.FC = () => {
 
     // Add a safety timeout - if nothing happens after 10 seconds, redirect anyway
     const safetyTimeout = setTimeout(() => {
-      console.warn('PaymentCallback: Safety timeout triggered, redirecting to home');
+      console.log('PaymentCallback: Safety timeout triggered, redirecting to home');
       navigate('/app/home', { replace: true });
     }, 10000);
 
