@@ -156,7 +156,12 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
       console.error('Error sending message:', error);
       // Remove temp message on error
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
-      alert('Failed to send message. Please try again.');
+      
+      // Show more detailed error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to send message. Please try again.';
+      alert(`Error: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

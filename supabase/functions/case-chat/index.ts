@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 interface ChatRequest {
@@ -38,18 +39,32 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    // Get auth token from headers
     const authHeader = req.headers.get('Authorization');
-    const token = authHeader?.replace('Bearer ', '') ?? '';
-
-    // Get user from token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Create client with anon key for auth verification
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Verify user is authenticated
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create service role client for database operations
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     const input: ChatRequest = await req.json();
     const { method, leadId, lead, stage, message, conversationHistory = [] } = input;
@@ -170,12 +185,13 @@ Keep it conversational and helpful.`;
 
       return new Response(
         JSON.stringify({
-          success: true,
-          message: {
-            id: savedMessage?.id || `temp-${Date.now()}`,
-            role: 'assistant',
-            content: aiResponse,
-            created_at: savedMessage?.created_at || new Date().toISOString(),
+          data: {
+            message: {
+              id: savedMessage?.id || `temp-${Date.now()}`,
+              role: 'assistant',
+              content: aiResponse,
+              created_at: savedMessage?.created_at || new Date().toISOString(),
+            },
           },
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -257,12 +273,13 @@ Keep it conversational and helpful.`;
 
       return new Response(
         JSON.stringify({
-          success: true,
-          message: {
-            id: aiMessage?.id || `temp-${Date.now()}`,
-            role: 'assistant',
-            content: aiResponse,
-            created_at: aiMessage?.created_at || new Date().toISOString(),
+          data: {
+            message: {
+              id: aiMessage?.id || `temp-${Date.now()}`,
+              role: 'assistant',
+              content: aiResponse,
+              created_at: aiMessage?.created_at || new Date().toISOString(),
+            },
           },
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
