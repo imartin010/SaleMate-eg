@@ -48,7 +48,11 @@ export function useCase(leadId: string): UseCaseReturn {
         .from('leads')
         .select(`
           *,
-          project:projects(id, name, region)
+          projects (
+            id,
+            name,
+            region
+          )
         `)
         .eq('id', leadId)
         .single();
@@ -66,27 +70,55 @@ export function useCase(leadId: string): UseCaseReturn {
 
         if (simpleLeadError) throw simpleLeadError;
         
+        // Fetch project separately if join failed
+        let projectData = null;
+        if (simpleLeadData.project_id) {
+          const { data: project, error: projectError } = await supabase
+            .from('projects')
+            .select('id, name, region')
+            .eq('id', simpleLeadData.project_id)
+            .single();
+          
+          if (!projectError && project) {
+            projectData = {
+              id: project.id,
+              name: typeof project.name === 'object' && project.name !== null
+                ? (project.name.name || JSON.stringify(project.name))
+                : (project.name || ''),
+              region: typeof project.region === 'object' && project.region !== null
+                ? (project.region.name || JSON.stringify(project.region))
+                : (project.region || ''),
+            };
+          }
+        }
+        
         // Transform simple data
         const transformedLead = {
           ...simpleLeadData,
-          project: null,
+          project: projectData,
           owner: null,
           assigned_to: null,
         } as Lead;
         
         setLead(transformedLead);
       } else {
+        // Handle project - it might come as 'projects' (array) or 'project' (object)
+        const originalProject = leadData.projects || leadData.project;
+        const projectData = Array.isArray(originalProject) 
+          ? (originalProject.length > 0 ? originalProject[0] : null)
+          : originalProject;
+        
         // Transform the data to extract nested project info
         const transformedLead = {
           ...leadData,
-          project: leadData.project ? {
-            ...leadData.project,
-            name: typeof leadData.project.name === 'object' && leadData.project.name !== null
-              ? (leadData.project.name.name || JSON.stringify(leadData.project.name))
-              : leadData.project.name,
-            region: typeof leadData.project.region === 'object' && leadData.project.region !== null
-              ? (leadData.project.region.name || JSON.stringify(leadData.project.region))
-              : leadData.project.region,
+          project: projectData ? {
+            id: projectData.id,
+            name: typeof projectData.name === 'object' && projectData.name !== null
+              ? (projectData.name.name || JSON.stringify(projectData.name))
+              : (projectData.name || ''),
+            region: typeof projectData.region === 'object' && projectData.region !== null
+              ? (projectData.region.name || JSON.stringify(projectData.region))
+              : (projectData.region || ''),
           } : null,
           owner: null,
           assigned_to: null,

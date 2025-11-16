@@ -1,11 +1,11 @@
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Building2 } from 'lucide-react';
 import { useCase } from '../../hooks/case/useCase';
 import { Button } from '../../components/ui/button';
 import { CaseStageTimeline } from '../../components/case/CaseStageTimeline';
 import { CaseCoachPanel } from '../../components/case/CaseCoachPanel';
-import { FeedbackEditor } from '../../components/case/FeedbackEditor';
+import { ChatInterface } from '../../components/case/ChatInterface';
 import { ActionsList } from '../../components/case/ActionsList';
 import { ActivityLog } from '../../components/case/ActivityLog';
 import { ChangeFaceModal } from '../../components/case/ChangeFaceModal';
@@ -54,7 +54,8 @@ export default function CaseManager() {
     );
   }
 
-  // Get latest AI coach recommendations from most recent feedback
+  // Note: AI coach is now handled through ChatInterface
+  // Keeping this for backward compatibility if needed elsewhere
   const latestCoach = feedback[0]?.ai_coach 
     ? JSON.parse(feedback[0].ai_coach) 
     : null;
@@ -85,6 +86,15 @@ export default function CaseManager() {
               <p className="text-gray-600 mt-1">
                 {lead.client_phone} {lead.client_email && `• ${lead.client_email}`}
               </p>
+              {lead.project && (
+                <div className="flex items-center gap-2 mt-2 text-sm">
+                  <Building2 className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                  <span className="text-gray-700 font-medium">{lead.project.name}</span>
+                  {lead.project.region && (
+                    <span className="text-gray-500">• {lead.project.region}</span>
+                  )}
+                </div>
+              )}
             </div>
             <Button
               onClick={() => setShowChangeFaceModal(true)}
@@ -115,18 +125,11 @@ export default function CaseManager() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-6 space-y-6"
           >
-            {latestCoach && (
-              <CaseCoachPanel
-                recommendations={latestCoach}
-                leadId={leadId!}
-                onRefetch={refetch}
-              />
-            )}
-            
-            <FeedbackEditor
+            <ChatInterface
               leadId={leadId!}
+              lead={lead}
               currentStage={lead.stage}
-              onSubmit={refetch}
+              onRefetch={refetch}
             />
             
             <ActivityLog
