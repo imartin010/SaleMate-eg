@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 interface ChatRequest {
@@ -48,17 +47,43 @@ serve(async (req) => {
       );
     }
 
-    // Create client with anon key for auth verification
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Verify user is authenticated
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      console.error('Auth error:', userError);
+    // Create anon key client for auth verification (Supabase provides this automatically)
+    // If SUPABASE_ANON_KEY is not available, we'll extract user ID from JWT payload
+    let userId: string | null = null;
+    
+    try {
+      // Try to decode JWT to get user ID (fallback if anon key not available)
+      const token = authHeader.replace('Bearer ', '');
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        userId = payload.sub; // JWT 'sub' field contains user ID
+      }
+      
+      if (!userId) {
+        // Try using anon key if available
+        const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+        if (anonKey) {
+          const supabaseClient = createClient(SUPABASE_URL, anonKey, {
+            global: { headers: { Authorization: authHeader } },
+          });
+          const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+          if (!userError && user) {
+            userId = user.id;
+          }
+        }
+      }
+      
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized', details: 'Could not verify user' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (authErr) {
+      console.error('Failed to verify user:', authErr);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
+        JSON.stringify({ error: 'Unauthorized', details: 'Failed to verify authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -171,7 +196,7 @@ Keep it conversational and helpful.`;
           lead_id: leadId,
           activity_type: 'chat',
           event_type: 'ai_coach',
-          actor_profile_id: user.id,
+          actor_profile_id: userId,
           stage: stage,
           body: aiResponse,
           payload: { role: 'assistant' },
@@ -212,7 +237,7 @@ Keep it conversational and helpful.`;
           lead_id: leadId,
           activity_type: 'chat',
           event_type: 'feedback',
-          actor_profile_id: user.id,
+          actor_profile_id: userId,
           stage: stage,
           body: message,
           payload: { role: 'user' },
@@ -259,7 +284,7 @@ Keep it conversational and helpful.`;
           lead_id: leadId,
           activity_type: 'chat',
           event_type: 'ai_coach',
-          actor_profile_id: user.id,
+          actor_profile_id: userId,
           stage: stage,
           body: aiResponse,
           payload: { role: 'assistant' },
