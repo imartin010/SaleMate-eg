@@ -399,7 +399,8 @@ export async function initializeChat(
       return null;
     }
 
-    return data.message;
+    console.log('Chat init response data:', data); // Debug log
+    return data?.data?.message || data?.message || null;
   } catch (error) {
     console.error('Error initializing chat:', error);
     return null;
@@ -432,7 +433,8 @@ export async function sendChatMessage(
       throw new Error(error.message || 'Failed to send message');
     }
 
-    return data.message;
+    console.log('Chat response data:', data); // Debug log
+    return data?.data?.message || data?.message || null;
   } catch (error) {
     console.error('Error sending chat message:', error);
     throw error;
