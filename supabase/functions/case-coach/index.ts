@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import OpenAI from 'https://esm.sh/openai@4.68.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,6 +7,9 @@ const corsHeaders = {
 };
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
+
+// Initialize OpenAI client
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 interface CoachInput {
   stage: string;
@@ -52,35 +56,74 @@ serve(async (req) => {
     const { stage, lead, lastFeedback, inventoryContext, history } = input;
 
     // Build detailed prompt for GPT-4
-    const prompt = `You are an expert real estate sales coach for the Egyptian market. Analyze this lead case and provide actionable, specific recommendations.
+    const prompt = `أنت مدرب مبيعات عقارات خبير في السوق المصري. حلل حالة العميل هذه وقدم توصيات عملية ومحددة.
 
-**Lead Information:**
-- Name: ${lead.name}
-- Phone: ${lead.phone || 'N/A'}
-- Current Stage: ${stage}
+**🚨 قاعدة مهمة - ممنوع الخروج عن الموضوع:**
+- أنت مدرب مبيعات عقارية متخصص فقط
+- دورك الوحيد: تحليل حالة العميل وإعطاء نصائح لإتمام صفقة العقار
+- لو الملاحظة المكتوبة مش متعلقة بالعميل أو العقار، قدم توصيات عامة عن كيفية التعامل مع العميل ده
+- ممنوع تجاوب عن مواضيع مش متعلقة بالعقارات أو البيع
+- ركز دائماً على: كيف نقفل الصفقة مع العميل (${lead.name})
 
-**Context:**
-- Last Feedback: ${lastFeedback || 'None yet'}
-- Inventory Matches Available: ${inventoryContext?.hasMatches ? 'Yes' : 'No'}
-${inventoryContext?.hasMatches && inventoryContext?.topUnits ? `- Top ${inventoryContext.topUnits.length} matching units found` : ''}
-${history && history.length > 0 ? `\n**History:**\n${history.map(h => `- ${h.stage}: ${h.note} (${h.at})`).join('\n')}` : ''}
+**معلومات العميل:**
+- الاسم: ${lead.name}
+- الهاتف: ${lead.phone || 'غير متوفر'}
+- المرحلة الحالية: ${stage}
 
-**Task:**
-Provide a detailed coaching response with:
+**السياق:**
+- آخر ملاحظة: ${lastFeedback || 'لا توجد بعد'}
+- تطابقات المخزون متوفرة: ${inventoryContext?.hasMatches ? 'نعم' : 'لا'}
+${inventoryContext?.hasMatches && inventoryContext?.topUnits ? `- تم العثور على ${inventoryContext.topUnits.length} وحدة متطابقة` : ''}
+${history && history.length > 0 ? `\n**السجل:**\n${history.map(h => `- ${h.stage}: ${h.note} (${h.at})`).join('\n')}` : ''}
 
-1. **3-5 Specific Recommendations**: Each with:
-   - A clear call-to-action (CTA)
-   - Reasoning/justification
-   - Suggested action type (CALL_NOW, PUSH_MEETING, CHANGE_FACE, etc.)
-   - Recommended timing in minutes (if time-sensitive)
+**⚠️ القاعدة الذهبية - NEVER SELL OVER THE PHONE:**
+- محدش بيشتري عقار من التليفون أبداً
+- الهدف الوحيد من أي مكالمة أو رسالة هو: **حجز ميتنج مباشر**
+- اذكر 2-3 مميزات بسيطة عن المشروع بس لتشويق العميل
+- خلي العميل يحس إن في حاجات كتير لازم يشوفها في الميتنج
+- الصفقات بتتقفل وجهاً لوجه في الميتنج، مش على التليفون
 
-2. **Follow-up Script**: Ready-to-use script for phone call or WhatsApp message written in Egyptian Arabic (dialectal Arabic using Arabic script). Keep it professional but conversational for the local market.
+**📊 مراحل العميل المتاحة (CRM Stages):**
+- **New Lead** - عميل جديد
+- **Attempted** - حاولنا نتصل
+- **Call Back** - طلب نرجعله
+- **Potential** - مهتم جداً
+- **Meeting Scheduled** - الميتنج محجوز
+- **Meeting Done** - الميتنج حصل
+- **Hot Case** - جاهز للشراء
+- **Non Potential** - مش مهتم
+- **Low Budget** - ميزانية قليلة
+- **Closed Deal** - الصفقة تمت! 🎉
 
-3. **Risk Flags**: Any concerns (e.g., "Low engagement", "Budget mismatch", "Wrong timing", "Needs immediate attention")
+**استراتيجية التواصل:**
+1. **تشويق بسيط** - اذكر ميزة أو اتنين (موقع ممتاز، سعر كويس، عرض محدود)
+2. **FOMO** - "الوحدات بتخلص"، "في حاجات لازم تشوفها"
+3. **Push للميتنج** - دايماً اقترح موعد محدد للقاء
+4. **مش تفاصيل كتير** - خلي المكالمة قصيرة والهدف حجز الميتنج
+5. **تحديث المرحلة** - ذكر الوكيل دايماً يحدث مرحلة العميل لو حصل تطور
 
-**Important**: Consider the Egyptian real estate market context, typical buyer behavior, and cultural communication styles. The follow-up script must be in Egyptian Arabic (Arabic script), not English or Modern Standard Arabic.
+**المهمة:**
+قدم استجابة تدريبية مفصلة تتضمن:
 
-Respond in valid JSON format with this exact structure:
+1. **3-5 توصيات محددة**: كل واحدة تتضمن:
+   - دعوة واضحة للعمل (CTA) - ركز على حجز الميتنج
+   - المبرر/التفسير
+   - نوع الإجراء المقترح (PUSH_MEETING هو الأولوية، CALL_NOW لحجز الميتنج، إلخ)
+   - التوقيت المقترح بالدقائق
+   - **🔄 تذكير بتحديث المرحلة** - لو الملاحظة توضح تطور في موقف العميل، قترح المرحلة الجديدة المناسبة
+
+2. **نص المتابعة**: سكريبت جاهز لمكالمة أو رسالة واتساب **هدفه الوحيد حجز ميتنج**. اذكر ميزة أو اتنين بسرعة، خلق FOMO، ثم اطلب الميتنج بموعد محدد. مكتوب باللهجة المصرية العامية.
+
+3. **علامات الخطر**: أي مخاوف (مثل: "العميل بيماطل في الميتنج"، "بيطلب تفاصيل كتير على التليفون"، "مش مستعد للقاء"، "المرحلة الحالية مش صح - لازم تتحدث")
+
+**مهم جداً**: 
+- جميع الاستجابات باللهجة المصرية (العربية الدارجة)
+- التوصيات تركز على حجز الميتنج مش البيع على التليفون
+- السكريبت يكون قصير ومشوق ويطلب ميتنج بموعد محدد
+- ذكر الوكيل دايماً بتحديث المرحلة - ضمن التوصيات أو علامات الخطر، ذكره يحدث مرحلة العميل في CRM لو الملاحظات تدل على تطور
+- كل التوصيات لازم تكون متعلقة بالعقار والعميل فقط - ممنوع مواضيع تانية
+
+أجب بصيغة JSON صالحة بهذا الهيكل الدقيق:
 {
   "recommendations": [
     {
@@ -94,41 +137,27 @@ Respond in valid JSON format with this exact structure:
   "riskFlags": ["string"]
 }`;
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert real estate sales coach specializing in the Egyptian market. Provide actionable, specific advice in valid JSON format only.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-      }),
+    // Call OpenAI API using SDK
+    console.log('📍 Calling OpenAI for coaching advice');
+    
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'أنت مدرب مبيعات عقارات خبير متخصص في السوق المصري. قدم نصائح عملية ومحددة بصيغة JSON صالحة فقط. يجب أن تكون جميع الاستجابات باللهجة المصرية (العربية الدارجة باستخدام الأحرف العربية). تذكر دائماً: الهدف هو حجز ميتنج وجاهي، مش البيع على التليفون. محدش بيشتري عقار من غير ما يشوفه.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 1500,
     });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      return new Response(
-        JSON.stringify({ error: 'Failed to get AI coaching advice' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const data = await response.json();
-    const aiContent = data.choices[0].message.content;
+    console.log('✅ OpenAI response received');
+    const aiContent = completion.choices[0].message.content || '';
 
     // Parse JSON response
     let aiResponse: CoachOutput;
@@ -143,14 +172,14 @@ Respond in valid JSON format with this exact structure:
       aiResponse = {
         recommendations: [
           {
-            cta: 'Follow up with client',
-            reason: 'Maintain engagement based on current stage',
-            suggestedActionType: 'CALL_NOW',
+            cta: 'اتصل واحجز ميتنج فوراً',
+            reason: 'العميل محتاج يشوف الوحدات - الصفقات بتتقفل في الميتنج مش على التليفون',
+            suggestedActionType: 'PUSH_MEETING',
             dueInMinutes: 60,
           },
         ],
-        followupScript: `Hello ${lead.name}, this is regarding the property inquiry. How can I assist you today?`,
-        riskFlags: ['AI parsing error - using fallback recommendations'],
+        followupScript: `أهلاً ${lead.name}، عندنا مشروع في موقع ممتاز وأسعار كويسة. بس والله الكلام مش هيوفي - لازم تشوف الوحدات والخرايط على الطبيعة. ممكن نتقابل بكرة عشان أوريك حاجات هتعجبك؟`,
+        riskFlags: ['خطأ في تحليل AI - استخدام توصيات احتياطية'],
       };
     }
 
@@ -162,8 +191,15 @@ Respond in valid JSON format with this exact structure:
     );
   } catch (error) {
     console.error('Unexpected error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : String(error);
+    console.error('Error details:', { errorMessage, errorStack });
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: errorMessage,
+        message: 'Failed to generate AI coaching. Please try again.'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

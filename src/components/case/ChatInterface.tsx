@@ -105,10 +105,13 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
   const handleSend = async () => {
     if (!input.trim() || isLoading || !user?.id) return;
 
+    const userMessageContent = input.trim();
+    const tempUserId = `temp-user-${Date.now()}`;
+    
     const userMessage: ChatMessage = {
-      id: `temp-${Date.now()}`,
+      id: tempUserId,
       role: 'user',
-      content: input.trim(),
+      content: userMessageContent,
       created_at: new Date().toISOString(),
     };
 
@@ -119,8 +122,9 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
 
     try {
       // Send message and get AI response
+      console.log('Sending message to AI...');
       const response = await sendChatMessage(leadId, {
-        message: userMessage.content,
+        message: userMessageContent,
         lead: {
           id: lead.id,
           name: lead.client_name,
@@ -134,34 +138,62 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
         })),
       });
 
-      // Add AI response
+      console.log('AI response received:', response);
+
+      // Add AI response immediately
       if (response) {
-        setMessages((prev) => [
-          ...prev.filter((m) => m.id !== userMessage.id), // Remove temp message
-          {
-            id: userMessage.id,
-            role: 'user',
-            content: userMessage.content,
-            created_at: userMessage.created_at,
-          },
-          response,
-        ]);
+        setMessages((prev) => {
+          // Remove temp message and add both real user message and AI response
+          const withoutTemp = prev.filter((m) => m.id !== tempUserId);
+          return [
+            ...withoutTemp,
+            {
+              ...userMessage,
+              id: `user-${Date.now()}`, // Use a new ID for the saved message
+            },
+            response,
+          ];
+        });
       } else {
-        // Remove temp message if no response
-        setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+        console.warn('No response received from AI');
+        // Keep the user message but show an error indicator
+        setMessages((prev) => 
+          prev.map((m) => 
+            m.id === tempUserId 
+              ? { ...m, id: `user-${Date.now()}` } 
+              : m
+          )
+        );
       }
 
-      onRefetch();
+      // Don't call onRefetch() - realtime subscriptions will handle updates
+      // and we don't want to trigger a full page reload
     } catch (error) {
       console.error('Error sending message:', error);
-      // Remove temp message on error
-      setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+      
+      // Keep the user message but add error message from AI
+      setMessages((prev) => {
+        const withoutTemp = prev.filter((m) => m.id !== tempUserId);
+        return [
+          ...withoutTemp,
+          {
+            ...userMessage,
+            id: `user-${Date.now()}`,
+          },
+          {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: 'عذراً، حصل خطأ في الاتصال. جرب تاني من فضلك.',
+            created_at: new Date().toISOString(),
+          },
+        ];
+      });
       
       // Show more detailed error message
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to send message. Please try again.';
-      alert(`Error: ${errorMessage}`);
+      console.error('Chat error details:', errorMessage);
     } finally {
       setIsLoading(false);
     }
