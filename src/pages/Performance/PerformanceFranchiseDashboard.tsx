@@ -6,6 +6,7 @@ import {
   usePerformanceTransactions,
   usePerformanceExpenses,
   useDeleteExpense,
+  useUpdateFranchise,
 } from '../../hooks/performance/usePerformanceData';
 import { 
   TrendingUp,
@@ -22,7 +23,9 @@ import {
   Filter,
   X,
   Edit2,
-  Trash2
+  Trash2,
+  Save,
+  XCircle
 } from 'lucide-react';
 import { AddTransactionModal } from '../../components/performance/AddTransactionModal';
 import { AddExpenseModal } from '../../components/performance/AddExpenseModal';
@@ -37,6 +40,14 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'expenses' | 'settings'>('overview');
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
+  
+  // Settings form state
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({
+    name: '',
+    headcount: 0,
+    is_active: true,
+  });
   
   // Transaction filters
   const [transactionSearch, setTransactionSearch] = useState('');
@@ -53,6 +64,18 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const { data: transactions } = usePerformanceTransactions(franchise?.id);
   const { data: expenses } = usePerformanceExpenses(franchise?.id);
   const deleteExpenseMutation = useDeleteExpense();
+  const updateFranchiseMutation = useUpdateFranchise();
+  
+  // Initialize settings form when franchise data loads
+  React.useEffect(() => {
+    if (franchise) {
+      setSettingsForm({
+        name: franchise.name,
+        headcount: franchise.headcount,
+        is_active: franchise.is_active,
+      });
+    }
+  }, [franchise]);
 
   // Filtered transactions
   const filteredTransactions = useMemo(() => {
@@ -749,21 +772,173 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
         {activeTab === 'settings' && (
           <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Franchise Settings</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Franchise Name</label>
-                <p className="mt-1 text-lg text-gray-900">{franchise.name}</p>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Franchise Settings</h3>
+                  <p className="text-sm text-gray-500 mt-1">Manage franchise information</p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Headcount</label>
-                <p className="mt-1 text-lg text-gray-900">{franchise.headcount} agents</p>
+              
+              {!isEditingSettings ? (
+                <button
+                  onClick={() => setIsEditingSettings(true)}
+                  className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>Edit Settings</span>
+                </button>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      setIsEditingSettings(false);
+                      // Reset form to original values
+                      if (franchise) {
+                        setSettingsForm({
+                          name: franchise.name,
+                          headcount: franchise.headcount,
+                          is_active: franchise.is_active,
+                        });
+                      }
+                    }}
+                    className="flex items-center space-x-2 px-4 py-3 bg-white text-gray-700 rounded-2xl hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateFranchiseMutation.mutateAsync({
+                          id: franchise.id,
+                          ...settingsForm,
+                        });
+                        setIsEditingSettings(false);
+                      } catch (error) {
+                        console.error('Failed to update franchise:', error);
+                        alert('Failed to update franchise. Please try again.');
+                      }
+                    }}
+                    disabled={updateFranchiseMutation.isPending}
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-2xl hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{updateFranchiseMutation.isPending ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Form */}
+            <div className="space-y-6">
+              {/* Franchise Name */}
+              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Franchise Name
+                </label>
+                {isEditingSettings ? (
+                  <input
+                    type="text"
+                    value={settingsForm.name}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg font-semibold"
+                    placeholder="Enter franchise name"
+                  />
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{franchise.name}</p>
+                )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Status</label>
-                <p className="mt-1 text-lg text-gray-900">
-                  {franchise.is_active ? 'Active' : 'Inactive'}
-                </p>
+
+              {/* Headcount */}
+              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Agent Headcount
+                </label>
+                {isEditingSettings ? (
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="number"
+                      value={settingsForm.headcount}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, headcount: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg font-semibold"
+                      placeholder="Number of agents"
+                    />
+                    <div className="flex items-center space-x-2 px-4 py-3 bg-purple-50 rounded-2xl">
+                      <Users className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-semibold text-purple-700">Agents</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-purple-100 rounded-2xl">
+                      <Users className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{franchise.headcount} Agents</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Status */}
+              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Franchise Status
+                </label>
+                {isEditingSettings ? (
+                  <div className="flex items-center space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, is_active: true })}
+                      className={`flex-1 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 ${
+                        settingsForm.is_active
+                          ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 scale-105'
+                          : 'bg-white text-gray-600 border-2 border-gray-200 hover:border-emerald-300'
+                      }`}
+                    >
+                      ● Active
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, is_active: false })}
+                      className={`flex-1 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 ${
+                        !settingsForm.is_active
+                          ? 'bg-gradient-to-r from-gray-500 to-slate-600 text-white shadow-lg shadow-gray-500/30 scale-105'
+                          : 'bg-white text-gray-600 border-2 border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      ○ Inactive
+                    </button>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl font-semibold text-lg" style={{
+                    background: franchise.is_active 
+                      ? 'linear-gradient(to right, rgb(16, 185, 129), rgb(5, 150, 105))' 
+                      : 'linear-gradient(to right, rgb(107, 114, 128), rgb(75, 85, 99))',
+                    color: 'white',
+                    boxShadow: franchise.is_active 
+                      ? '0 10px 15px -3px rgba(16, 185, 129, 0.3)' 
+                      : '0 10px 15px -3px rgba(107, 114, 128, 0.3)'
+                  }}>
+                    {franchise.is_active ? '● Active' : '○ Inactive'}
+                  </div>
+                )}
+              </div>
+
+              {/* Info Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-100">
+                  <p className="text-sm font-semibold text-blue-700 mb-2">Franchise Slug</p>
+                  <p className="text-lg font-mono text-gray-900">{franchise.slug}</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-100">
+                  <p className="text-sm font-semibold text-purple-700 mb-2">Franchise ID</p>
+                  <p className="text-sm font-mono text-gray-700 break-all">{franchise.id}</p>
+                </div>
               </div>
             </div>
           </div>

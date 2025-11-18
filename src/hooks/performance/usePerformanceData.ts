@@ -48,6 +48,28 @@ export function usePerformanceFranchise(franchiseId: string) {
   });
 }
 
+export function useUpdateFranchise() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<PerformanceFranchise> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('performance_franchises')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['performance-franchise', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['performance-franchises'] });
+    },
+  });
+}
+
 export function usePerformanceFranchiseBySlug(slug: string) {
   return useQuery({
     queryKey: ['performance-franchise-slug', slug],
