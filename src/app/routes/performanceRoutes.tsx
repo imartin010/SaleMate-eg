@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 // Performance program pages
 const PerformanceHome = React.lazy(() => import('../../pages/Performance/PerformanceHome'));
+const PerformanceFranchiseDashboard = React.lazy(() => import('../../pages/Performance/PerformanceFranchiseDashboard'));
 
 // Fast loading component
 const PageLoader = () => (
@@ -39,7 +40,16 @@ export const performanceRouter = createBrowserRouter([
       </>
     ),
   },
-  // Catch ALL routes (including /app, /dashboard, etc.) and redirect to home
+  {
+    path: '/franchise/:franchiseSlug',
+    element: (
+      <>
+        <ScrollToTop />
+        <SafePage><PerformanceFranchiseDashboard /></SafePage>
+      </>
+    ),
+  },
+  // Catch ALL other routes and redirect to home
   // This ensures the performance subdomain ONLY shows the performance program
   {
     path: '*',
