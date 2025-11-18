@@ -87,13 +87,13 @@ ReactDOM.createRoot(rootElement).render(
             </ToastProvider>
           ) : (
             // Main domain - full providers
-            <AuthProvider>
-              <WalletProvider>
-                <ToastProvider>
+          <AuthProvider>
+            <WalletProvider>
+              <ToastProvider>
                   <RouterProvider router={activeRouter} />
-                </ToastProvider>
-              </WalletProvider>
-            </AuthProvider>
+              </ToastProvider>
+            </WalletProvider>
+          </AuthProvider>
           )}
         </ThemeProvider>
       </QueryProvider>

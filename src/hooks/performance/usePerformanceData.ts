@@ -171,6 +171,47 @@ export function useCreateExpense() {
   });
 }
 
+export function useUpdateExpense() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...expense }: Partial<PerformanceExpense> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('performance_expenses')
+        .update(expense)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['performance-expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+    },
+  });
+}
+
+export function useDeleteExpense() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (expenseId: string) => {
+      const { error } = await supabase
+        .from('performance_expenses')
+        .delete()
+        .eq('id', expenseId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['performance-expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+    },
+  });
+}
+
 // Commission Schemes
 export function usePerformanceCommissionSchemes(franchiseId?: string) {
   return useQuery({

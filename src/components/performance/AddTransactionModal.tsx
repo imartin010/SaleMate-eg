@@ -74,21 +74,21 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const selectedProject = projects?.find(p => p.id.toString() === projectId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 scale-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-8 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
           <h2 className="text-xl font-semibold text-gray-900">Add Transaction</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-all duration-300 hover:rotate-90 p-2 hover:bg-gray-100 rounded-2xl"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -161,7 +161,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="5000000"
               required
             />
@@ -174,7 +174,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <select
               value={stage}
               onChange={(e) => setStage(e.target.value as TransactionStage)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="eoi">EOI (Expression of Interest)</option>
               <option value="reservation">Reservation</option>
@@ -190,7 +190,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={3}
               placeholder="Add any additional notes..."
             />
@@ -208,9 +208,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <button
               type="submit"
               disabled={createTransaction.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               <span>{createTransaction.isPending ? 'Adding...' : 'Add Transaction'}</span>
             </button>
           </div>
