@@ -2,11 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './app/routes';
+import { performanceRouter } from './app/routes/performanceRoutes';
 import { ThemeProvider } from './app/providers/ThemeProvider';
 import { QueryProvider } from './app/providers/QueryProvider';
 import { AuthProvider } from './components/common/AuthProvider';
 import { WalletProvider } from './contexts/WalletContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { isPerformanceSubdomain } from './utils/subdomain';
 import './index.css';
 
 // Production build - minimal logging
@@ -59,18 +61,40 @@ class DebugErrorBoundary extends React.Component<{children: React.ReactNode}, {h
   }
 }
 
+// Determine which router to use based on subdomain
+const isPerformance = isPerformanceSubdomain();
+
+// Debug logging
+if (import.meta.env.DEV || localStorage.getItem('debug-subdomain') === 'true') {
+  console.log('🌐 Subdomain check:', {
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A',
+    isPerformance,
+    usingRouter: isPerformance ? 'performanceRouter' : 'mainRouter'
+  });
+}
+
+const activeRouter = isPerformance ? performanceRouter : router;
+
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <DebugErrorBoundary>
       <QueryProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <WalletProvider>
-              <ToastProvider>
-                <RouterProvider router={router} />
-              </ToastProvider>
-            </WalletProvider>
-          </AuthProvider>
+          {isPerformanceSubdomain() ? (
+            // Performance subdomain - minimal providers (no auth/wallet needed initially)
+            <ToastProvider>
+              <RouterProvider router={activeRouter} />
+            </ToastProvider>
+          ) : (
+            // Main domain - full providers
+            <AuthProvider>
+              <WalletProvider>
+                <ToastProvider>
+                  <RouterProvider router={activeRouter} />
+                </ToastProvider>
+              </WalletProvider>
+            </AuthProvider>
+          )}
         </ThemeProvider>
       </QueryProvider>
     </DebugErrorBoundary>

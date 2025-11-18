@@ -192,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   return (
     <div 
       className={cn(
-        'flex h-full flex-col sidebar-glass transition-all duration-300 ease-in-out',
+        'flex h-screen flex-col sidebar-glass transition-all duration-300 ease-in-out',
         isCollapsed ? 'w-16' : 'w-64',
         className
       )}
@@ -201,7 +201,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     >
       {/* Brand Header with Gradient */}
       <div className={cn(
-        'flex h-32 items-center justify-center border-b border-white/20 px-6 transition-all duration-300',
+        'flex h-32 flex-shrink-0 items-center justify-center border-b border-white/20 px-6 transition-all duration-300',
         isCollapsed ? 'px-2' : 'px-6'
       )}>
         {isCollapsed ? (
@@ -213,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       
       {/* Navigation Menu */}
       <nav className={cn(
-        'flex-1 space-y-2 transition-all duration-300',
+        'flex-1 space-y-2 overflow-y-auto transition-all duration-300',
         isCollapsed ? 'p-2' : 'p-6'
       )}>
         {navigation
@@ -264,36 +264,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       
       {/* User Profile Section or Login Section */}
       <div className={cn(
-        'border-t border-white/20 transition-all duration-300',
-        isCollapsed ? 'p-2' : 'p-6'
+        'flex-shrink-0 border-t border-white/20 transition-all duration-300',
+        isCollapsed ? 'p-2' : 'p-4'
       )}>
         {user ? (
           <>
             <div className={cn(
-              'mb-4 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-300',
-              isCollapsed ? 'p-2' : 'p-4'
+              'mb-3 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-300',
+              isCollapsed ? 'p-2' : 'p-3'
             )}>
               <div className={cn(
-                'mb-3 flex items-center gap-3',
+                'mb-2 flex items-center gap-3',
                 isCollapsed ? 'justify-center' : ''
               )}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-bg text-white font-bold text-lg">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full gradient-bg text-white font-bold text-lg">
                   {(profile?.name || user?.email || 'U').charAt(0).toUpperCase()}
                 </div>
                 {!isCollapsed && (
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{profile?.name || user?.email || 'User'}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email || 'No email'}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{profile?.name || user?.email || 'User'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email || 'No email'}</p>
                   </div>
                 )}
               </div>
               {!isCollapsed && (
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-400"></div>
+                  <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-400"></div>
                   <span className="text-xs font-medium text-muted-foreground capitalize">{profile?.role || 'user'}</span>
                   <button
                     onClick={refreshProfile}
-                    className="ml-auto p-1 rounded hover:bg-white/20 transition-colors"
+                    className="ml-auto p-1 rounded hover:bg-white/20 transition-colors flex-shrink-0"
                     title="Refresh profile"
                   >
                     <RefreshCw className="h-3 w-3 text-muted-foreground" />
@@ -302,26 +302,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               )}
             </div>
             
-            <div className="space-y-2">
-              <button
-                onClick={signOut}
-                className={cn(
-                  'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105',
-                  isCollapsed ? 'justify-center px-2' : 'px-4'
-                )}
-                title={isCollapsed ? 'Logout' : undefined}
-              >
-                <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                {!isCollapsed && <span>Logout</span>}
-              </button>
-            </div>
+            <button
+              onClick={signOut}
+              className={cn(
+                'group flex w-full items-center gap-3 rounded-xl py-2.5 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-destructive hover:scale-105',
+                isCollapsed ? 'justify-center px-2' : 'px-4'
+              )}
+              title={isCollapsed ? 'Logout' : undefined}
+            >
+              <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              {!isCollapsed && <span>Logout</span>}
+            </button>
           </>
         ) : (
           <div className="space-y-2">
             <Link
               to="/auth/login"
               className={cn(
-                'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-primary hover:scale-105',
+                'group flex w-full items-center gap-3 rounded-xl py-2.5 text-sm font-medium text-muted-foreground transition-all duration-300 hover:neumorphic hover:text-primary hover:scale-105',
                 isCollapsed ? 'justify-center px-2' : 'px-4'
               )}
               title={isCollapsed ? 'Login' : undefined}
@@ -332,7 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             <Link
               to="/auth/signup"
               className={cn(
-                'group flex w-full items-center gap-3 rounded-xl py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300 hover:from-blue-700 hover:to-indigo-700 hover:scale-105',
+                'group flex w-full items-center gap-3 rounded-xl py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300 hover:from-blue-700 hover:to-indigo-700 hover:scale-105',
                 isCollapsed ? 'justify-center px-2' : 'px-4'
               )}
               title={isCollapsed ? 'Sign Up' : undefined}
