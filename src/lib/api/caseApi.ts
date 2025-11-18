@@ -172,7 +172,7 @@ export async function notifyUser(params: {
  */
 export async function getCaseFeedback(leadId: string) {
   const { data, error } = await supabase
-    .from('activities')
+    .from('events')
     .select(`
       id,
       lead_id,
@@ -183,6 +183,7 @@ export async function getCaseFeedback(leadId: string) {
       created_at
     `)
     .eq('lead_id', leadId)
+    .eq('event_type', 'activity')
     .eq('activity_type', 'feedback')
     .order('created_at', { ascending: false });
 
@@ -204,7 +205,7 @@ export async function getCaseFeedback(leadId: string) {
  */
 export async function getCaseActions(leadId: string) {
   const { data, error } = await supabase
-    .from('activities')
+    .from('events')
     .select(`
       id,
       lead_id,
@@ -217,6 +218,7 @@ export async function getCaseActions(leadId: string) {
       created_at
     `)
     .eq('lead_id', leadId)
+    .eq('event_type', 'activity')
     .eq('activity_type', 'task')
     .order('due_at', { ascending: true, nullsFirst: false });
 
@@ -256,7 +258,7 @@ export async function getCaseActions(leadId: string) {
  */
 export async function getCaseFaces(leadId: string) {
   const { data, error } = await supabase
-    .from('activities')
+    .from('events')
     .select(`
       id,
       lead_id,
@@ -265,10 +267,11 @@ export async function getCaseFaces(leadId: string) {
       reason,
       actor_profile_id,
       created_at,
-      from_profile:profiles!activities_from_profile_id_fkey(name, email),
-      to_profile:profiles!activities_to_profile_id_fkey(name, email)
+      from_profile:profiles!events_from_profile_id_fkey(name, email),
+      to_profile:profiles!events_to_profile_id_fkey(name, email)
     `)
     .eq('lead_id', leadId)
+    .eq('event_type', 'activity')
     .eq('activity_type', 'transfer')
     .order('created_at', { ascending: false });
 
@@ -291,9 +294,10 @@ export async function getCaseFaces(leadId: string) {
  */
 export async function getInventoryMatches(leadId: string) {
   const { data, error } = await supabase
-    .from('activities')
+    .from('events')
     .select('*')
     .eq('lead_id', leadId)
+    .eq('event_type', 'activity')
     .eq('activity_type', 'recommendation')
     .order('created_at', { ascending: false });
 
@@ -315,8 +319,9 @@ export async function getInventoryMatches(leadId: string) {
  */
 export async function getNotifications(userId: string, limit = 50) {
   const { data, error } = await supabase
-    .from('notifications')
+    .from('events')
     .select('*')
+    .eq('event_type', 'notification')
     .eq('target_profile_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -327,9 +332,9 @@ export async function getNotifications(userId: string, limit = 50) {
     user_id: notification.target_profile_id,
     title: notification.title,
     body: notification.body,
-    url: notification.metadata?.url ?? undefined,
-    channels: notification.channels ?? [],
-    status: notification.status,
+    url: notification.notification_url ?? undefined,
+    channels: notification.notification_channels ?? [],
+    status: notification.notification_status,
     read_at: notification.read_at ?? undefined,
     sent_at: notification.sent_at ?? undefined,
     created_at: notification.created_at,
@@ -341,9 +346,10 @@ export async function getNotifications(userId: string, limit = 50) {
  */
 export async function markNotificationRead(notificationId: string) {
   const { data, error } = await supabase
-    .from('notifications')
-    .update({ status: 'read', read_at: new Date().toISOString() })
+    .from('events')
+    .update({ notification_status: 'read', read_at: new Date().toISOString() })
     .eq('id', notificationId)
+    .eq('event_type', 'notification')
     .select()
     .single();
 
@@ -356,10 +362,11 @@ export async function markNotificationRead(notificationId: string) {
  */
 export async function markAllNotificationsRead(userId: string) {
   const { error } = await supabase
-    .from('notifications')
-    .update({ status: 'read', read_at: new Date().toISOString() })
+    .from('events')
+    .update({ notification_status: 'read', read_at: new Date().toISOString() })
+    .eq('event_type', 'notification')
     .eq('target_profile_id', userId)
-    .eq('status', 'sent');
+    .eq('notification_status', 'sent');
 
   if (error) throw error;
 }
@@ -446,9 +453,10 @@ export async function sendChatMessage(
  */
 export async function getChatMessages(leadId: string): Promise<ChatMessage[]> {
   const { data, error } = await supabase
-    .from('activities')
+    .from('events')
     .select('id, body, created_at, payload')
     .eq('lead_id', leadId)
+    .eq('event_type', 'activity')
     .eq('activity_type', 'chat')
     .order('created_at', { ascending: true });
 

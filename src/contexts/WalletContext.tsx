@@ -61,24 +61,24 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         });
 
         if (balanceError) {
-          // Final fallback: compute balance from payments table directly
-          const { data: deposits } = await supabase
-            .from('payments')
+          // Final fallback: compute balance from transactions table directly
+          const { data: credits } = await supabase
+            .from('transactions')
             .select('amount')
             .eq('profile_id', user.id)
             .eq('status', 'completed')
-            .in('entry_type', ['deposit', 'refund', 'adjustment']);
+            .eq('ledger_entry_type', 'credit');
 
-          const { data: withdrawals } = await supabase
-            .from('payments')
+          const { data: debits } = await supabase
+            .from('transactions')
             .select('amount')
             .eq('profile_id', user.id)
             .eq('status', 'completed')
-            .in('entry_type', ['withdrawal', 'payment']);
+            .eq('ledger_entry_type', 'debit');
 
-          const depositTotal = deposits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
-          const withdrawalTotal = withdrawals?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
-          setBalance(depositTotal - withdrawalTotal);
+          const creditTotal = credits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
+          const debitTotal = debits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
+          setBalance(creditTotal - debitTotal);
         } else {
           setBalance(parseFloat((data as number) || 0));
         }

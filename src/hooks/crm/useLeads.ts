@@ -222,7 +222,7 @@ export function useLeads() {
 
       if (leadIds.length > 0) {
         const { data: feedbackData, error: feedbackError } = await supabase
-          .from('activities')
+          .from('events')
           .select(`
             id,
             lead_id,
@@ -230,13 +230,14 @@ export function useLeads() {
             body,
             payload,
             created_at,
-            actor:profiles!activities_actor_profile_id_fkey (
+            actor:profiles!events_actor_profile_id_fkey (
               id,
               name,
               email
             )
           `)
           .in('lead_id', leadIds)
+          .eq('event_type', 'activity')
           .eq('activity_type', 'feedback')
           .order('created_at', { ascending: false });
 

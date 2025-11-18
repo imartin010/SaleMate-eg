@@ -62,11 +62,13 @@ export function useAdminData() {
         supabase.from('projects').select('id, name, region, available_leads, price_per_lead, description').order('name'),
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase
-          .from('purchase_requests')
-          .select('id, user_id, project_id, quantity, total_amount, status, created_at, profiles!user_id(name), projects!project_id(name)')
+          .from('transactions')
+          .select('id, profile_id, project_id, quantity, amount, status, created_at, profiles!transactions_profile_id_fkey(name), projects!transactions_project_id_fkey(name)')
+          .eq('transaction_type', 'commerce')
+          .in('commerce_type', ['purchase', 'allocation'])
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
-          .then((res: any) => res)
+          .then((res: any) => ({ ...res, data: res.data?.map((r: any) => ({ ...r, user_id: r.profile_id, total_amount: r.amount })) }))
           .catch(() => ({ data: [], error: null }))
       ]);
 

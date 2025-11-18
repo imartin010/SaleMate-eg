@@ -58,30 +58,18 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = React.memo(
     setError(null);
 
     try {
-      // Query payments table (wallet entries)
+      // Query transactions table (wallet entries and top-ups)
       const { data: transactionsData, error: transactionsError } = await supabase
-        .from('payments')
+        .from('transactions')
         .select('*')
         .eq('profile_id', user.id)
-        .not('entry_type', 'is', null) // Only wallet entries
+        .or('ledger_entry_type.not.is.null,transaction_type.eq.topup') // Wallet entries or topups
         .order('created_at', { ascending: false })
         .limit(50);
 
       // If table doesn't exist or has no data, just log and continue
       if (transactionsError && transactionsError.code !== 'PGRST116') {
         console.warn('Error loading wallet transactions:', transactionsError);
-      }
-
-      // Also get top-up requests as transactions
-      const { data: topupRequests, error: topupError } = await supabase
-        .from('wallet_topup_requests')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (topupError) {
-        console.error('Top-up requests error:', topupError);
       }
 
       // Combine and format transactions
@@ -91,12 +79,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = React.memo(
       if (transactionsData && Array.isArray(transactionsData)) {
         transactionsData.forEach((tx: any) => {
           const amount = tx.amount || 0;
-          const isDebit = amount < 0;
+          const isCredit = tx.ledger_entry_type === 'credit';
+          const isTopup = tx.transaction_type === 'topup';
           allTransactions.push({
             id: tx.id,
             amount: Math.abs(amount),
-            type: isDebit ? 'debit' : (tx.type === 'topup' ? 'topup' : 'credit'),
-            description: tx.description || 'Wallet transaction',
+            type: isTopup ? 'topup' : (isCredit ? 'credit' : 'debit'),
+            description: tx.description || tx.notes || 'Wallet transaction',
             reference_id: tx.reference_id,
             status: tx.status || 'completed',
             created_at: tx.created_at,
@@ -115,20 +104,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = React.memo(
         return methodMap[method] || method;
       };
 
-      // Add top-up requests as transactions
-      if (topupRequests) {
-        topupRequests.forEach((req: any) => {
-          allTransactions.push({
-            id: req.id,
-            amount: req.amount,
-            type: 'topup',
-            description: `Top-up via ${formatPaymentMethod(req.payment_method || 'Unknown')}`,
-            reference_id: req.id,
-            status: req.status === 'approved' ? 'completed' : req.status === 'rejected' ? 'failed' : 'pending',
-            created_at: req.created_at,
-          });
-        });
-      }
+      // Top-up requests are already included in the main transactions query
 
       // Sort by date
       allTransactions.sort((a, b) => 

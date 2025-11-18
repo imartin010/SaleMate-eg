@@ -569,15 +569,18 @@ export const ImprovedShop: React.FC = () => {
                       // Insert lead request into database
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       const { error: insertError } = await (supabase as any)
-                        .from('lead_requests')
+                        .from('transactions')
                         .insert({
-                          user_id: user.id,
-                          project_name: requestFormData.projectName.trim(),
+                          transaction_type: 'commerce',
+                          commerce_type: 'request',
+                          profile_id: user.id,
                           project_id: null, // Allow null since user is typing project name manually
                           quantity: Number(requestFormData.leadsAmount),
-                          budget: Number(requestFormData.budget),
+                          amount: Number(requestFormData.budget),
+                          currency: 'EGP',
                           status: 'pending',
-                          notes: `Budget: EGP ${requestFormData.budget}, Leads Amount: ${requestFormData.leadsAmount}`
+                          notes: `Budget: EGP ${requestFormData.budget}, Leads Amount: ${requestFormData.leadsAmount}`,
+                          metadata: { project_name: requestFormData.projectName.trim() }
                         });
 
                       if (insertError) {

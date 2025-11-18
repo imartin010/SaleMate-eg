@@ -61,8 +61,9 @@ export default function WalletManagement() {
       
       // Fetch wallet topup requests first
       const { data: requestsData, error: requestsErr } = await supabase
-        .from('wallet_topup_requests')
+        .from('transactions')
         .select('*')
+        .eq('transaction_type', 'topup')
         .order('created_at', { ascending: false });
 
       if (requestsErr) {
@@ -141,7 +142,7 @@ export default function WalletManagement() {
 
       // Update request status
       const { error: err1 } = await supabase
-        .from('wallet_topup_requests')
+        .from('transactions')
         .update({
           status: 'approved',
           validated_by: currentProfile?.id,
@@ -156,7 +157,7 @@ export default function WalletManagement() {
       const { data: profile } = await supabase
         .from('profiles')
         .select('wallet_balance')
-        .eq('id', request.user_id)
+        .eq('id', request.user_id || request.profile_id)
         .single();
 
       if (profile) {
@@ -165,20 +166,20 @@ export default function WalletManagement() {
           .update({
             wallet_balance: (profile.wallet_balance || 0) + request.amount,
           })
-          .eq('id', request.user_id);
+          .eq('id', request.user_id || request.profile_id);
 
         if (err2) throw err2;
 
-        // Create payment record
-        await supabase.from('payments').insert({
-          profile_id: request.user_id,
-          operation_type: 'topup_request',
-          entry_type: 'deposit',
+        // Create wallet ledger entry
+        await supabase.from('transactions').insert({
+          transaction_type: 'wallet',
+          profile_id: request.user_id || request.profile_id,
+          ledger_entry_type: 'credit',
           status: 'completed',
           amount: request.amount,
           currency: 'EGP',
           description: `Wallet top-up via ${request.payment_method}`,
-          reference_type: 'commerce',
+          reference_type: 'topup',
           reference_id: requestId,
         });
       }
@@ -201,7 +202,7 @@ export default function WalletManagement() {
   const rejectRequest = async (requestId: string) => {
     try {
       const { error: err } = await supabase
-        .from('wallet_topup_requests')
+        .from('transactions')
         .update({
           status: 'rejected',
           validated_by: currentProfile?.id,
