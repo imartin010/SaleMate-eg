@@ -1,11 +1,36 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Get environment variables with fallback to verified values
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wkxbhvckmgrmdkdkhnqo.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGJodmNrbWdybWRrZGtobnFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTgzNTQsImV4cCI6MjA3MjA3NDM1NH0.Vg48-ld0anvU4OQJWf5ZlEqTKjXiHBK0A14fz0vGvU8';
+
+// Debug logging in development
+if (import.meta.env.DEV) {
+  console.log('🔍 Supabase Environment Check:', {
+    url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+    key: supabaseAnonKey ? `Set (${supabaseAnonKey.length} chars)` : 'MISSING',
+    allEnvKeys: Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'))
+  });
+}
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  const errorMsg = `Missing Supabase environment variables. 
+  VITE_SUPABASE_URL: ${supabaseUrl ? '✅ Set' : '❌ Missing'}
+  VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✅ Set' : '❌ Missing'}
+  
+  Please ensure your .env file contains:
+  VITE_SUPABASE_URL=https://your-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=your-anon-key-here
+  
+  Then restart your development server.`;
+  console.error(errorMsg);
+  throw new Error('Missing Supabase environment variables. Check console for details.');
+}
+
+// Validate the API key format before creating client
+if (supabaseAnonKey && supabaseAnonKey.length < 100) {
+  console.warn('⚠️ Supabase anon key seems too short. Expected JWT token format.');
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {

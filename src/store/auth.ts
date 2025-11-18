@@ -64,7 +64,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // "Auth session missing" is expected when user is not logged in - don't treat as error
         if (error.message !== 'Auth session missing!') {
           console.error('Auth init: getUser error', error);
-          set({ error: error.message });
+          // Don't set "Invalid API key" as an error during init - it's likely a client config issue
+          if (error.message.includes('Invalid API key')) {
+            console.error('❌ Invalid API key detected during auth init. Check your VITE_SUPABASE_ANON_KEY in .env file.');
+            // Only set error if it's not already set from supabaseClient initialization
+            if (!get().error) {
+              set({ error: 'Invalid API key. Please check your environment variables and restart the dev server.' });
+            }
+          } else {
+            set({ error: error.message });
+          }
         }
         set({ user: null, profile: null });
       } else {

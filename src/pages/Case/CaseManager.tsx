@@ -12,7 +12,7 @@ import { ChangeFaceModal } from '../../components/case/ChangeFaceModal';
 import { MeetingScheduler } from '../../components/case/MeetingScheduler';
 import { InventoryMatchesCard } from '../../components/case/InventoryMatchesCard';
 import { QuickActions } from '../../components/case/QuickActions';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function CaseManager() {
@@ -21,6 +21,11 @@ export default function CaseManager() {
   const { lead, feedback, actions, faces, matches, loading, error, refetch } = useCase(leadId!);
   
   const [showChangeFaceModal, setShowChangeFaceModal] = useState(false);
+
+  // Scroll to top when component mounts or leadId changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [leadId]);
 
   if (loading) {
     return (

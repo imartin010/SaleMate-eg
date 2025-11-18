@@ -157,10 +157,59 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
 
         // Handle payment result
         if (paymentResult.success && paymentResult.transactionId) {
-          // If redirect URL provided (Kashier), redirect user
+          // If redirect URL provided (Kashier), open in new tab for better UX
           if (paymentResult.redirectUrl && gateway === 'kashier') {
-            // Redirect to Kashier payment page
-            window.location.href = paymentResult.redirectUrl;
+            // Open Kashier payment page in a new tab/window
+            const paymentWindow = window.open(
+              paymentResult.redirectUrl,
+              'kashier_payment',
+              'width=600,height=700,scrollbars=yes,resizable=yes'
+            );
+            
+            // Close the modal
+            onClose();
+            
+            // Set up polling to check payment status
+            const checkPaymentStatus = async () => {
+              try {
+                const { data: transaction } = await supabase
+                  .from('payment_transactions')
+                  .select('status, completed_at')
+                  .eq('id', paymentResult.transactionId)
+                  .single();
+                
+                if (transaction?.completed_at) {
+                  // Payment completed! Refresh wallet and close payment window
+                  await refreshBalance();
+                  showSuccess('Payment successful! Your wallet has been updated.');
+                  if (paymentWindow && !paymentWindow.closed) {
+                    paymentWindow.close();
+                  }
+                  return true;
+                }
+                return false;
+              } catch (error) {
+                console.error('Error checking payment status:', error);
+                return false;
+              }
+            };
+            
+            // Poll every 3 seconds for up to 5 minutes
+            let attempts = 0;
+            const maxAttempts = 100; // 5 minutes
+            const pollInterval = setInterval(async () => {
+              attempts++;
+              const completed = await checkPaymentStatus();
+              
+              if (completed || attempts >= maxAttempts || (paymentWindow && paymentWindow.closed)) {
+                clearInterval(pollInterval);
+                if (!completed) {
+                  // Window closed without completion - refresh balance anyway
+                  await refreshBalance();
+                }
+              }
+            }, 3000);
+            
             return;
           }
 
