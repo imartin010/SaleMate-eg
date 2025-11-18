@@ -15,22 +15,32 @@ export function getSubdomain(): string | null {
     console.log('🔍 Subdomain detection - hostname:', hostname);
   }
   
-  // Handle localhost for development
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Check if there's a subdomain in the URL (e.g., performance.localhost:5173)
+  // Check localStorage override first (for testing)
+  const testSubdomain = localStorage.getItem('test-subdomain');
+  if (testSubdomain) {
+    if (import.meta.env.DEV || localStorage.getItem('debug-subdomain') === 'true') {
+      console.log('✅ Using test subdomain from localStorage:', testSubdomain);
+    }
+    return testSubdomain;
+  }
+  
+  // Handle localhost variations
+  // performance.localhost -> ['performance', 'localhost']
+  // localhost -> ['localhost']
+  if (hostname.endsWith('localhost') || hostname === '127.0.0.1') {
     const parts = hostname.split('.');
-    if (parts.length > 1 && parts[0] !== 'www') {
+    // If we have subdomain.localhost pattern (2 parts)
+    if (parts.length === 2 && parts[1] === 'localhost' && parts[0] !== 'www') {
+      if (import.meta.env.DEV || localStorage.getItem('debug-subdomain') === 'true') {
+        console.log('✅ Detected localhost subdomain:', parts[0]);
+      }
       return parts[0];
     }
-    // For localhost, check localStorage or URL params for testing
-    const testSubdomain = localStorage.getItem('test-subdomain');
-    if (testSubdomain) {
-      return testSubdomain;
-    }
+    // Just localhost, no subdomain
     return null;
   }
 
-  // Parse subdomain from hostname
+  // Parse subdomain from hostname (production)
   const parts = hostname.split('.');
   
   // For salemate-eg.com domain structure
