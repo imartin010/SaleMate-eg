@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Search } from 'lucide-react';
 import { useCreateTransaction } from '../../hooks/performance/usePerformanceData';
+import { useProjects } from '../../hooks/performance/useProjects';
 import type { TransactionStage } from '../../types/performance';
 
 interface AddTransactionModalProps {
@@ -15,12 +16,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onClose,
 }) => {
   const [projectId, setProjectId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [amount, setAmount] = useState('');
   const [stage, setStage] = useState<TransactionStage>('eoi');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
   const createTransaction = useCreateTransaction();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +51,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
       // Reset form
       setProjectId('');
+      setSearchTerm('');
       setAmount('');
       setStage('eoi');
       setNotes('');
@@ -60,9 +64,18 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Filter projects based on search term
+  const filteredProjects = projects?.filter(project => 
+    project.compound.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.developer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.area.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const selectedProject = projects?.find(p => p.id.toString() === projectId);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Add Transaction</h2>
@@ -84,19 +97,59 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Project ID <span className="text-red-500">*</span>
+              Project <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter project ID"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Get project IDs from the inventory table
-            </p>
+            
+            {/* Search Input */}
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Search projects..."
+              />
+            </div>
+
+            {/* Selected Project Display */}
+            {selectedProject && (
+              <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="font-medium text-blue-900">{selectedProject.compound}</p>
+                <p className="text-sm text-blue-700">{selectedProject.developer} • {selectedProject.area}</p>
+              </div>
+            )}
+
+            {/* Project Dropdown */}
+            <div className="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
+              {projectsLoading ? (
+                <div className="p-4 text-center text-gray-500">Loading projects...</div>
+              ) : filteredProjects.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  {searchTerm ? 'No projects found' : 'No projects available'}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredProjects.map((project) => (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => {
+                        setProjectId(project.id.toString());
+                        setSearchTerm('');
+                      }}
+                      className={`w-full text-left p-3 hover:bg-blue-50 transition-colors ${
+                        projectId === project.id.toString() ? 'bg-blue-100' : ''
+                      }`}
+                    >
+                      <p className="font-medium text-gray-900">{project.compound}</p>
+                      <p className="text-sm text-gray-600">{project.developer}</p>
+                      <p className="text-xs text-gray-500">{project.area}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
