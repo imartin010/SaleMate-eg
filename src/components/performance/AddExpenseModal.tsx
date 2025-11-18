@@ -64,10 +64,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 scale-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-8 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-pink-50">
           <h2 className="text-xl font-semibold text-gray-900">Add Expense</h2>
           <button
             onClick={onClose}
@@ -78,7 +78,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -100,7 +100,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   setCategory('marketing');
                 }
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="fixed">Fixed</option>
               <option value="variable">Variable</option>
@@ -114,7 +114,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {expenseType === 'fixed' ? (
                 <>
@@ -139,7 +139,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., Monthly office rent - New Cairo"
             />
           </div>
@@ -153,7 +153,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="50000"
               required
             />
@@ -167,7 +167,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
@@ -184,9 +184,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             <button
               type="submit"
               disabled={createExpense.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-4 bg-gradient-to-r from-rose-600 to-pink-600 text-white font-semibold rounded-2xl hover:from-rose-700 hover:to-pink-700 shadow-lg shadow-rose-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               <span>{createExpense.isPending ? 'Adding...' : 'Add Expense'}</span>
             </button>
           </div>

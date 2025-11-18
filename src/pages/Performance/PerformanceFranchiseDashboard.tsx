@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   usePerformanceFranchiseBySlug,
   usePerformanceAnalytics,
   usePerformanceTransactions,
   usePerformanceExpenses,
+  useDeleteExpense,
 } from '../../hooks/performance/usePerformanceData';
 import { 
-  TrendingUp, 
+  TrendingUp,
+  TrendingDown,
   DollarSign, 
   Users, 
   Calendar,
@@ -15,10 +17,16 @@ import {
   BarChart3,
   PieChart,
   Wallet,
-  Plus
+  Plus,
+  Search,
+  Filter,
+  X,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { AddTransactionModal } from '../../components/performance/AddTransactionModal';
 import { AddExpenseModal } from '../../components/performance/AddExpenseModal';
+import { AIInsights } from '../../components/performance/AIInsights';
 
 /**
  * Franchise Owner Dashboard
@@ -30,10 +38,73 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   
+  // Transaction filters
+  const [transactionSearch, setTransactionSearch] = useState('');
+  const [transactionStageFilter, setTransactionStageFilter] = useState<string>('all');
+  const [showTransactionFilters, setShowTransactionFilters] = useState(false);
+  
+  // Expense filters
+  const [expenseSearch, setExpenseSearch] = useState('');
+  const [expenseTypeFilter, setExpenseTypeFilter] = useState<string>('all');
+  const [showExpenseFilters, setShowExpenseFilters] = useState(false);
+  
   const { data: franchise, isLoading: franchiseLoading } = usePerformanceFranchiseBySlug(franchiseSlug || '');
   const { data: analytics, isLoading: analyticsLoading } = usePerformanceAnalytics(franchise?.id || '');
   const { data: transactions } = usePerformanceTransactions(franchise?.id);
   const { data: expenses } = usePerformanceExpenses(franchise?.id);
+  const deleteExpenseMutation = useDeleteExpense();
+
+  // Filtered transactions
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+    
+    return transactions.filter((transaction) => {
+      // Stage filter
+      if (transactionStageFilter !== 'all' && transaction.stage !== transactionStageFilter) {
+        return false;
+      }
+      
+      // Search filter (amount or project ID)
+      if (transactionSearch) {
+        const searchLower = transactionSearch.toLowerCase();
+        const matchesAmount = transaction.transaction_amount.toString().includes(searchLower);
+        const matchesProject = transaction.project_id.toString().includes(searchLower);
+        const matchesNotes = transaction.notes?.toLowerCase().includes(searchLower);
+        
+        if (!matchesAmount && !matchesProject && !matchesNotes) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [transactions, transactionSearch, transactionStageFilter]);
+
+  // Filtered expenses
+  const filteredExpenses = useMemo(() => {
+    if (!expenses) return [];
+    
+    return expenses.filter((expense) => {
+      // Type filter
+      if (expenseTypeFilter !== 'all' && expense.expense_type !== expenseTypeFilter) {
+        return false;
+      }
+      
+      // Search filter (category, description, amount)
+      if (expenseSearch) {
+        const searchLower = expenseSearch.toLowerCase();
+        const matchesCategory = expense.category?.toLowerCase().includes(searchLower);
+        const matchesDescription = expense.description?.toLowerCase().includes(searchLower);
+        const matchesAmount = expense.amount.toString().includes(searchLower);
+        
+        if (!matchesCategory && !matchesDescription && !matchesAmount) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [expenses, expenseSearch, expenseTypeFilter]);
 
   const isLoading = franchiseLoading || analyticsLoading;
 
@@ -72,40 +143,44 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Modern Header with Gradient */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <a
                 href="/"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="group flex items-center justify-center w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:scale-110"
               >
-                <ArrowLeft className="w-6 h-6" />
+                <ArrowLeft className="w-6 h-6 text-white" />
               </a>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-4xl font-bold text-white tracking-tight">
                   {franchise.name}
                 </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Coldwell Banker Franchise Performance
+                <p className="mt-2 text-lg text-blue-100 font-medium">
+                  Coldwell Banker Performance Dashboard
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                {franchise.is_active ? 'Active' : 'Inactive'}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
+                <Users className="w-5 h-5 text-white" />
+                <span className="text-white font-semibold">{franchise.headcount} Agents</span>
+              </div>
+              <span className="inline-flex items-center px-5 py-2.5 rounded-2xl text-sm font-semibold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
+                {franchise.is_active ? '● Active' : '○ Inactive'}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Modern Tabs */}
+      <div className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
+          <nav className="flex space-x-2 py-4">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'transactions', label: 'Transactions', icon: Wallet },
@@ -117,14 +192,19 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                  className={`group relative px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
+                  <span className="flex items-center space-x-2">
+                    <Icon className="w-5 h-5" />
+                    <span>{tab.label}</span>
+                  </span>
+                  {activeTab === tab.id && (
+                    <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-600 rounded-full" />
+                  )}
                 </button>
               );
             })}
@@ -136,53 +216,73 @@ const PerformanceFranchiseDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && analytics && (
           <div className="space-y-6">
-            {/* Key Metrics */}
+            {/* Modern Key Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Gross Revenue</p>
-                    <p className="text-2xl font-bold text-green-600 mt-2">
-                      {formatCurrency(analytics.gross_revenue)}
-                    </p>
+              {/* Gross Revenue Card */}
+              <div className="group relative bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                      <DollarSign className="w-6 h-6 text-white" />
+                    </div>
+                    <TrendingUp className="w-5 h-5 text-white/60" />
                   </div>
-                  <DollarSign className="w-12 h-12 text-green-500 opacity-20" />
+                  <p className="text-emerald-100 text-sm font-medium mb-1">Gross Revenue</p>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {formatCurrency(analytics.gross_revenue)}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Net Revenue</p>
-                    <p className="text-2xl font-bold text-blue-600 mt-2">
-                      {formatCurrency(analytics.net_revenue)}
-                    </p>
+              {/* Net Revenue Card */}
+              <div className="group relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                      <TrendingUp className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-full">Profit</span>
                   </div>
-                  <TrendingUp className="w-12 h-12 text-blue-500 opacity-20" />
+                  <p className="text-blue-100 text-sm font-medium mb-1">Net Revenue</p>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {formatCurrency(analytics.net_revenue)}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-                    <p className="text-2xl font-bold text-red-600 mt-2">
-                      {formatCurrency(analytics.total_expenses)}
-                    </p>
+              {/* Total Expenses Card */}
+              <div className="group relative bg-gradient-to-br from-rose-500 to-red-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                      <Wallet className="w-6 h-6 text-white" />
+                    </div>
+                    <TrendingDown className="w-5 h-5 text-white/60" />
                   </div>
-                  <Wallet className="w-12 h-12 text-red-500 opacity-20" />
+                  <p className="text-rose-100 text-sm font-medium mb-1">Total Expenses</p>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {formatCurrency(analytics.total_expenses)}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Cost Per Agent</p>
-                    <p className="text-2xl font-bold text-purple-600 mt-2">
-                      {formatCurrency(analytics.cost_per_agent)}
-                    </p>
+              {/* Cost Per Agent Card */}
+              <div className="group relative bg-gradient-to-br from-purple-500 to-violet-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-full">{franchise.headcount}</span>
                   </div>
-                  <Users className="w-12 h-12 text-purple-500 opacity-20" />
+                  <p className="text-purple-100 text-sm font-medium mb-1">Cost Per Agent</p>
+                  <p className="text-3xl font-bold text-white tracking-tight">
+                    {formatCurrency(analytics.cost_per_agent)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -190,8 +290,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
             {/* Detailed Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Sales Overview */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales Overview</h3>
+              <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Sales Overview</h3>
+                </div>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total Sales Volume:</span>
@@ -221,8 +326,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
 
               {/* Expense Breakdown */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+              <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl">
+                    <PieChart className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Expense Breakdown</h3>
+                </div>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Fixed Expenses:</span>
@@ -255,10 +365,12 @@ const PerformanceFranchiseDashboard: React.FC = () => {
             </div>
 
             {/* Expected Payout Timeline */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Expected Payout Timeline</h3>
-                <Calendar className="w-6 h-6 text-blue-500" />
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Expected Payout Timeline</h3>
               </div>
               
               {analytics.expected_payout_timeline.length === 0 ? (
@@ -268,7 +380,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   {analytics.expected_payout_timeline.map((item) => (
                     <div
                       key={item.month}
-                      className="flex items-center justify-between p-4 bg-blue-50 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100"
                     >
                       <div>
                         <p className="font-medium text-gray-900">{item.month}</p>
@@ -283,29 +395,101 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* AI Insights Placeholder */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
-              <h3 className="text-lg font-semibold text-purple-900 mb-2">🤖 AI Insights</h3>
-              <p className="text-purple-700">
-                Coming soon: AI-powered insights and recommendations for your franchise performance
-              </p>
-            </div>
+            {/* AI Insights */}
+            <AIInsights analytics={analytics} franchise={franchise} />
           </div>
         )}
 
         {activeTab === 'transactions' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Transactions</h3>
-                <button
-                  onClick={() => setShowAddTransaction(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Transaction</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowTransactionFilters(!showTransactionFilters)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-white text-gray-700 rounded-2xl hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-colors"
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>Filters</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAddTransaction(true)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Transaction</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Filter Panel */}
+              {showTransactionFilters && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Search */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={transactionSearch}
+                          onChange={(e) => setTransactionSearch(e.target.value)}
+                          placeholder="Search by amount, project, notes..."
+                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {transactionSearch && (
+                          <button
+                            onClick={() => setTransactionSearch('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stage Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Stage
+                      </label>
+                      <select
+                        value={transactionStageFilter}
+                        onChange={(e) => setTransactionStageFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Stages</option>
+                        <option value="eoi">EOI</option>
+                        <option value="reservation">Reservation</option>
+                        <option value="contracted">Contracted</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Results Count */}
+                  <div className="mt-4 flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      Showing {filteredTransactions.length} of {transactions?.length || 0} transactions
+                    </span>
+                    {(transactionSearch || transactionStageFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setTransactionSearch('');
+                          setTransactionStageFilter('all');
+                        }}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {!transactions || transactions.length === 0 ? (
                 <div className="text-center py-12">
@@ -318,12 +502,26 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     Add your first transaction
                   </button>
                 </div>
+              ) : filteredTransactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2">No transactions match your filters</p>
+                  <button
+                    onClick={() => {
+                      setTransactionSearch('');
+                      setTransactionStageFilter('all');
+                    }}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear filters
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {transactions.map((transaction) => (
+                  {filteredTransactions.map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl"
                     >
                       <div>
                         <p className="font-medium text-gray-900">
@@ -338,7 +536,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                          className={`inline-block px-3 py-1 rounded-2xl text-xs font-medium ${
                             transaction.stage === 'contracted'
                               ? 'bg-green-100 text-green-800'
                               : transaction.stage === 'reservation'
@@ -366,17 +564,92 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
-                <button
-                  onClick={() => setShowAddExpense(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Expense</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowExpenseFilters(!showExpenseFilters)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-white text-gray-700 rounded-2xl hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-colors"
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>Filters</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAddExpense(true)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Expense</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Filter Panel */}
+              {showExpenseFilters && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Search */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={expenseSearch}
+                          onChange={(e) => setExpenseSearch(e.target.value)}
+                          placeholder="Search by category, description, amount..."
+                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {expenseSearch && (
+                          <button
+                            onClick={() => setExpenseSearch('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Type Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Type
+                      </label>
+                      <select
+                        value={expenseTypeFilter}
+                        onChange={(e) => setExpenseTypeFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="fixed">Fixed</option>
+                        <option value="variable">Variable</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Results Count */}
+                  <div className="mt-4 flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      Showing {filteredExpenses.length} of {expenses?.length || 0} expenses
+                    </span>
+                    {(expenseSearch || expenseTypeFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setExpenseSearch('');
+                          setExpenseTypeFilter('all');
+                        }}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {!expenses || expenses.length === 0 ? (
                 <div className="text-center py-12">
@@ -389,14 +662,28 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     Add your first expense
                   </button>
                 </div>
+              ) : filteredExpenses.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2">No expenses match your filters</p>
+                  <button
+                    onClick={() => {
+                      setExpenseSearch('');
+                      setExpenseTypeFilter('all');
+                    }}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear filters
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {expenses.map((expense) => (
+                  {filteredExpenses.map((expense) => (
                     <div
                       key={expense.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                     >
-                      <div>
+                      <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <span
                             className={`px-2 py-1 rounded text-xs font-medium ${
@@ -418,10 +705,39 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                           {new Date(expense.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="flex items-center space-x-4">
                         <p className="font-semibold text-gray-900">
                           {formatCurrency(expense.amount)}
                         </p>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              // TODO: Implement edit functionality
+                              alert('Edit expense feature coming soon!');
+                            }}
+                            className="p-2 text-blue-600 hover:bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 transition-colors"
+                            title="Edit expense"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+                                try {
+                                  await deleteExpenseMutation.mutateAsync(expense.id);
+                                } catch (error) {
+                                  console.error('Failed to delete expense:', error);
+                                  alert('Failed to delete expense. Please try again.');
+                                }
+                              }
+                            }}
+                            disabled={deleteExpenseMutation.isPending}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete expense"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -432,7 +748,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         )}
 
         {activeTab === 'settings' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Franchise Settings</h3>
             <div className="space-y-4">
               <div>
