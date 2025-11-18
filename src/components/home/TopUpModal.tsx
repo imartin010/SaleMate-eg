@@ -122,8 +122,9 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
         const gateway = defaultGateway;
 
         const { data: topupRequest, error: topupError } = await supabase
-          .from('commerce')
+          .from('transactions')
           .insert({
+            transaction_type: 'topup',
             commerce_type: 'topup',
             profile_id: user.id,
             amount: amountValue,
@@ -280,8 +281,9 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
 
       // Create top-up request
       const { error: requestError } = await supabase
-        .from('commerce')
+        .from('transactions')
         .insert({
+          transaction_type: 'topup',
           commerce_type: 'topup',
           profile_id: user.id,
           amount: parseFloat(amount),

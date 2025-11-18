@@ -28,9 +28,10 @@ export function MeetingScheduler({ leadId, onScheduled }: MeetingSchedulerProps)
       const reminder24h = new Date(meetingTime - 24 * 60 * 60 * 1000).toISOString();
       const reminder2h = new Date(meetingTime - 2 * 60 * 60 * 1000).toISOString();
 
-      // Create meeting actions in activities table
-      await supabase.from('activities').insert([
+      // Create meeting actions in events table
+      await supabase.from('events').insert([
         {
+          event_type: 'activity',
           lead_id: leadId,
           activity_type: 'task',
           task_type: 'meeting',
@@ -41,6 +42,7 @@ export function MeetingScheduler({ leadId, onScheduled }: MeetingSchedulerProps)
           completed_at: new Date().toISOString(),
         },
         {
+          event_type: 'activity',
           lead_id: leadId,
           activity_type: 'task',
           task_type: 'meeting',
@@ -51,6 +53,7 @@ export function MeetingScheduler({ leadId, onScheduled }: MeetingSchedulerProps)
           due_at: reminder24h,
         },
         {
+          event_type: 'activity',
           lead_id: leadId,
           activity_type: 'task',
           task_type: 'meeting',

@@ -51,8 +51,8 @@ export default function PurchaseRequests() {
     loadRequests();
     
       const channel = supabase
-      .channel('commerce_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'commerce', filter: 'commerce_type=eq.purchase' }, () => {
+      .channel('transactions_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: 'transaction_type=eq.commerce' }, () => {
         loadRequests();
       })
       .subscribe();
@@ -175,11 +175,12 @@ export default function PurchaseRequests() {
         console.warn('Admin access required for purchase requests');
       }
       
-      // Fetch purchase requests from commerce table
+      // Fetch purchase requests from transactions table
       const { data: requestsData, error: requestsErr } = await supabase
-        .from('commerce')
+        .from('transactions')
         .select('*')
-        .eq('commerce_type', 'purchase')
+        .eq('transaction_type', 'commerce')
+        .in('commerce_type', ['purchase', 'allocation'])
         .order('created_at', { ascending: false });
 
       if (requestsErr) {

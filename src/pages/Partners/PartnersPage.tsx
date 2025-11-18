@@ -177,16 +177,16 @@ const PartnersPage: React.FC = () => {
     
     try {
       console.log('🏢 Loading partner projects...');
-      // Fetch from commerce table (consolidated from project_partner_commissions)
+      // Fetch from transactions table (consolidated from project_partner_commissions)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: queryError } = await ((supabase as unknown as { from: (table: string) => any })
-        .from('commerce')
+        .from('transactions')
         .select(`
           commission_rate,
-          projects:projects ( id, name, region, developer_id, cover_image, developer:entities!projects_developer_id_fkey ( name ) ),
-          partner:entities!commerce_partner_id_fkey ( name )
+          projects:projects ( id, name, region, developer_id, cover_image, developer:system_data!projects_developer_id_fkey ( entity_name ) ),
+          partner:system_data!transactions_partner_id_fkey ( entity_name )
         `)
-        .eq('commerce_type', 'commission'));
+        .eq('transaction_type', 'commission'));
 
       if (queryError) {
         throw new Error(`Database error: ${queryError.message}`);

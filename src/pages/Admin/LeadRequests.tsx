@@ -95,8 +95,10 @@ export default function LeadRequests() {
       // Fetch lead requests
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: requestsData, error: requestsErr } = await (supabase as any)
-        .from('lead_requests')
+        .from('transactions')
         .select('*')
+        .eq('transaction_type', 'commerce')
+        .eq('commerce_type', 'request')
         .order('created_at', { ascending: false });
 
       if (requestsErr) {
@@ -212,7 +214,7 @@ export default function LeadRequests() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: err } = await (supabase as any)
-        .from('lead_requests')
+        .from('transactions')
         .update(updateData)
         .eq('id', requestId);
 
