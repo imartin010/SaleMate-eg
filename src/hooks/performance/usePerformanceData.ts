@@ -72,10 +72,7 @@ export function usePerformanceTransactions(franchiseId?: string) {
     queryFn: async () => {
       let query = supabase
         .from('performance_transactions')
-        .select(`
-          *,
-          project:salemate-inventory(name, developer, area)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (franchiseId) {
@@ -181,10 +178,7 @@ export function usePerformanceCommissionSchemes(franchiseId?: string) {
     queryFn: async () => {
       let query = supabase
         .from('performance_commission_schemes')
-        .select(`
-          *,
-          project:salemate-inventory(name, developer, area)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (franchiseId) {
