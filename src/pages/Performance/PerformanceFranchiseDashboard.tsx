@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { 
   usePerformanceFranchiseBySlug,
   usePerformanceAnalytics,
+  usePerformanceTransactions,
+  usePerformanceExpenses,
 } from '../../hooks/performance/usePerformanceData';
 import { 
   TrendingUp, 
@@ -12,8 +14,11 @@ import {
   ArrowLeft,
   BarChart3,
   PieChart,
-  Wallet
+  Wallet,
+  Plus
 } from 'lucide-react';
+import { AddTransactionModal } from '../../components/performance/AddTransactionModal';
+import { AddExpenseModal } from '../../components/performance/AddExpenseModal';
 
 /**
  * Franchise Owner Dashboard
@@ -22,9 +27,13 @@ import {
 const PerformanceFranchiseDashboard: React.FC = () => {
   const { franchiseSlug } = useParams<{ franchiseSlug: string }>();
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'expenses' | 'settings'>('overview');
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showAddExpense, setShowAddExpense] = useState(false);
   
   const { data: franchise, isLoading: franchiseLoading } = usePerformanceFranchiseBySlug(franchiseSlug || '');
   const { data: analytics, isLoading: analyticsLoading } = usePerformanceAnalytics(franchise?.id || '');
+  const { data: transactions } = usePerformanceTransactions(franchise?.id);
+  const { data: expenses } = usePerformanceExpenses(franchise?.id);
 
   const isLoading = franchiseLoading || analyticsLoading;
 
@@ -285,16 +294,140 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         )}
 
         {activeTab === 'transactions' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Transactions Management</h3>
-            <p className="text-gray-600">Transaction management interface coming soon...</p>
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Transactions</h3>
+                <button
+                  onClick={() => setShowAddTransaction(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Transaction</span>
+                </button>
+              </div>
+
+              {!transactions || transactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No transactions yet</p>
+                  <button
+                    onClick={() => setShowAddTransaction(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Add your first transaction
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {formatCurrency(transaction.transaction_amount)}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Project ID: {transaction.project_id}
+                        </p>
+                        {transaction.notes && (
+                          <p className="text-xs text-gray-500 mt-1">{transaction.notes}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                            transaction.stage === 'contracted'
+                              ? 'bg-green-100 text-green-800'
+                              : transaction.stage === 'reservation'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : transaction.stage === 'eoi'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {transaction.stage.toUpperCase()}
+                        </span>
+                        {transaction.commission_amount && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Commission: {formatCurrency(transaction.commission_amount)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {activeTab === 'expenses' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Expenses Management</h3>
-            <p className="text-gray-600">Expense management interface coming soon...</p>
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
+                <button
+                  onClick={() => setShowAddExpense(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Expense</span>
+                </button>
+              </div>
+
+              {!expenses || expenses.length === 0 ? (
+                <div className="text-center py-12">
+                  <PieChart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No expenses yet</p>
+                  <button
+                    onClick={() => setShowAddExpense(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Add your first expense
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {expenses.map((expense) => (
+                    <div
+                      key={expense.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              expense.expense_type === 'fixed'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}
+                          >
+                            {expense.expense_type}
+                          </span>
+                          <span className="text-sm text-gray-600 capitalize">
+                            {expense.category.replace('_', ' ')}
+                          </span>
+                        </div>
+                        {expense.description && (
+                          <p className="text-sm text-gray-900 mt-1">{expense.description}</p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(expense.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">
+                          {formatCurrency(expense.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -320,6 +453,22 @@ const PerformanceFranchiseDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {franchise && (
+        <>
+          <AddTransactionModal
+            franchiseId={franchise.id}
+            isOpen={showAddTransaction}
+            onClose={() => setShowAddTransaction(false)}
+          />
+          <AddExpenseModal
+            franchiseId={franchise.id}
+            isOpen={showAddExpense}
+            onClose={() => setShowAddExpense(false)}
+          />
+        </>
+      )}
     </div>
   );
 };
