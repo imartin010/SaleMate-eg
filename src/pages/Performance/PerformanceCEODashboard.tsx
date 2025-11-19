@@ -1,7 +1,79 @@
 import React, { useState } from 'react';
-import { usePerformanceFranchises } from '../../hooks/performance/usePerformanceData';
+import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
 import { Building2, TrendingUp, DollarSign, Users, BarChart3 } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
+
+// Component to display franchise card with analytics
+const FranchiseCard: React.FC<{ franchise: any }> = ({ franchise }) => {
+  const { data: analytics } = usePerformanceAnalytics(franchise.id);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-EG', {
+      style: 'currency',
+      currency: 'EGP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  return (
+    <a
+      href={`/franchise/${franchise.slug}`}
+      className="group block p-6 bg-white rounded-3xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+            {franchise.name}
+          </h3>
+          <div className="flex items-center space-x-2 mt-2">
+            <Users className="w-4 h-4 text-gray-400" />
+            <p className="text-sm text-gray-600 font-medium">
+              {franchise.headcount} {franchise.headcount === 1 ? 'agent' : 'agents'}
+            </p>
+          </div>
+        </div>
+        {franchise.is_active && (
+          <span className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-semibold bg-emerald-100 text-emerald-700">
+            ● Active
+          </span>
+        )}
+      </div>
+      
+      <div className="space-y-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 mb-4">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Gross Revenue</span>
+          <span className="font-bold text-gray-900">
+            {analytics ? formatCurrency(analytics.gross_revenue) : 'Loading...'}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Net Revenue</span>
+          <span className={`font-bold ${analytics && analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            {analytics ? formatCurrency(analytics.net_revenue) : 'Loading...'}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Expenses</span>
+          <span className="font-bold text-gray-900">
+            {analytics ? formatCurrency(analytics.total_expenses + analytics.commission_cuts_total) : 'Loading...'}
+          </span>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-blue-600 font-semibold group-hover:text-blue-700">
+          View Dashboard
+        </span>
+        <div className="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
+          <svg className="w-4 h-4 text-blue-600 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+  );
+};
 
 /**
  * CEO Dashboard - Overview of all franchises
@@ -148,56 +220,7 @@ const PerformanceCEODashboard: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {franchises.map((franchise) => (
-                  <a
-                    key={franchise.id}
-                    href={`/franchise/${franchise.slug}`}
-                    className="group block p-6 bg-white rounded-3xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {franchise.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Users className="w-4 h-4 text-gray-400" />
-                          <p className="text-sm text-gray-600 font-medium">
-                            {franchise.headcount} {franchise.headcount === 1 ? 'agent' : 'agents'}
-                          </p>
-                        </div>
-                      </div>
-                      {franchise.is_active && (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-semibold bg-emerald-100 text-emerald-700">
-                          ● Active
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Gross Revenue</span>
-                        <span className="font-bold text-gray-900">EGP --</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Net Revenue</span>
-                        <span className="font-bold text-gray-900">EGP --</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Expenses</span>
-                        <span className="font-bold text-gray-900">EGP --</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-blue-600 font-semibold group-hover:text-blue-700">
-                        View Dashboard
-                      </span>
-                      <div className="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-                        <svg className="w-4 h-4 text-blue-600 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </a>
+                  <FranchiseCard key={franchise.id} franchise={franchise} />
                 ))}
               </div>
             )}
