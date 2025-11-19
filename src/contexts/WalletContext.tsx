@@ -55,92 +55,15 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const walletHook = useWalletNew();
 
   const refreshBalance = async () => {
-    if (!user) {
-      setBalance(0);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Get balance directly from profiles.wallet_balance column
-      // This is updated by the payment gateway system (process_payment_and_topup RPC)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        // Fallback: try using get_wallet_balance RPC function
-        const { data, error: balanceError } = await supabase.rpc('get_wallet_balance', {
-          p_profile_id: user.id
-        });
-
-        if (balanceError) {
-          // Final fallback: compute balance from transactions table directly
-          const { data: credits } = await supabase
-            .from('transactions')
-            .select('amount')
-            .eq('profile_id', user.id)
-            .eq('status', 'completed')
-            .eq('ledger_entry_type', 'credit');
-
-          const { data: debits } = await supabase
-            .from('transactions')
-            .select('amount')
-            .eq('profile_id', user.id)
-            .eq('status', 'completed')
-            .eq('ledger_entry_type', 'debit');
-
-          const creditTotal = credits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
-          const debitTotal = debits?.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) || 0;
-          setBalance(creditTotal - debitTotal);
-        } else {
-          setBalance(parseFloat((data as number) || 0));
-        }
-      } else {
-        // Use wallet_balance from profiles table (primary source for payment gateway)
-        setBalance(parseFloat((profile.wallet_balance || 0).toString()));
-      }
-    } catch (err: unknown) {
-      console.error('Error fetching wallet balance:', err);
-      setError((err instanceof Error ? err.message : String(err)) || 'Failed to fetch wallet balance');
-      // Set balance to 0 on error to prevent UI issues
-      setBalance(0);
-    } finally {
-      setLoading(false);
-    }
+    await walletHook.refreshBalance();
   };
 
   const addToWallet = async (amount: number, description: string = 'Wallet deposit'): Promise<boolean> => {
-    if (!user) {
-      setError('User not authenticated');
-      return false;
-    }
-
     try {
-      setError(null);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: addError } = await (supabase as any).rpc('add_to_wallet', {
-        p_user_id: user.id,
-        p_amount: amount,
-        p_description: description
-      });
-
-      if (addError) {
-        throw new Error(addError.message);
-      }
-
-      // Refresh balance after successful addition
-      await refreshBalance();
+      await walletHook.addToWallet(amount, description);
       return true;
     } catch (err: unknown) {
       console.error('Error adding to wallet:', err);
-      setError((err instanceof Error ? err.message : String(err)) || 'Failed to add money to wallet');
       return false;
     }
   };
@@ -226,46 +149,19 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   };
 
   const deductFromWallet = async (amount: number, description: string = 'Lead purchase'): Promise<{ success: boolean; error?: string; new_balance?: number }> => {
-    if (!user) {
-      return { success: false, error: 'User not authenticated' };
-    }
-
-    try {
-      setError(null);
-
-      // Call RPC to deduct from wallet
-      const { data, error: deductError } = await supabase.rpc('deduct_from_wallet', {
-        p_user_id: user.id,
-        p_amount: amount,
-        p_description: description,
-      });
-
-      if (deductError) {
-        throw new Error(deductError.message);
-      }
-
-      // Refresh balance
-      await refreshBalance();
-      
-      return { 
-        success: true, 
-        new_balance: data?.new_balance || (balance - amount)
-      };
-    } catch (err: unknown) {
-      const errorMessage = (err instanceof Error ? err.message : String(err)) || 'Failed to deduct from wallet';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    }
+    const result = await walletHook.deductFromWallet(amount, description);
+    return {
+      success: result.success,
+      error: result.error,
+      new_balance: walletHook.balance - amount,
+    };
   };
 
-  useEffect(() => {
-    refreshBalance();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Adapt the new hook's API to match the old Context API
   const value: WalletContextType = {
-    balance,
-    loading,
-    error,
+    balance: walletHook.balance,
+    loading: walletHook.loading,
+    error: walletHook.error,
     refreshBalance,
     addToWallet,
     addToWalletWithPayment,
