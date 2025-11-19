@@ -1,28 +1,9 @@
-/**
- * @deprecated
- * This file has been moved to features/auth/store/auth.store.ts
- * Please update your imports to use:
- * import { useAuthStore } from '@/features/auth'
- */
-
-import { useAuthStore } from '../features/auth/store/auth.store';
-
-if (import.meta.env.DEV) {
-  console.warn(
-    '⚠️ DEPRECATED: Importing from src/store/auth.ts is deprecated.\n' +
-    'Please update your imports:\n' +
-    "import { useAuthStore } from '@/features/auth';"
-  );
-}
-
-export { useAuthStore };
-
-// Legacy type definitions for backward compatibility
 import { create } from "zustand";
 import { supabase } from "../lib/supabaseClient";
 import type { Database } from "../types/database";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+// type Role = Database["public"]["Enums"]["user_role"]; // Unused
 
 interface AuthState {
   user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] | null;
