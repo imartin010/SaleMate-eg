@@ -1,12 +1,21 @@
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../../supabase/types/database.types'
+/**
+ * @deprecated
+ * This file is deprecated. Please import from '@/core/api/admin-client' instead.
+ * This re-export will be removed in a future version.
+ */
 
-// Admin client with service role key for admin operations
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wkxbhvckmgrmdkdkhnqo.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGJodmNrbWdybWRrZGtobnFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjQ5ODM1NCwiZXhwIjoyMDcyMDc0MzU0fQ.8GPIkvdBEyuYAjqi_GpByGcDfmESXOBCn4M-XAaaNUg'
+import { supabaseAdmin } from '../core/api/admin-client';
 
-// Create admin client that bypasses RLS for admin operations
-export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey)
+if (import.meta.env.DEV) {
+  console.warn(
+    '⚠️ DEPRECATED: Importing from src/lib/supabaseAdminClient.ts is deprecated.\n' +
+    'Please update your imports to use:\n' +
+    "import { supabaseAdmin } from '@/core/api/admin-client';"
+  );
+}
+
+// Re-export admin client
+export { supabaseAdmin };
 
 /**
  * Get all projects (admin function - bypasses RLS)

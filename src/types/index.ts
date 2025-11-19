@@ -1,3 +1,39 @@
+/**
+ * @deprecated
+ * This file is deprecated. Types have been reorganized:
+ * - Shared types → '@/shared/types'
+ * - Feature-specific types → '@/features/[feature]/types'
+ * 
+ * Please update your imports accordingly.
+ */
+
+// Re-export from new locations for backward compatibility
+export type {
+  UserRole,
+  Platform,
+  LeadStage,
+  PaymentMethod,
+  OrderStatus,
+  PurchaseRequestStatus,
+  SupportCaseStatus,
+  SupportCasePriority,
+  BRDataPropertySortField,
+  User,
+  Partner,
+  Developer,
+  BRDataProperty,
+} from '../shared/types';
+
+if (import.meta.env.DEV) {
+  console.warn(
+    '⚠️ DEPRECATED: Importing from src/types/index.ts is deprecated.\n' +
+    'Please update your imports:\n' +
+    '  Shared types: import { ... } from "@/shared/types"\n' +
+    '  Feature types: import { ... } from "@/features/[feature]/types"'
+  );
+}
+
+// Legacy type definitions (kept for backwards compatibility)
 export type UserRole = 'admin' | 'manager' | 'support' | 'user';
 
 export interface User {
