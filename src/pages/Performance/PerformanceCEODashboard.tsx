@@ -1,7 +1,43 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
 import { Building2, TrendingUp, DollarSign, Users, BarChart3 } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
+
+// Hook for animated counter effect
+const useCounter = (target: number, duration: number = 2000) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (target === 0) {
+      setCount(0);
+      return;
+    }
+
+    let startTime: number | null = null;
+    const startValue = 0;
+
+    const animate = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const currentCount = Math.floor(startValue + (target - startValue) * easeOutQuart);
+      
+      setCount(currentCount);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCount(target);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [target, duration]);
+
+  return count;
+};
 
 // Component to display franchise card with analytics
 const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: string, revenue: number) => void }> = ({ franchise, onRevenueUpdate }) => {
@@ -109,6 +145,16 @@ const PerformanceCEODashboard: React.FC = () => {
     }).format(amount);
   };
 
+  // Calculate values for counter animation
+  const totalFranchises = franchises?.length || 0;
+  const activeFranchises = franchises?.filter(f => f.is_active).length || 0;
+  const totalAgents = franchises?.reduce((sum, f) => sum + f.headcount, 0) || 0;
+
+  // Animated counters
+  const animatedTotalFranchises = useCounter(totalFranchises);
+  const animatedActiveFranchises = useCounter(activeFranchises);
+  const animatedTotalAgents = useCounter(totalAgents);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -158,7 +204,7 @@ const PerformanceCEODashboard: React.FC = () => {
               </div>
               <p className="text-blue-100 text-sm font-medium mb-1">Total Franchises</p>
               <p className="text-4xl font-bold text-white tracking-tight">
-                {franchises?.length || 0}
+                {animatedTotalFranchises}
               </p>
             </div>
           </div>
@@ -175,7 +221,7 @@ const PerformanceCEODashboard: React.FC = () => {
               </div>
               <p className="text-emerald-100 text-sm font-medium mb-1">Active Franchises</p>
               <p className="text-4xl font-bold text-white tracking-tight">
-                {franchises?.filter(f => f.is_active).length || 0}
+                {animatedActiveFranchises}
               </p>
             </div>
           </div>
@@ -191,7 +237,7 @@ const PerformanceCEODashboard: React.FC = () => {
               </div>
               <p className="text-purple-100 text-sm font-medium mb-1">Total Agents</p>
               <p className="text-4xl font-bold text-white tracking-tight">
-                {franchises?.reduce((sum, f) => sum + f.headcount, 0) || 0}
+                {animatedTotalAgents}
               </p>
             </div>
           </div>
@@ -207,7 +253,7 @@ const PerformanceCEODashboard: React.FC = () => {
                 <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-2xl">Live</span>
               </div>
               <p className="text-amber-100 text-sm font-medium mb-1">Total Revenue</p>
-              <p className="text-4xl font-bold text-white tracking-tight">
+              <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight break-words">
                 {formatCurrency(totalRevenue)}
               </p>
             </div>
