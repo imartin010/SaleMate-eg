@@ -94,23 +94,47 @@ export function usePerformanceTransactions(franchiseId?: string) {
     queryFn: async () => {
       let query = supabase
         .from('performance_transactions')
-        .select(`
-          *,
-          project:salemate-inventory!performance_transactions_project_id_fkey(
-            name,
-            developer,
-            area
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (franchiseId) {
         query = query.eq('franchise_id', franchiseId);
       }
       
-      const { data, error } = await query;
+      const { data: transactions, error } = await query;
       if (error) throw error;
-      return data as PerformanceTransaction[];
+      
+      if (!transactions || transactions.length === 0) {
+        return [] as PerformanceTransaction[];
+      }
+      
+      // Get unique project IDs
+      const projectIds = [...new Set(transactions.map(t => t.project_id).filter(Boolean))];
+      
+      // Batch fetch all projects at once
+      let projectsMap = new Map();
+      if (projectIds.length > 0) {
+        const { data: projects } = await supabase
+          .from('salemate-inventory')
+          .select('id, compound, developer, area')
+          .in('id', projectIds);
+        
+        if (projects) {
+          projectsMap = new Map(projects.map(p => [p.id, {
+            name: p.compound || `Project ${p.id}`,
+            developer: p.developer || '',
+            area: p.area || ''
+          }]));
+        }
+      }
+      
+      // Merge transactions with project data
+      const transactionsWithProjects = transactions.map(transaction => ({
+        ...transaction,
+        project: transaction.project_id ? projectsMap.get(transaction.project_id) : undefined
+      }));
+      
+      return transactionsWithProjects as PerformanceTransaction[];
     },
   });
 }
