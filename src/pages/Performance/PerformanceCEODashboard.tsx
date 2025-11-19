@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
 import { Building2, TrendingUp, DollarSign, Users, BarChart3 } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
 
 // Component to display franchise card with analytics
-const FranchiseCard: React.FC<{ franchise: any }> = ({ franchise }) => {
+const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: string, revenue: number) => void }> = ({ franchise, onRevenueUpdate }) => {
   const { data: analytics } = usePerformanceAnalytics(franchise.id);
+  
+  React.useEffect(() => {
+    if (analytics && onRevenueUpdate) {
+      onRevenueUpdate(franchise.id, analytics.gross_revenue);
+    }
+  }, [analytics, franchise.id, onRevenueUpdate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-EG', {
@@ -80,6 +86,28 @@ const FranchiseCard: React.FC<{ franchise: any }> = ({ franchise }) => {
 const PerformanceCEODashboard: React.FC = () => {
   const { data: franchises, isLoading } = usePerformanceFranchises();
   const [showComparison, setShowComparison] = useState(false);
+  const [franchiseRevenues, setFranchiseRevenues] = useState<Record<string, number>>({});
+
+  // Calculate total revenue across all franchises
+  const totalRevenue = useMemo(() => {
+    return Object.values(franchiseRevenues).reduce((sum, revenue) => sum + revenue, 0);
+  }, [franchiseRevenues]);
+
+  const handleRevenueUpdate = (franchiseId: string, revenue: number) => {
+    setFranchiseRevenues(prev => ({
+      ...prev,
+      [franchiseId]: revenue
+    }));
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-EG', {
+      style: 'currency',
+      currency: 'EGP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   if (isLoading) {
     return (
@@ -176,11 +204,11 @@ const PerformanceCEODashboard: React.FC = () => {
                 <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
                   <DollarSign className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xs font-semibold text-white/60 bg-white/10 px-3 py-1 rounded-2xl">Soon</span>
+                <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-2xl">Live</span>
               </div>
               <p className="text-amber-100 text-sm font-medium mb-1">Total Revenue</p>
               <p className="text-4xl font-bold text-white tracking-tight">
-                --
+                {formatCurrency(totalRevenue)}
               </p>
             </div>
           </div>
@@ -218,7 +246,11 @@ const PerformanceCEODashboard: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {franchises.map((franchise) => (
-                  <FranchiseCard key={franchise.id} franchise={franchise} />
+                  <FranchiseCard 
+                    key={franchise.id} 
+                    franchise={franchise}
+                    onRevenueUpdate={handleRevenueUpdate}
+                  />
                 ))}
               </div>
             )}
