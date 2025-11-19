@@ -1,14 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../types/database";
+/**
+ * @deprecated
+ * This file is deprecated. Please import from '@/core/api/client' instead.
+ * This re-export will be removed in a future version.
+ */
 
-export const supabase = createClient<Database>(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+import { supabase } from '../core/api/client';
+
+if (import.meta.env.DEV) {
+  console.warn(
+    '⚠️ DEPRECATED: Importing from src/lib/supabase.ts is deprecated.\n' +
+    'Please update your imports to use:\n' +
+    "import { supabase } from '@/core/api/client';"
+  );
+}
+
+export { supabase };
+export default supabase;
