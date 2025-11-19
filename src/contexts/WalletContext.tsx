@@ -1,9 +1,26 @@
+/**
+ * @deprecated
+ * WalletContext has been migrated to React Query.
+ * Please use the new hook-based approach:
+ * import { useWallet } from '@/features/wallet'
+ * 
+ * This Context wrapper is kept for backward compatibility
+ * but will be removed in a future version.
+ */
+
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import { useAuthStore } from '../store/auth';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useWallet as useWalletNew } from '../features/wallet/hooks/useWallet';
 import PaymentGatewayService, { PaymentGateway } from '../services/paymentGateway';
 import { PaymentMethod } from '../types';
+
+if (import.meta.env.DEV) {
+  console.warn(
+    '⚠️ DEPRECATED: WalletContext is deprecated.\n' +
+    'Please migrate to the new hook:\n' +
+    "import { useWallet } from '@/features/wallet';"
+  );
+}
 
 interface WalletContextType {
   balance: number;
@@ -29,11 +46,13 @@ interface WalletProviderProps {
   children: ReactNode;
 }
 
+/**
+ * WalletProvider with React Query integration
+ * Now uses the new useWallet hook internally for better performance
+ */
 export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
-  const [balance, setBalance] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
+  // Use the new React Query-based hook internally
+  const walletHook = useWalletNew();
 
   const refreshBalance = async () => {
     if (!user) {
