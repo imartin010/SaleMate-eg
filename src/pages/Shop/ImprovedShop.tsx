@@ -79,8 +79,7 @@ export const ImprovedShop: React.FC = () => {
           description,
           price_per_lead,
           available_leads,
-          cover_image,
-          developer:entities!projects_developer_id_fkey ( name )
+          cover_image
         `)
         .gt('available_leads', 0) // Only show projects with available leads
         .order('available_leads', { ascending: false }); // Order by available leads descending
