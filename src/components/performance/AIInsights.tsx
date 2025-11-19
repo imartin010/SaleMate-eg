@@ -7,7 +7,8 @@ import {
   Lightbulb,
   DollarSign,
   Users,
-  Target
+  Target,
+  Bot
 } from 'lucide-react';
 import type { FranchiseAnalytics, PerformanceFranchise } from '../../types/performance';
 
@@ -87,7 +88,7 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
     }
 
     // 3. Deal Conversion Analysis
-    const totalDeals = analytics.total_deals;
+    const totalDeals = analytics.contracted_deals_count + analytics.pending_deals_count + analytics.cancelled_deals_count;
     const contractedDeals = analytics.contracted_deals_count;
     const cancelledDeals = analytics.cancelled_deals_count;
     const conversionRate = totalDeals > 0 ? (contractedDeals / totalDeals) * 100 : 0;
@@ -229,7 +230,7 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
   return (
     <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
       <div className="flex items-center space-x-2 mb-4">
-        <span className="text-2xl">🤖</span>
+        <Bot className="w-6 h-6 text-purple-600" />
         <h3 className="text-lg font-semibold text-purple-900">AI Performance Insights</h3>
       </div>
       <p className="text-sm text-purple-700 mb-6">

@@ -25,11 +25,14 @@ import {
   Edit2,
   Trash2,
   Save,
-  XCircle
+  XCircle,
+  FileText
 } from 'lucide-react';
 import { AddTransactionModal } from '../../components/performance/AddTransactionModal';
 import { AddExpenseModal } from '../../components/performance/AddExpenseModal';
 import { AIInsights } from '../../components/performance/AIInsights';
+import { ForecastingSystem } from '../../components/performance/ForecastingSystem';
+import { PNLStatement } from '../../components/performance/PNLStatement';
 
 /**
  * Franchise Owner Dashboard
@@ -37,7 +40,7 @@ import { AIInsights } from '../../components/performance/AIInsights';
  */
 const PerformanceFranchiseDashboard: React.FC = () => {
   const { franchiseSlug } = useParams<{ franchiseSlug: string }>();
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'expenses' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'pnl' | 'transactions' | 'expenses' | 'settings'>('overview');
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   
@@ -206,6 +209,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
           <nav className="flex space-x-2 py-4">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'pnl', label: 'P&L Statement', icon: FileText },
               { id: 'transactions', label: 'Transactions', icon: Wallet },
               { id: 'expenses', label: 'Expenses', icon: PieChart },
               { id: 'settings', label: 'Settings', icon: Users },
@@ -420,6 +424,29 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
             {/* AI Insights */}
             <AIInsights analytics={analytics} franchise={franchise} />
+
+            {/* Forecasting System */}
+            {transactions && expenses && (
+              <ForecastingSystem
+                analytics={analytics}
+                franchise={franchise}
+                transactions={transactions}
+                expenses={expenses}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'pnl' && (
+          <div className="space-y-4">
+            {analytics && franchise && transactions && expenses && (
+              <PNLStatement
+                analytics={analytics}
+                franchise={franchise}
+                transactions={transactions}
+                expenses={expenses}
+              />
+            )}
           </div>
         )}
 

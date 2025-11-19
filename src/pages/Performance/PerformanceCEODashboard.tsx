@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePerformanceFranchises } from '../../hooks/performance/usePerformanceData';
-import { Building2, TrendingUp, DollarSign, Users } from 'lucide-react';
+import { Building2, TrendingUp, DollarSign, Users, BarChart3 } from 'lucide-react';
+import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
 
 /**
  * CEO Dashboard - Overview of all franchises
@@ -8,6 +9,7 @@ import { Building2, TrendingUp, DollarSign, Users } from 'lucide-react';
  */
 const PerformanceCEODashboard: React.FC = () => {
   const { data: franchises, isLoading } = usePerformanceFranchises();
+  const [showComparison, setShowComparison] = useState(false);
 
   if (isLoading) {
     return (
@@ -116,11 +118,22 @@ const PerformanceCEODashboard: React.FC = () => {
 
         {/* Franchises Grid */}
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900">All Franchises</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Click on a franchise to view detailed performance
-            </p>
+          <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">All Franchises</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Click on a franchise to view detailed performance
+              </p>
+            </div>
+            {franchises && franchises.length > 1 && (
+              <button
+                onClick={() => setShowComparison(true)}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all"
+              >
+                <BarChart3 className="w-5 h-5" />
+                <span className="font-semibold">Compare Franchises</span>
+              </button>
+            )}
           </div>
           
           <div className="p-6">
@@ -191,6 +204,14 @@ const PerformanceCEODashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Franchise Comparison Modal */}
+      {showComparison && franchises && (
+        <FranchiseComparison
+          franchises={franchises}
+          onClose={() => setShowComparison(false)}
+        />
+      )}
     </div>
   );
 };
