@@ -578,8 +578,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                           {formatCurrency(transaction.transaction_amount)}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Project ID: {transaction.project_id}
+                          {transaction.project?.name || `Project ID: ${transaction.project_id}`}
                         </p>
+                        {transaction.project?.developer && (
+                          <p className="text-xs text-gray-500">
+                            {transaction.project.developer}
+                          </p>
+                        )}
                         {transaction.notes && (
                           <p className="text-xs text-gray-500 mt-1">{transaction.notes}</p>
                         )}

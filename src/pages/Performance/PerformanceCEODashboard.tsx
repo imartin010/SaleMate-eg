@@ -42,21 +42,19 @@ const FranchiseCard: React.FC<{ franchise: any }> = ({ franchise }) => {
       
       <div className="space-y-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 mb-4">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Gross Revenue</span>
-          <span className="font-bold text-gray-900">
-            {analytics ? formatCurrency(analytics.gross_revenue) : 'Loading...'}
-          </span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Net Revenue</span>
-          <span className={`font-bold ${analytics && analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+          <span className="text-gray-600">P&L Amount</span>
+          <span className={`font-bold text-base ${
+            analytics && analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-700'
+          }`}>
             {analytics ? formatCurrency(analytics.net_revenue) : 'Loading...'}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Expenses</span>
+          <span className="text-gray-600">Performance/Agent</span>
           <span className="font-bold text-gray-900">
-            {analytics ? formatCurrency(analytics.total_expenses + analytics.commission_cuts_total) : 'Loading...'}
+            {analytics ? 
+              formatCurrency(franchise.headcount > 0 ? analytics.total_sales_volume / franchise.headcount : 0) 
+              : 'Loading...'}
           </span>
         </div>
       </div>
