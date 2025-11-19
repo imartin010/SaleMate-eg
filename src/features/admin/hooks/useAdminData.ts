@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import { UserRole } from '../../types';
+import { supabase } from '@/core/api/client';
+import { UserRole } from '@/shared/types';
 
 export interface AdminUser {
   id: string;

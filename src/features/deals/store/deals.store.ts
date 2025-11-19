@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from "../lib/supabaseClient"
+import { supabase } from "@/core/api/client"
 import { Deal, CreateDealRequest, UpdateDealRequest, DealFilters, DealStats } from '../types/deals';
 
 interface DealsState {

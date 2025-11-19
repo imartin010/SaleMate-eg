@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Users, Check } from 'lucide-react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { useAuthStore } from '../../store/auth';
 
 interface TeamMember {

@@ -6,8 +6,8 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { AlertCircle, CheckCircle, Wallet, Users, DollarSign, CreditCard, Smartphone, Phone } from 'lucide-react';
 import { useWallet } from '../../contexts/WalletContext';
-import { supabase } from '../../lib/supabaseClient';
-import { PaymentMethod } from '../../types';
+import { supabase } from '@/core/api/client';
+import { PaymentMethod } from '@/shared/types';
 
 interface Project {
   id: string;

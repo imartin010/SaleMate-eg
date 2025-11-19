@@ -5,7 +5,7 @@ import { Bell, FileText, Users, HelpCircle, Settings, X } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useAuthStore } from '../../store/auth';
 import { cn } from '../../lib/cn';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { NotificationBell } from '../notifications/NotificationBell';
 
 export const HomeHeader: React.FC = () => {

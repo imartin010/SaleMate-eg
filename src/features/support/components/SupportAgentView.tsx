@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '../ui/select';
-import { SupportCaseStatus } from '../../types';
+import { SupportCaseStatus } from '@/shared/types';
 import { formatRelativeTime } from '../../lib/format';
 import { 
   getAllTopics,

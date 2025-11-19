@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Project } from '../types';
-import { supabase } from "../lib/supabaseClient"
+import { Project } from '@/shared/types';
+import { supabase } from "@/core/api/client"
 
 interface ProjectState {
   projects: Project[];

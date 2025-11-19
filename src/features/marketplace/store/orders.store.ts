@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Order, PurchaseRequest, OrderStatus } from '../types';
-import { supabase } from "../lib/supabaseClient"
+import { Order, PurchaseRequest, OrderStatus } from '@/shared/types';
+import { supabase } from "@/core/api/client"
 import { processPayment, calculateTotalAmount } from '../lib/payments';
 
 interface OrderState {

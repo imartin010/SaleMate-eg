@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Image as ImageIcon, X, Check } from 'lucide-react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { uploadFile, listFiles, getPublicUrl } from '../../lib/storage';
 
 interface ImagePickerProps {

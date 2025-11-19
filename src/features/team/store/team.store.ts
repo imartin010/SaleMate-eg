@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { supabase } from "../lib/supabaseClient"
-import type { Database } from "../types/database";
+import { supabase } from "@/core/api/client"
+import type { Database } from "@/shared/types";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 

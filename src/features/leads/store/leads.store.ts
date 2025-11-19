@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { Lead, LeadFilters, User } from '../types';
-import { supabase } from "../lib/supabaseClient"
-// import type { Database } from '../types/database'; // Unused
+import { Lead, LeadFilters, User } from '@/shared/types';
+import { supabase } from "@/core/api/client"
+// import type { Database } from '@/shared/types'; // Unused
 
 // type LeadRow = Database["public"]["Tables"]["leads"]["Row"]; // Unused
 

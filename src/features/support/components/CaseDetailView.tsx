@@ -13,7 +13,7 @@ import {
   CheckCircle,
   Eye
 } from 'lucide-react';
-import { SupportCaseReply, SupportCaseStatus } from '../../types';
+import { SupportCaseReply, SupportCaseStatus } from '@/shared/types';
 import { formatRelativeTime } from '../../lib/format';
 import { getTopicColor, getTopicIcon, getIssueIcon } from '../../types/support-categories';
 import * as LucideIcons from 'lucide-react';

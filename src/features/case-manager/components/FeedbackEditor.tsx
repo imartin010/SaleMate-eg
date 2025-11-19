@@ -5,7 +5,7 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { getAICoaching } from '../../lib/api/caseApi';
 
 interface FeedbackEditorProps {
