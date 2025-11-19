@@ -11,8 +11,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useWallet as useWalletNew } from '../features/wallet/hooks/useWallet';
-import PaymentGatewayService, { PaymentGateway } from '../services/paymentGateway';
-import { PaymentMethod } from '../types';
+import { useAuthStore } from '../store/auth';
+import PaymentGatewayService, { PaymentGateway, PaymentMethod } from '../services/paymentGateway';
 
 if (import.meta.env.DEV) {
   console.warn(
@@ -53,6 +53,7 @@ interface WalletProviderProps {
 export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   // Use the new React Query-based hook internally
   const walletHook = useWalletNew();
+  const { user } = useAuthStore();
 
   const refreshBalance = async () => {
     await walletHook.refreshBalance();
@@ -74,8 +75,6 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     }
 
     try {
-      setError(null);
-
       // Validate amount
       if (amount <= 0) {
         return { success: false, error: 'Amount must be greater than 0' };
