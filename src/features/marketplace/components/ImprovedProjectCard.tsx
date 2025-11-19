@@ -3,9 +3,9 @@ import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Project } from '../../types';
+import { Project } from '@/shared/types';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from "../../lib/supabaseClient"
+import { supabase } from "@/core/api/client"
 import { LeadRequestDialog } from '../leads/LeadRequestDialog';
 import { 
   MapPin, 

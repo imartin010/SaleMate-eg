@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { useAuthStore } from '../../store/auth';
 
 export interface FeedbackHistoryEntry {

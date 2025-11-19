@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, ArrowDownCircle, ArrowUpCircle, Filter, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { useAuthStore } from '../../store/auth';
 import { cn } from '../../lib/cn';
 

@@ -15,7 +15,7 @@ import {
   Loader2,
   Eye
 } from 'lucide-react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { format } from 'date-fns';
 
 interface PurchaseRequest {

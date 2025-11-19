@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Wallet, Plus, RefreshCw, DollarSign, Smartphone, Phone, CheckCircle, AlertCircle } from 'lucide-react';
 import { useWallet } from '../../contexts/WalletContext';
-import { PaymentMethod } from '../../types';
+import { PaymentMethod } from '@/shared/types';
 
 export const WalletDisplay: React.FC = () => {
   const { balance, loading, error, refreshBalance, addToWalletWithPayment } = useWallet();

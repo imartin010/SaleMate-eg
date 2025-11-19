@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Loader2, CheckCircle2, AlertCircle, CreditCard, Building2, Wallet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { useAuthStore } from '../../store/auth';
 import { useToast } from '../../contexts/ToastContext';
 import { useWallet } from '../../contexts/WalletContext';

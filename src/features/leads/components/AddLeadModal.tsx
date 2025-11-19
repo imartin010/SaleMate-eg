@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { CreateLeadInput, LeadStage } from '../../hooks/crm/useLeads';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 
 interface AddLeadModalProps {
   open: boolean;

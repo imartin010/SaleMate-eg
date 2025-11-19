@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { SupportCase, SupportCaseStatus, SupportCaseReply } from '../types';
+import { SupportCase, SupportCaseStatus, SupportCaseReply } from '@/shared/types';
 import { 
   getAllSupportCases,
   getUserSupportCasesWithDetails,
@@ -7,7 +7,7 @@ import {
   updateSupportCase as updateSupportCaseDB,
   createSupportCaseReply as createSupportCaseReplyDB,
   getSupportCaseReplies as getSupportCaseRepliesDB
-} from '../lib/supabaseClient';
+} from '@/core/api/client';
 
 interface SupportState {
   cases: any[];

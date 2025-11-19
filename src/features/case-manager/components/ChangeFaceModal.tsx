@@ -8,7 +8,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { changeFace } from '../../lib/api/caseApi';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 
 interface ChangeFaceModalProps {
   isOpen: boolean;

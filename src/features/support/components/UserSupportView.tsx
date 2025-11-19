@@ -11,7 +11,7 @@ import {
   SelectValue
 } from '../ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { SupportCaseStatus } from '../../types';
+import { SupportCaseStatus } from '@/shared/types';
 import { formatRelativeTime } from '../../lib/format';
 import { 
   getAllTopics,
