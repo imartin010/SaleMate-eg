@@ -35,8 +35,7 @@ export const getAllProjectsAdmin = async () => {
           available_leads,
           price_per_lead,
           description,
-          created_at,
-          developer:entities!projects_developer_id_fkey ( name )
+          created_at
         `)
         .order('name')
 
@@ -63,7 +62,7 @@ export const getAllProjectsAdmin = async () => {
           price_per_lead: p.price_per_lead ?? null,
           description: p.description ?? null,
           created_at: p.created_at,
-          developer: p?.developer?.name ?? 'Unknown'
+          developer: projectName.split(' - ')[0] || 'Unknown Developer' // Extract from project name
         };
       })
 
@@ -101,7 +100,7 @@ export const getAllProjectsAdmin = async () => {
           price_per_lead: p.price_per_lead ?? null,
           description: p.description ?? null,
           created_at: p.created_at,
-          developer: 'Unknown' // Default value when developer relation fails
+          developer: projectName.split(' - ')[0] || 'Unknown Developer' // Extract from project name
         };
       })
 
