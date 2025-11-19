@@ -84,7 +84,7 @@ const FranchiseAnalyticsLoader: React.FC<{
   const isLoading = transactionsLoading || expensesLoading || cutsLoading;
   
   const calculatedAnalytics = useMemo(() => {
-    if (!transactions || !expenses || !commissionCuts || isLoading) {
+    if (!transactions || !expenses || !commissionCuts) {
       return null;
     }
     
@@ -131,7 +131,7 @@ const FranchiseAnalyticsLoader: React.FC<{
       cost_per_agent,
       headcount: franchise.headcount,
     };
-  }, [transactions, expenses, commissionCuts, timeFrame, franchise.headcount, isLoading]);
+  }, [transactions, expenses, commissionCuts, timeFrame, franchise.headcount]);
   
   useEffect(() => {
     onDataReady({
@@ -239,15 +239,6 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
 
   const validSelectedData = selectedData.filter(d => d.analytics && !d.isLoading);
 
-  // Debug logging
-  console.log('Comparison Debug:', {
-    selectedFranchiseIds,
-    comparisonDataCount: comparisonData.length,
-    selectedDataCount: selectedData.length,
-    validSelectedDataCount: validSelectedData.length,
-    timeFrame
-  });
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -335,15 +326,17 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
           </div>
         </div>
 
-        {/* Load analytics for all active franchises */}
-        {activeFranchises.map(franchise => (
-          <FranchiseAnalyticsLoader
-            key={franchise.id}
-            franchise={franchise}
-            timeFrame={timeFrame}
-            onDataReady={handleDataReady}
-          />
-        ))}
+        {/* Load analytics only for selected franchises */}
+        {activeFranchises
+          .filter(f => selectedFranchiseIds.includes(f.id))
+          .map(franchise => (
+            <FranchiseAnalyticsLoader
+              key={`${franchise.id}-${timeFrame}`}
+              franchise={franchise}
+              timeFrame={timeFrame}
+              onDataReady={handleDataReady}
+            />
+          ))}
 
         {/* Comparison Content */}
         <div className="flex-1 overflow-y-auto p-8">

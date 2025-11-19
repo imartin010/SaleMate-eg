@@ -94,7 +94,14 @@ export function usePerformanceTransactions(franchiseId?: string) {
     queryFn: async () => {
       let query = supabase
         .from('performance_transactions')
-        .select('*')
+        .select(`
+          *,
+          project:salemate-inventory!performance_transactions_project_id_fkey(
+            name,
+            developer,
+            area
+          )
+        `)
         .order('created_at', { ascending: false });
       
       if (franchiseId) {
