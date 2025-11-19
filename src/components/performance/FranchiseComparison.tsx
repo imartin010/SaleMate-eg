@@ -148,6 +148,11 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
   franchises,
   onClose
 }) => {
+  // Filter to only show franchises with headcount > 0
+  const activeFranchises = useMemo(() => {
+    return franchises.filter(f => f.headcount > 0);
+  }, [franchises]);
+
   const [selectedFranchiseIds, setSelectedFranchiseIds] = useState<string[]>([]);
   const [comparisonData, setComparisonData] = useState<ComparisonData[]>([]);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('all-time');
@@ -170,7 +175,7 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
 
   // Filter to only selected franchises
   const selectedData = useMemo(() => {
-    if (selectedFranchiseIds.length === 0) return comparisonData;
+    if (selectedFranchiseIds.length === 0) return [];
     return comparisonData.filter(d => selectedFranchiseIds.includes(d.franchise.id));
   }, [comparisonData, selectedFranchiseIds]);
 
@@ -225,7 +230,7 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
   };
 
   const selectAll = () => {
-    setSelectedFranchiseIds(franchises.map(f => f.id));
+    setSelectedFranchiseIds(activeFranchises.map(f => f.id));
   };
 
   const clearSelection = () => {
@@ -233,6 +238,15 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
   };
 
   const validSelectedData = selectedData.filter(d => d.analytics && !d.isLoading);
+
+  // Debug logging
+  console.log('Comparison Debug:', {
+    selectedFranchiseIds,
+    comparisonDataCount: comparisonData.length,
+    selectedDataCount: selectedData.length,
+    validSelectedDataCount: validSelectedData.length,
+    timeFrame
+  });
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -274,7 +288,7 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {franchises.map(franchise => {
+            {activeFranchises.map(franchise => {
               const isSelected = selectedFranchiseIds.includes(franchise.id);
               return (
                 <button
@@ -321,8 +335,8 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
           </div>
         </div>
 
-        {/* Load analytics for all franchises */}
-        {franchises.map(franchise => (
+        {/* Load analytics for all active franchises */}
+        {activeFranchises.map(franchise => (
           <FranchiseAnalyticsLoader
             key={franchise.id}
             franchise={franchise}
@@ -333,12 +347,20 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
 
         {/* Comparison Content */}
         <div className="flex-1 overflow-y-auto p-8">
-          {validSelectedData.length === 0 ? (
+          {selectedFranchiseIds.length === 0 ? (
             <div className="text-center py-12">
               <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">Select at least one franchise to compare</p>
               <p className="text-sm text-gray-400 mt-2">
                 Choose franchises from the list above to see their performance metrics side by side
+              </p>
+            </div>
+          ) : validSelectedData.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500 font-medium">Loading franchise data...</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Calculating analytics for selected franchises
               </p>
             </div>
           ) : (
@@ -552,6 +574,28 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
                                 </span>
                                 {isBest && <Award className="w-4 h-4 text-green-600" />}
                               </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+
+                      {/* Performance Per Agent */}
+                      <tr className="hover:bg-gray-50 bg-purple-50">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                          <div className="flex items-center space-x-2">
+                            <Target className="w-4 h-4 text-purple-600" />
+                            <span>Performance Per Agent</span>
+                          </div>
+                        </td>
+                        {validSelectedData.map((data) => {
+                          const performancePerAgent = data.analytics!.headcount > 0
+                            ? data.analytics!.total_sales_volume / data.analytics!.headcount
+                            : 0;
+                          return (
+                            <td key={data.franchise.id} className="px-6 py-4 text-center">
+                              <span className="text-sm font-mono text-gray-900">
+                                {formatCurrency(performancePerAgent)}
+                              </span>
                             </td>
                           );
                         })}
