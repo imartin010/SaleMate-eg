@@ -179,7 +179,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Franchise Not Found</h2>
           <p className="text-gray-600 mb-4">The requested franchise could not be found.</p>
-          <a href="/" className="text-blue-600 hover:text-blue-700 font-medium">
+          <a href="/dashboard" className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to Dashboard
           </a>
         </div>
@@ -204,7 +204,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <a
-                href="/"
+                href="/dashboard"
                 className="group flex items-center justify-center w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:scale-110"
               >
                 <ArrowLeft className="w-6 h-6 text-white" />
