@@ -118,8 +118,8 @@ const CBProjectsList: React.FC = () => {
         ) : (
           projects.map((project) => (
             <div key={project.id} className="p-4 border-2 border-gray-200 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <div>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
                   <p className="font-semibold text-gray-900">
                     {project.compound}
                   </p>
@@ -132,22 +132,52 @@ const CBProjectsList: React.FC = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+              </div>
+              
+              {/* Commission Rate & Payout Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="flex items-start gap-2">
+                    <DollarSign className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-semibold text-gray-900">Commission Rate:</span>
+                      <span className="text-gray-600 ml-1">% of transaction amount</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Calendar className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-semibold text-gray-900">Payout Time:</span>
+                      <span className="text-gray-600 ml-1">Months after contract</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Input Fields */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Commission Rate (%)</label>
                   <input
                     type="number"
                     step="0.01"
                     defaultValue={project.commission_rate}
-                    className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     placeholder="Rate %"
                     id={`rate-${project.id}`}
                   />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Payout (Months)</label>
                   <input
                     type="number"
                     defaultValue={project.developer_payout_months}
-                    className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     placeholder="Months"
                     id={`months-${project.id}`}
                   />
+                </div>
+                <div className="pt-5">
                   <button
                     onClick={() => {
                       const rateInput = document.getElementById(`rate-${project.id}`) as HTMLInputElement;
@@ -160,6 +190,7 @@ const CBProjectsList: React.FC = () => {
                     }}
                     disabled={loading}
                     className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    title="Save changes"
                   >
                     <Save className="w-4 h-4" />
                   </button>
@@ -821,33 +852,6 @@ const PerformanceAdminPanel: React.FC = () => {
         {/* Projects Tab */}
         {activeTab === 'projects' && (
           <div className="space-y-6">
-            {/* Information Banner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">About Commission Rate & Payout</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/80 rounded-xl p-4 border border-blue-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold text-gray-900">Commission Rate</span>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    The percentage of the transaction amount that will be paid as commission. 
-                    For example, a 3.5% rate on a 1,000,000 EGP transaction = 35,000 EGP commission.
-                  </p>
-                </div>
-                <div className="bg-white/80 rounded-xl p-4 border border-blue-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-5 h-5 text-indigo-600" />
-                    <span className="font-semibold text-gray-900">Payout Time (Months)</span>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    The number of months after a deal is contracted before the commission is paid out. 
-                    For example, 3 months means the commission will be paid 3 months after the contract date.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Add Project Form */}
             <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Project</h2>
