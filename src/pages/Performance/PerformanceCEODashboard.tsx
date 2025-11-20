@@ -175,7 +175,7 @@ const PerformanceCEODashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex flex-col items-start">
               <img 
-                src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
+                src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo_white.png"
                 alt="SaleMate Performance Logo"
                 className="h-20 object-contain mb-4"
                 style={{ width: 'auto', maxWidth: '600px' }}
