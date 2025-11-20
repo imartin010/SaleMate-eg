@@ -18,7 +18,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [projectId, setProjectId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [amount, setAmount] = useState('');
-  const [grossCommission, setGrossCommission] = useState('');
   const [stage, setStage] = useState<TransactionStage>('eoi');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
@@ -26,11 +25,18 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const createTransaction = useCreateTransaction();
   const { data: projects, isLoading: projectsLoading } = useProjects();
 
+  // Commission rate: 3.5% for all projects
+  const COMMISSION_RATE = 0.035;
+  
   // Tax calculations (14% + 5% + 4% = 23% total)
   const TAX_RATE = 0.14;
   const WITHHOLDING_TAX_RATE = 0.05;
   const INCOME_TAX_RATE = 0.04;
   const TOTAL_TAX_RATE = TAX_RATE + WITHHOLDING_TAX_RATE + INCOME_TAX_RATE; // 0.23
+
+  // Calculate gross commission from transaction amount (3.5%)
+  const transactionAmountNum = parseFloat(amount) || 0;
+  const grossCommissionNum = transactionAmountNum * COMMISSION_RATE;
 
   // Calculate taxes and net commission
   const calculateTaxes = (gross: number) => {
@@ -47,34 +53,29 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     };
   };
 
-  const grossCommissionNum = parseFloat(grossCommission) || 0;
   const taxBreakdown = calculateTaxes(grossCommissionNum);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!projectId || !amount || !grossCommission) {
+    if (!projectId || !amount) {
       setError('Please fill in all required fields');
       return;
     }
 
     const transactionAmount = parseFloat(amount);
-    const grossCommissionAmount = parseFloat(grossCommission);
     
     if (isNaN(transactionAmount) || transactionAmount <= 0) {
       setError('Please enter a valid transaction amount');
       return;
     }
 
-    if (isNaN(grossCommissionAmount) || grossCommissionAmount <= 0) {
-      setError('Please enter a valid commission amount');
-      return;
-    }
+    // Calculate gross commission automatically (3.5% of transaction amount)
+    const grossCommissionAmount = transactionAmount * COMMISSION_RATE;
+    const taxes = calculateTaxes(grossCommissionAmount);
 
     try {
-      const taxes = calculateTaxes(grossCommissionAmount);
-      
       await createTransaction.mutateAsync({
         franchise_id: franchiseId,
         project_id: parseInt(projectId),
@@ -93,7 +94,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setProjectId('');
       setSearchTerm('');
       setAmount('');
-      setGrossCommission('');
       setStage('eoi');
       setNotes('');
       onClose();
@@ -206,31 +206,36 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               placeholder="5000000"
               required
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Commission will be calculated automatically at 3.5% of transaction amount
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Gross Commission (EGP) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={grossCommission}
-              onChange={(e) => setGrossCommission(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="150000"
-              required
-            />
-          </div>
-
-          {/* Tax Breakdown */}
-          {grossCommissionNum > 0 && (
+          {/* Commission & Tax Breakdown */}
+          {transactionAmountNum > 0 && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 space-y-2 border border-blue-100">
-              <h3 className="font-semibold text-gray-900 mb-2">Tax Breakdown</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Commission Calculation & Tax Breakdown</h3>
               
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Gross Commission</span>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-600">Transaction Amount</span>
                 <span className="font-medium text-gray-900">
+                  {new Intl.NumberFormat('en-EG', {
+                    style: 'currency',
+                    currency: 'EGP',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  }).format(transactionAmountNum)}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-600">Commission Rate</span>
+                <span className="font-medium text-gray-700">3.5%</span>
+              </div>
+              
+              <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
+                <span className="text-gray-600 font-medium">Gross Commission (3.5%)</span>
+                <span className="font-semibold text-gray-900">
                   {new Intl.NumberFormat('en-EG', {
                     style: 'currency',
                     currency: 'EGP',
