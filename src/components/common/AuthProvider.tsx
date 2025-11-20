@@ -6,12 +6,11 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { init } = useAuthStore();
-
   useEffect(() => {
     // Initialize auth system once
-    init();
-  }, [init]);
+    // Don't use init as dependency to avoid infinite loops
+    useAuthStore.getState().init();
+  }, []); // Empty dependency array - only run once on mount
 
   // Auth initialization is now handled by AuthGuard
   // This component just ensures auth is initialized globally
