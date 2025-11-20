@@ -109,30 +109,30 @@ const PerformanceValueGrid = () => {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="container mx-auto px-4">
+    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-white to-gray-50">
+      <div className="container mx-auto px-4 sm:px-6">
         {/* Section header */}
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-12 lg:mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 mb-3 sm:mb-4 px-2 sm:px-0">
             Why Choose{' '}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Performance Platform
             </span>
           </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-4 sm:px-0">
             A comprehensive financial management platform designed for franchise operations with real-time tracking and AI-powered insights
           </p>
         </motion.div>
 
         {/* Value proposition grid */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -147,22 +147,22 @@ const PerformanceValueGrid = () => {
                 whileHover={{ y: -8, scale: 1.02 }}
                 transition={{ type: "spring" as const, stiffness: 300, damping: 30 }}
               >
-                <Card className={`h-full p-6 ${value.bgColor} ${value.borderColor} border-2 hover:shadow-xl transition-all duration-300 group`}>
+                <Card className={`h-full p-4 sm:p-6 ${value.bgColor} ${value.borderColor} border-2 hover:shadow-xl transition-all duration-300 group`}>
                   {/* Icon */}
                   <motion.div 
-                    className={`w-14 h-14 rounded-xl bg-gradient-to-r ${value.color} flex items-center justify-center mb-4 group-hover:shadow-lg transition-shadow duration-300`}
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${value.color} flex items-center justify-center mb-3 sm:mb-4 group-hover:shadow-lg transition-shadow duration-300`}
                     variants={iconVariants}
                     whileHover="hover"
                   >
-                    <Icon className="w-7 h-7 text-white" />
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                   </motion.div>
 
                   {/* Content */}
-                  <h3 className="text-xl font-semibold text-slate-800 mb-3 group-hover:text-slate-900 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-2 sm:mb-3 group-hover:text-slate-900 transition-colors">
                     {value.title}
                   </h3>
                   
-                  <p className="text-slate-600 leading-relaxed group-hover:text-slate-700 transition-colors">
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed group-hover:text-slate-700 transition-colors">
                     {value.description}
                   </p>
 
@@ -181,21 +181,21 @@ const PerformanceValueGrid = () => {
 
         {/* Bottom CTA */}
         <motion.div 
-          className="text-center mt-16"
+          className="text-center mt-10 sm:mt-12 lg:mt-16 px-4 sm:px-0"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full border border-blue-200/50 mb-6">
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full border border-blue-200/50 mb-4 sm:mb-6">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-xs sm:text-sm font-medium text-slate-700">
               Trusted by franchise leaders across Egypt
             </span>
           </div>
           
           <motion.p 
-            className="text-slate-600 max-w-xl mx-auto"
+            className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto px-2 sm:px-0"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}

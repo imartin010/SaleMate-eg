@@ -64,35 +64,35 @@ const PerformanceLiveMetrics = () => {
   ];
 
   return (
-    <section ref={ref} className="py-20 bg-gradient-to-b from-gray-50 to-white">
-      <div className="container mx-auto px-4">
+    <section ref={ref} className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto px-4 sm:px-6">
         {/* Section header */}
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-12 lg:mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 mb-3 sm:mb-4 px-2 sm:px-0">
             Live{' '}
             <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
               Performance
             </span>
           </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-4 sm:px-0">
             Real-time metrics from our platform showing franchise performance and growth
           </p>
           
           {/* Live indicator */}
-          <div className="flex items-center justify-center gap-2 mt-4">
+          <div className="flex items-center justify-center gap-2 mt-3 sm:mt-4">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-slate-500 font-medium">Live data • Updated every 5 minutes</span>
+            <span className="text-xs sm:text-sm text-slate-500 font-medium">Live data • Updated every 5 minutes</span>
           </div>
         </motion.div>
 
         {/* Metrics grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
           {metrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
@@ -109,24 +109,24 @@ const PerformanceLiveMetrics = () => {
 
         {/* Additional insights */}
         <motion.div 
-          className="mt-16 text-center"
+          className="mt-10 sm:mt-12 lg:mt-16 text-center px-4 sm:px-0"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-800 mb-1">98.5%</div>
-              <div className="text-sm text-slate-600">Data accuracy</div>
+              <div className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">98.5%</div>
+              <div className="text-xs sm:text-sm text-slate-600">Data accuracy</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-800 mb-1">2.3x</div>
-              <div className="text-sm text-slate-600">Avg. decision speed increase</div>
+              <div className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">2.3x</div>
+              <div className="text-xs sm:text-sm text-slate-600">Avg. decision speed increase</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-800 mb-1">24/7</div>
-              <div className="text-sm text-slate-600">Platform availability</div>
+              <div className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">24/7</div>
+              <div className="text-xs sm:text-sm text-slate-600">Platform availability</div>
             </div>
           </div>
         </motion.div>
@@ -197,16 +197,16 @@ const MetricCard = ({
       }}
       whileHover={{ y: -5, scale: 1.02 }}
     >
-      <Card className={`p-6 h-full ${metric.bgColor} ${metric.borderColor} border-2 hover:shadow-xl transition-all duration-300 group`}>
+      <Card className={`p-4 sm:p-6 h-full ${metric.bgColor} ${metric.borderColor} border-2 hover:shadow-xl transition-all duration-300 group`}>
         {/* Icon */}
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${metric.color} flex items-center justify-center mb-4 group-hover:shadow-lg transition-shadow duration-300`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r ${metric.color} flex items-center justify-center mb-3 sm:mb-4 group-hover:shadow-lg transition-shadow duration-300`}>
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </div>
 
         {/* Value */}
         <div className="mb-2">
-          <div className="text-2xl md:text-3xl font-bold text-slate-800 flex items-baseline gap-1">
-            <span>{metric.prefix}</span>
+          <div className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 flex items-baseline gap-1 flex-wrap">
+            <span className="text-sm sm:text-base">{metric.prefix}</span>
             <motion.span
               key={displayValue}
               initial={{ scale: 1.2, opacity: 0 }}
@@ -215,13 +215,13 @@ const MetricCard = ({
             >
               {formatValue(displayValue)}
             </motion.span>
-            <span className="text-lg">{metric.suffix}</span>
+            <span className="text-sm sm:text-base lg:text-lg">{metric.suffix}</span>
           </div>
         </div>
 
         {/* Label */}
         <div>
-          <h3 className="font-semibold text-slate-700 text-sm mb-1">
+          <h3 className="font-semibold text-slate-700 text-xs sm:text-sm mb-1">
             {metric.label}
           </h3>
           {metric.sublabel && (

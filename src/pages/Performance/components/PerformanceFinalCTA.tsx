@@ -29,7 +29,7 @@ const PerformanceFinalCTA = () => {
   };
 
   return (
-    <section className="py-20 relative overflow-hidden">
+    <section className="py-12 sm:py-16 lg:py-20 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700" />
       <BackgroundDecor />
@@ -58,7 +58,7 @@ const PerformanceFinalCTA = () => {
         ))}
       </div>
 
-      <div className="container relative mx-auto px-4 z-10">
+      <div className="container relative mx-auto px-4 sm:px-6 z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main CTA content */}
           <motion.div
@@ -69,20 +69,20 @@ const PerformanceFinalCTA = () => {
           >
             {/* Badge */}
             <motion.div 
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-6"
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-4 sm:mb-6"
               variants={floatingAnimation}
               initial="initial"
               animate="animate"
             >
-              <Sparkles className="w-4 h-4 text-yellow-300" />
-              <span className="text-white font-medium text-sm">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
+              <span className="text-white font-medium text-xs sm:text-sm">
                 Trusted by franchise leaders
               </span>
             </motion.div>
 
             {/* Main headline */}
             <motion.h2
-              className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight px-2 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -96,7 +96,7 @@ const PerformanceFinalCTA = () => {
 
             {/* Subtitle */}
             <motion.p
-              className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed max-w-3xl mx-auto"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl text-blue-100 mb-6 sm:mb-8 leading-relaxed max-w-3xl mx-auto px-4 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -108,7 +108,7 @@ const PerformanceFinalCTA = () => {
 
             {/* Feature highlights */}
             <motion.div 
-              className="flex flex-wrap items-center justify-center gap-6 mb-10"
+              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mb-6 sm:mb-10 px-2 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -125,8 +125,8 @@ const PerformanceFinalCTA = () => {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
                   >
-                    <Icon className="w-5 h-5 text-green-300" />
-                    <span className="font-medium">{feature.text}</span>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-green-300" />
+                    <span className="font-medium text-sm sm:text-base">{feature.text}</span>
                   </motion.div>
                 );
               })}
@@ -134,7 +134,7 @@ const PerformanceFinalCTA = () => {
 
             {/* CTA Buttons */}
             <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-2 sm:px-0"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -143,20 +143,22 @@ const PerformanceFinalCTA = () => {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="w-full sm:w-auto"
               >
-                <Link to="/auth/login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white hover:bg-gray-100 rounded-lg shadow-xl transition-all duration-300 group">
-                  <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
+                <Link to="/auth/login" className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-blue-600 bg-white hover:bg-gray-100 rounded-lg shadow-xl transition-all duration-300 group w-full sm:w-auto">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 group-hover:animate-spin" />
                   Access Dashboard
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </motion.div>
               
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="w-full sm:w-auto"
               >
-                <a href="mailto:support@salemate.com" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border border-white/30 hover:bg-white/10 rounded-lg backdrop-blur-sm transition-all duration-300">
-                  <MessageCircle className="w-5 h-5 mr-2" />
+                <a href="mailto:support@salemate.com" className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white border border-white/30 hover:bg-white/10 rounded-lg backdrop-blur-sm transition-all duration-300 w-full sm:w-auto">
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Contact Support
                 </a>
               </motion.div>
@@ -164,28 +166,28 @@ const PerformanceFinalCTA = () => {
 
             {/* Trust indicators */}
             <motion.div 
-              className="text-center"
+              className="text-center px-2 sm:px-0"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <p className="text-blue-200 text-sm mb-4">
+              <p className="text-blue-200 text-xs sm:text-sm mb-3 sm:mb-4">
                 Trusted by franchise operations across Egypt
               </p>
               
               {/* Social proof numbers */}
-              <div className="flex flex-wrap items-center justify-center gap-8 text-white/80">
+              <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-white/80">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">22+</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">22+</div>
                   <div className="text-xs text-blue-200">Active franchises</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">98.5%</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">98.5%</div>
                   <div className="text-xs text-blue-200">Data accuracy</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">24/7</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">24/7</div>
                   <div className="text-xs text-blue-200">Platform uptime</div>
                 </div>
               </div>
