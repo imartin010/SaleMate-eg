@@ -330,19 +330,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <div className="relative p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                      <img 
-                        src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png"
-                        alt="Coldwell Banker"
-                        className="w-6 h-6 object-contain"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          // Fallback to Users icon if logo fails to load
-                          const fallback = document.createElement('div');
-                          fallback.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>';
-                          target.parentNode?.appendChild(fallback);
-                        }}
-                      />
+                      <Users className="w-6 h-6 text-white" />
                     </div>
                     <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-full">{franchise.headcount}</span>
                   </div>
