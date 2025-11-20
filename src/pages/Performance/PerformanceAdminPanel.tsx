@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, 
   Building2, 
@@ -11,7 +12,8 @@ import {
   Edit2,
   Trash2,
   Save,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 import { 
   usePerformanceFranchises,
@@ -24,8 +26,156 @@ import { useProjects } from '../../hooks/performance/useProjects';
 import { supabase } from '../../lib/supabaseClient';
 import type { CommissionRole } from '../../types/performance';
 
+// Component to list all projects from coldwell_banker_inventory
+const CBProjectsList: React.FC = () => {
+  const [projects, setProjects] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState('');
+
+  React.useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('coldwell_banker_inventory')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (fetchError) throw fetchError;
+        if (data) setProjects(data);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProjects();
+  }, []);
+
+  const handleUpdateProject = async (projectId: number, commissionRate: number, payoutMonths: number) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const { error: updateError } = await supabase
+        .from('coldwell_banker_inventory')
+        .update({
+          commission_rate: commissionRate,
+          developer_payout_months: payoutMonths,
+        })
+        .eq('id', projectId);
+      
+      if (updateError) throw updateError;
+      
+      setSuccess('Project updated successfully!');
+      
+      // Refresh projects list
+      const { data, error: fetchError } = await supabase
+        .from('coldwell_banker_inventory')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!fetchError && data) setProjects(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update project');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && projects.length === 0) {
+    return (
+      <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">All Projects</h2>
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700">
+          {success}
+        </div>
+      )}
+      <div className="space-y-4">
+        {projects.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No projects found</p>
+            <p className="text-sm text-gray-400 mt-2">Add a project to get started</p>
+          </div>
+        ) : (
+          projects.map((project) => (
+            <div key={project.id} className="p-4 border-2 border-gray-200 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {project.compound}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Developer: {project.developer}
+                  </p>
+                  {project.area && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Area: {project.area}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    defaultValue={project.commission_rate}
+                    className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                    placeholder="Rate %"
+                    id={`rate-${project.id}`}
+                  />
+                  <input
+                    type="number"
+                    defaultValue={project.developer_payout_months}
+                    className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                    placeholder="Months"
+                    id={`months-${project.id}`}
+                  />
+                  <button
+                    onClick={() => {
+                      const rateInput = document.getElementById(`rate-${project.id}`) as HTMLInputElement;
+                      const monthsInput = document.getElementById(`months-${project.id}`) as HTMLInputElement;
+                      handleUpdateProject(
+                        project.id,
+                        parseFloat(rateInput.value) || project.commission_rate,
+                        parseInt(monthsInput.value) || project.developer_payout_months
+                      );
+                    }}
+                    disabled={loading}
+                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PerformanceAdminPanel: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'franchises' | 'taxes' | 'commission-cuts' | 'developers' | 'projects'>('franchises');
   
   // Franchise management
@@ -76,20 +226,28 @@ const PerformanceAdminPanel: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [projectDetails, setProjectDetails] = useState<Record<number, { compound: string; developer: string }>>({});
 
-  // Load unique developers from projects
+  // Load unique developers from coldwell_banker_inventory
   React.useEffect(() => {
-    if (projects) {
-      const uniqueDevelopers = [...new Set(projects.map(p => {
-        try {
-          const dev = typeof p.developer === 'string' ? JSON.parse(p.developer) : p.developer;
-          return typeof dev === 'object' && dev !== null ? dev.name || dev : dev;
-        } catch {
-          return p.developer;
+    const loadDevelopers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('coldwell_banker_inventory')
+          .select('developer')
+          .not('developer', 'is', null);
+        
+        if (error) throw error;
+        
+        if (data) {
+          const uniqueDevelopers = [...new Set(data.map(p => p.developer).filter(Boolean))] as string[];
+          setDevelopers(uniqueDevelopers);
         }
-      }).filter(Boolean))] as string[];
-      setDevelopers(uniqueDevelopers);
-    }
-  }, [projects]);
+      } catch (err) {
+        console.error('Failed to load developers:', err);
+      }
+    };
+    
+    loadDevelopers();
+  }, []);
 
   // Load project details for commission schemes
   React.useEffect(() => {
@@ -200,9 +358,10 @@ const PerformanceAdminPanel: React.FC = () => {
     }
   };
 
-  // Load existing commission cuts (use first franchise's cuts as default)
+  // Load existing commission cuts (use first franchise's cuts as default, or any franchise if they're all the same)
   React.useEffect(() => {
     if (commissionCuts && commissionCuts.length > 0 && franchises && franchises.length > 0) {
+      // Get cuts from the first franchise
       const firstFranchiseId = franchises[0].id;
       const cutsForFirstFranchise = commissionCuts.filter(c => c.franchise_id === firstFranchiseId);
       
@@ -212,13 +371,24 @@ const PerformanceAdminPanel: React.FC = () => {
         head_of_sales: 0,
       };
       
+      // Load values from the first franchise
       cutsForFirstFranchise.forEach(cut => {
         if (cut.role === 'team_leader' || cut.role === 'sales_director' || cut.role === 'head_of_sales') {
           formData[cut.role] = cut.cut_per_million;
         }
       });
       
-      setCommissionCutForm(formData);
+      // Only update if we have actual values (not all zeros)
+      if (formData.team_leader > 0 || formData.sales_director > 0 || formData.head_of_sales > 0) {
+        setCommissionCutForm(formData);
+      }
+    } else if (commissionCuts && commissionCuts.length === 0 && franchises && franchises.length > 0) {
+      // No commission cuts exist yet, initialize with zeros
+      setCommissionCutForm({
+        team_leader: 0,
+        sales_director: 0,
+        head_of_sales: 0,
+      });
     }
   }, [commissionCuts, franchises]);
 
@@ -230,35 +400,38 @@ const PerformanceAdminPanel: React.FC = () => {
     try {
       if (!franchises || franchises.length === 0) {
         setError('No franchises found. Please add a franchise first.');
+        setLoading(false);
         return;
       }
 
-      // Apply the same commission cuts to all franchises
-      const savePromises = franchises.map(franchise => 
-        Promise.all([
-          upsertCommissionCut.mutateAsync({
-            franchise_id: franchise.id,
-            role: 'team_leader',
-            cut_per_million: commissionCutForm.team_leader,
-          }),
-          upsertCommissionCut.mutateAsync({
-            franchise_id: franchise.id,
-            role: 'sales_director',
-            cut_per_million: commissionCutForm.sales_director,
-          }),
-          upsertCommissionCut.mutateAsync({
-            franchise_id: franchise.id,
-            role: 'head_of_sales',
-            cut_per_million: commissionCutForm.head_of_sales,
-          }),
-        ])
-      );
+      // Prepare all commission cuts to save
+      const cutsToSave: Array<{ franchise_id: string; role: CommissionRole; cut_per_million: number }> = [];
+      
+      for (const franchise of franchises) {
+        cutsToSave.push(
+          { franchise_id: franchise.id, role: 'team_leader', cut_per_million: commissionCutForm.team_leader },
+          { franchise_id: franchise.id, role: 'sales_director', cut_per_million: commissionCutForm.sales_director },
+          { franchise_id: franchise.id, role: 'head_of_sales', cut_per_million: commissionCutForm.head_of_sales }
+        );
+      }
 
-      await Promise.all(savePromises);
+      // Save all cuts using bulk upsert
+      const { data, error: upsertError } = await supabase
+        .from('performance_commission_cuts')
+        .upsert(cutsToSave, { onConflict: 'franchise_id,role' })
+        .select();
 
-      setSuccess('Commission cuts saved for all franchises!');
+      if (upsertError) throw upsertError;
+
+      // Invalidate and refetch commission cuts data
+      queryClient.invalidateQueries({ queryKey: ['performance-commission-cuts'] });
+      queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+
+      setSuccess(`Commission cuts saved successfully for all ${franchises.length} franchise(s)!`);
+      
     } catch (err: any) {
       setError(err.message || 'Failed to save commission cuts');
+      console.error('Error saving commission cuts:', err);
     } finally {
       setLoading(false);
     }
@@ -271,10 +444,10 @@ const PerformanceAdminPanel: React.FC = () => {
     setSuccess('');
 
     try {
-      // Create a minimal project entry with just the developer name
+      // Create a minimal project entry in coldwell_banker_inventory with just the developer name
       // This ensures the developer appears in the system
       const { error: insertError } = await supabase
-        .from('salemate-inventory')
+        .from('coldwell_banker_inventory')
         .insert({
           compound: `Developer Entry: ${developerForm.name}`,
           developer: developerForm.name,
@@ -287,16 +460,14 @@ const PerformanceAdminPanel: React.FC = () => {
       setDeveloperForm({ name: '' });
       setShowAddDeveloper(false);
       
-      // Refresh developers list
-      if (projects) {
-        const uniqueDevelopers = [...new Set(projects.map(p => {
-          try {
-            const dev = typeof p.developer === 'string' ? JSON.parse(p.developer) : p.developer;
-            return typeof dev === 'object' && dev !== null ? dev.name || dev : dev;
-          } catch {
-            return p.developer;
-          }
-        }).filter(Boolean))] as string[];
+      // Refresh developers list by fetching from coldwell_banker_inventory
+      const { data: cbProjects } = await supabase
+        .from('coldwell_banker_inventory')
+        .select('developer')
+        .not('developer', 'is', null);
+      
+      if (cbProjects) {
+        const uniqueDevelopers = [...new Set(cbProjects.map(p => p.developer).filter(Boolean))] as string[];
         setDevelopers(uniqueDevelopers);
       }
     } catch (err: any) {
@@ -313,20 +484,22 @@ const PerformanceAdminPanel: React.FC = () => {
     setSuccess('');
 
     try {
-      // Create the project in salemate-inventory
+      // Create project in coldwell_banker_inventory
       const { data: projectData, error: projectError } = await supabase
-        .from('salemate-inventory')
+        .from('coldwell_banker_inventory')
         .insert({
           compound: projectForm.compound,
           developer: projectForm.developer,
-          area: projectForm.area,
+          area: projectForm.area || null,
+          commission_rate: projectForm.commission_rate,
+          developer_payout_months: projectForm.developer_payout_months,
         })
         .select()
         .single();
 
       if (projectError) throw projectError;
 
-      setSuccess('Project created successfully! You can set commission schemes for franchises in the list below.');
+      setSuccess('Project created successfully!');
       setProjectForm({
         compound: '',
         developer: '',
@@ -334,6 +507,17 @@ const PerformanceAdminPanel: React.FC = () => {
         commission_rate: 3.5,
         developer_payout_months: 3,
       });
+      
+      // Refresh developers list
+      const { data: cbProjects } = await supabase
+        .from('coldwell_banker_inventory')
+        .select('developer')
+        .not('developer', 'is', null);
+      
+      if (cbProjects) {
+        const uniqueDevelopers = [...new Set(cbProjects.map(p => p.developer).filter(Boolean))] as string[];
+        setDevelopers(uniqueDevelopers);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create project');
     } finally {
@@ -341,31 +525,6 @@ const PerformanceAdminPanel: React.FC = () => {
     }
   };
 
-  const handleUpdateCommissionScheme = async (schemeId: string, commissionRate: number, payoutMonths: number) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const { error: updateError } = await supabase
-        .from('performance_commission_schemes')
-        .update({
-          commission_rate: commissionRate,
-          developer_payout_months: payoutMonths,
-        })
-        .eq('id', schemeId);
-
-      if (updateError) throw updateError;
-
-      setSuccess('Commission scheme updated successfully!');
-      // Invalidate queries to refresh data
-      window.location.reload(); // Simple refresh for now
-    } catch (err: any) {
-      setError(err.message || 'Failed to update commission scheme');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -633,7 +792,7 @@ const PerformanceAdminPanel: React.FC = () => {
               )}
               
               <p className="text-sm text-gray-500 mb-6">
-                Developers are automatically extracted from existing projects in the inventory.
+                Developers are automatically extracted from existing projects in the Coldwell Banker inventory.
               </p>
             </div>
 
@@ -662,6 +821,33 @@ const PerformanceAdminPanel: React.FC = () => {
         {/* Projects Tab */}
         {activeTab === 'projects' && (
           <div className="space-y-6">
+            {/* Information Banner */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">About Commission Rate & Payout</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white/80 rounded-xl p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-5 h-5 text-blue-600" />
+                    <span className="font-semibold text-gray-900">Commission Rate</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    The percentage of the transaction amount that will be paid as commission. 
+                    For example, a 3.5% rate on a 1,000,000 EGP transaction = 35,000 EGP commission.
+                  </p>
+                </div>
+                <div className="bg-white/80 rounded-xl p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-5 h-5 text-indigo-600" />
+                    <span className="font-semibold text-gray-900">Payout Time (Months)</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    The number of months after a deal is contracted before the commission is paid out. 
+                    For example, 3 months means the commission will be paid 3 months after the contract date.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Add Project Form */}
             <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Project</h2>
@@ -738,63 +924,8 @@ const PerformanceAdminPanel: React.FC = () => {
               </form>
             </div>
 
-            {/* Existing Projects & Commission Schemes */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Existing Projects & Commission Schemes</h2>
-              <div className="space-y-4">
-                {commissionSchemes?.map((scheme) => {
-                  const details = projectDetails[scheme.project_id];
-                  const projectName = details?.compound || `Project ID: ${scheme.project_id}`;
-                  const developerName = details?.developer || 'N/A';
-                  
-                  return (
-                    <div key={scheme.id} className="p-4 border-2 border-gray-200 rounded-xl">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {projectName}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Developer: {developerName}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            defaultValue={scheme.commission_rate}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
-                            placeholder="Rate %"
-                            id={`rate-${scheme.id}`}
-                          />
-                          <input
-                            type="number"
-                            defaultValue={scheme.developer_payout_months}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
-                            placeholder="Months"
-                            id={`months-${scheme.id}`}
-                          />
-                          <button
-                            onClick={() => {
-                              const rateInput = document.getElementById(`rate-${scheme.id}`) as HTMLInputElement;
-                              const monthsInput = document.getElementById(`months-${scheme.id}`) as HTMLInputElement;
-                              handleUpdateCommissionScheme(
-                                scheme.id,
-                                parseFloat(rateInput.value) || scheme.commission_rate,
-                                parseInt(monthsInput.value) || scheme.developer_payout_months
-                              );
-                            }}
-                            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            <Save className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {/* All Projects from coldwell_banker_inventory */}
+            <CBProjectsList />
           </div>
         )}
       </div>
