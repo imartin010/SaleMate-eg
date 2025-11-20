@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Search } from 'lucide-react';
-import { useCreateTransaction, useUpdateTransaction } from '../../hooks/performance/usePerformanceData';
+import { useCreateTransaction, useUpdateTransaction, usePerformanceCommissionCuts } from '../../hooks/performance/usePerformanceData';
 import { useProjects } from '../../hooks/performance/useProjects';
-import type { TransactionStage } from '../../types/performance';
+import type { TransactionStage, CommissionRole } from '../../types/performance';
 
 import type { PerformanceTransaction } from '../../types/performance';
 
@@ -27,10 +27,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [stage, setStage] = useState<TransactionStage>('eoi');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  
+  // Managerial roles checkboxes
+  const [managerialRoles, setManagerialRoles] = useState<CommissionRole[]>([]);
+  const availableRoles: { role: CommissionRole; label: string }[] = [
+    { role: 'team_leader', label: 'Team Leader' },
+    { role: 'sales_director', label: 'Sales Manager' },
+    { role: 'head_of_sales', label: 'Sales Director' },
+  ];
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: commissionCuts } = usePerformanceCommissionCuts(franchiseId);
 
   // Initialize form with transaction data when editing
   useEffect(() => {
@@ -39,6 +48,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount(transactionToEdit.transaction_amount.toString());
       setStage(transactionToEdit.stage);
       setNotes(transactionToEdit.notes || '');
+      setManagerialRoles(transactionToEdit.managerial_roles || []);
       // Set search term to show selected project
       const project = projects?.find(p => p.id === transactionToEdit.project_id);
       if (project) {
@@ -51,6 +61,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount('');
       setStage('eoi');
       setNotes('');
+      setManagerialRoles([]);
     }
   }, [transactionToEdit, projects]);
 
@@ -82,7 +93,37 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     };
   };
 
+  // Calculate commission cuts for selected managerial roles
+  const calculateRoleCuts = useMemo(() => {
+    if (!commissionCuts || !transactionAmountNum || managerialRoles.length === 0) {
+      return { totalCuts: 0, roleBreakdown: [] };
+    }
+
+    const millions = transactionAmountNum / 1_000_000;
+    const roleBreakdown: Array<{ role: CommissionRole; label: string; cut: number }> = [];
+    let totalCuts = 0;
+
+    managerialRoles.forEach(role => {
+      const cutConfig = commissionCuts.find(c => c.role === role);
+      if (cutConfig) {
+        const cutAmount = cutConfig.cut_per_million * millions;
+        totalCuts += cutAmount;
+        const roleLabel = availableRoles.find(r => r.role === role)?.label || role;
+        roleBreakdown.push({
+          role,
+          label: roleLabel,
+          cut: cutAmount,
+        });
+      }
+    });
+
+    return { totalCuts, roleBreakdown };
+  }, [commissionCuts, transactionAmountNum, managerialRoles, availableRoles]);
+
   const taxBreakdown = calculateTaxes(grossCommissionNum);
+  
+  // Final net commission after taxes and role cuts
+  const finalNetCommission = taxBreakdown.netCommission - calculateRoleCuts.totalCuts;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +144,20 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     // Calculate gross commission automatically (3.5% of transaction amount)
     const grossCommissionAmount = transactionAmount * COMMISSION_RATE;
     const taxes = calculateTaxes(grossCommissionAmount);
+    
+    // Calculate role cuts
+    const millions = transactionAmount / 1_000_000;
+    let totalRoleCuts = 0;
+    if (commissionCuts && managerialRoles.length > 0) {
+      managerialRoles.forEach(role => {
+        const cutConfig = commissionCuts.find(c => c.role === role);
+        if (cutConfig) {
+          totalRoleCuts += cutConfig.cut_per_million * millions;
+        }
+      });
+    }
+    
+    const finalNetCommission = taxes.netCommission - totalRoleCuts;
 
     try {
       if (isEditMode && transactionToEdit) {
@@ -116,8 +171,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           tax_amount: taxes.tax,
           withholding_tax: taxes.withholdingTax,
           income_tax: taxes.incomeTax,
-          net_commission: taxes.netCommission,
-          commission_amount: taxes.netCommission, // Keep for backward compatibility
+          net_commission: finalNetCommission,
+          commission_amount: finalNetCommission, // Keep for backward compatibility
+          managerial_roles: managerialRoles.length > 0 ? managerialRoles : null,
           stage,
           notes: notes || null,
         });
@@ -131,8 +187,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           tax_amount: taxes.tax,
           withholding_tax: taxes.withholdingTax,
           income_tax: taxes.incomeTax,
-          net_commission: taxes.netCommission,
-          commission_amount: taxes.netCommission, // Keep for backward compatibility
+          net_commission: finalNetCommission,
+          commission_amount: finalNetCommission, // Keep for backward compatibility
+          managerial_roles: managerialRoles.length > 0 ? managerialRoles : null,
           stage,
           notes: notes || null,
         });
@@ -144,6 +201,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount('');
       setStage('eoi');
       setNotes('');
+      setManagerialRoles([]);
       onClose();
     } catch (err) {
       setError(isEditMode ? 'Failed to update transaction. Please try again.' : 'Failed to create transaction. Please try again.');
@@ -333,10 +391,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 </div>
               </div>
 
-              <div className="border-t-2 border-blue-300 pt-2">
+              <div className="border-t border-blue-200 pt-2">
                 <div className="flex justify-between">
                   <span className="font-semibold text-gray-900">Net Commission (After Tax)</span>
-                  <span className="font-bold text-green-700 text-lg">
+                  <span className="font-bold text-green-700">
                     {new Intl.NumberFormat('en-EG', {
                       style: 'currency',
                       currency: 'EGP',
@@ -346,11 +404,124 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Total deductions: 23% (14% + 5% + 4%)
+                  Total tax deductions: 23% (14% + 5% + 4%)
+                </div>
+              </div>
+
+              {/* Managerial Role Cuts */}
+              {calculateRoleCuts.roleBreakdown.length > 0 && (
+                <div className="border-t-2 border-orange-200 pt-2 mt-2 space-y-1">
+                  <div className="text-xs font-semibold text-gray-700 mb-1">Managerial Role Cuts:</div>
+                  {calculateRoleCuts.roleBreakdown.map((roleCut) => (
+                    <div key={roleCut.role} className="flex justify-between text-sm">
+                      <span className="text-gray-600">{roleCut.label}</span>
+                      <span className="text-orange-600 font-medium">
+                        -{new Intl.NumberFormat('en-EG', {
+                          style: 'currency',
+                          currency: 'EGP',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(roleCut.cut)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-xs pt-1 border-t border-orange-200">
+                    <span className="text-gray-600 font-medium">Total Role Cuts</span>
+                    <span className="text-orange-700 font-semibold">
+                      -{new Intl.NumberFormat('en-EG', {
+                        style: 'currency',
+                        currency: 'EGP',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }).format(calculateRoleCuts.totalCuts)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Final Net Commission */}
+              <div className="border-t-2 border-green-300 pt-2 mt-2">
+                <div className="flex justify-between">
+                  <span className="font-bold text-gray-900">Final Net Commission</span>
+                  <span className="font-bold text-green-700 text-lg">
+                    {new Intl.NumberFormat('en-EG', {
+                      style: 'currency',
+                      currency: 'EGP',
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    }).format(finalNetCommission)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  After taxes and role cuts
                 </div>
               </div>
             </div>
           )}
+
+          {/* Managerial Roles Checkboxes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Managerial Roles Involved (Optional)
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Select which managerial roles are involved in this deal. Commission cuts will be calculated automatically.
+            </p>
+            <div className="space-y-2">
+              {availableRoles.map((roleOption) => {
+                const isChecked = managerialRoles.includes(roleOption.role);
+                const cutConfig = commissionCuts?.find(c => c.role === roleOption.role);
+                const cutAmount = cutConfig && transactionAmountNum > 0 
+                  ? (cutConfig.cut_per_million * (transactionAmountNum / 1_000_000))
+                  : 0;
+                
+                return (
+                  <label
+                    key={roleOption.role}
+                    className="flex items-center justify-between p-3 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setManagerialRoles([...managerialRoles, roleOption.role]);
+                          } else {
+                            setManagerialRoles(managerialRoles.filter(r => r !== roleOption.role));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        {roleOption.label}
+                      </span>
+                    </div>
+                    {cutConfig && (
+                      <span className="text-xs text-gray-500">
+                        {cutConfig.cut_per_million.toLocaleString()} EGP/million
+                        {isChecked && transactionAmountNum > 0 && (
+                          <span className="ml-2 text-blue-600 font-medium">
+                            (-{new Intl.NumberFormat('en-EG', {
+                              style: 'currency',
+                              currency: 'EGP',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 0,
+                            }).format(cutAmount)})
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+            {managerialRoles.length === 0 && (
+              <p className="text-xs text-gray-400 mt-2 italic">
+                No managerial roles selected - no commission cuts will be applied
+              </p>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

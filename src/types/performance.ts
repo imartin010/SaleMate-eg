@@ -47,6 +47,7 @@ export interface PerformanceTransaction {
   withholding_tax: number | null;
   income_tax: number | null;
   net_commission: number | null;
+  managerial_roles?: CommissionRole[]; // Roles involved in this transaction
   notes: string | null;
   created_by: string | null;
   created_at: string;
