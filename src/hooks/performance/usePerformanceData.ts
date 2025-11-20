@@ -12,6 +12,7 @@ import type {
   PerformanceCommissionScheme,
   PerformanceCommissionCut,
   FranchiseAnalytics,
+  CommissionRole,
 } from '../../types/performance';
 
 // Franchises
@@ -120,19 +121,55 @@ export function usePerformanceTransactions(franchiseId?: string) {
           .in('id', projectIds);
         
         if (projects) {
+          // Helper to extract clean name from potentially JSON-formatted strings
+          const extractCleanName = (value: unknown): string => {
+            if (!value) return '';
+            if (typeof value === 'string') {
+              // Try to extract name from JSON or pseudo-JSON strings
+              const jsonMatch = value.match(/"name"\s*:\s*"([^"]+)"/);
+              if (jsonMatch && jsonMatch[1]) return jsonMatch[1].trim();
+              const pseudoJsonMatch = value.match(/'name'\s*:\s*'([^']+)'/);
+              if (pseudoJsonMatch && pseudoJsonMatch[1]) return pseudoJsonMatch[1].trim();
+              // If it's a plain string, return it
+              return value.trim();
+            }
+            if (typeof value === 'object' && value !== null) {
+              const obj = value as { name?: string };
+              return obj.name || '';
+            }
+            return String(value).trim();
+          };
+
           projectsMap = new Map(projects.map(p => [p.id, {
-            name: p.compound || `Project ${p.id}`,
-            developer: p.developer || '',
-            area: p.area || ''
+            name: extractCleanName(p.compound) || `Project ${p.id}`,
+            developer: extractCleanName(p.developer) || '',
+            area: extractCleanName(p.area) || ''
           }]));
         }
       }
       
       // Merge transactions with project data
-      const transactionsWithProjects = transactions.map(transaction => ({
-        ...transaction,
-        project: transaction.project_id ? projectsMap.get(transaction.project_id) : undefined
-      }));
+      const transactionsWithProjects = transactions.map(transaction => {
+        // Parse managerial_roles from JSONB if it exists
+        let managerialRoles: CommissionRole[] | undefined;
+        if (transaction.managerial_roles) {
+          if (Array.isArray(transaction.managerial_roles)) {
+            managerialRoles = transaction.managerial_roles;
+          } else if (typeof transaction.managerial_roles === 'string') {
+            try {
+              managerialRoles = JSON.parse(transaction.managerial_roles);
+            } catch {
+              managerialRoles = undefined;
+            }
+          }
+        }
+        
+        return {
+          ...transaction,
+          project: transaction.project_id ? projectsMap.get(transaction.project_id) : undefined,
+          managerial_roles: managerialRoles
+        };
+      });
       
       return transactionsWithProjects as PerformanceTransaction[];
     },
@@ -144,9 +181,17 @@ export function useCreateTransaction() {
   
   return useMutation({
     mutationFn: async (transaction: Partial<PerformanceTransaction>) => {
+      // Convert managerial_roles array to JSONB format for database
+      const transactionData = {
+        ...transaction,
+        managerial_roles: transaction.managerial_roles && transaction.managerial_roles.length > 0
+          ? transaction.managerial_roles
+          : null
+      };
+      
       const { data, error } = await supabase
         .from('performance_transactions')
-        .insert(transaction)
+        .insert(transactionData)
         .select()
         .single();
       
@@ -165,9 +210,17 @@ export function useUpdateTransaction() {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<PerformanceTransaction> & { id: string }) => {
+      // Convert managerial_roles array to JSONB format for database
+      const updateData = {
+        ...updates,
+        managerial_roles: updates.managerial_roles && updates.managerial_roles.length > 0
+          ? updates.managerial_roles
+          : null
+      };
+      
       const { data, error } = await supabase
         .from('performance_transactions')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();

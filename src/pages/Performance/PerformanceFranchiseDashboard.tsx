@@ -82,6 +82,26 @@ const PerformanceFranchiseDashboard: React.FC = () => {
     }
   }, [franchise]);
 
+  // Helper function to extract clean name from potentially JSON-formatted strings
+  const extractName = (value: unknown): string => {
+    if (!value) return '';
+    if (typeof value === 'string') {
+      // Try to extract name from JSON or pseudo-JSON strings
+      const jsonMatch = value.match(/"name"\s*:\s*"([^"]+)"/);
+      if (jsonMatch && jsonMatch[1]) return jsonMatch[1].trim();
+      const pseudoJsonMatch = value.match(/'name'\s*:\s*'([^']+)'/);
+      if (pseudoJsonMatch && pseudoJsonMatch[1]) return pseudoJsonMatch[1].trim();
+      // If it's a plain string, return it
+      return value.trim();
+    }
+    if (typeof value === 'object' && value !== null) {
+      // If it's an object, try to get the name property
+      const obj = value as { name?: string; compound?: string };
+      return obj.name || obj.compound || '';
+    }
+    return String(value).trim();
+  };
+
   // Filtered transactions
   const filteredTransactions = useMemo(() => {
     if (!transactions) return [];
@@ -99,7 +119,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         const matchesProject = transaction.project_id.toString().includes(searchLower);
         const matchesNotes = transaction.notes?.toLowerCase().includes(searchLower);
         
-        if (!matchesAmount && !matchesProject && !matchesNotes) {
+        // Also search in project name and developer
+        const projectName = transaction.project?.name || '';
+        const developer = transaction.project?.developer || '';
+        const matchesProjectName = extractName(projectName).toLowerCase().includes(searchLower);
+        const matchesDeveloper = extractName(developer).toLowerCase().includes(searchLower);
+        
+        if (!matchesAmount && !matchesProject && !matchesNotes && !matchesProjectName && !matchesDeveloper) {
           return false;
         }
       }
@@ -583,11 +609,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                           {formatCurrency(transaction.transaction_amount)}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {transaction.project?.name || `Project ID: ${transaction.project_id}`}
+                          {transaction.project?.name 
+                            ? extractName(transaction.project.name) 
+                            : `Project ID: ${transaction.project_id}`}
                         </p>
-                        {transaction.project?.developer && (
+                        {transaction.project?.developer && extractName(transaction.project.developer) && (
                           <p className="text-xs text-gray-500">
-                            {transaction.project.developer}
+                            {extractName(transaction.project.developer)}
                           </p>
                         )}
                         {transaction.notes && (
