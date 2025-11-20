@@ -42,6 +42,11 @@ export interface PerformanceTransaction {
   contracted_at: string | null;
   expected_payout_date: string | null;
   commission_amount: number | null;
+  gross_commission: number | null;
+  tax_amount: number | null;
+  withholding_tax: number | null;
+  income_tax: number | null;
+  net_commission: number | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;

@@ -84,7 +84,19 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
         ? (analytics.commission_cuts_total / analytics.total_sales_volume) * monthSales
         : 0;
 
-      const totalExpenses = monthExpenses + commissionCuts;
+      // Taxes for transactions in this month
+      const monthTaxes = transactions
+        .filter(t => {
+          if (t.stage !== 'contracted' || !t.contracted_at) return false;
+          const contractDate = new Date(t.contracted_at);
+          return contractDate.toISOString().substring(0, 7) === monthKey;
+        })
+        .reduce((sum, t) => {
+          const tax = (t.tax_amount || 0) + (t.withholding_tax || 0) + (t.income_tax || 0);
+          return sum + tax;
+        }, 0);
+
+      const totalExpenses = monthExpenses + commissionCuts + monthTaxes;
       const profit = revenue - totalExpenses;
 
       months.push({
@@ -98,6 +110,16 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
 
     return months;
   }, [transactions, expenses, analytics]);
+
+  // Calculate total taxes from all transactions
+  const totalTaxes = useMemo(() => {
+    return transactions
+      .filter(t => t.stage === 'contracted')
+      .reduce((sum, t) => {
+        const tax = (t.tax_amount || 0) + (t.withholding_tax || 0) + (t.income_tax || 0);
+        return sum + tax;
+      }, 0);
+  }, [transactions]);
 
   // Build PNL statement rows
   const pnlRows: PNLRow[] = useMemo(() => {
@@ -116,21 +138,22 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
     rows.push({ label: 'Fixed Expenses', amount: analytics.fixed_expenses, type: 'expense' });
     rows.push({ label: 'Variable Expenses', amount: analytics.variable_expenses, type: 'expense' });
     rows.push({ label: 'Commission Cuts (Agent/Team)', amount: analytics.commission_cuts_total, type: 'expense' });
-    rows.push({ label: 'Total Expenses', amount: analytics.total_expenses + analytics.commission_cuts_total, type: 'subtotal' });
+    rows.push({ label: 'Taxes (14% + 5% + 4%)', amount: totalTaxes, type: 'expense' });
+    rows.push({ label: 'Total Expenses', amount: analytics.total_expenses + analytics.commission_cuts_total + totalTaxes, type: 'subtotal' });
 
     rows.push({ label: '', amount: 0, type: 'total' }); // Spacer
 
     // PROFIT/LOSS
     const totalRevenue = analytics.gross_revenue;
-    const totalExpenses = analytics.total_expenses + analytics.commission_cuts_total;
+    const totalExpenses = analytics.total_expenses + analytics.commission_cuts_total + totalTaxes;
     const netProfit = totalRevenue - totalExpenses;
 
     rows.push({ label: 'NET PROFIT / (LOSS)', amount: netProfit, type: 'total' });
 
     return rows;
-  }, [analytics]);
+  }, [analytics, totalTaxes]);
 
-  const netProfit = analytics.gross_revenue - (analytics.total_expenses + analytics.commission_cuts_total);
+  const netProfit = analytics.gross_revenue - (analytics.total_expenses + analytics.commission_cuts_total + totalTaxes);
   const isProfitable = netProfit > 0;
 
   return (
@@ -301,9 +324,9 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
             <p className="text-sm font-medium text-red-700">Total Expenses</p>
           </div>
           <p className="text-2xl font-bold text-red-900">
-            {formatCurrency(analytics.total_expenses + analytics.commission_cuts_total)}
+            {formatCurrency(analytics.total_expenses + analytics.commission_cuts_total + totalTaxes)}
           </p>
-          <p className="text-xs text-red-600 mt-1">Fixed + Variable + Cuts</p>
+          <p className="text-xs text-red-600 mt-1">Fixed + Variable + Cuts + Taxes</p>
         </div>
 
         <div className={`bg-gradient-to-br rounded-lg p-6 border-2 ${
