@@ -751,10 +751,19 @@ const PerformanceAdminPanel: React.FC = () => {
               These commission cuts will be applied to all franchises.
             </p>
             <div className="space-y-4 max-w-2xl">
-              {(['team_leader', 'sales_director', 'head_of_sales'] as CommissionRole[]).map((role) => (
+              {(['team_leader', 'sales_director', 'head_of_sales'] as CommissionRole[]).map((role) => {
+                const roleLabels: Record<CommissionRole, string> = {
+                  team_leader: 'Team Leader',
+                  sales_director: 'Sales Manager',
+                  head_of_sales: 'Sales Director',
+                  sales_agent: 'Sales Agent',
+                  royalty: 'Royalty',
+                };
+                
+                return (
                 <div key={role} className="flex items-center gap-4">
-                  <label className="w-40 text-sm font-medium text-gray-700 capitalize">
-                    {role.replace('_', ' ')}:
+                  <label className="w-40 text-sm font-medium text-gray-700">
+                    {roleLabels[role]}:
                   </label>
                   <input
                     type="number"
@@ -768,7 +777,8 @@ const PerformanceAdminPanel: React.FC = () => {
                     placeholder="EGP per million"
                   />
                 </div>
-              ))}
+              );
+              })}
               <div className="pt-4">
                 <button
                   onClick={handleSaveAllCommissionCuts}
