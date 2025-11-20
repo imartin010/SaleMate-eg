@@ -47,10 +47,10 @@ const PerformanceAdminPanel: React.FC = () => {
   // Commission cuts
   const { data: commissionCuts } = usePerformanceCommissionCuts();
   const upsertCommissionCut = useUpsertCommissionCut();
-  const [commissionCutForm, setCommissionCutForm] = useState<Record<CommissionRole, { franchise_id: string; cut_per_million: number }>>({
-    team_leader: { franchise_id: '', cut_per_million: 0 },
-    sales_director: { franchise_id: '', cut_per_million: 0 },
-    head_of_sales: { franchise_id: '', cut_per_million: 0 },
+  const [commissionCutForm, setCommissionCutForm] = useState<Record<CommissionRole, number>>({
+    team_leader: 0,
+    sales_director: 0,
+    head_of_sales: 0,
   });
   
   // Developers
@@ -67,7 +67,6 @@ const PerformanceAdminPanel: React.FC = () => {
     compound: '',
     developer: '',
     area: '',
-    franchise_id: '',
     commission_rate: 3.5,
     developer_payout_months: 3,
   });
@@ -75,6 +74,7 @@ const PerformanceAdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [projectDetails, setProjectDetails] = useState<Record<number, { compound: string; developer: string }>>({});
 
   // Load unique developers from projects
   React.useEffect(() => {
@@ -90,6 +90,67 @@ const PerformanceAdminPanel: React.FC = () => {
       setDevelopers(uniqueDevelopers);
     }
   }, [projects]);
+
+  // Load project details for commission schemes
+  React.useEffect(() => {
+    const loadProjectDetails = async () => {
+      if (!commissionSchemes || commissionSchemes.length === 0) return;
+      
+      const projectIds = [...new Set(commissionSchemes.map(s => s.project_id))];
+      if (projectIds.length === 0) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('salemate-inventory')
+          .select('id, compound, developer')
+          .in('id', projectIds);
+
+        if (error) throw error;
+
+        const detailsMap: Record<number, { compound: string; developer: string }> = {};
+        
+        data?.forEach((item: any) => {
+          // Extract compound name
+          let compoundName = 'Unknown';
+          if (item.compound) {
+            if (typeof item.compound === 'string') {
+              try {
+                const compoundObj = JSON.parse(item.compound.replace(/'/g, '"'));
+                compoundName = compoundObj?.name || item.compound;
+              } catch {
+                compoundName = item.compound;
+              }
+            } else if (typeof item.compound === 'object') {
+              compoundName = item.compound?.name || 'Unknown';
+            }
+          }
+
+          // Extract developer name
+          let developerName = 'N/A';
+          if (item.developer) {
+            if (typeof item.developer === 'string') {
+              try {
+                const developerObj = JSON.parse(item.developer.replace(/'/g, '"'));
+                developerName = developerObj?.name || item.developer;
+              } catch {
+                developerName = item.developer;
+              }
+            } else if (typeof item.developer === 'object') {
+              developerName = item.developer?.name || 'N/A';
+            }
+          }
+
+          detailsMap[item.id] = { compound: compoundName, developer: developerName };
+        });
+
+        setProjectDetails(detailsMap);
+      } catch (err) {
+        console.error('Failed to load project details:', err);
+      }
+    };
+
+    loadProjectDetails();
+  }, [commissionSchemes]);
 
   const handleCreateFranchise = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,21 +200,65 @@ const PerformanceAdminPanel: React.FC = () => {
     }
   };
 
-  const handleSaveCommissionCut = async (role: CommissionRole, franchiseId: string) => {
+  // Load existing commission cuts (use first franchise's cuts as default)
+  React.useEffect(() => {
+    if (commissionCuts && commissionCuts.length > 0 && franchises && franchises.length > 0) {
+      const firstFranchiseId = franchises[0].id;
+      const cutsForFirstFranchise = commissionCuts.filter(c => c.franchise_id === firstFranchiseId);
+      
+      const formData: Record<CommissionRole, number> = {
+        team_leader: 0,
+        sales_director: 0,
+        head_of_sales: 0,
+      };
+      
+      cutsForFirstFranchise.forEach(cut => {
+        if (cut.role === 'team_leader' || cut.role === 'sales_director' || cut.role === 'head_of_sales') {
+          formData[cut.role] = cut.cut_per_million;
+        }
+      });
+      
+      setCommissionCutForm(formData);
+    }
+  }, [commissionCuts, franchises]);
+
+  const handleSaveAllCommissionCuts = async () => {
     setLoading(true);
     setError('');
     setSuccess('');
 
     try {
-      await upsertCommissionCut.mutateAsync({
-        franchise_id: franchiseId,
-        role,
-        cut_per_million: commissionCutForm[role].cut_per_million,
-      });
+      if (!franchises || franchises.length === 0) {
+        setError('No franchises found. Please add a franchise first.');
+        return;
+      }
 
-      setSuccess(`Commission cut for ${role} saved successfully!`);
+      // Apply the same commission cuts to all franchises
+      const savePromises = franchises.map(franchise => 
+        Promise.all([
+          upsertCommissionCut.mutateAsync({
+            franchise_id: franchise.id,
+            role: 'team_leader',
+            cut_per_million: commissionCutForm.team_leader,
+          }),
+          upsertCommissionCut.mutateAsync({
+            franchise_id: franchise.id,
+            role: 'sales_director',
+            cut_per_million: commissionCutForm.sales_director,
+          }),
+          upsertCommissionCut.mutateAsync({
+            franchise_id: franchise.id,
+            role: 'head_of_sales',
+            cut_per_million: commissionCutForm.head_of_sales,
+          }),
+        ])
+      );
+
+      await Promise.all(savePromises);
+
+      setSuccess('Commission cuts saved for all franchises!');
     } catch (err: any) {
-      setError(err.message || 'Failed to save commission cut');
+      setError(err.message || 'Failed to save commission cuts');
     } finally {
       setLoading(false);
     }
@@ -208,7 +313,7 @@ const PerformanceAdminPanel: React.FC = () => {
     setSuccess('');
 
     try {
-      // First, create or find the project in salemate-inventory
+      // Create the project in salemate-inventory
       const { data: projectData, error: projectError } = await supabase
         .from('salemate-inventory')
         .insert({
@@ -221,22 +326,11 @@ const PerformanceAdminPanel: React.FC = () => {
 
       if (projectError) throw projectError;
 
-      // Then create commission scheme for the franchise
-      if (projectForm.franchise_id && projectData) {
-        await createCommissionScheme.mutateAsync({
-          franchise_id: projectForm.franchise_id,
-          project_id: projectData.id,
-          commission_rate: projectForm.commission_rate,
-          developer_payout_months: projectForm.developer_payout_months,
-        });
-      }
-
-      setSuccess('Project created and commission scheme set!');
+      setSuccess('Project created successfully! You can set commission schemes for franchises in the list below.');
       setProjectForm({
         compound: '',
         developer: '',
         area: '',
-        franchise_id: '',
         commission_rate: 3.5,
         developer_payout_months: 3,
       });
@@ -463,42 +557,38 @@ const PerformanceAdminPanel: React.FC = () => {
         {activeTab === 'commission-cuts' && (
           <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Commission Cuts per Million</h2>
-            <div className="space-y-6">
-              {franchises?.map((franchise) => (
-                <div key={franchise.id} className="border-2 border-gray-200 rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{franchise.name}</h3>
-                  <div className="space-y-4">
-                    {(['team_leader', 'sales_director', 'head_of_sales'] as CommissionRole[]).map((role) => {
-                      const existingCut = commissionCuts?.find(c => c.franchise_id === franchise.id && c.role === role);
-                      return (
-                        <div key={role} className="flex items-center gap-4">
-                          <label className="w-40 text-sm font-medium text-gray-700 capitalize">
-                            {role.replace('_', ' ')}:
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            defaultValue={existingCut?.cut_per_million || 0}
-                            onChange={(e) => setCommissionCutForm({
-                              ...commissionCutForm,
-                              [role]: { franchise_id: franchise.id, cut_per_million: parseFloat(e.target.value) || 0 }
-                            })}
-                            className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="EGP per million"
-                          />
-                          <button
-                            onClick={() => handleSaveCommissionCut(role, franchise.id)}
-                            disabled={loading}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
-                          >
-                            <Save className="w-4 h-4" />
-                          </button>
-                        </div>
-                      );
+            <p className="text-sm text-gray-500 mb-6">
+              These commission cuts will be applied to all franchises.
+            </p>
+            <div className="space-y-4 max-w-2xl">
+              {(['team_leader', 'sales_director', 'head_of_sales'] as CommissionRole[]).map((role) => (
+                <div key={role} className="flex items-center gap-4">
+                  <label className="w-40 text-sm font-medium text-gray-700 capitalize">
+                    {role.replace('_', ' ')}:
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={commissionCutForm[role]}
+                    onChange={(e) => setCommissionCutForm({
+                      ...commissionCutForm,
+                      [role]: parseFloat(e.target.value) || 0
                     })}
-                  </div>
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="EGP per million"
+                  />
                 </div>
               ))}
+              <div className="pt-4">
+                <button
+                  onClick={handleSaveAllCommissionCuts}
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Save className="w-5 h-5" />
+                  {loading ? 'Saving...' : 'Save Commission Cuts for All Franchises'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -589,13 +679,22 @@ const PerformanceAdminPanel: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Developer *</label>
-                    <input
-                      type="text"
+                    <select
                       value={projectForm.developer}
                       onChange={(e) => setProjectForm({ ...projectForm, developer: e.target.value })}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
-                    />
+                    >
+                      <option value="">Select Developer</option>
+                      {developers.map((developer, index) => (
+                        <option key={index} value={developer}>{developer}</option>
+                      ))}
+                    </select>
+                    {developers.length === 0 && (
+                      <p className="mt-2 text-xs text-amber-600">
+                        No developers available. Please add a developer first.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
@@ -605,20 +704,6 @@ const PerformanceAdminPanel: React.FC = () => {
                       onChange={(e) => setProjectForm({ ...projectForm, area: e.target.value })}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Franchise *</label>
-                    <select
-                      value={projectForm.franchise_id}
-                      onChange={(e) => setProjectForm({ ...projectForm, franchise_id: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select Franchise</option>
-                      {franchises?.map((f) => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
-                      ))}
-                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%) *</label>
@@ -658,17 +743,19 @@ const PerformanceAdminPanel: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Existing Projects & Commission Schemes</h2>
               <div className="space-y-4">
                 {commissionSchemes?.map((scheme) => {
-                  const project = projects?.find(p => p.id === scheme.project_id);
-                  const franchise = franchises?.find(f => f.id === scheme.franchise_id);
+                  const details = projectDetails[scheme.project_id];
+                  const projectName = details?.compound || `Project ID: ${scheme.project_id}`;
+                  const developerName = details?.developer || 'N/A';
+                  
                   return (
                     <div key={scheme.id} className="p-4 border-2 border-gray-200 rounded-xl">
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {project?.compound || `Project ID: ${scheme.project_id}`}
+                            {projectName}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Developer: {project?.developer || 'N/A'} | Franchise: {franchise?.name || 'N/A'}
+                            Developer: {developerName}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
