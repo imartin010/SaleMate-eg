@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 
 // Performance program pages
 const PerformanceHome = React.lazy(() => import('../../pages/Performance/PerformanceHome'));
+const PerformanceCEODashboard = React.lazy(() => import('../../pages/Performance/PerformanceCEODashboard'));
 const PerformanceFranchiseDashboard = React.lazy(() => import('../../pages/Performance/PerformanceFranchiseDashboard'));
 
 // Auth pages  
@@ -40,9 +41,18 @@ export const performanceRouter = createBrowserRouter([
   {
     path: '/',
     element: (
-      <AuthGuard>
+      <>
         <ScrollToTop />
         <SafePage><PerformanceHome /></SafePage>
+      </>
+    ),
+  },
+  {
+    path: '/dashboard',
+    element: (
+      <AuthGuard>
+        <ScrollToTop />
+        <SafePage><PerformanceCEODashboard /></SafePage>
       </AuthGuard>
     ),
   },

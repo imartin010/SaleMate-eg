@@ -1,13 +1,13 @@
 import React from 'react';
-import PerformanceCEODashboard from './PerformanceCEODashboard';
+import PerformanceHomePage from './PerformanceHomePage';
 
 /**
  * Performance Program Home Page
  * This is the main entry point for the performance.salemate-eg.com subdomain
- * Shows CEO Dashboard with overview of all Coldwell Banker franchises
+ * Shows marketing-style home page describing the performance program
  */
 const PerformanceHome: React.FC = () => {
-  return <PerformanceCEODashboard />;
+  return <PerformanceHomePage />;
 };
 
 export default PerformanceHome;
