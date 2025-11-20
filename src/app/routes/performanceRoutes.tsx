@@ -11,6 +11,11 @@ import { Loader2 } from 'lucide-react';
 const PerformanceHome = React.lazy(() => import('../../pages/Performance/PerformanceHome'));
 const PerformanceFranchiseDashboard = React.lazy(() => import('../../pages/Performance/PerformanceFranchiseDashboard'));
 
+// Auth pages  
+const Login = React.lazy(() => import('../../pages/Auth/Login'));
+const Signup = React.lazy(() => import('../../pages/Auth/Signup'));
+const ResetPassword = React.lazy(() => import('../../pages/Auth/ResetPassword'));
+
 // Fast loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -48,6 +53,28 @@ export const performanceRouter = createBrowserRouter([
         <ScrollToTop />
         <SafePage><PerformanceFranchiseDashboard /></SafePage>
       </AuthGuard>
+    ),
+  },
+  // Auth routes (no AuthGuard protection)
+  {
+    path: '/auth/login',
+    element: (
+      <ScrollToTop />
+      <SafePage><Login /></SafePage>
+    ),
+  },
+  {
+    path: '/auth/signup',
+    element: (
+      <ScrollToTop />
+      <SafePage><Signup /></SafePage>
+    ),
+  },
+  {
+    path: '/auth/reset-password',
+    element: (
+      <ScrollToTop />
+      <SafePage><ResetPassword /></SafePage>
     ),
   },
   // Catch ALL other routes and redirect to home

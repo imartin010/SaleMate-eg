@@ -11,6 +11,7 @@ interface AuthState {
   loading: boolean;
   error?: string;
   initialized: boolean;
+  _isInitializing: boolean; // Private flag to prevent concurrent init calls
   init(): Promise<void>;
   signUpEmail(name: string, email: string, password: string, phone?: string): Promise<boolean>;
   signUpWithOTP(name: string, email: string, phone: string, password: string, challengeId: string, otp: string): Promise<boolean>;
@@ -49,13 +50,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   loading: true,
   initialized: false,
+  _isInitializing: false,
   
   async init() {
-    if (get().initialized && !get().loading) {
+    // Strong guard against concurrent/repeated init calls
+    const state = get();
+    if (state.initialized || state._isInitializing) {
       return;
     }
 
-    set({ loading: true, error: undefined });
+    set({ loading: true, error: undefined, _isInitializing: true });
 
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -85,13 +89,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
 
+      // Set up auth state change listener - only once
       if (!get().initialized) {
         supabase.auth.onAuthStateChange(async (_e, session) => {
-          set({ user: session?.user ?? null });
-          if (session?.user) {
-            await get().refreshProfile();
-          } else {
-            set({ profile: null });
+          // Only update if not currently initializing to prevent loops
+          if (!get()._isInitializing) {
+            set({ user: session?.user ?? null });
+            if (session?.user) {
+              await get().refreshProfile();
+            } else {
+              set({ profile: null });
+            }
           }
         });
       }
@@ -103,7 +111,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         profile: null,
       });
     } finally {
-      set({ loading: false, initialized: true });
+      set({ loading: false, initialized: true, _isInitializing: false });
     }
   },
   

@@ -5,12 +5,14 @@ import { Loader2 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 
 export const AuthGuard: React.FC = () => {
-  const { user, profile, loading, init } = useAuthStore();
+  const { user, profile, loading } = useAuthStore();
   const location = useLocation();
 
   useEffect(() => {
-    init();
-  }, [init]);
+    // Initialize auth once on mount
+    // Don't use init as dependency to avoid infinite loops
+    useAuthStore.getState().init();
+  }, []); // Empty dependency array - only run once on mount
 
   // Show loading while auth is initializing
   if (loading) {
@@ -66,6 +68,7 @@ export const AuthGuard: React.FC = () => {
       return <Outlet />;
     }
     
+    // Redirect to login page
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
