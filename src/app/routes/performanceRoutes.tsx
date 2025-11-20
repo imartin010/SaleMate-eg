@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 const PerformanceHome = React.lazy(() => import('../../pages/Performance/PerformanceHome'));
 const PerformanceCEODashboard = React.lazy(() => import('../../pages/Performance/PerformanceCEODashboard'));
 const PerformanceFranchiseDashboard = React.lazy(() => import('../../pages/Performance/PerformanceFranchiseDashboard'));
+const PerformanceAdminPanel = React.lazy(() => import('../../pages/Performance/PerformanceAdminPanel'));
 
 // Auth pages  
 const Login = React.lazy(() => import('../../pages/Auth/Login'));
@@ -62,6 +63,15 @@ export const performanceRouter = createBrowserRouter([
       <AuthGuard>
         <ScrollToTop />
         <SafePage><PerformanceFranchiseDashboard /></SafePage>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <AuthGuard>
+        <ScrollToTop />
+        <SafePage><PerformanceAdminPanel /></SafePage>
       </AuthGuard>
     ),
   },
