@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/auth';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 
-export const AuthGuard: React.FC = () => {
+export const AuthGuard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading } = useAuthStore();
   const location = useLocation();
 
@@ -94,5 +94,6 @@ export const AuthGuard: React.FC = () => {
   }
 
   // User is authenticated and not banned - render protected content
-  return <Outlet />;
+  // Support both Outlet pattern and children pattern
+  return children ? <>{children}</> : <Outlet />;
 };
