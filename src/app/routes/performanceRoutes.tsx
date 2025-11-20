@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { AuthGuard } from '../../components/auth/AuthGuard';
 import { ErrorBoundary, FastFallback } from '../../components/common/ErrorBoundary';
 import { PageErrorBoundary } from '../../components/common/PageErrorBoundary';
 import { ScrollToTop } from '../../components/common/ScrollToTop';
@@ -34,19 +35,19 @@ export const performanceRouter = createBrowserRouter([
   {
     path: '/',
     element: (
-      <>
+      <AuthGuard>
         <ScrollToTop />
         <SafePage><PerformanceHome /></SafePage>
-      </>
+      </AuthGuard>
     ),
   },
   {
     path: '/franchise/:franchiseSlug',
     element: (
-      <>
+      <AuthGuard>
         <ScrollToTop />
         <SafePage><PerformanceFranchiseDashboard /></SafePage>
-      </>
+      </AuthGuard>
     ),
   },
   // Catch ALL other routes and redirect to home

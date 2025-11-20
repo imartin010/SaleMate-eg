@@ -129,12 +129,13 @@ const PerformanceCEODashboard: React.FC = () => {
     return Object.values(franchiseRevenues).reduce((sum, revenue) => sum + revenue, 0);
   }, [franchiseRevenues]);
 
-  const handleRevenueUpdate = (franchiseId: string, revenue: number) => {
+  // Memoize the callback to prevent infinite re-renders
+  const handleRevenueUpdate = React.useCallback((franchiseId: string, revenue: number) => {
     setFranchiseRevenues(prev => ({
       ...prev,
       [franchiseId]: revenue
     }));
-  };
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-EG', {
