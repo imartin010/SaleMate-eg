@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -10,9 +10,12 @@ import {
   Target,
   Bot,
   LineChart,
-  Wallet
+  Wallet,
+  Languages
 } from 'lucide-react';
 import type { FranchiseAnalytics, PerformanceFranchise, PerformanceTransaction, PerformanceExpense } from '../../types/performance';
+
+type Language = 'en' | 'ar';
 
 interface ForecastingSystemProps {
   analytics: FranchiseAnalytics;
@@ -46,6 +49,73 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
   transactions,
   expenses
 }) => {
+  const [language, setLanguage] = useState<Language>('en'); // English as default
+
+  // Translations object
+  const t = {
+    en: {
+      breakEven: {
+        title: 'Break-Even Analysis',
+        subtitle: 'Calculate how much you need to sell to cover your expenses',
+        monthlyExpenses: 'Monthly Expenses',
+        avgCommissionRate: 'Average Commission Rate',
+        breakEvenSales: 'Break-Even Sales Volume',
+        currentMonthlySales: 'Current Monthly Sales',
+        currentlyProfitable: 'Currently Profitable',
+        needToSell: (amount: number) => `Need to sell ${amount.toLocaleString('en-US', { style: 'currency', currency: 'EGP', minimumFractionDigits: 0 })} monthly to break even`
+      },
+      cashflowForecast: {
+        title: '12-Month Cashflow Forecast',
+        subtitle: 'Projected cashflow based on commission payout dates and monthly expenses',
+        inflow: 'Inflow',
+        expenses: 'Expenses',
+        cumulative: 'Cumulative'
+      },
+      recommendations: {
+        title: 'AI Cashflow Recommendations',
+        subtitle: 'Smart recommendations to keep your franchise cashflow positive and profitable',
+        negativeCashflow: (month: string, amount: number) => `Cashflow will be negative in ${month}. You need to close deals worth ${amount.toLocaleString()} EGP to reach break-even.`,
+        salesBelowBreakEven: (gap: number, current: number, target: number) => `You need to increase monthly sales by ${gap.toLocaleString()} EGP to reach break-even. Current: ${current.toLocaleString()} EGP, Target: ${target.toLocaleString()} EGP`,
+        aboveBreakEven: (amount: number) => `Your current sales volume exceeds break-even by ${amount.toLocaleString()} EGP. Keep up the momentum!`,
+        strongCashflow: (months: number) => `${months} out of 12 months show positive cashflow. Your franchise is in a good position for growth.`,
+        weakCashflow: (months: number) => `Only ${months} months show positive cashflow. Focus on closing more deals and reducing expenses.`,
+        accelerateSales: (months: number) => `At current velocity, it will take ${months.toFixed(1)} months to reach break-even. Increase sales activity urgently.`,
+        healthyForecast: 'Your cashflow forecast looks healthy! Keep up the great work.'
+      }
+    },
+    ar: {
+      breakEven: {
+        title: 'تحليل التعادل',
+        subtitle: 'احسب كمية المبيعات المطلوبة لتغطية مصروفاتك',
+        monthlyExpenses: 'المصروفات الشهرية',
+        avgCommissionRate: 'متوسط معدل العمولة',
+        breakEvenSales: 'حجم مبيعات التعادل',
+        currentMonthlySales: 'المبيعات الشهرية الحالية',
+        currentlyProfitable: 'ربح حالياً',
+        needToSell: (amount: number) => `محتاج تبيع <span dir="ltr">${amount.toLocaleString()}</span> جنيه شهرياً عشان توصل للتعادل`
+      },
+      cashflowForecast: {
+        title: 'توقعات التدفق النقدي لـ 12 شهر',
+        subtitle: 'التدفق النقدي المتوقع بناءً على تواريخ دفع العمولات والمصروفات الشهرية',
+        inflow: 'التدفق الداخل',
+        expenses: 'المصروفات',
+        cumulative: 'التراكمي'
+      },
+      recommendations: {
+        title: 'توصيات التدفق النقدي بالذكاء الاصطناعي',
+        subtitle: 'توصيات ذكية عشان تحافظ على التدفق النقدي للفرع إيجابي ومربح',
+        negativeCashflow: (month: string, amount: number) => `التدفق النقدي هيكون سلبي في <span dir="ltr">${month}</span>. محتاج تغلق صفقات بقيمة <span dir="ltr">${amount.toLocaleString()}</span> جنيه عشان توصل لتعادل.`,
+        salesBelowBreakEven: (gap: number, current: number, target: number) => `محتاج تزود المبيعات الشهرية بمقدار <span dir="ltr">${gap.toLocaleString()}</span> جنيه عشان توصل للتعادل. الحالي: <span dir="ltr">${current.toLocaleString()}</span> جنيه، الهدف: <span dir="ltr">${target.toLocaleString()}</span> جنيه`,
+        aboveBreakEven: (amount: number) => `حجم المبيعات الحالي بتاعك أكتر من التعادل بمقدار <span dir="ltr">${amount.toLocaleString()}</span> جنيه. استمر في الزخم ده!`,
+        strongCashflow: (months: number) => `<span dir="ltr">${months}</span> من أصل <span dir="ltr">12</span> شهر بتظهر تدفق نقدي إيجابي. الفرع بتاعك في وضع كويس للنمو.`,
+        weakCashflow: (months: number) => `فقط <span dir="ltr">${months}</span> شهور بتظهر تدفق نقدي إيجابي. ركز على إغلاق صفقات أكتر وتقليل المصروفات.`,
+        accelerateSales: (months: number) => `بالسرعة الحالية، هياخد <span dir="ltr">${months.toFixed(1)}</span> شهر عشان توصل للتعادل. زود نشاط المبيعات بشكل عاجل.`,
+        healthyForecast: 'توقعات التدفق النقدي بتاعتك شايفة صحية! استمر في الشغل الممتاز.'
+      }
+    }
+  };
+
+  const translations = t[language];
   // Calculate average monthly expenses (fixed expenses only, commission cuts calculated separately)
   const monthlyExpenses = useMemo(() => {
     // Group expenses by month and calculate average
@@ -174,7 +244,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
   }, [transactions, monthlyExpenses, analytics.net_revenue]);
 
   // Generate AI recommendations
-  const generateRecommendations = () => {
+  const generateRecommendations = (lang: Language) => {
+    const tRec = t[lang].recommendations;
     const recommendations: Array<{
       type: 'success' | 'warning' | 'danger' | 'info';
       title: string;
@@ -188,8 +259,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
       const firstNegativeMonth = negativeMonths[0];
       recommendations.push({
         type: 'danger',
-        title: 'Negative Cashflow Alert',
-        description: `Your cashflow will turn negative in ${firstNegativeMonth.monthLabel}. You need to close deals worth EGP ${breakevenAnalysis.breakevenSalesVolume.toLocaleString()} to break even.`,
+        title: lang === 'ar' ? 'تنبيه تدفق نقدي سلبي' : 'Negative Cashflow Alert',
+        description: tRec.negativeCashflow(firstNegativeMonth.monthLabel, breakevenAnalysis.breakevenSalesVolume),
         icon: <AlertTriangle className="w-5 h-5" />
       });
     }
@@ -199,15 +270,15 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
       const gap = breakevenAnalysis.breakevenSalesVolume - breakevenAnalysis.currentMonthlySales;
       recommendations.push({
         type: 'warning',
-        title: 'Below Break-Even Sales',
-        description: `You need to increase monthly sales by EGP ${gap.toLocaleString()} to reach break-even. Current: EGP ${breakevenAnalysis.currentMonthlySales.toLocaleString()}, Target: EGP ${breakevenAnalysis.breakevenSalesVolume.toLocaleString()}`,
+        title: lang === 'ar' ? 'مبيعات أقل من التعادل' : 'Sales Below Break-Even',
+        description: tRec.salesBelowBreakEven(gap, breakevenAnalysis.currentMonthlySales, breakevenAnalysis.breakevenSalesVolume),
         icon: <Target className="w-5 h-5" />
       });
     } else {
       recommendations.push({
         type: 'success',
-        title: 'Above Break-Even',
-        description: `Your current sales volume exceeds break-even by EGP ${(breakevenAnalysis.currentMonthlySales - breakevenAnalysis.breakevenSalesVolume).toLocaleString()}. Keep up the momentum!`,
+        title: lang === 'ar' ? 'فوق التعادل' : 'Above Break-Even',
+        description: tRec.aboveBreakEven(breakevenAnalysis.currentMonthlySales - breakevenAnalysis.breakevenSalesVolume),
         icon: <CheckCircle className="w-5 h-5" />
       });
     }
@@ -217,15 +288,15 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
     if (positiveMonths >= 10) {
       recommendations.push({
         type: 'success',
-        title: 'Strong Cashflow Forecast',
-        description: `${positiveMonths} out of 12 months show positive cashflow. Your franchise is well-positioned for growth.`,
+        title: lang === 'ar' ? 'توقعات تدفق نقدي قوية' : 'Strong Cashflow Forecast',
+        description: tRec.strongCashflow(positiveMonths),
         icon: <TrendingUp className="w-5 h-5" />
       });
     } else if (positiveMonths < 6) {
       recommendations.push({
         type: 'danger',
-        title: 'Weak Cashflow Forecast',
-        description: `Only ${positiveMonths} months show positive cashflow. Focus on closing more deals and reducing expenses.`,
+        title: lang === 'ar' ? 'توقعات تدفق نقدي ضعيفة' : 'Weak Cashflow Forecast',
+        description: tRec.weakCashflow(positiveMonths),
         icon: <TrendingDown className="w-5 h-5" />
       });
     }
@@ -234,8 +305,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
     if (breakevenAnalysis.monthsToBreakeven > 3) {
       recommendations.push({
         type: 'warning',
-        title: 'Accelerate Sales',
-        description: `At current pace, it will take ${breakevenAnalysis.monthsToBreakeven.toFixed(1)} months to reach break-even. Increase sales activity urgently.`,
+        title: lang === 'ar' ? 'تسريع المبيعات' : 'Accelerate Sales',
+        description: tRec.accelerateSales(breakevenAnalysis.monthsToBreakeven),
         icon: <Lightbulb className="w-5 h-5" />
       });
     }
@@ -243,7 +314,7 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
     return recommendations;
   };
 
-  const recommendations = generateRecommendations();
+  const recommendations = generateRecommendations(language);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-EG', {
@@ -257,30 +328,40 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
   return (
     <div className="space-y-6">
       {/* Break-Even Analysis */}
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-md p-6 border-2 border-blue-200">
-        <div className="flex items-center space-x-2 mb-4">
-          <Target className="w-6 h-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-blue-900">Break-Even Analysis</h3>
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-md p-6 border-2 border-blue-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <Target className="w-6 h-6 text-blue-600" />
+            <h3 className="text-lg font-semibold text-blue-900">{translations.breakEven.title}</h3>
+          </div>
+          <button
+            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+            title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
+          >
+            <Languages className="w-4 h-4" />
+            <span className="text-sm font-medium">{language === 'en' ? 'AR' : 'EN'}</span>
+          </button>
         </div>
         <p className="text-sm text-blue-700 mb-6">
-          Calculate how much you need to sell to cover your expenses
+          {translations.breakEven.subtitle}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
-            <p className="text-sm text-gray-600 mb-1">Monthly Expenses</p>
+            <p className="text-sm text-gray-600 mb-1">{translations.breakEven.monthlyExpenses}</p>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(breakevenAnalysis.monthlyExpenses)}</p>
           </div>
           <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
-            <p className="text-sm text-gray-600 mb-1">Average Commission Rate</p>
+            <p className="text-sm text-gray-600 mb-1">{translations.breakEven.avgCommissionRate}</p>
             <p className="text-2xl font-bold text-blue-600">{breakevenAnalysis.averageCommissionRate.toFixed(2)}%</p>
           </div>
           <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
-            <p className="text-sm text-gray-600 mb-1">Break-Even Sales Volume</p>
+            <p className="text-sm text-gray-600 mb-1">{translations.breakEven.breakEvenSales}</p>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(breakevenAnalysis.breakevenSalesVolume)}</p>
           </div>
           <div className="bg-white/80 rounded-lg p-4 border border-blue-100">
-            <p className="text-sm text-gray-600 mb-1">Current Monthly Sales</p>
+            <p className="text-sm text-gray-600 mb-1">{translations.breakEven.currentMonthlySales}</p>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(breakevenAnalysis.currentMonthlySales)}</p>
           </div>
         </div>
@@ -294,21 +375,21 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
             )}
             <p className={`font-semibold ${breakevenAnalysis.isProfitable ? 'text-green-900' : 'text-yellow-900'}`}>
               {breakevenAnalysis.isProfitable 
-                ? 'Currently Profitable' 
-                : `Need to sell ${formatCurrency(breakevenAnalysis.breakevenSalesVolume)} monthly to break even`}
+                ? translations.breakEven.currentlyProfitable
+                : translations.breakEven.needToSell(breakevenAnalysis.breakevenSalesVolume)}
             </p>
           </div>
         </div>
       </div>
 
       {/* Cashflow Forecast */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <div className="flex items-center space-x-2 mb-4">
           <LineChart className="w-6 h-6 text-purple-600" />
-          <h3 className="text-lg font-semibold text-purple-900">12-Month Cashflow Forecast</h3>
+          <h3 className="text-lg font-semibold text-purple-900">{translations.cashflowForecast.title}</h3>
         </div>
         <p className="text-sm text-purple-700 mb-6">
-          Projected cashflow based on commission payout dates and monthly expenses
+          {translations.cashflowForecast.subtitle}
         </p>
 
         <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -339,15 +420,15 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div>
-                  <p className="text-gray-600">Inflow</p>
+                  <p className="text-gray-600">{translations.cashflowForecast.inflow}</p>
                   <p className="font-medium text-green-700">{formatCurrency(month.commissionInflow)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Expenses</p>
+                  <p className="text-gray-600">{translations.cashflowForecast.expenses}</p>
                   <p className="font-medium text-red-700">{formatCurrency(month.expenses)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Cumulative</p>
+                  <p className="text-gray-600">{translations.cashflowForecast.cumulative}</p>
                   <p className={`font-medium ${month.cumulativeCashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                     {formatCurrency(month.cumulativeCashflow)}
                   </p>
@@ -359,13 +440,23 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
       </div>
 
       {/* AI Recommendations */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border-2 border-indigo-200">
-        <div className="flex items-center space-x-2 mb-4">
-          <Bot className="w-6 h-6 text-indigo-600" />
-          <h3 className="text-lg font-semibold text-indigo-900">AI Cashflow Recommendations</h3>
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border-2 border-indigo-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <Bot className="w-6 h-6 text-indigo-600" />
+            <h3 className="text-lg font-semibold text-indigo-900">{translations.recommendations.title}</h3>
+          </div>
+          <button
+            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 transition-colors"
+            title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
+          >
+            <Languages className="w-4 h-4" />
+            <span className="text-sm font-medium">{language === 'en' ? 'AR' : 'EN'}</span>
+          </button>
         </div>
         <p className="text-sm text-indigo-700 mb-6">
-          Smart recommendations to keep your franchise cashflow positive and profitable
+          {translations.recommendations.subtitle}
         </p>
 
         <div className="space-y-4">
@@ -396,7 +487,7 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold mb-1">{rec.title}</h4>
-                  <p className="text-sm">{rec.description}</p>
+                  <p className="text-sm" dangerouslySetInnerHTML={{ __html: rec.description }} />
                 </div>
               </div>
             </div>
@@ -405,7 +496,7 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
           {recommendations.length === 0 && (
             <div className="text-center py-8 text-indigo-700">
               <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Your cashflow forecast looks healthy! Keep up the great work.</p>
+              <p>{translations.recommendations.healthyForecast}</p>
             </div>
           )}
         </div>
