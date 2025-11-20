@@ -6,14 +6,19 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   showTagline?: boolean;
+  logoUrl?: string; // Optional custom logo URL
 }
 
 export const Logo: React.FC<LogoProps> = ({ 
   variant = 'full', 
   size = 'md', 
   className,
-  showTagline = false 
+  showTagline = false,
+  logoUrl
 }) => {
+  const defaultLogoUrl = "https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png";
+  const performanceLogoUrl = "https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png";
+  const imageUrl = logoUrl || defaultLogoUrl;
   const sizeClasses = {
     sm: 'text-lg',
     md: 'text-2xl',
@@ -32,7 +37,7 @@ export const Logo: React.FC<LogoProps> = ({
     return (
       <div className={cn('flex items-center justify-center', className)}>
         <img 
-          src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png"
+          src={imageUrl}
           alt="SaleMate Logo"
           className={cn('object-contain', iconSizes[size])}
           onError={(e) => {
@@ -74,7 +79,7 @@ export const Logo: React.FC<LogoProps> = ({
   return (
     <div className={cn('flex items-center justify-center', className)}>
       <img 
-        src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_logo.png"
+        src={imageUrl}
         alt="SaleMate Logo"
         className={cn('object-contain', iconSizes[size])}
         onError={(e) => {

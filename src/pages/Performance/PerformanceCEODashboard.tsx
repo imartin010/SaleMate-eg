@@ -173,10 +173,17 @@ const PerformanceCEODashboard: React.FC = () => {
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-5xl font-bold text-white tracking-tight mb-2">
-                Salemate Performance
-              </h1>
+            <div className="flex flex-col items-start">
+              <img 
+                src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
+                alt="SaleMate Performance Logo"
+                className="h-20 object-contain mb-4"
+                style={{ width: 'auto', maxWidth: '600px' }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
               <p className="text-xl text-blue-100 font-medium">
                 Coldwell Banker Franchise Management Dashboard
               </p>
