@@ -81,10 +81,12 @@ ReactDOM.createRoot(rootElement).render(
       <QueryProvider>
         <ThemeProvider>
           {isPerformanceSubdomain() ? (
-            // Performance subdomain - minimal providers (no auth/wallet needed initially)
-            <ToastProvider>
-              <RouterProvider router={activeRouter} />
-            </ToastProvider>
+            // Performance subdomain - with auth required
+            <AuthProvider>
+              <ToastProvider>
+                <RouterProvider router={activeRouter} />
+              </ToastProvider>
+            </AuthProvider>
           ) : (
             // Main domain - full providers
           <AuthProvider>
