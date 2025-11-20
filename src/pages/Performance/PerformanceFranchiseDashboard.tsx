@@ -33,6 +33,7 @@ import { AddExpenseModal } from '../../components/performance/AddExpenseModal';
 import { AIInsights } from '../../components/performance/AIInsights';
 import { ForecastingSystem } from '../../components/performance/ForecastingSystem';
 import { PNLStatement } from '../../components/performance/PNLStatement';
+import type { PerformanceTransaction } from '../../types/performance';
 
 /**
  * Franchise Owner Dashboard
@@ -43,6 +44,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'pnl' | 'transactions' | 'expenses' | 'settings'>('overview');
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<PerformanceTransaction | null>(null);
   
   // Settings form state
   const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -464,7 +466,10 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     <span>Filters</span>
                   </button>
                   <button
-                    onClick={() => setShowAddTransaction(true)}
+                    onClick={() => {
+                      setTransactionToEdit(null);
+                      setShowAddTransaction(true);
+                    }}
                     className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -571,9 +576,9 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   {filteredTransactions.map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl"
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                     >
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium text-gray-900">
                           {formatCurrency(transaction.transaction_amount)}
                         </p>
@@ -589,25 +594,37 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                           <p className="text-xs text-gray-500 mt-1">{transaction.notes}</p>
                         )}
                       </div>
-                      <div className="text-right">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-2xl text-xs font-medium ${
-                            transaction.stage === 'contracted'
-                              ? 'bg-green-100 text-green-800'
-                              : transaction.stage === 'reservation'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : transaction.stage === 'eoi'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-2xl text-xs font-medium ${
+                              transaction.stage === 'contracted'
+                                ? 'bg-green-100 text-green-800'
+                                : transaction.stage === 'reservation'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : transaction.stage === 'eoi'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {transaction.stage.toUpperCase()}
+                          </span>
+                          {transaction.commission_amount && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              Commission: {formatCurrency(transaction.commission_amount)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setTransactionToEdit(transaction);
+                            setShowAddTransaction(true);
+                          }}
+                          className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit transaction"
                         >
-                          {transaction.stage.toUpperCase()}
-                        </span>
-                        {transaction.commission_amount && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            Commission: {formatCurrency(transaction.commission_amount)}
-                          </p>
-                        )}
+                          <Edit2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -983,7 +1000,11 @@ const PerformanceFranchiseDashboard: React.FC = () => {
           <AddTransactionModal
             franchiseId={franchise.id}
             isOpen={showAddTransaction}
-            onClose={() => setShowAddTransaction(false)}
+            onClose={() => {
+              setShowAddTransaction(false);
+              setTransactionToEdit(null);
+            }}
+            transactionToEdit={transactionToEdit}
           />
           <AddExpenseModal
             franchiseId={franchise.id}

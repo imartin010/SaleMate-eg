@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Search } from 'lucide-react';
-import { useCreateTransaction } from '../../hooks/performance/usePerformanceData';
+import { useCreateTransaction, useUpdateTransaction } from '../../hooks/performance/usePerformanceData';
 import { useProjects } from '../../hooks/performance/useProjects';
 import type { TransactionStage } from '../../types/performance';
+
+import type { PerformanceTransaction } from '../../types/performance';
 
 interface AddTransactionModalProps {
   franchiseId: string;
   isOpen: boolean;
   onClose: () => void;
+  transactionToEdit?: PerformanceTransaction | null;
 }
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   franchiseId,
   isOpen,
   onClose,
+  transactionToEdit,
 }) => {
+  const isEditMode = !!transactionToEdit;
+  
   const [projectId, setProjectId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [amount, setAmount] = useState('');
@@ -23,7 +29,30 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [error, setError] = useState('');
 
   const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
   const { data: projects, isLoading: projectsLoading } = useProjects();
+
+  // Initialize form with transaction data when editing
+  useEffect(() => {
+    if (transactionToEdit) {
+      setProjectId(transactionToEdit.project_id?.toString() || '');
+      setAmount(transactionToEdit.transaction_amount.toString());
+      setStage(transactionToEdit.stage);
+      setNotes(transactionToEdit.notes || '');
+      // Set search term to show selected project
+      const project = projects?.find(p => p.id === transactionToEdit.project_id);
+      if (project) {
+        setSearchTerm(`${project.compound} ${project.developer}`);
+      }
+    } else {
+      // Reset form when adding new transaction
+      setProjectId('');
+      setSearchTerm('');
+      setAmount('');
+      setStage('eoi');
+      setNotes('');
+    }
+  }, [transactionToEdit, projects]);
 
   // Commission rate: 3.5% for all projects
   const COMMISSION_RATE = 0.035;
@@ -76,19 +105,38 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const taxes = calculateTaxes(grossCommissionAmount);
 
     try {
-      await createTransaction.mutateAsync({
-        franchise_id: franchiseId,
-        project_id: parseInt(projectId),
-        transaction_amount: transactionAmount,
-        gross_commission: grossCommissionAmount,
-        tax_amount: taxes.tax,
-        withholding_tax: taxes.withholdingTax,
-        income_tax: taxes.incomeTax,
-        net_commission: taxes.netCommission,
-        commission_amount: taxes.netCommission, // Keep for backward compatibility
-        stage,
-        notes: notes || null,
-      });
+      if (isEditMode && transactionToEdit) {
+        // Update existing transaction
+        await updateTransaction.mutateAsync({
+          id: transactionToEdit.id,
+          franchise_id: franchiseId,
+          project_id: parseInt(projectId),
+          transaction_amount: transactionAmount,
+          gross_commission: grossCommissionAmount,
+          tax_amount: taxes.tax,
+          withholding_tax: taxes.withholdingTax,
+          income_tax: taxes.incomeTax,
+          net_commission: taxes.netCommission,
+          commission_amount: taxes.netCommission, // Keep for backward compatibility
+          stage,
+          notes: notes || null,
+        });
+      } else {
+        // Create new transaction
+        await createTransaction.mutateAsync({
+          franchise_id: franchiseId,
+          project_id: parseInt(projectId),
+          transaction_amount: transactionAmount,
+          gross_commission: grossCommissionAmount,
+          tax_amount: taxes.tax,
+          withholding_tax: taxes.withholdingTax,
+          income_tax: taxes.incomeTax,
+          net_commission: taxes.netCommission,
+          commission_amount: taxes.netCommission, // Keep for backward compatibility
+          stage,
+          notes: notes || null,
+        });
+      }
 
       // Reset form
       setProjectId('');
@@ -98,7 +146,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setNotes('');
       onClose();
     } catch (err) {
-      setError('Failed to create transaction. Please try again.');
+      setError(isEditMode ? 'Failed to update transaction. Please try again.' : 'Failed to create transaction. Please try again.');
       console.error(err);
     }
   };
@@ -119,7 +167,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 scale-100">
         {/* Header */}
         <div className="flex items-center justify-between p-8 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <h2 className="text-xl font-semibold text-gray-900">Add Transaction</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {isEditMode ? 'Edit Transaction' : 'Add Transaction'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-all duration-300 hover:rotate-90 p-2 hover:bg-gray-100 rounded-2xl"
@@ -342,11 +392,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={createTransaction.isPending}
+              disabled={createTransaction.isPending || updateTransaction.isPending}
               className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
             >
               <Plus className="w-5 h-5" />
-              <span>{createTransaction.isPending ? 'Adding...' : 'Add Transaction'}</span>
+              <span>
+                {isEditMode 
+                  ? (updateTransaction.isPending ? 'Updating...' : 'Update Transaction')
+                  : (createTransaction.isPending ? 'Adding...' : 'Add Transaction')
+                }
+              </span>
             </button>
           </div>
         </form>
