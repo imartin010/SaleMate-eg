@@ -28,6 +28,10 @@ export default function Login() {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [userPhone, setUserPhone] = useState('');
+  
+  // Check if we're on the performance subdomain
+  const isPerformanceSubdomain = typeof window !== 'undefined' && window.location.hostname.includes('performance');
+  const performanceLogoUrl = "https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png";
   const [step, setStep] = useState<LoginStep>('credentials');
   const [formData, setFormData] = useState<LoginForm | null>(null);
   const [sendingOTP, setSendingOTP] = useState(false);
@@ -269,7 +273,12 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
-          <Logo variant="icon" size="xl" className="mx-auto mb-4 scale-125" />
+          <Logo 
+            variant="icon" 
+            size="xl" 
+            className="mx-auto mb-4 scale-125"
+            logoUrl={isPerformanceSubdomain ? performanceLogoUrl : undefined}
+          />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to your SaleMate account</p>
         </div>
