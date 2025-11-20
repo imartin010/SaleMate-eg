@@ -56,6 +56,7 @@ const PerformanceAdminPanel: React.FC = () => {
   // Developers
   const [developerForm, setDeveloperForm] = useState({ name: '' });
   const [developers, setDevelopers] = useState<string[]>([]);
+  const [showAddDeveloper, setShowAddDeveloper] = useState(false);
   
   // Projects
   const { data: projects } = useProjects();
@@ -160,10 +161,44 @@ const PerformanceAdminPanel: React.FC = () => {
 
   const handleAddDeveloper = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Developers are stored in the salemate-inventory table
-    // This is just for reference - actual developers come from existing projects
-    setSuccess('Developers are automatically extracted from existing projects');
-    setDeveloperForm({ name: '' });
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Create a minimal project entry with just the developer name
+      // This ensures the developer appears in the system
+      const { error: insertError } = await supabase
+        .from('salemate-inventory')
+        .insert({
+          compound: `Developer Entry: ${developerForm.name}`,
+          developer: developerForm.name,
+          area: 'N/A',
+        });
+
+      if (insertError) throw insertError;
+
+      setSuccess(`Developer "${developerForm.name}" added successfully!`);
+      setDeveloperForm({ name: '' });
+      setShowAddDeveloper(false);
+      
+      // Refresh developers list
+      if (projects) {
+        const uniqueDevelopers = [...new Set(projects.map(p => {
+          try {
+            const dev = typeof p.developer === 'string' ? JSON.parse(p.developer) : p.developer;
+            return typeof dev === 'object' && dev !== null ? dev.name || dev : dev;
+          } catch {
+            return p.developer;
+          }
+        }).filter(Boolean))] as string[];
+        setDevelopers(uniqueDevelopers);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to add developer');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -470,17 +505,66 @@ const PerformanceAdminPanel: React.FC = () => {
 
         {/* Developers Tab */}
         {activeTab === 'developers' && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Developers</h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Developers are automatically extracted from existing projects in the inventory.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {developers.map((developer, index) => (
-                <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="font-medium text-gray-900">{developer}</p>
+          <div className="space-y-6">
+            {/* Add Developer Form */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Developers</h2>
+                <button
+                  onClick={() => setShowAddDeveloper(!showAddDeveloper)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{showAddDeveloper ? 'Cancel' : 'Add New Developer'}</span>
+                </button>
+              </div>
+              
+              {showAddDeveloper && (
+                <form onSubmit={handleAddDeveloper} className="mb-6 p-6 bg-gray-50 rounded-2xl border-2 border-gray-200">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Developer Name *</label>
+                    <input
+                      type="text"
+                      value={developerForm.name}
+                      onChange={(e) => setDeveloperForm({ name: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter developer name"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                  >
+                    {loading ? 'Adding...' : 'Add Developer'}
+                  </button>
+                </form>
+              )}
+              
+              <p className="text-sm text-gray-500 mb-6">
+                Developers are automatically extracted from existing projects in the inventory.
+              </p>
+            </div>
+
+            {/* Developers List */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">All Developers ({developers.length})</h3>
+              {developers.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No developers found</p>
+                  <p className="text-sm text-gray-400 mt-2">Add a developer or create a project to see developers here</p>
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {developers.map((developer, index) => (
+                    <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+                      <p className="font-medium text-gray-900">{developer}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
