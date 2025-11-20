@@ -76,23 +76,23 @@ const PerformanceHowItWorks = () => {
   };
 
   return (
-    <section id="how-it-works" className="py-20 bg-white">
-      <div className="container mx-auto px-4">
+    <section id="how-it-works" className="py-12 sm:py-16 lg:py-20 bg-white">
+      <div className="container mx-auto px-4 sm:px-6">
         {/* Section header */}
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-12 lg:mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 mb-3 sm:mb-4 px-2 sm:px-0">
             How It{' '}
             <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
               Works
             </span>
           </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-4 sm:px-0">
             Get started in minutes and start tracking your franchise performance today
           </p>
         </motion.div>
@@ -172,7 +172,7 @@ const PerformanceHowItWorks = () => {
           </div>
 
           {/* Mobile timeline */}
-          <div className="lg:hidden space-y-8">
+          <div className="lg:hidden space-y-6 sm:space-y-8">
             {steps.map((step, index) => {
               const Icon = step.icon;
               return (
@@ -181,35 +181,35 @@ const PerformanceHowItWorks = () => {
                   variants={stepVariants}
                   className="relative"
                 >
-                  <div className={`${step.bgColor} rounded-2xl p-6 border-2 border-opacity-20`}>
+                  <div className={`${step.bgColor} rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-opacity-20`}>
                     {/* Step header */}
-                    <div className="flex items-start gap-4 mb-4">
+                    <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
                       {/* Icon */}
-                      <div className={`w-12 h-12 bg-gradient-to-r ${step.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                        <Icon className="w-6 h-6 text-white" />
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r ${step.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className={`w-6 h-6 bg-gradient-to-r ${step.color} text-white text-sm font-bold rounded-full flex items-center justify-center`}>
+                          <span className={`w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r ${step.color} text-white text-xs sm:text-sm font-bold rounded-full flex items-center justify-center flex-shrink-0`}>
                             {step.number}
                           </span>
-                          <h3 className="text-lg font-semibold text-slate-800">
+                          <h3 className="text-base sm:text-lg font-semibold text-slate-800">
                             {step.title}
                           </h3>
                         </div>
 
-                        <p className="text-slate-600 mb-3">
+                        <p className="text-sm sm:text-base text-slate-600 mb-2 sm:mb-3">
                           {step.description}
                         </p>
 
                         {/* Details */}
                         <ul className="space-y-1">
                           {step.details.map((detail, idx) => (
-                            <li key={idx} className="flex items-center gap-2 text-sm text-slate-500">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              {detail}
+                            <li key={idx} className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+                              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                              <span>{detail}</span>
                             </li>
                           ))}
                         </ul>
@@ -219,8 +219,8 @@ const PerformanceHowItWorks = () => {
 
                   {/* Connector line (except for last step) */}
                   {index < steps.length - 1 && (
-                    <div className="flex justify-center py-4">
-                      <div className="w-px h-8 bg-gradient-to-b from-slate-300 to-slate-100" />
+                    <div className="flex justify-center py-3 sm:py-4">
+                      <div className="w-px h-6 sm:h-8 bg-gradient-to-b from-slate-300 to-slate-100" />
                     </div>
                   )}
                 </motion.div>
@@ -231,20 +231,20 @@ const PerformanceHowItWorks = () => {
 
         {/* Bottom CTA */}
         <motion.div 
-          className="text-center mt-16"
+          className="text-center mt-10 sm:mt-12 lg:mt-16 px-4 sm:px-0"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full border border-green-200/50 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full border border-green-200/50 mb-3 sm:mb-4">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-xs sm:text-sm font-medium text-slate-700">
               Average setup time: 5 minutes
             </span>
           </div>
           
-          <p className="text-slate-600 max-w-xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto px-2 sm:px-0">
             Ready to get started? Login to your dashboard and start tracking performance today.
           </p>
         </motion.div>

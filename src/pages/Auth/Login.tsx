@@ -67,7 +67,9 @@ export default function Login() {
     if (!values.use2FA) {
       const success = await signInEmail(values.email, values.password, values.rememberMe);
       if (success) {
-        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
+        // Check if we're on performance subdomain
+        const defaultPath = isPerformanceSubdomain ? '/dashboard' : '/app';
+        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
         setTimeout(() => {
           navigate(from, { replace: true });
         }, 100);
@@ -152,7 +154,9 @@ export default function Login() {
       setDevOtp(undefined);
       setOtpHelperMessage(undefined);
       setOtpExpiresIn(undefined);
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
+      // Check if we're on performance subdomain
+      const defaultPath = isPerformanceSubdomain ? '/dashboard' : '/app';
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
       setTimeout(() => {
         navigate(from, { replace: true });
       }, 100);
