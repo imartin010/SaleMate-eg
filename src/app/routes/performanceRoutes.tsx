@@ -59,22 +59,28 @@ export const performanceRouter = createBrowserRouter([
   {
     path: '/auth/login',
     element: (
-      <ScrollToTop />
-      <SafePage><Login /></SafePage>
+      <>
+        <ScrollToTop />
+        <SafePage><Login /></SafePage>
+      </>
     ),
   },
   {
     path: '/auth/signup',
     element: (
-      <ScrollToTop />
-      <SafePage><Signup /></SafePage>
+      <>
+        <ScrollToTop />
+        <SafePage><Signup /></SafePage>
+      </>
     ),
   },
   {
     path: '/auth/reset-password',
     element: (
-      <ScrollToTop />
-      <SafePage><ResetPassword /></SafePage>
+      <>
+        <ScrollToTop />
+        <SafePage><ResetPassword /></SafePage>
+      </>
     ),
   },
   // Catch ALL other routes and redirect to home
