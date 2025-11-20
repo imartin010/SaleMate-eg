@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
-import { Building2, TrendingUp, DollarSign, Users, BarChart3 } from 'lucide-react';
+import { Building2, TrendingUp, DollarSign, Users, BarChart3, Settings } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
 
 // Hook for animated counter effect
@@ -120,6 +121,7 @@ const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: 
  * Main entry point for Coldwell Banker CEO to monitor all franchise performance
  */
 const PerformanceCEODashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { data: franchises, isLoading } = usePerformanceFranchises();
   const [showComparison, setShowComparison] = useState(false);
   const [franchiseRevenues, setFranchiseRevenues] = useState<Record<string, number>>({});
@@ -322,6 +324,17 @@ const PerformanceCEODashboard: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Admin Panel Button */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <button
+          onClick={() => navigate('/admin')}
+          className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-2xl hover:from-gray-800 hover:to-gray-950 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+        >
+          <Settings className="w-5 h-5" />
+          <span className="font-semibold text-lg">Admin Panel</span>
+        </button>
       </div>
 
       {/* Franchise Comparison Modal */}
