@@ -26,11 +26,44 @@ interface CartState {
 }
 
 const MINIMUM_LEADS = 30;
+const STORAGE_KEY = 'salemate-cart';
+
+// Helper functions for localStorage
+const loadCartFromStorage = (): { items: CartItem[]; totalLeads: number; totalPrice: number } => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Recalculate totals to ensure consistency
+      const totalLeads = parsed.items?.reduce((sum: number, item: CartItem) => sum + item.quantity, 0) || 0;
+      const totalPrice = parsed.items?.reduce((sum: number, item: CartItem) => sum + (item.quantity * item.pricePerLead), 0) || 0;
+      return {
+        items: parsed.items || [],
+        totalLeads,
+        totalPrice
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load cart from storage:', error);
+  }
+  return { items: [], totalLeads: 0, totalPrice: 0 };
+};
+
+const saveCartToStorage = (items: CartItem[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ items }));
+  } catch (error) {
+    console.error('Failed to save cart to storage:', error);
+  }
+};
+
+// Load initial state from localStorage
+const initialState = loadCartFromStorage();
 
 export const useCartStore = create<CartState>()((set, get) => ({
-      items: [],
-      totalLeads: 0,
-      totalPrice: 0,
+      items: initialState.items,
+      totalLeads: initialState.totalLeads,
+      totalPrice: initialState.totalPrice,
 
       addToCart: (item) => {
         const state = get();
@@ -47,8 +80,8 @@ export const useCartStore = create<CartState>()((set, get) => ({
               : i
           );
         } else {
-          // Add new item
-          const quantity = item.quantity || Math.min(30, item.availableLeads);
+          // Add new item - default to 1 if no quantity specified
+          const quantity = item.quantity || Math.min(1, item.availableLeads);
           newItems = [...state.items, { ...item, quantity }];
         }
 
@@ -57,6 +90,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
         const totalPrice = newItems.reduce((sum, item) => sum + (item.quantity * item.pricePerLead), 0);
 
         set({ items: newItems, totalLeads, totalPrice });
+        saveCartToStorage(newItems);
       },
 
       updateQuantity: (projectId, quantity) => {
@@ -82,6 +116,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
         const totalPrice = newItems.reduce((sum, item) => sum + (item.quantity * item.pricePerLead), 0);
 
         set({ items: newItems, totalLeads, totalPrice });
+        saveCartToStorage(newItems);
       },
 
       removeFromCart: (projectId) => {
@@ -91,10 +126,12 @@ export const useCartStore = create<CartState>()((set, get) => ({
         const totalPrice = newItems.reduce((sum, item) => sum + (item.quantity * item.pricePerLead), 0);
 
         set({ items: newItems, totalLeads, totalPrice });
+        saveCartToStorage(newItems);
       },
 
       clearCart: () => {
         set({ items: [], totalLeads: 0, totalPrice: 0 });
+        saveCartToStorage([]);
       },
 
       getCartItem: (projectId) => {

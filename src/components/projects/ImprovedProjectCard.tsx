@@ -28,7 +28,7 @@ interface ProjectCardProps {
 export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPurchaseSuccess }) => {
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [showLeadRequestDialog, setShowLeadRequestDialog] = useState(false);
-  const [quantity, setQuantity] = useState(30);
+  const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [currentAvailableLeads, setCurrentAvailableLeads] = useState(project.availableLeads);
   
@@ -52,7 +52,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
       if (!error && data) {
         setCurrentAvailableLeads((data as any).available_leads); // eslint-disable-line @typescript-eslint/no-explicit-any
         if (quantity > (data as any).available_leads) { // eslint-disable-line @typescript-eslint/no-explicit-any
-          setQuantity(Math.min((data as any).available_leads, 30)); // eslint-disable-line @typescript-eslint/no-explicit-any
+          setQuantity(Math.min((data as any).available_leads, 1)); // eslint-disable-line @typescript-eslint/no-explicit-any
         }
       }
     } catch (err) {
@@ -99,16 +99,24 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
     // Close dialog and show success
     setShowPurchaseDialog(false);
     setError(null);
+    setQuantity(1); // Reset to 1 for next time
     onPurchaseSuccess?.();
   };
 
   // Check if item is already in cart
   const cartItem = getCartItem(project.id);
   const isInCart = !!cartItem;
+  
+  // Update quantity when dialog opens if item is in cart
+  useEffect(() => {
+    if (showPurchaseDialog && cartItem) {
+      setQuantity(cartItem.quantity);
+    } else if (showPurchaseDialog && !cartItem) {
+      setQuantity(1);
+    }
+  }, [showPurchaseDialog, cartItem]);
 
-  const quantityError = quantity < 30 ? 'Minimum order is 30 leads' : 
-                       quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : 
-                       null;
+  const quantityError = quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : null;
 
   // Generate hero image (deterministic placeholder)
   const getHeroImage = (projectName: string) => {
@@ -194,12 +202,14 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             </Badge>
           </div>
           
-          {/* Minimum Order Badge */}
-          <div className="absolute bottom-3 right-3">
-            <Badge className="bg-blue-600 text-white hover:bg-blue-700">
-              Min 30 leads
-            </Badge>
-          </div>
+          {/* Cart Info Badge */}
+          {cartItem && (
+            <div className="absolute bottom-3 right-3">
+              <Badge className="bg-green-600 text-white hover:bg-green-700">
+                {cartItem.quantity} in cart
+              </Badge>
+            </div>
+          )}
         </div>
 
         {/* Project Details */}
@@ -259,40 +269,40 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
       {/* Enhanced Purchase Dialog */}
       <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-        <DialogContent className="max-w-md w-[90vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="relative pb-4">
+        <DialogContent className="max-w-md w-full h-full md:h-auto md:max-h-[90vh] md:w-[90vw] overflow-y-auto p-0 md:p-6">
+          <DialogHeader className="relative pb-4 px-4 md:px-0 pt-4 md:pt-0 border-b md:border-b-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowPurchaseDialog(false)}
-              className="absolute top-0 right-0 h-8 w-8 p-0 hover:bg-gray-100 rounded-full z-10"
+              className="absolute top-2 md:top-0 right-2 md:right-0 h-9 w-9 md:h-8 md:w-8 p-0 hover:bg-gray-100 rounded-full z-10 touch-manipulation"
             >
               <span className="sr-only">Close</span>
               <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </Button>
-            <DialogTitle className="text-center text-lg sm:text-xl font-semibold text-gray-900">
+            <DialogTitle className="text-center text-base md:text-lg lg:text-xl font-semibold text-gray-900 pr-10 md:pr-0">
               Purchase Leads
             </DialogTitle>
-            <DialogDescription className="text-center text-gray-600 text-sm">
-              Select quantity and proceed to secure checkout
+            <DialogDescription className="text-center text-gray-600 text-xs md:text-sm mt-1">
+              Select quantity and add to cart (minimum 30 total to checkout)
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 md:space-y-6 px-4 md:px-0 pb-4 md:pb-0">
             {/* Project Information */}
-            <div className="bg-gray-50 p-4 rounded-lg border">
+            <div className="bg-gray-50 p-3 md:p-4 rounded-lg border">
               <div className="text-center">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h4>
-                <p className="text-gray-600 mb-3 text-sm">{project.developer} • {project.region}</p>
-                <div className="flex justify-center gap-6">
+                <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-1">{project.name}</h4>
+                <p className="text-gray-600 mb-3 text-xs md:text-sm">{project.developer} • {project.region}</p>
+                <div className="flex justify-center gap-4 md:gap-6">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-blue-600">EGP {pricePerLead.toFixed(0)}</div>
+                    <div className="text-lg md:text-xl font-bold text-blue-600">EGP {pricePerLead.toFixed(0)}</div>
                     <div className="text-xs text-gray-500">per lead</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl font-bold text-green-600">{currentAvailableLeads}</div>
+                    <div className="text-lg md:text-xl font-bold text-green-600">{currentAvailableLeads}</div>
                     <div className="text-xs text-gray-500">available</div>
                   </div>
                 </div>
@@ -300,50 +310,52 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             </div>
 
             {/* Quantity Selection with Slider */}
-            <div className="space-y-3">
+            <div className="space-y-3 md:space-y-4">
               <div className="text-center">
-                <h3 className="text-base font-semibold">Select Quantity</h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  {cartItem ? `Currently in cart: ${cartItem.quantity} leads` : 'Add leads to your cart (minimum 30 total to checkout)'}
+                <h3 className="text-sm md:text-base font-semibold">Select Quantity</h3>
+                <p className="text-xs text-gray-500 mt-1 px-2">
+                  {cartItem ? `Currently in cart: ${cartItem.quantity} leads` : 'Add any quantity to your cart (minimum 30 total to checkout)'}
                 </p>
               </div>
               
               {/* Quantity Display */}
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{quantity}</div>
-                <div className="text-xs text-gray-500">leads selected</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600">{quantity}</div>
+                <div className="text-xs md:text-sm text-gray-500 mt-1">leads selected</div>
               </div>
               
               {/* Range Slider */}
-              <div className="px-2">
+              <div className="px-2 md:px-4">
                 <input
                   type="range"
-                  min="30"
+                  min="1"
                   max={currentAvailableLeads}
                   value={quantity}
                   onChange={(e) => setQuantity(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  className="w-full h-3 md:h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer touch-manipulation"
                   style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((quantity - 30) / (currentAvailableLeads - 30)) * 100}%, #e5e7eb ${((quantity - 30) / (currentAvailableLeads - 30)) * 100}%, #e5e7eb 100%)`,
+                    background: currentAvailableLeads > 1 
+                      ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((quantity - 1) / (currentAvailableLeads - 1)) * 100}%, #e5e7eb ${((quantity - 1) / (currentAvailableLeads - 1)) * 100}%, #e5e7eb 100%)`
+                      : '#3b82f6',
                     WebkitAppearance: 'none',
                     appearance: 'none'
                   }}
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>30</span>
+                <div className="flex justify-between text-xs text-gray-500 mt-1.5 md:mt-1">
+                  <span>1</span>
                   <span>{currentAvailableLeads}</span>
                 </div>
               </div>
 
               {/* Quick Selection Buttons */}
-              <div className="grid grid-cols-4 gap-2">
-                {[30, 50, 100, 200].map((qty) => (
+              <div className="grid grid-cols-4 gap-2 md:gap-2">
+                {[1, 10, 50, 100].map((qty) => (
                   <Button
                     key={qty}
                     variant={quantity === qty ? "default" : "outline"}
                     onClick={() => setQuantity(Math.min(qty, currentAvailableLeads))}
                     disabled={qty > currentAvailableLeads}
-                    className="h-8 text-xs font-medium"
+                    className="h-10 md:h-8 text-xs md:text-xs font-medium touch-manipulation"
                   >
                     {qty}
                   </Button>
@@ -351,23 +363,23 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
               </div>
 
               {quantityError && (
-                <div className="flex items-center justify-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg">
-                  <AlertCircle className="h-3 w-3" />
-                  <span className="text-xs font-medium">{quantityError}</span>
+                <div className="flex items-center justify-center gap-2 text-red-600 bg-red-50 p-2.5 md:p-2 rounded-lg text-xs md:text-xs">
+                  <AlertCircle className="h-4 w-4 md:h-3 md:w-3 flex-shrink-0" />
+                  <span className="font-medium">{quantityError}</span>
                 </div>
               )}
             </div>
 
             {/* Order Summary */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 mb-1">
+                <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">
                   EGP {totalAmount.toFixed(0)}
                 </div>
-                <div className="text-gray-600 mb-1 text-sm">
+                <div className="text-gray-600 mb-1 text-sm md:text-base">
                   Total for {quantity} lead{quantity !== 1 ? 's' : ''}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs md:text-sm text-gray-500">
                   EGP {pricePerLead.toFixed(0)} × {quantity} leads
                 </div>
               </div>
@@ -375,34 +387,34 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                <span className="text-xs font-medium">{error}</span>
+              <div className="flex items-center gap-2 p-3 md:p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs md:text-xs">
+                <AlertCircle className="h-4 w-4 md:h-3 md:w-3 flex-shrink-0" />
+                <span className="font-medium">{error}</span>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-2">
+            <div className="space-y-2.5 md:space-y-2 pb-2 md:pb-0">
               <Button
-                className="w-full h-10 text-sm font-semibold"
+                className="w-full h-12 md:h-10 text-base md:text-sm font-semibold touch-manipulation"
                 onClick={handleAddToCart}
                 disabled={quantity < 1 || quantity > currentAvailableLeads}
               >
                 {isInCart ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4 mr-2" />
                     Update Cart
                   </>
                 ) : (
                   <>
-                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    <ShoppingCart className="h-5 w-5 md:h-4 md:w-4 mr-2" />
                     Add to Cart
                   </>
                 )}
               </Button>
               <Button
                 variant="outline"
-                className="w-full h-8 text-sm"
+                className="w-full h-11 md:h-8 text-sm md:text-sm touch-manipulation"
                 onClick={() => setShowPurchaseDialog(false)}
               >
                 Cancel

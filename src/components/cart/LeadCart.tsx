@@ -44,12 +44,12 @@ export const LeadCart: React.FC = () => {
         variant="outline"
         size="sm"
         onClick={() => setIsOpen(true)}
-        className="relative"
+        className="relative h-9 md:h-9 px-3 md:px-4 touch-manipulation"
       >
-        <ShoppingCart className="h-4 w-4 mr-2" />
-        Cart
+        <ShoppingCart className="h-4 w-4 md:mr-2" />
+        <span className="hidden sm:inline">Cart</span>
         {totalLeads > 0 && (
-          <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-blue-600 text-white">
+          <Badge className="absolute -top-1.5 -right-1.5 h-5 w-5 md:h-5 md:w-5 rounded-full p-0 flex items-center justify-center text-xs bg-blue-600 text-white font-semibold">
             {totalLeads}
           </Badge>
         )}
@@ -57,8 +57,8 @@ export const LeadCart: React.FC = () => {
 
       {/* Cart Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl w-full h-full md:h-auto md:max-h-[90vh] overflow-y-auto p-0 md:p-6">
-          <DialogHeader className="px-4 md:px-0 pt-4 md:pt-0 pb-4 border-b md:border-b-0">
+        <DialogContent className="max-w-2xl w-full h-[calc(100vh-4.5rem)] md:h-auto md:max-h-[90vh] flex flex-col p-0 md:p-6 overflow-hidden">
+          <DialogHeader className="px-4 md:px-0 pt-4 md:pt-0 pb-3 md:pb-4 border-b md:border-b-0 flex-shrink-0">
             <DialogTitle className="flex items-center justify-between text-lg md:text-xl">
               <span className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 md:h-6 md:w-6" />
@@ -78,7 +78,8 @@ export const LeadCart: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 md:space-y-6 mt-4 px-4 md:px-0 pb-4 md:pb-0">
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 mt-3 md:mt-4 px-4 md:px-0 pb-2 md:pb-4 min-h-0">
             {/* Progress Bar */}
             <Card className="p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
               <div className="space-y-2">
@@ -117,10 +118,10 @@ export const LeadCart: React.FC = () => {
 
             {/* Cart Items */}
             {items.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Your cart is empty</p>
-                <p className="text-sm text-gray-400 mt-1">
+              <div className="text-center py-8 md:py-12">
+                <ShoppingCart className="h-12 w-12 md:h-16 md:w-16 text-gray-300 mx-auto mb-3 md:mb-4" />
+                <p className="text-gray-500 font-medium text-sm md:text-base">Your cart is empty</p>
+                <p className="text-xs md:text-sm text-gray-400 mt-1 px-4">
                   Add leads from different projects to your cart
                 </p>
               </div>
@@ -135,52 +136,57 @@ export const LeadCart: React.FC = () => {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Card className="p-4">
-                        <div className="flex gap-4">
-                          {/* Project Image */}
-                          <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {item.image ? (
-                              <img
-                                src={item.image}
-                                alt={item.projectName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Building className="h-8 w-8 text-gray-400" />
-                            )}
-                          </div>
+                      <Card className="p-3 md:p-4">
+                        <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+                          {/* Project Image and Info Row */}
+                          <div className="flex gap-3 md:gap-4 flex-1 min-w-0">
+                            {/* Project Image */}
+                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={item.projectName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Building className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                              )}
+                            </div>
 
-                          {/* Project Info */}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">
-                              {item.projectName}
-                            </h4>
-                            <p className="text-sm text-gray-600 truncate">
-                              {item.developer} • {item.region}
-                            </p>
-                            <div className="flex items-center gap-4 mt-2">
-                              <span className="text-sm text-gray-600">
-                                EGP {item.pricePerLead.toFixed(0)} per lead
-                              </span>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.availableLeads} available
-                              </Badge>
+                            {/* Project Info */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">
+                                {item.projectName}
+                              </h4>
+                              <p className="text-xs md:text-sm text-gray-600 line-clamp-1 mt-0.5">
+                                {item.developer} • {item.region}
+                              </p>
+                              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 mt-2">
+                                <span className="text-xs md:text-sm text-gray-600">
+                                  EGP {item.pricePerLead.toFixed(0)} per lead
+                                </span>
+                                <Badge variant="secondary" className="text-xs w-fit">
+                                  {item.availableLeads} available
+                                </Badge>
+                              </div>
                             </div>
                           </div>
 
-                          {/* Quantity Controls */}
-                          <div className="flex flex-col items-end gap-2">
-                            <div className="flex items-center gap-2">
+                          {/* Quantity Controls and Price - Mobile Layout */}
+                          <div className="flex items-center justify-between md:flex-col md:items-end gap-3 md:gap-2 border-t md:border-t-0 pt-3 md:pt-0">
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-2 md:gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => updateQuantity(item.projectId, item.quantity - 1)}
                                 disabled={item.quantity <= 1}
-                                className="h-8 w-8 p-0"
+                                className="h-10 w-10 md:h-8 md:w-8 p-0 touch-manipulation"
+                                aria-label="Decrease quantity"
                               >
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-4 w-4 md:h-4 md:w-4" />
                               </Button>
-                              <span className="w-12 text-center font-semibold">
+                              <span className="w-12 md:w-12 text-center font-semibold text-sm md:text-base">
                                 {item.quantity}
                               </span>
                               <Button
@@ -188,22 +194,28 @@ export const LeadCart: React.FC = () => {
                                 size="sm"
                                 onClick={() => updateQuantity(item.projectId, item.quantity + 1)}
                                 disabled={item.quantity >= item.availableLeads}
-                                className="h-8 w-8 p-0"
+                                className="h-10 w-10 md:h-8 md:w-8 p-0 touch-manipulation"
+                                aria-label="Increase quantity"
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-4 w-4 md:h-4 md:w-4" />
                               </Button>
                             </div>
-                            <div className="text-sm font-semibold text-gray-900">
-                              EGP {(item.quantity * item.pricePerLead).toFixed(0)}
+                            
+                            {/* Price and Remove */}
+                            <div className="flex items-center gap-3 md:flex-col md:items-end md:gap-2">
+                              <div className="text-sm md:text-sm font-semibold text-gray-900">
+                                EGP {(item.quantity * item.pricePerLead).toFixed(0)}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFromCart(item.projectId)}
+                                className="h-9 w-9 md:h-6 md:w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 touch-manipulation"
+                                aria-label="Remove item"
+                              >
+                                <X className="h-5 w-5 md:h-4 md:w-4" />
+                              </Button>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFromCart(item.projectId)}
-                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
                       </Card>
@@ -215,56 +227,59 @@ export const LeadCart: React.FC = () => {
 
             {/* Order Summary */}
             {items.length > 0 && (
-              <Card className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+              <Card className="p-3 md:p-4 bg-gray-50">
+                <h3 className="font-semibold text-base md:text-lg text-gray-900 mb-3">Order Summary</h3>
+                <div className="space-y-2.5 text-sm md:text-base">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total Leads:</span>
                     <span className="font-medium">{totalLeads} leads</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">Subtotal:</span>
                     <span className="font-medium">EGP {subtotal.toFixed(0)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">VAT (14%):</span>
                     <span className="font-medium">EGP {vat.toFixed(0)}</span>
                   </div>
-                  <div className="border-t border-gray-300 pt-2 mt-2">
-                    <div className="flex justify-between">
-                      <span className="font-semibold text-gray-900">Grand Total:</span>
-                      <span className="font-bold text-lg text-blue-600">EGP {grandTotal.toFixed(0)}</span>
+                  <div className="border-t border-gray-300 pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-base md:text-lg text-gray-900">Grand Total:</span>
+                      <span className="font-bold text-lg md:text-xl text-blue-600">EGP {grandTotal.toFixed(0)}</span>
                     </div>
                   </div>
                 </div>
               </Card>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-                className="flex-1"
-              >
-                Continue Shopping
-              </Button>
+          </div>
+
+          {/* Fixed Action Buttons - Always Visible */}
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 md:px-0 pt-3 pb-4 md:pb-0 md:border-t-0 md:pt-4 md:mt-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none">
+            <div className="flex flex-col md:flex-row gap-2.5 md:gap-3">
               <Button
                 onClick={handleCheckout}
                 disabled={!canProceed}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 h-12 md:h-10 bg-blue-600 hover:bg-blue-700 text-base md:text-sm touch-manipulation order-1"
               >
                 {canProceed ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Proceed to Checkout
+                    <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4 mr-2" />
+                    <span>Proceed to Checkout</span>
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    Add {leadsNeeded} More Lead{leadsNeeded !== 1 ? 's' : ''}
+                    <AlertCircle className="h-5 w-5 md:h-4 md:w-4 mr-2" />
+                    <span className="text-xs md:text-sm">Add {leadsNeeded} More Lead{leadsNeeded !== 1 ? 's' : ''}</span>
                   </>
                 )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 h-12 md:h-10 text-base md:text-sm touch-manipulation order-2"
+              >
+                Continue Shopping
               </Button>
             </div>
           </div>
