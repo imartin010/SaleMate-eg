@@ -53,11 +53,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
       try {
         const { count } = await supabase
-          .from('team_invitations')
+          .from('team_members')
           .select('*', { count: 'exact', head: true })
-          .eq('invitee_email', profile.email)
-          .eq('status', 'pending')
-          .gt('expires_at', new Date().toISOString());
+          .eq('invited_email', profile.email)
+          .eq('status', 'invited')
+          .gt('invitation_expires_at', new Date().toISOString());
 
         setPendingInvitationsCount(count || 0);
       } catch (error) {

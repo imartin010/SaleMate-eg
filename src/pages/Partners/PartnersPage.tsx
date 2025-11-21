@@ -178,18 +178,88 @@ const PartnersPage: React.FC = () => {
     try {
       console.log('🏢 Loading partner projects...');
       // Fetch from transactions table (consolidated from project_partner_commissions)
+      // Note: Foreign keys to system_data don't exist, so we fetch data separately
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: queryError } = await ((supabase as unknown as { from: (table: string) => any })
+      let data: any[] | null = null;
+      
+      // Try to fetch with project join first
+      const { data: joinedData, error: queryError } = await ((supabase as unknown as { from: (table: string) => any })
         .from('transactions')
         .select(`
           commission_rate,
-          projects:projects ( id, name, region, developer_id, cover_image, developer:system_data!projects_developer_id_fkey ( entity_name ) ),
-          partner:system_data!transactions_partner_id_fkey ( entity_name )
+          project_id,
+          partner_id,
+          projects:project_id (
+            id,
+            name,
+            region,
+            cover_image
+          )
         `)
         .eq('transaction_type', 'commission'));
 
       if (queryError) {
-        throw new Error(`Database error: ${queryError.message}`);
+        console.warn('Failed to load transactions with project join, trying simpler query:', queryError);
+        // Fallback: fetch transactions without joins
+        const { data: simpleData, error: simpleError } = await ((supabase as unknown as { from: (table: string) => any })
+          .from('transactions')
+          .select('commission_rate, project_id, partner_id')
+          .eq('transaction_type', 'commission'));
+
+        if (simpleError) {
+          throw new Error(`Database error: ${simpleError.message}`);
+        }
+
+        // Fetch projects separately
+        const projectIds = [...new Set((simpleData || []).map((t: any) => t.project_id).filter(Boolean))];
+        let projectsMap: Record<string, any> = {};
+        
+        if (projectIds.length > 0) {
+          const { data: projectsData } = await ((supabase as unknown as { from: (table: string) => any })
+            .from('projects')
+            .select('id, name, region, cover_image')
+            .in('id', projectIds));
+          
+          if (projectsData) {
+            projectsData.forEach((p: any) => {
+              projectsMap[p.id] = p;
+            });
+          }
+        }
+
+        // Transform simple data with manually joined projects
+        data = (simpleData || []).map((t: any) => ({
+          commission_rate: t.commission_rate,
+          project_id: t.project_id,
+          partner_id: t.partner_id,
+          projects: projectsMap[t.project_id] || null,
+        }));
+      } else {
+        data = joinedData;
+      }
+
+      // Fetch partner names from system_data if we have partner_ids
+      const partnerIds = [...new Set((data || []).map((r: any) => r.partner_id).filter(Boolean))];
+      let partnersMap: Record<string, string> = {};
+      
+      if (partnerIds.length > 0) {
+        try {
+          const { data: partnersData } = await ((supabase as unknown as { from: (table: string) => any })
+            .from('system_data')
+            .select('id, entity_name')
+            .eq('data_type', 'entity')
+            .eq('entity_type', 'partner')
+            .in('id', partnerIds));
+          
+          if (partnersData) {
+            partnersData.forEach((p: any) => {
+              partnersMap[p.id] = p.entity_name || 'Unknown Partner';
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch partner names from system_data:', err);
+          // Continue without partner names
+        }
       }
 
       // Aggregate rows into one record per project with partner-specific commission fields
@@ -212,8 +282,9 @@ const PartnersPage: React.FC = () => {
       };
       type Row = {
         commission_rate: number | null;
+        project_id?: string;
+        partner_id?: string;
         projects: { id: string; name: string | null; region: unknown; cover_image?: string | null } | null;
-        partner: { name: string | null } | null;
       };
 
       const byProject = new Map<string, PartnerProject>();
@@ -227,12 +298,9 @@ const PartnersPage: React.FC = () => {
         const areaText = extractName(row.projects.region);
 
         if (!byProject.has(pid)) {
-          // Normalize developer name with multiple fallbacks
-          let developerName = 'Unknown';
-          const projects = row.projects as Record<string, unknown>;
-          const developerEntity = (projects?.developer as Record<string, unknown>) || null;
-          developerName = extractName(developerEntity?.name);
-          // Developer name already extracted from developer entity
+          // Developer name is stored in the region field
+          // (e.g., "Palm Hills Developments", "Mountain View", etc.)
+          const developerName = areaText || 'Unknown';
           byProject.set(pid, {
             id: 0, // not used in UI for keys; using pid via map key instead
             compound_name: compoundName,
@@ -258,7 +326,9 @@ const PartnersPage: React.FC = () => {
         }
 
         const proj = byProject.get(pid)!;
-        const partnerName = (row.partner?.name ?? '').toLowerCase();
+        // Get partner name from map or use partner_id as fallback
+        const partnerId = row.partner_id || '';
+        const partnerName = (partnersMap[partnerId] || partnerId || '').toLowerCase();
         const rate = row.commission_rate ?? 0;
 
         // Map known partner names to fields
