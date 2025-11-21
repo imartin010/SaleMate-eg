@@ -257,15 +257,29 @@ export const Checkout: React.FC = () => {
         console.log('Receipt uploaded successfully:', uploadData);
       }
 
-      // Process payment based on method
+      // Process wallet payment first if applicable
       if (paymentMethod === 'wallet') {
-        // Deduct from wallet using the wallet context
-        // This would need to be implemented in the wallet context
-        // For now, we'll create purchase requests for each project
-      } else if (paymentMethod === 'kashier') {
-        // Redirect to Kashier payment gateway
-        // This would integrate with Kashier API
-        // For now, we'll create purchase requests
+        try {
+          const { error: walletError } = await supabase.rpc('deduct_from_wallet', {
+            p_user_id: user.id,
+            p_amount: grandTotal,
+            p_description: `Purchase ${totalLeads} leads from ${items.length} project(s)`
+          });
+
+          if (walletError) {
+            console.error('Wallet deduction error:', walletError);
+            alert(`Wallet payment failed: ${walletError.message}. Please try again.`);
+            setIsProcessing(false);
+            setIsUploading(false);
+            return;
+          }
+        } catch (walletErr: any) {
+          console.error('Wallet deduction error:', walletErr);
+          alert(`Wallet payment failed: ${walletErr.message || 'Unknown error'}. Please try again.`);
+          setIsProcessing(false);
+          setIsUploading(false);
+          return;
+        }
       }
 
       // Create purchase requests for each project
@@ -275,6 +289,7 @@ export const Checkout: React.FC = () => {
                                  paymentMethod === 'kashier' ? 'Kashier' : 'Wallet';
 
       // Create purchase requests for all projects
+      // The view expects these fields to map to lead_commerce table
       const purchaseRequests = items.map(item => ({
         user_id: user.id,
         project_id: item.projectId,
@@ -284,26 +299,42 @@ export const Checkout: React.FC = () => {
         receipt_url: receiptPath || null,
         receipt_file_name: fileName || null,
         payment_method: paymentMethodName,
-        status: paymentMethod === 'wallet' ? 'confirmed' : 'pending'
+        status: paymentMethod === 'wallet' ? 'confirmed' : 'pending',
+        admin_notes: null
       }));
 
+      // Insert into purchase_requests view (which will sync to lead_commerce via trigger)
       const { error: requestError } = await supabase
         .from('purchase_requests')
         .insert(purchaseRequests);
 
       if (requestError) {
         console.error('Error creating purchase requests:', requestError);
-        alert('Failed to create purchase requests. Please contact support.');
+        
+        // If wallet payment failed after deduction, try to refund
+        if (paymentMethod === 'wallet') {
+          try {
+            // Try to add back to wallet - check if function exists
+            const { error: refundError } = await supabase.rpc('add_to_wallet', {
+              p_user_id: user.id,
+              p_amount: grandTotal,
+              p_description: 'Refund - purchase request creation failed'
+            }).catch(() => ({ error: { message: 'Refund function not available' } }));
+            
+            if (refundError) {
+              console.error('Failed to refund wallet after purchase request failure:', refundError);
+              alert('⚠️ IMPORTANT: Your wallet was charged but the purchase request failed. Please contact support with this error to get a refund.');
+            }
+          } catch (refundErr) {
+            console.error('Failed to refund wallet after purchase request failure:', refundErr);
+            alert('⚠️ IMPORTANT: Your wallet was charged but the purchase request failed. Please contact support with this error to get a refund.');
+          }
+        }
+        
+        alert(`Failed to create purchase requests: ${requestError.message}. ${paymentMethod === 'wallet' ? 'Your wallet has been refunded.' : 'Please contact support.'}`);
         setIsProcessing(false);
         setIsUploading(false);
         return;
-      }
-
-      // If wallet payment, process wallet deduction
-      if (paymentMethod === 'wallet') {
-        // Call wallet deduction function
-        // This would need to be implemented
-        console.log('Processing wallet payment...');
       }
 
       console.log('Purchase requests created successfully');
