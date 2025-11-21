@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Project } from '../../types';
 import { useAuthStore } from '../../store/auth';
+import { useCartStore } from '../../store/cart';
 import { supabase } from "../../lib/supabaseClient"
 import { LeadRequestDialog } from '../leads/LeadRequestDialog';
 import { 
@@ -13,7 +14,8 @@ import {
   ShoppingCart, 
   Star, 
   AlertCircle, 
-  MessageSquare
+  MessageSquare,
+  CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,6 +34,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
   
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { addToCart, getCartItem } = useCartStore();
 
   const pricePerLead = project.pricePerLead || 100;
   const totalAmount = quantity * pricePerLead;
@@ -64,14 +67,14 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
     }
   }, [showPurchaseDialog]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleProceedToCheckout = () => {
+  const handleAddToCart = () => {
     if (!user) {
       navigate('/auth/login', { state: { from: { pathname: window.location.pathname } } });
       return;
     }
 
-    if (quantity < 30) {
-      setError('Minimum order is 30 leads');
+    if (quantity < 1) {
+      setError('Please select at least 1 lead');
       return;
     }
 
@@ -80,25 +83,28 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
       return;
     }
 
-    // Close the dialog and navigate to checkout
-    setShowPurchaseDialog(false);
-    
-    // Navigate to checkout with project data
-    const checkoutParams = new URLSearchParams({
+    // Add to cart
+    addToCart({
       projectId: project.id,
       projectName: project.name,
       developer: project.developer,
       region: project.region,
-      availableLeads: currentAvailableLeads.toString(),
-      pricePerLead: pricePerLead.toString(),
-      quantity: quantity.toString(),
-      totalPrice: totalAmount.toString(),
+      pricePerLead: pricePerLead,
+      availableLeads: currentAvailableLeads,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      image: (project as any).image || '/placeholder-project.svg'
+      image: (project as any).coverImage || (project as any).image,
+      quantity: quantity
     });
 
-    navigate(`/checkout?${checkoutParams.toString()}`);
+    // Close dialog and show success
+    setShowPurchaseDialog(false);
+    setError(null);
+    onPurchaseSuccess?.();
   };
+
+  // Check if item is already in cart
+  const cartItem = getCartItem(project.id);
+  const isInCart = !!cartItem;
 
   const quantityError = quantity < 30 ? 'Minimum order is 30 leads' : 
                        quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : 
@@ -297,7 +303,9 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             <div className="space-y-3">
               <div className="text-center">
                 <h3 className="text-base font-semibold">Select Quantity</h3>
-                <p className="text-xs text-gray-500 mt-1">Minimum order: 30 leads</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {cartItem ? `Currently in cart: ${cartItem.quantity} leads` : 'Add leads to your cart (minimum 30 total to checkout)'}
+                </p>
               </div>
               
               {/* Quantity Display */}
@@ -377,11 +385,20 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             <div className="space-y-2">
               <Button
                 className="w-full h-10 text-sm font-semibold"
-                onClick={handleProceedToCheckout}
+                onClick={handleAddToCart}
                 disabled={quantity < 1 || quantity > currentAvailableLeads}
               >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Proceed to Checkout
+                {isInCart ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Update Cart
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Add to Cart
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"

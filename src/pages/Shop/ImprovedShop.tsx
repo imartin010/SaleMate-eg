@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { ImprovedProjectCard } from '../../components/projects/ImprovedProjectCard';
 import { WalletDisplay } from '../../components/wallet/WalletDisplay';
+import { LeadCart } from '../../components/cart/LeadCart';
 import { supabase } from "../../lib/supabaseClient"
 import { useAuthStore } from '../../store/auth';
 import { Project } from '../../types';
@@ -247,13 +248,7 @@ export const ImprovedShop: React.FC = () => {
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button 
-                size="sm"
-                className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30"
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                View Cart
-              </Button>
+              <LeadCart />
             </div>
           </div>
 
