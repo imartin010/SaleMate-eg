@@ -45,6 +45,7 @@ export function NotificationBell() {
         className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell className="h-5 w-5 text-gray-700" />
         {unreadCount > 0 && (
@@ -53,6 +54,7 @@ export function NotificationBell() {
             animate={{ scale: 1 }}
             className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
             data-testid="notification-badge"
+            aria-hidden="true"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.div>

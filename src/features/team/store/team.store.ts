@@ -223,9 +223,10 @@ export const useTeamStore = create<TeamState>((set, get) => ({
   async cancelInvitation(invitationId: string) {
     try {
       const { error } = await supabase
-        .from('team_invitations')
+        .from('team_members')
         .delete()
-        .eq('id', invitationId);
+        .eq('id', invitationId)
+        .eq('status', 'invited'); // Only allow canceling pending invitations
 
       if (error) {
         set({ error: error.message });

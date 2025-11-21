@@ -5,6 +5,49 @@
 import { supabase } from '../supabaseClient';
 import { logAudit } from './audit';
 
+// Cache for banner_metrics table existence check
+// Use localStorage to persist across page refreshes
+const BANNER_METRICS_CACHE_KEY = 'banner_metrics_table_exists';
+
+let bannerMetricsTableExists: boolean | null = null;
+
+/**
+ * Check if banner_metrics table exists (cached with localStorage)
+ * Defaults to false (table doesn't exist) to avoid unnecessary requests
+ */
+async function checkBannerMetricsTableExists(): Promise<boolean> {
+  // Return cached result if available
+  if (bannerMetricsTableExists !== null) {
+    return bannerMetricsTableExists;
+  }
+
+  // Check localStorage cache first - this persists across page refreshes
+  try {
+    const cached = localStorage.getItem(BANNER_METRICS_CACHE_KEY);
+    if (cached !== null) {
+      const exists = cached === 'true';
+      bannerMetricsTableExists = exists;
+      return exists;
+    }
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
+  // Default to false (table doesn't exist) to avoid making requests
+  // This prevents 404 errors from appearing in console
+  // If the table is created later, clear localStorage to re-check
+  bannerMetricsTableExists = false;
+  
+  // Cache the default value
+  try {
+    localStorage.setItem(BANNER_METRICS_CACHE_KEY, 'false');
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+  
+  return false;
+}
+
 export interface DashboardBanner {
   id: string;
   title: string;
@@ -352,46 +395,93 @@ export async function resolveBannersForViewer(
 
 /**
  * Track banner impression
+ * Note: banner_metrics table may not exist, so we check first and skip if it doesn't
  */
 export async function trackBannerImpression(
   bannerId: string,
   viewerId: string
 ) {
+  // Check if table exists first - skip if it doesn't
+  const tableExists = await checkBannerMetricsTableExists();
+  if (!tableExists) {
+    return; // Silently skip tracking if table doesn't exist
+  }
+
   try {
-    await supabase
+    const { error } = await supabase
       .from('banner_metrics')
       .insert({
         banner_id: bannerId,
         viewer_id: viewerId,
         event: 'impression',
       });
+    
+    // Silently ignore errors - metrics tracking is optional
+    if (error) {
+      // If we get a table not found error, update cache
+      const isNotFound = error.message?.includes('404') || 
+                        error.message?.includes('Not Found') ||
+                        error.message?.includes('Could not find the table') ||
+                        error.code === '42P01' || 
+                        error.code === 'PGRST116' ||
+                        error.code === 'PGRST205';
+      if (isNotFound) {
+        bannerMetricsTableExists = false;
+      } else {
+        console.warn('Track impression error:', error);
+      }
+    }
   } catch (error) {
-    console.error('Track impression error:', error);
+    // Silently ignore all errors - metrics tracking is optional
   }
 }
 
 /**
  * Track banner click
+ * Note: banner_metrics table may not exist, so we check first and skip if it doesn't
  */
 export async function trackBannerClick(
   bannerId: string,
   viewerId: string
 ) {
+  // Check if table exists first - skip if it doesn't
+  const tableExists = await checkBannerMetricsTableExists();
+  if (!tableExists) {
+    return; // Silently skip tracking if table doesn't exist
+  }
+
   try {
-    await supabase
+    const { error } = await supabase
       .from('banner_metrics')
       .insert({
         banner_id: bannerId,
         viewer_id: viewerId,
         event: 'click',
       });
+    
+    // Silently ignore errors - metrics tracking is optional
+    if (error) {
+      // If we get a table not found error, update cache
+      const isNotFound = error.message?.includes('404') || 
+                        error.message?.includes('Not Found') ||
+                        error.message?.includes('Could not find the table') ||
+                        error.code === '42P01' || 
+                        error.code === 'PGRST116' ||
+                        error.code === 'PGRST205';
+      if (isNotFound) {
+        bannerMetricsTableExists = false;
+      } else {
+        console.warn('Track click error:', error);
+      }
+    }
   } catch (error) {
-    console.error('Track click error:', error);
+    // Silently ignore all errors - metrics tracking is optional
   }
 }
 
 /**
  * Get banner analytics
+ * Note: banner_metrics table may not exist, returns zeros if unavailable
  */
 export async function getBannerAnalytics(bannerId?: string) {
   try {
@@ -405,8 +495,16 @@ export async function getBannerAnalytics(bannerId?: string) {
 
     const { data, error } = await query;
 
+    // If table doesn't exist, return zeros
     if (error) {
-      console.error('Get banner analytics error:', error);
+      const isNotFound = error.code === '42P01' || 
+                        error.code === 'PGRST116' ||
+                        error.code === 'PGRST205' ||
+                        error.message?.includes('Could not find the table');
+      if (isNotFound) {
+        return { impressions: 0, clicks: 0, ctr: 0 };
+      }
+      console.warn('Get banner analytics error:', error);
       return { impressions: 0, clicks: 0, ctr: 0 };
     }
 
@@ -416,7 +514,7 @@ export async function getBannerAnalytics(bannerId?: string) {
 
     return { impressions, clicks, ctr };
   } catch (error) {
-    console.error('Get banner analytics exception:', error);
+    // Silently return zeros if table doesn't exist
     return { impressions: 0, clicks: 0, ctr: 0 };
   }
 }

@@ -138,20 +138,20 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
           height: 20px;
           width: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #2563eb;
           cursor: pointer;
           border: 2px solid #ffffff;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
         }
         
         input[type="range"]::-moz-range-thumb {
           height: 20px;
           width: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #2563eb;
           cursor: pointer;
           border: 2px solid #ffffff;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
         }
         
         input[type="range"]::-webkit-slider-track {
@@ -165,93 +165,87 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
           background: transparent;
         }
       `}</style>
-      <Card className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-300">
+      <Card className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0" style={{ padding: 0 }}>
         {/* Hero Photo Section */}
-        <div className="relative h-48 overflow-hidden">
+        <div className="relative h-52 w-full overflow-hidden">
           <img
             src={project.coverImage || getHeroImage(project.name)}
             alt={project.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = getHeroImage(project.name);
             }}
           />
           
-          {/* Overlay with Project Name */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
-            <div className="absolute bottom-4 left-4 right-4 text-white">
-              <h3 className="text-xl font-bold mb-1">{project.name}</h3>
-              <p className="text-sm opacity-90">{project.description || 'Premium Real Estate Project'}</p>
+          {/* Subtle Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          
+          {/* Developer Badge - Minimal */}
+          <div className="absolute top-2 left-2">
+            <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
+              <Building className="h-2.5 w-2.5 inline mr-1 align-middle" />
+              <span className="align-middle">{project.developer}</span>
             </div>
           </div>
           
-          {/* Developer Badge */}
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-white/90 text-black hover:bg-white">
-              <Building className="h-3 w-3 mr-1" />
-              {project.developer}
-            </Badge>
-          </div>
-          
-          {/* Premium Badge */}
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">
-              <Star className="h-3 w-3 mr-1" />
-              Premium
-            </Badge>
-          </div>
-          
-          {/* Cart Info Badge */}
+          {/* Cart Indicator - Minimal */}
           {cartItem && (
-            <div className="absolute bottom-3 right-3">
-              <Badge className="bg-green-600 text-white hover:bg-green-700">
-                {cartItem.quantity} in cart
-              </Badge>
+            <div className="absolute top-2 right-2">
+              <div className="bg-gray-900/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm">
+                <ShoppingCart className="h-2.5 w-2.5 inline mr-1 align-middle" />
+                <span className="align-middle">{cartItem.quantity}</span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Project Details */}
-        <CardContent className="p-4 space-y-3">
-          {/* Location */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>{project.region}</span>
+        {/* Project Details - Clean & Minimal */}
+        <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
+          {/* Project Name - Moved to white space */}
+          <div>
+            <div className="text-base font-semibold text-gray-900 line-clamp-1">{project.name}</div>
+            <p className="text-xs text-gray-500 line-clamp-1">{project.description || 'Premium Real Estate Project'}</p>
+          </div>
+          
+          {/* Location - Subtle */}
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <MapPin className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+            <span className="truncate">{project.region}</span>
           </div>
 
-          {/* CPL and Leads Available */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-lg font-bold text-blue-600">
-                EGP {pricePerLead.toFixed(2)}
+          {/* Stats - Minimal Design */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-left p-2 bg-blue-50/50 rounded-lg">
+              <div className="text-xs text-gray-500 mb-0.5 font-medium">Price</div>
+              <div className="text-lg font-semibold text-blue-600">
+                EGP {pricePerLead.toFixed(0)}
               </div>
-              <div className="text-xs text-blue-600 font-medium">Cost Per Lead</div>
             </div>
             
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-lg font-bold text-green-600">
-                {currentAvailableLeads}
+            <div className="text-left p-2 bg-green-50/50 rounded-lg">
+              <div className="text-xs text-gray-500 mb-0.5 font-medium">Available</div>
+              <div className="text-lg font-semibold text-green-700">
+                {currentAvailableLeads.toLocaleString()}
               </div>
-              <div className="text-xs text-green-600 font-medium">Available</div>
             </div>
           </div>
         </CardContent>
 
-        {/* Action Footer */}
-        <CardFooter className="p-4 pt-0">
+        {/* Action Footer - Modern Button */}
+        <CardFooter className="px-3 pb-2 pt-1">
           {currentAvailableLeads === 0 ? (
             <Button 
-              className="w-full h-12 text-base font-semibold bg-orange-600 hover:bg-orange-700" 
+              className="w-full h-9 text-sm font-medium bg-gray-900 hover:bg-gray-800 text-white transition-all rounded-lg border-0" 
               onClick={() => setShowLeadRequestDialog(true)}
               disabled={!user}
             >
-              <MessageSquare className="h-5 w-5 mr-2" />
+              <MessageSquare className="h-4 w-4 mr-1.5" />
               {!user ? 'Login to Request' : 'Request Leads'}
             </Button>
           ) : (
             <Button 
-              className="w-full h-12 text-base font-semibold" 
+              className="w-full h-9 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-lg border-0" 
               onClick={() => {
                 if (!user) {
                   navigate('/auth/login', { state: { from: { pathname: window.location.pathname } } });
@@ -260,7 +254,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                 }
               }}
             >
-              <ShoppingCart className="h-5 w-5 mr-2" />
+              <ShoppingCart className="h-4 w-4 mr-1.5" />
               {!user ? 'Login to Purchase' : 'Buy Leads'}
             </Button>
           )}
@@ -292,17 +286,17 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
           <div className="space-y-4 md:space-y-6 px-4 md:px-0 pb-4 md:pb-0">
             {/* Project Information */}
-            <div className="bg-gray-50 p-3 md:p-4 rounded-lg border">
+            <div className="bg-gray-50/50 p-3 md:p-4 rounded-xl border border-gray-100">
               <div className="text-center">
                 <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-1">{project.name}</h4>
-                <p className="text-gray-600 mb-3 text-xs md:text-sm">{project.developer} • {project.region}</p>
+                <p className="text-gray-500 mb-3 text-xs md:text-sm">{project.developer} • {project.region}</p>
                 <div className="flex justify-center gap-4 md:gap-6">
                   <div className="text-center">
-                    <div className="text-lg md:text-xl font-bold text-blue-600">EGP {pricePerLead.toFixed(0)}</div>
+                    <div className="text-lg md:text-xl font-semibold text-blue-600">EGP {pricePerLead.toFixed(0)}</div>
                     <div className="text-xs text-gray-500">per lead</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg md:text-xl font-bold text-green-600">{currentAvailableLeads}</div>
+                    <div className="text-lg md:text-xl font-semibold text-green-600">{currentAvailableLeads}</div>
                     <div className="text-xs text-gray-500">available</div>
                   </div>
                 </div>
@@ -320,7 +314,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
               
               {/* Quantity Display */}
               <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-blue-600">{quantity}</div>
+                <div className="text-3xl md:text-4xl font-semibold text-blue-600">{quantity}</div>
                 <div className="text-xs md:text-sm text-gray-500 mt-1">leads selected</div>
               </div>
               
@@ -335,8 +329,8 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                   className="w-full h-3 md:h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer touch-manipulation"
                   style={{
                     background: currentAvailableLeads > 1 
-                      ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((quantity - 1) / (currentAvailableLeads - 1)) * 100}%, #e5e7eb ${((quantity - 1) / (currentAvailableLeads - 1)) * 100}%, #e5e7eb 100%)`
-                      : '#3b82f6',
+                      ? `linear-gradient(to right, #2563eb 0%, #2563eb ${((quantity - 1) / (currentAvailableLeads - 1)) * 100}%, #e5e7eb ${((quantity - 1) / (currentAvailableLeads - 1)) * 100}%, #e5e7eb 100%)`
+                      : '#2563eb',
                     WebkitAppearance: 'none',
                     appearance: 'none'
                   }}
@@ -356,6 +350,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
                     onClick={() => setQuantity(Math.min(qty, currentAvailableLeads))}
                     disabled={qty > currentAvailableLeads}
                     className="h-10 md:h-8 text-xs md:text-xs font-medium touch-manipulation"
+                    aria-label={`Select ${qty} leads`}
                   >
                     {qty}
                   </Button>
@@ -371,9 +366,9 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             </div>
 
             {/* Order Summary */}
-            <div className="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200">
+            <div className="bg-blue-50/50 p-3 md:p-4 rounded-xl border border-blue-100">
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">
+                <div className="text-2xl md:text-3xl font-semibold text-blue-600 mb-1">
                   EGP {totalAmount.toFixed(0)}
                 </div>
                 <div className="text-gray-600 mb-1 text-sm md:text-base">
@@ -396,7 +391,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             {/* Action Buttons */}
             <div className="space-y-2.5 md:space-y-2 pb-2 md:pb-0">
               <Button
-                className="w-full h-12 md:h-10 text-base md:text-sm font-semibold touch-manipulation"
+                className="w-full h-12 md:h-10 text-base md:text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white touch-manipulation rounded-xl"
                 onClick={handleAddToCart}
                 disabled={quantity < 1 || quantity > currentAvailableLeads}
               >
@@ -414,7 +409,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
               </Button>
               <Button
                 variant="outline"
-                className="w-full h-11 md:h-8 text-sm md:text-sm touch-manipulation"
+                className="w-full h-11 md:h-8 text-sm md:text-sm touch-manipulation border-gray-200 hover:bg-gray-50 rounded-xl"
                 onClick={() => setShowPurchaseDialog(false)}
               >
                 Cancel

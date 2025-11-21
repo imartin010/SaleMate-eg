@@ -114,12 +114,13 @@ export const ImprovedShop: React.FC = () => {
         };
 
         // Base list from projects table
+        // Note: region column contains the developer name (e.g., "Palm Hills Developments", "Mountain View")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const base: Project[] = (projectsData as any[]).map((p: Record<string, unknown>) => {
           const name = extractName(p.name);
-          const developerEntity = p.developer as Record<string, unknown> | undefined;
-          const developer = extractName(developerEntity?.name ?? p.developer);
           const region = extractName(p.region);
+          // Use region as developer name since region column stores developer name
+          const developer = region || 'Unknown';
           // Prefer a clean description; if it looks like JSON, replace with developer tagline
           const desc = typeof p.description === 'string' && /['"]name['"]\s*:/.test(p.description)
             ? `Project from ${developer}`

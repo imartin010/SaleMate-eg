@@ -104,8 +104,8 @@ export function useLeads() {
       setLoading(true);
       setError(null);
 
-      // First, try to fetch leads with all joins
-      // Try multiple join syntaxes - Supabase PostgREST can be finicky with foreign keys
+      // Try to fetch leads with project join (only FK that exists)
+      // Note: owner_id and assigned_to_id don't have foreign keys, so we can't join profiles
       let query = supabase
         .from('leads')
         .select(`
@@ -114,14 +114,6 @@ export function useLeads() {
             id,
             name,
             region
-          ),
-          owner:profiles!leads_owner_id_fkey (
-            id,
-            name
-          ),
-          assigned_to:profiles!leads_assigned_to_id_fkey (
-            id,
-            name
           )
         `)
         .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
@@ -131,8 +123,7 @@ export function useLeads() {
 
       if (fetchError) {
         // If the query fails, try a simpler query without joins
-        console.warn('Failed to fetch leads with joins, trying simpler query:', fetchError);
-        console.error('Join error details:', JSON.stringify(fetchError, null, 2));
+        console.warn('Failed to fetch leads with project join, trying simpler query:', fetchError);
         const { data: simpleData, error: simpleError } = await supabase
           .from('leads')
           .select('*')
@@ -210,8 +201,8 @@ export function useLeads() {
         return {
           ...lead,
           project: transformedProject,
-          owner: lead.owner || null,
-          assigned_to: lead.assigned_to || null,
+          owner: null, // Will be fetched separately if needed
+          assigned_to: null, // Will be fetched separately if needed
           feedback_history: [] as FeedbackHistoryEntry[],
         };
       });
@@ -220,31 +211,63 @@ export function useLeads() {
 
       let feedbackHistoryMap: Record<string, FeedbackHistoryEntry[]> = {};
 
-      if (leadIds.length > 0) {
-        const { data: feedbackData, error: feedbackError } = await supabase
-          .from('events')
-          .select(`
-            id,
-            lead_id,
-            actor_profile_id,
-            body,
-            payload,
-            created_at,
-            actor:profiles!events_actor_profile_id_fkey (
-              id,
-              name,
-              email
-            )
-          `)
-          .in('lead_id', leadIds)
-          .eq('event_type', 'activity')
-          .eq('activity_type', 'feedback')
-          .order('created_at', { ascending: false });
+      // Only fetch feedback history if we have a reasonable number of leads
+      // Large arrays in .in() filters can cause 400 errors
+      if (leadIds.length > 0 && leadIds.length <= 100) {
+        try {
+          // Batch the query if there are many leads (Supabase has limits on .in() array size)
+          const batchSize = 50;
+          const batches: string[][] = [];
+          
+          for (let i = 0; i < leadIds.length; i += batchSize) {
+            batches.push(leadIds.slice(i, i + batchSize));
+          }
 
-        if (feedbackError) {
-          console.warn('Failed to load feedback history from lead_events:', feedbackError);
-        } else if (feedbackData) {
-          feedbackHistoryMap = feedbackData.reduce<Record<string, FeedbackHistoryEntry[]>>((acc, activity) => {
+          // Fetch feedback in batches
+          const allFeedbackData: any[] = [];
+          const profileIdsSet = new Set<string>();
+
+          for (const batch of batches) {
+            const { data: batchFeedbackData, error: batchError } = await supabase
+              .from('events')
+              .select('id, lead_id, actor_profile_id, body, payload, created_at, updated_at')
+              .in('lead_id', batch)
+              .eq('event_type', 'activity')
+              .eq('activity_type', 'feedback')
+              .order('created_at', { ascending: false });
+
+            if (!batchError && batchFeedbackData) {
+              allFeedbackData.push(...batchFeedbackData);
+              batchFeedbackData.forEach((f: any) => {
+                if (f.actor_profile_id) profileIdsSet.add(f.actor_profile_id);
+              });
+            }
+          }
+
+          // Fetch profiles separately
+          let profilesMap: Record<string, { id: string; name: string; email: string }> = {};
+          
+          if (profileIdsSet.size > 0) {
+            const profileIds = Array.from(profileIdsSet);
+            // Batch profile fetches too if needed
+            const profileBatchSize = 100;
+            for (let i = 0; i < profileIds.length; i += profileBatchSize) {
+              const profileBatch = profileIds.slice(i, i + profileBatchSize);
+              const { data: profilesData } = await supabase
+                .from('profiles')
+                .select('id, name, email')
+                .in('id', profileBatch);
+              
+              if (profilesData) {
+                profilesData.forEach((p: any) => {
+                  profilesMap[p.id] = { id: p.id, name: p.name || 'Unknown User', email: p.email || '' };
+                });
+              }
+            }
+          }
+
+          // Build feedback history map
+          feedbackHistoryMap = allFeedbackData.reduce<Record<string, FeedbackHistoryEntry[]>>((acc, activity: any) => {
             const feedbackEntry: FeedbackHistoryEntry = {
               id: activity.id,
               lead_id: activity.lead_id,
@@ -252,10 +275,10 @@ export function useLeads() {
               feedback_text: activity.body ?? '',
               created_at: activity.created_at,
               updated_at: activity.updated_at ?? null,
-              user: activity.actor
+              user: activity.actor_profile_id && profilesMap[activity.actor_profile_id]
                 ? {
-                    name: activity.actor.name ?? 'Unknown User',
-                    email: activity.actor.email ?? '',
+                    name: profilesMap[activity.actor_profile_id].name,
+                    email: profilesMap[activity.actor_profile_id].email,
                   }
                 : null,
             };
@@ -266,7 +289,13 @@ export function useLeads() {
             acc[activity.lead_id].push(feedbackEntry);
             return acc;
           }, {});
+        } catch (error) {
+          console.warn('Error loading feedback history:', error);
+          // Continue without feedback history - it's not critical
         }
+      } else if (leadIds.length > 100) {
+        // Skip feedback history for large result sets to avoid query size limits
+        console.log(`Skipping feedback history fetch for ${leadIds.length} leads (too many for efficient query)`);
       }
 
       const leadsWithFeedback = transformedData.map((lead) => ({

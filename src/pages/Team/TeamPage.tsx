@@ -138,12 +138,12 @@ const TeamPage: React.FC = () => {
     console.log('Direct DB query results:', directMembers);
     console.log('Direct DB query error:', error);
     
-    // Check invitations
+    // Check invitations (now in team_members table)
     const { data: invitationsData } = await supabase
-      .from('team_invitations')
+      .from('team_members')
       .select('*')
-      .eq('manager_id', user?.id)
-      .eq('status', 'accepted');
+      .eq('invited_by', user?.id)
+      .in('status', ['active', 'joined']);
     
     console.log('Accepted invitations:', invitationsData);
     console.log('🔍 === END DEBUG ===');

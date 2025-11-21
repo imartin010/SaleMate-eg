@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DashboardBanner } from '../../lib/data/banners';
 import { trackBannerImpression, trackBannerClick } from '../../lib/data/banners';
 import { useAuthStore } from '../../store/auth';
+import { supabase } from '../../core/api/client';
 
 interface BannerDisplayProps {
   placement: string;
@@ -25,23 +26,23 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
       console.log('🔍 Loading banners for placement:', placement);
       console.log('👤 Current user:', profile ? `Logged in as ${profile.role}` : 'Not logged in');
       
-      // Import supabase client directly
-      const { supabase } = await import('../../lib/supabaseClient');
       const now = new Date().toISOString();
       console.log('📅 Current date/time:', now);
       
       // Build query with proper date filtering
+      // Note: .select() must come before .eq() filters
       let query = supabase
         .from('content')
-        .eq('content_type', 'banner')
         .select('*')
+        .eq('content_type', 'banner')
         .eq('placement', placement)
         .eq('status', 'live');
       
       // Don't filter by dates in the query - we'll do it client-side
       // This is more reliable for date comparisons
-      query = query.order('priority', { ascending: true })
-                   .order('created_at', { ascending: false });
+      // Priority is stored in metadata JSONB, so we'll sort by created_at
+      // and handle priority sorting client-side if needed
+      query = query.order('created_at', { ascending: false });
       
       const limit = placement === 'home_banner' || placement === 'dashboard_top' ? 10 : 5;
       query = query.limit(limit);
@@ -112,11 +113,41 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
         console.log('✅ Banner passes all filters:', banner.title);
         return true;
       });
+
+      // Sort by priority (from metadata) if available, then by created_at
+      filtered.sort((a, b) => {
+        const aPriority = a.metadata?.priority ?? 999;
+        const bPriority = b.metadata?.priority ?? 999;
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority; // Lower priority number = higher priority
+        }
+        // If priorities are equal, sort by created_at (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
       
       console.log('✅ Filtered banners:', filtered.length, filtered);
       
       if (filtered.length > 0) {
-        const limitedBanners = filtered.slice(0, 3); // Limit to 3 banners for carousel
+        // Transform content table data to DashboardBanner format
+        const transformedBanners: DashboardBanner[] = filtered.map((banner: any) => ({
+          id: banner.id,
+          title: banner.title || '',
+          subtitle: banner.body || '',
+          placement: banner.placement || '',
+          image_url: banner.media_url || banner.cta?.image_url || null,
+          cta_url: banner.cta?.cta_url || null,
+          cta_label: banner.cta?.cta_label || null,
+          status: banner.status || 'draft',
+          start_at: banner.start_at || null,
+          end_at: banner.end_at || null,
+          audience: Array.isArray(banner.audience) ? banner.audience : (banner.audience ? [banner.audience] : []),
+          priority: banner.metadata?.priority || 999,
+          visibility_rules: banner.metadata?.visibility_rules || {},
+          created_at: banner.created_at || new Date().toISOString(),
+          updated_at: banner.updated_at || null,
+        }));
+
+        const limitedBanners = transformedBanners.slice(0, 3); // Limit to 3 banners for carousel
         setBanners(limitedBanners);
         
         // Track impressions
@@ -218,7 +249,6 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
                               // Try to get public URL if it's a storage path
                               if (banner.image_url && !banner.image_url.startsWith('http')) {
                                 try {
-                                  const { supabase } = await import('../../lib/supabaseClient');
                                   const { data } = supabase.storage
                                     .from('public')
                                     .getPublicUrl(banner.image_url);
@@ -336,7 +366,6 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
                   
                   if (banner.image_url && !banner.image_url.startsWith('http')) {
                     try {
-                      const { supabase } = await import('../../lib/supabaseClient');
                       const { data } = supabase.storage
                         .from('public')
                         .getPublicUrl(banner.image_url);
@@ -384,7 +413,6 @@ export const BannerDisplay: React.FC<BannerDisplayProps> = ({ placement }) => {
                       
                       if (banner.image_url && !banner.image_url.startsWith('http')) {
                         try {
-                          const { supabase } = await import('../../lib/supabaseClient');
                           const { data } = supabase.storage
                             .from('public')
                             .getPublicUrl(banner.image_url);
