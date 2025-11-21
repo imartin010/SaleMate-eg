@@ -284,9 +284,10 @@ export const Checkout: React.FC = () => {
 
       // Create purchase requests for each project
       const fileName = receiptPath ? receiptPath.split('/').pop() || receiptFile?.name || '' : '';
+      // Map payment methods to match database constraint values
       const paymentMethodName = paymentMethod === 'instapay' ? 'Instapay' : 
-                                 paymentMethod === 'bank_transfer' ? 'Bank Transfer' :
-                                 paymentMethod === 'kashier' ? 'Kashier' : 'Wallet';
+                                 paymentMethod === 'bank_transfer' ? 'BankTransfer' :
+                                 paymentMethod === 'kashier' ? 'kashier' : 'wallet';
 
       // Create purchase requests for all projects
       // The view expects these fields to map to lead_commerce table
