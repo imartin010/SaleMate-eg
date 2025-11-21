@@ -100,13 +100,18 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
-  // Main app route - redirect root to /app
+  // Main home page at root
   {
     path: '/',
-    element: <Navigate to="/app" replace />,
+    element: (
+      <>
+        <ScrollToTop />
+        <Home />
+      </>
+    ),
   },
   
-  // Marketing home page (moved to /marketing)
+  // Marketing home page (also available at /marketing for backward compatibility)
   {
     path: '/marketing',
     element: (

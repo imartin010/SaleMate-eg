@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 import { CreditCardMockup } from '../../components/checkout/CreditCardMockup';
+import { useCartStore, MINIMUM_LEADS } from '../../store/cart';
+import { useWallet } from '../../contexts/WalletContext';
 // import { Separator } from '../../components/ui/separator';
 import { 
   ArrowLeft, 
@@ -18,41 +21,27 @@ import {
   ExternalLink,
   Copy,
   Check,
-  X
+  X,
+  Wallet,
+  Landmark,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
-interface Project {
-  id: string;
+interface BuyerInfo {
   name: string;
-  developer: string;
-  region: string;
-  availableLeads: number;
-  pricePerLead: number;
-  image: string;
-  rating: number;
-  totalSold: number;
-}
-
-interface CheckoutData {
-  project: Project;
-  quantity: number;
-  totalPrice: number;
-  buyerInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    company: string;
-  };
+  email: string;
+  phone: string;
+  company: string;
 }
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { items, totalLeads, totalPrice, canCheckout, clearCart } = useCartStore();
+  const { balance, refreshBalance } = useWallet();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('instapay');
-  const [imageError, setImageError] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>('wallet');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -66,35 +55,29 @@ export const Checkout: React.FC = () => {
     expiry: '',
     cvv: ''
   });
-  
-  // Get project data from URL params or use mock data
-  const [checkoutData, setCheckoutData] = useState<CheckoutData>({
-    project: {
-      id: searchParams.get('projectId') || '1',
-      name: searchParams.get('projectName') || 'New Capital City',
-      developer: searchParams.get('developer') || 'Talaat Moustafa Group',
-      region: searchParams.get('region') || 'New Administrative Capital',
-      availableLeads: parseInt(searchParams.get('availableLeads') || '150'),
-      pricePerLead: parseInt(searchParams.get('pricePerLead') || '25'),
-      image: searchParams.get('image') || '/placeholder-project.svg',
-      rating: 4.8,
-      totalSold: 1250
-    },
-    quantity: Math.max(30, parseInt(searchParams.get('quantity') || '30')),
-    totalPrice: (() => {
-      const quantity = Math.max(30, parseInt(searchParams.get('quantity') || '30'));
-      const pricePerLead = parseInt(searchParams.get('pricePerLead') || '25');
-      const subtotal = quantity * pricePerLead;
-      const vat = Math.round(subtotal * 0.14);
-      return subtotal + vat;
-    })(),
-    buyerInfo: {
-      name: '',
-      email: '',
-      phone: '',
-      company: ''
-    }
+
+  const [buyerInfo, setBuyerInfo] = useState<BuyerInfo>({
+    name: '',
+    email: '',
+    phone: '',
+    company: ''
   });
+
+  // Redirect if cart is empty or doesn't meet minimum
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate('/app/shop');
+      return;
+    }
+    if (!canCheckout()) {
+      navigate('/app/shop');
+    }
+  }, [items, canCheckout, navigate]);
+
+  const subtotal = totalPrice;
+  const vat = Math.round(subtotal * 0.14);
+  const grandTotal = subtotal + vat;
+  const hasEnoughWalletBalance = balance >= grandTotal;
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -109,28 +92,23 @@ export const Checkout: React.FC = () => {
         
         setUserProfile(profile);
         // Auto-fill buyer info from profile
-        setCheckoutData(prev => ({
-          ...prev,
-          buyerInfo: {
-            name: profile?.name || '',
-            email: user?.email || '',
-            phone: profile?.phone || '',
-            company: profile?.company || ''
-          }
-        }));
+        setBuyerInfo({
+          name: profile?.name || '',
+          email: user?.email || '',
+          phone: profile?.phone || '',
+          company: profile?.company || ''
+        });
       }
+      refreshBalance();
     };
     
     fetchUserProfile();
-  }, []);
+  }, [refreshBalance]);
 
-  const handleInputChange = (field: string, value: string) => {
-    setCheckoutData(prev => ({
+  const handleInputChange = (field: keyof BuyerInfo, value: string) => {
+    setBuyerInfo(prev => ({
       ...prev,
-      buyerInfo: {
-        ...prev.buyerInfo,
-        [field]: value
-      }
+      [field]: value
     }));
   };
 
@@ -217,9 +195,21 @@ export const Checkout: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    // For InstaPay and Card, require receipt upload
-    if ((paymentMethod === 'instapay' || paymentMethod === 'card') && !receiptFile) {
+    // Validate minimum leads
+    if (!canCheckout()) {
+      alert(`Minimum order is ${MINIMUM_LEADS} leads. You have ${totalLeads} leads selected.`);
+      return;
+    }
+
+    // For InstaPay and Bank Transfer, require receipt upload
+    if ((paymentMethod === 'instapay' || paymentMethod === 'bank_transfer') && !receiptFile) {
       alert('Please upload your payment receipt to confirm payment');
+      return;
+    }
+
+    // For Wallet, check balance
+    if (paymentMethod === 'wallet' && !hasEnoughWalletBalance) {
+      alert(`Insufficient wallet balance. You need EGP ${(grandTotal - balance).toFixed(0)} more.`);
       return;
     }
 
@@ -227,84 +217,99 @@ export const Checkout: React.FC = () => {
     setIsUploading(true);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please log in to complete your purchase');
+        setIsProcessing(false);
+        setIsUploading(false);
+        return;
+      }
+
       let receiptPath = '';
       
-      // Upload receipt to Supabase Storage if InstaPay or Card
-      if ((paymentMethod === 'instapay' || paymentMethod === 'card') && receiptFile) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Get file extension
-          const fileExtension = receiptFile.name.split('.').pop() || 'png';
-          const timestamp = Date.now();
-          const randomString = Math.random().toString(36).substring(2, 8);
-          
-          // Create a completely clean filename: userId/timestamp_random.ext
-          const filePath = `${user.id}/receipt_${timestamp}_${randomString}.${fileExtension}`;
-          receiptPath = filePath;
-          
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('payment-receipts')
-            .upload(filePath, receiptFile, {
-              cacheControl: '3600',
-              upsert: false,
-              contentType: receiptFile.type
-            });
+      // Upload receipt to Supabase Storage if InstaPay or Bank Transfer
+      if ((paymentMethod === 'instapay' || paymentMethod === 'bank_transfer') && receiptFile) {
+        // Get file extension
+        const fileExtension = receiptFile.name.split('.').pop() || 'png';
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 8);
+        
+        // Create a completely clean filename: userId/timestamp_random.ext
+        const filePath = `${user.id}/receipt_${timestamp}_${randomString}.${fileExtension}`;
+        receiptPath = filePath;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('payment-receipts')
+          .upload(filePath, receiptFile, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: receiptFile.type
+          });
 
-          if (uploadError) {
-            console.error('Error uploading receipt:', uploadError);
-            alert(`Failed to upload receipt: ${uploadError.message}. Please try again.`);
-            setIsProcessing(false);
-            setIsUploading(false);
-            return;
-          }
-
-          console.log('Receipt uploaded successfully:', uploadData);
+        if (uploadError) {
+          console.error('Error uploading receipt:', uploadError);
+          alert(`Failed to upload receipt: ${uploadError.message}. Please try again.`);
+          setIsProcessing(false);
+          setIsUploading(false);
+          return;
         }
+
+        console.log('Receipt uploaded successfully:', uploadData);
       }
 
-      // Create purchase request for InstaPay or Card (requires receipt upload)
-      if ((paymentMethod === 'instapay' || paymentMethod === 'card') && receiptPath) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Extract filename from receiptPath
-          const fileName = receiptPath.split('/').pop() || receiptFile?.name || '';
-          
-          const { error: requestError } = await supabase
-            .from('purchase_requests')
-            .insert({
-              user_id: user.id,
-              project_id: checkoutData.project.id,
-              project_name: checkoutData.project.name, // Denormalized for performance
-              quantity: checkoutData.quantity,
-              total_amount: checkoutData.totalPrice,
-              receipt_url: receiptPath,
-              receipt_file_name: fileName,
-              payment_method: paymentMethod === 'instapay' ? 'Instapay' : 'Card',
-              status: 'pending'
-            });
-
-          if (requestError) {
-            console.error('Error creating purchase request:', requestError);
-            alert('Failed to create purchase request. Please contact support.');
-            setIsProcessing(false);
-            setIsUploading(false);
-            return;
-          }
-
-          console.log('Purchase request created successfully');
-        }
+      // Process payment based on method
+      if (paymentMethod === 'wallet') {
+        // Deduct from wallet using the wallet context
+        // This would need to be implemented in the wallet context
+        // For now, we'll create purchase requests for each project
+      } else if (paymentMethod === 'kashier') {
+        // Redirect to Kashier payment gateway
+        // This would integrate with Kashier API
+        // For now, we'll create purchase requests
       }
 
-      // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create purchase requests for each project
+      const fileName = receiptPath ? receiptPath.split('/').pop() || receiptFile?.name || '' : '';
+      const paymentMethodName = paymentMethod === 'instapay' ? 'Instapay' : 
+                                 paymentMethod === 'bank_transfer' ? 'Bank Transfer' :
+                                 paymentMethod === 'kashier' ? 'Kashier' : 'Wallet';
+
+      // Create purchase requests for all projects
+      const purchaseRequests = items.map(item => ({
+        user_id: user.id,
+        project_id: item.projectId,
+        project_name: item.projectName,
+        quantity: item.quantity,
+        total_amount: item.quantity * item.pricePerLead,
+        receipt_url: receiptPath || null,
+        receipt_file_name: fileName || null,
+        payment_method: paymentMethodName,
+        status: paymentMethod === 'wallet' ? 'confirmed' : 'pending'
+      }));
+
+      const { error: requestError } = await supabase
+        .from('purchase_requests')
+        .insert(purchaseRequests);
+
+      if (requestError) {
+        console.error('Error creating purchase requests:', requestError);
+        alert('Failed to create purchase requests. Please contact support.');
+        setIsProcessing(false);
+        setIsUploading(false);
+        return;
+      }
+
+      // If wallet payment, process wallet deduction
+      if (paymentMethod === 'wallet') {
+        // Call wallet deduction function
+        // This would need to be implemented
+        console.log('Processing wallet payment...');
+      }
+
+      console.log('Purchase requests created successfully');
       
-      console.log('Purchase request created:', {
-        amount: checkoutData.totalPrice,
-        currency: 'EGP',
-        paymentMethod,
-        project: checkoutData.project,
-        quantity: checkoutData.quantity
-      });
+      // Clear cart on success
+      clearCart();
       
       // Success
       setIsProcessing(false);
@@ -391,6 +396,56 @@ export const Checkout: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Wallet Payment */}
+                    <div
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        paymentMethod === 'wallet'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${!hasEnoughWalletBalance ? 'opacity-60' : ''}`}
+                      onClick={() => hasEnoughWalletBalance && handlePaymentMethodChange('wallet')}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          paymentMethod === 'wallet' ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}>
+                          <Wallet className={`h-5 w-5 ${paymentMethod === 'wallet' ? 'text-blue-600' : 'text-gray-600'}`} />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold">Wallet</h3>
+                          <p className="text-sm text-gray-600">
+                            Balance: EGP {balance.toFixed(0)}
+                            {!hasEnoughWalletBalance && (
+                              <span className="text-red-600 ml-1">(Insufficient)</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Kashier Payment */}
+                    <div
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        paymentMethod === 'kashier'
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => handlePaymentMethodChange('kashier')}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          paymentMethod === 'kashier' ? 'bg-purple-100' : 'bg-gray-100'
+                        }`}>
+                          <CreditCard className={`h-5 w-5 ${paymentMethod === 'kashier' ? 'text-purple-600' : 'text-gray-600'}`} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Kashier</h3>
+                          <p className="text-sm text-gray-600">Credit/Debit Card</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* InstaPay Payment */}
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         paymentMethod === 'instapay'
@@ -400,8 +455,10 @@ export const Checkout: React.FC = () => {
                       onClick={() => handlePaymentMethodChange('instapay')}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                          <Smartphone className="h-5 w-5 text-green-600" />
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          paymentMethod === 'instapay' ? 'bg-green-100' : 'bg-gray-100'
+                        }`}>
+                          <Smartphone className={`h-5 w-5 ${paymentMethod === 'instapay' ? 'text-green-600' : 'text-gray-600'}`} />
                         </div>
                         <div>
                           <h3 className="font-semibold">InstaPay</h3>
@@ -410,25 +467,81 @@ export const Checkout: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Bank Transfer */}
                     <div
-                      className="p-4 border-2 rounded-lg cursor-not-allowed transition-all border-gray-200 bg-gray-100 opacity-60 relative"
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        paymentMethod === 'bank_transfer'
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => handlePaymentMethodChange('bank_transfer')}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-300 rounded-lg flex items-center justify-center">
-                          <CreditCard className="h-5 w-5 text-gray-500" />
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          paymentMethod === 'bank_transfer' ? 'bg-orange-100' : 'bg-gray-100'
+                        }`}>
+                          <Landmark className={`h-5 w-5 ${paymentMethod === 'bank_transfer' ? 'text-orange-600' : 'text-gray-600'}`} />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-600">Debit/Credit Card</h3>
-                            <span className="text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full border border-yellow-300">
-                              Coming Soon
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500">Visa, Mastercard, American Express</p>
+                          <h3 className="font-semibold">Bank Transfer</h3>
+                          <p className="text-sm text-gray-600">Direct bank transfer</p>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Wallet Payment Details */}
+                  {paymentMethod === 'wallet' && (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200">
+                      <h4 className="font-semibold text-blue-900 mb-4 flex items-center">
+                        <Wallet className="h-5 w-5 mr-2" />
+                        Wallet Payment
+                      </h4>
+                      <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm text-gray-600">Current Balance:</span>
+                            <span className="font-bold text-lg text-blue-600">EGP {balance.toFixed(0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Total Amount:</span>
+                            <span className="font-bold text-lg text-gray-900">EGP {grandTotal.toFixed(0)}</span>
+                          </div>
+                          {!hasEnoughWalletBalance && (
+                            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-center gap-2 text-red-700">
+                                <AlertCircle className="h-4 w-4" />
+                                <span className="text-sm font-medium">
+                                  Insufficient balance. You need EGP {(grandTotal - balance).toFixed(0)} more.
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Kashier Payment Details */}
+                  {paymentMethod === 'kashier' && (
+                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-lg border-2 border-purple-200">
+                      <h4 className="font-semibold text-purple-900 mb-4 flex items-center">
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        Kashier Payment Gateway
+                      </h4>
+                      <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <p className="text-sm text-gray-600 mb-4">
+                            You will be redirected to Kashier's secure payment page to complete your transaction.
+                          </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Shield className="h-4 w-4" />
+                            <span>Secure payment processing by Kashier</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* InstaPay Details */}
                   {paymentMethod === 'instapay' && (
@@ -475,6 +588,64 @@ export const Checkout: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Bank Transfer Details */}
+                  {paymentMethod === 'bank_transfer' && (
+                    <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-lg border-2 border-orange-200">
+                      <h4 className="font-semibold text-orange-900 mb-4 flex items-center">
+                        <Landmark className="h-5 w-5 mr-2" />
+                        Bank Transfer Details
+                      </h4>
+                      <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-lg shadow-sm space-y-3">
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Bank Name:</p>
+                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                              <span className="font-mono font-bold">CIB Bank</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard('CIB Bank')}
+                              >
+                                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Account Number:</p>
+                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                              <span className="font-mono font-bold text-lg">1000123456789</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard('1000123456789')}
+                              >
+                                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Account Name:</p>
+                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                              <span className="font-semibold">SaleMate</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard('SaleMate')}
+                              >
+                                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-xs text-yellow-800">
+                              <strong>Important:</strong> After transferring, please upload your receipt to confirm payment.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
                       <Shield className="h-4 w-4 mr-2" />
@@ -499,7 +670,113 @@ export const Checkout: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {paymentMethod === 'credit_card' ? (
+                  {/* Wallet Payment */}
+                  {paymentMethod === 'wallet' && (
+                    <div className="py-6">
+                      <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Wallet className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">Pay with Wallet</h3>
+                        <p className="text-gray-600">
+                          Your wallet balance will be deducted to complete this purchase.
+                        </p>
+                      </div>
+
+                      <div className="max-w-md mx-auto mb-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Wallet Balance:</span>
+                            <span className="font-bold text-lg text-blue-600">EGP {balance.toFixed(0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Total Amount:</span>
+                            <span className="font-bold text-lg text-gray-900">EGP {grandTotal.toFixed(0)}</span>
+                          </div>
+                          <div className="border-t border-blue-200 pt-3 mt-3">
+                            <div className="flex justify-between items-center">
+                              <span className="font-semibold">Remaining Balance:</span>
+                              <span className={`font-bold text-lg ${hasEnoughWalletBalance ? 'text-green-600' : 'text-red-600'}`}>
+                                EGP {(balance - grandTotal).toFixed(0)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="max-w-md mx-auto">
+                        <Button 
+                          onClick={handlePayment}
+                          disabled={isProcessing || !hasEnoughWalletBalance}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          size="lg"
+                        >
+                          {isProcessing ? (
+                            <>
+                              <Clock className="h-4 w-4 mr-2 animate-spin" />
+                              Processing Payment...
+                            </>
+                          ) : (
+                            <>
+                              <Wallet className="h-4 w-4 mr-2" />
+                              Pay EGP {grandTotal.toFixed(0)} from Wallet
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Kashier Payment */}
+                  {paymentMethod === 'kashier' && (
+                    <div className="py-6">
+                      <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <CreditCard className="h-8 w-8 text-purple-600" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">Pay with Kashier</h3>
+                        <p className="text-gray-600">
+                          You will be redirected to Kashier's secure payment page.
+                        </p>
+                      </div>
+
+                      <div className="max-w-md mx-auto mb-6 bg-purple-50 border border-purple-200 rounded-lg p-6">
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-4">
+                            Total Amount: <span className="font-bold text-lg text-purple-600">EGP {grandTotal.toFixed(0)}</span>
+                          </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 justify-center">
+                            <Shield className="h-4 w-4" />
+                            <span>Secure payment processing by Kashier</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="max-w-md mx-auto">
+                        <Button 
+                          onClick={handlePayment}
+                          disabled={isProcessing}
+                          className="w-full bg-purple-600 hover:bg-purple-700"
+                          size="lg"
+                        >
+                          {isProcessing ? (
+                            <>
+                              <Clock className="h-4 w-4 mr-2 animate-spin" />
+                              Redirecting to Kashier...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Proceed to Kashier Payment
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* InstaPay Payment */}
+                  {paymentMethod === 'instapay' && (
                     <div>
                       <h3 className="text-lg font-semibold mb-6 text-center">Enter Your Card Details</h3>
                       
@@ -582,15 +859,18 @@ export const Checkout: React.FC = () => {
                         )}
                       </Button>
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Bank Transfer Payment */}
+                  {paymentMethod === 'bank_transfer' && (
                     <div className="py-6">
                       <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Smartphone className="h-8 w-8 text-green-600" />
+                        <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Landmark className="h-8 w-8 text-orange-600" />
                         </div>
-                        <h3 className="text-xl font-semibold mb-2">Complete Your InstaPay Payment</h3>
+                        <h3 className="text-xl font-semibold mb-2">Complete Your Bank Transfer</h3>
                         <p className="text-gray-600">
-                          After completing the payment via InstaPay, upload your receipt to confirm.
+                          After completing the bank transfer, upload your receipt to confirm.
                         </p>
                       </div>
 
@@ -667,7 +947,7 @@ export const Checkout: React.FC = () => {
                         <Button 
                           onClick={handlePayment}
                           disabled={isProcessing || !receiptFile}
-                          className="w-full bg-green-600 hover:bg-green-700"
+                          className="w-full bg-orange-600 hover:bg-orange-700"
                           size="lg"
                         >
                           {isProcessing ? (
@@ -683,6 +963,92 @@ export const Checkout: React.FC = () => {
                           )}
                         </Button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Credit Card Payment (Legacy - can be removed if not needed) */}
+                  {paymentMethod === 'credit_card' && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-6 text-center">Enter Your Card Details</h3>
+                      
+                      {/* Credit Card Mockup */}
+                      <CreditCardMockup
+                        cardNumber={cardDetails.number}
+                        cardHolder={cardDetails.holder}
+                        expiryDate={cardDetails.expiry}
+                        cvv={cardDetails.cvv}
+                      />
+
+                      {/* Card Form */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="cardNumber">Card Number</Label>
+                          <Input
+                            id="cardNumber"
+                            value={cardDetails.number}
+                            onChange={(e) => handleCardInputChange('number', e.target.value)}
+                            placeholder="1234 5678 9012 3456"
+                            maxLength={19}
+                            className="font-mono text-lg"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="cardHolder">Card Holder Name</Label>
+                          <Input
+                            id="cardHolder"
+                            value={cardDetails.holder}
+                            onChange={(e) => handleCardInputChange('holder', e.target.value)}
+                            placeholder="JOHN DOE"
+                            className="uppercase"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="expiry">Expiry Date</Label>
+                            <Input
+                              id="expiry"
+                              value={cardDetails.expiry}
+                              onChange={(e) => handleCardInputChange('expiry', e.target.value)}
+                              placeholder="MM/YY"
+                              maxLength={5}
+                              className="font-mono"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cvv">CVV</Label>
+                            <Input
+                              id="cvv"
+                              type="password"
+                              value={cardDetails.cvv}
+                              onChange={(e) => handleCardInputChange('cvv', e.target.value)}
+                              placeholder="123"
+                              maxLength={4}
+                              className="font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={handlePayment}
+                        disabled={isProcessing || !cardDetails.number || !cardDetails.holder || !cardDetails.expiry || !cardDetails.cvv}
+                        className="w-full mt-6"
+                        size="lg"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Clock className="h-4 w-4 mr-2 animate-spin" />
+                            Processing Payment...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Pay {grandTotal.toFixed(0)} EGP
+                          </>
+                        )}
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -808,27 +1174,31 @@ export const Checkout: React.FC = () => {
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Project Info */}
-                <div className="flex space-x-4">
-                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                    {!imageError ? (
-                      <img
-                        src={checkoutData.project.image}
-                        alt={checkoutData.project.name}
-                        className="w-full h-full object-cover"
-                        onError={() => setImageError(true)}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                        <Building className="h-8 w-8 text-blue-600" />
+                {/* Projects List */}
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.projectId} className="flex space-x-3 pb-3 border-b border-gray-100 last:border-0">
+                      <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.projectName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Building className="h-6 w-6 text-gray-400" />
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-sm">{checkoutData.project.name}</h3>
-                    <p className="text-xs text-gray-600">{checkoutData.project.developer}</p>
-                    <p className="text-xs text-gray-500">{checkoutData.project.region}</p>
-                  </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm truncate">{item.projectName}</h4>
+                        <p className="text-xs text-gray-600 truncate">{item.developer}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-gray-500">{item.quantity} leads</span>
+                          <span className="text-xs font-medium">EGP {(item.quantity * item.pricePerLead).toFixed(0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="border-t border-gray-200 my-4" />
@@ -836,28 +1206,24 @@ export const Checkout: React.FC = () => {
                 {/* Order Details */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Quantity:</span>
-                    <span>{checkoutData.quantity} leads</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Price per lead:</span>
-                    <span>{checkoutData.project.pricePerLead} EGP</span>
+                    <span>Total Leads:</span>
+                    <span className="font-medium">{totalLeads} leads</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
-                    <span>{checkoutData.quantity * checkoutData.project.pricePerLead} EGP</span>
+                    <span className="font-medium">{subtotal.toFixed(0)} EGP</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>VAT (14%):</span>
-                    <span>{Math.round(checkoutData.quantity * checkoutData.project.pricePerLead * 0.14)} EGP</span>
+                    <span className="font-medium">{vat.toFixed(0)} EGP</span>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 my-4" />
 
                 <div className="flex justify-between font-semibold">
-                  <span>Total:</span>
-                  <span>{checkoutData.quantity * checkoutData.project.pricePerLead + Math.round(checkoutData.quantity * checkoutData.project.pricePerLead * 0.14)} EGP</span>
+                  <span>Grand Total:</span>
+                  <span className="text-lg text-blue-600">{grandTotal.toFixed(0)} EGP</span>
                 </div>
 
                 {/* Security Badges */}
