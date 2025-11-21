@@ -174,12 +174,13 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ isOpen, onClose, onSucce
             const checkPaymentStatus = async () => {
               try {
                 const { data: transaction } = await supabase
-                  .from('payment_transactions')
-                  .select('status, completed_at')
+                  .from('transactions')
+                  .select('status, processed_at')
                   .eq('id', paymentResult.transactionId)
+                  .eq('transaction_type', 'payment')
                   .single();
                 
-                if (transaction?.completed_at) {
+                if (transaction?.processed_at) {
                   // Payment completed! Refresh wallet and close payment window
                   await refreshBalance();
                   showSuccess('Payment successful! Your wallet has been updated.');

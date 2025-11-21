@@ -81,13 +81,16 @@ class PaymentGatewayService {
       };
 
       const { data: transaction, error: transactionError } = await supabase
-        .from('payment_transactions')
+        .from('transactions')
         .insert({
-          user_id: request.userId,
+          transaction_type: 'payment',
+          profile_id: request.userId,
           amount: request.amount,
           currency: request.currency || 'EGP',
-          gateway: request.gateway,
+          provider: request.gateway,
+          payment_method: request.paymentMethod === 'card' ? 'Card' : request.paymentMethod === 'instapay' ? 'Instapay' : 'BankTransfer',
           status: 'pending',
+          reference_id: request.referenceId || null,
           metadata: transactionMetadata,
         })
         .select()
@@ -133,19 +136,19 @@ class PaymentGatewayService {
           : 'pending';
         
         await supabase
-          .from('payment_transactions')
+          .from('transactions')
           .update({
-            gateway_transaction_id: paymentResult.transactionId,
+            provider_transaction_id: paymentResult.transactionId,
             gateway_payment_intent_id: paymentResult.paymentIntentId || null,
             status: newStatus,
           })
           .eq('id', transaction.id);
       } else {
         await supabase
-          .from('payment_transactions')
+          .from('transactions')
           .update({
             status: 'failed',
-            error_message: paymentResult.error || 'Payment processing failed',
+            notes: paymentResult.error || 'Payment processing failed',
           })
           .eq('id', transaction.id);
       }
@@ -361,8 +364,8 @@ class PaymentGatewayService {
       // Update gateway transaction ID if provided
       if (gatewayTransactionId) {
         await supabase
-          .from('payment_transactions')
-          .update({ gateway_transaction_id: gatewayTransactionId })
+          .from('transactions')
+          .update({ provider_transaction_id: gatewayTransactionId })
           .eq('id', transactionId);
       }
 
@@ -380,16 +383,36 @@ class PaymentGatewayService {
    */
   static async getTransaction(transactionId: string): Promise<PaymentTransaction | null> {
     const { data, error } = await supabase
-      .from('payment_transactions')
+      .from('transactions')
       .select('*')
       .eq('id', transactionId)
+      .eq('transaction_type', 'payment')
       .single();
 
     if (error || !data) {
       return null;
     }
 
-    return data as PaymentTransaction;
+    // Map transactions table columns to PaymentTransaction interface
+    const tx = data as any;
+    return {
+      id: tx.id,
+      user_id: tx.profile_id,
+      amount: Number(tx.amount),
+      currency: tx.currency,
+      payment_method: tx.payment_method?.toLowerCase() as PaymentMethod || 'card',
+      gateway: tx.provider as PaymentGateway || 'test',
+      gateway_transaction_id: tx.provider_transaction_id,
+      gateway_payment_intent_id: tx.gateway_payment_intent_id,
+      status: tx.status as PaymentStatus,
+      transaction_type: (tx.metadata?.transaction_type || 'wallet_topup') as TransactionType,
+      reference_id: tx.reference_id,
+      metadata: tx.metadata,
+      test_mode: tx.metadata?.test_mode || false,
+      created_at: tx.created_at,
+      updated_at: tx.updated_at,
+      completed_at: tx.processed_at,
+    } as PaymentTransaction;
   }
 
   /**
@@ -397,9 +420,10 @@ class PaymentGatewayService {
    */
   static async getUserTransactions(userId: string, limit = 50): Promise<PaymentTransaction[]> {
     const { data, error } = await supabase
-      .from('payment_transactions')
+      .from('transactions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('profile_id', userId)
+      .eq('transaction_type', 'payment')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -408,7 +432,25 @@ class PaymentGatewayService {
       return [];
     }
 
-    return (data || []) as PaymentTransaction[];
+    // Map transactions table columns to PaymentTransaction interface
+    return (data || []).map((tx: any) => ({
+      id: tx.id,
+      user_id: tx.profile_id,
+      amount: Number(tx.amount),
+      currency: tx.currency,
+      payment_method: tx.payment_method?.toLowerCase() as PaymentMethod || 'card',
+      gateway: tx.provider as PaymentGateway || 'test',
+      gateway_transaction_id: tx.provider_transaction_id,
+      gateway_payment_intent_id: tx.gateway_payment_intent_id,
+      status: tx.status as PaymentStatus,
+      transaction_type: (tx.metadata?.transaction_type || 'wallet_topup') as TransactionType,
+      reference_id: tx.reference_id,
+      metadata: tx.metadata,
+      test_mode: tx.metadata?.test_mode || false,
+      created_at: tx.created_at,
+      updated_at: tx.updated_at,
+      completed_at: tx.processed_at,
+    })) as PaymentTransaction[];
   }
 }
 

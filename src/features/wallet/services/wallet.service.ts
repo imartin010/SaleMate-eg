@@ -111,12 +111,14 @@ export class WalletService {
     transactionType = 'wallet_topup'
   ) {
     const { data, error } = await supabase
-      .from('payment_transactions')
+      .from('transactions')
       .insert({
-        user_id: userId,
-        amount: amount.toString(),
+        transaction_type: 'payment',
+        profile_id: userId,
+        amount: Number(amount),
         currency: 'EGP',
-        gateway: 'test',
+        provider: 'test',
+        payment_method: paymentMethod === 'card' ? 'Card' : paymentMethod === 'instapay' ? 'Instapay' : 'BankTransfer',
         status: 'pending',
         metadata: {
           payment_method: paymentMethod,
