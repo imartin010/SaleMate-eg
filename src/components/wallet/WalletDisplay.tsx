@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -82,10 +82,10 @@ export const WalletDisplay: React.FC = () => {
 
   if (loading) {
     return (
-      <Card className="w-full">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-center">
-            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+      <Card className="shop-project-card overflow-hidden bg-white rounded-lg border-0" style={{ padding: 0 }}>
+        <CardContent className="px-3 pt-2 pb-1.5">
+          <div className="flex items-center justify-center py-4">
+            <RefreshCw className="h-4 w-4 animate-spin mr-2 text-gray-400" />
             <span className="text-sm text-gray-600">Loading wallet...</span>
           </div>
         </CardContent>
@@ -95,42 +95,43 @@ export const WalletDisplay: React.FC = () => {
 
   return (
     <>
-      <Card className="w-full">
-        <CardContent className="p-4">
+      <Card className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0" style={{ padding: 0 }}>
+        {/* Wallet Details - Minimal */}
+        <CardContent className="px-3 pt-2 pb-1.5">
+          {/* Compact Balance Display */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Wallet className="h-5 w-5 text-blue-600" />
-              </div>
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-blue-500 flex-shrink-0" />
               <div>
-                <div className="text-sm text-gray-600">Wallet Balance</div>
-                <div className="text-xl font-bold text-gray-900">
+                <div className="text-xs text-gray-500 font-medium">Wallet Balance</div>
+                <div className="text-lg font-semibold text-blue-600">
                   EGP {balance.toFixed(0)}
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={refreshBalance}
-                className="h-8"
+                className="h-7 w-7 p-0 hover:bg-gray-100 transition-all rounded"
+                aria-label="Refresh balance"
               >
-                <RefreshCw className="h-3 w-3" />
+                <RefreshCw className="h-3.5 w-3.5 text-gray-500" />
               </Button>
               <Button
                 size="sm"
                 onClick={() => setShowAddMoney(true)}
-                className="h-8"
+                className="h-7 px-2 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-all rounded border-0"
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Add Money
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add
               </Button>
             </div>
           </div>
           
           {error && (
-            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+            <div className="mt-1.5 p-1.5 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
               {error}
             </div>
           )}
