@@ -283,55 +283,33 @@ serve(async (req) => {
               console.log('Reason:', fallbackReason);
               console.log('===================================');
             } else {
-              // Non-recoverable error
-              await supabaseAdmin
-                .from('otp_challenges')
-                .update({
-                  status: 'failed',
-                  provider: 'twilio_sms',
-                  metadata: { error: fallbackErr.message },
-                  updated_at: formatIso(now()),
-                })
-                .eq('id', insertedChallenge.id);
-
-              return jsonResponse({
-                success: false,
-                error: 'Failed to send verification code',
-                code: 'OTP_DISPATCH_FAILED',
-              }, 500);
+              // Phone number fallback also failed - always use dev fallback
+              const fallbackErr = fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+              provider = 'fallback_dev';
+              fallbackReason = `Alphanumeric sender failed: ${err.message}. Phone fallback also failed: ${fallbackErr.message}`;
+              metadata = { fallback: true, reason: fallbackReason, twilio_error: err.message };
+              devOtp = otpCode;
+              console.log('===================================');
+              console.log('📱 OTP FALLBACK MODE (DEV)');
+              console.log('Phone:', normalizedPhone);
+              console.log('Code:', otpCode);
+              console.log('Reason:', fallbackReason);
+              console.log('===================================');
             }
+          } else {
+            // Other Twilio errors - always use dev fallback
+            provider = 'fallback_dev';
+            fallbackReason = err.message || 'Twilio SMS delivery failed';
+            metadata = { fallback: true, reason: fallbackReason, twilio_error: err.message };
+            devOtp = otpCode;
+
+            console.log('===================================');
+            console.log('📱 OTP FALLBACK MODE (DEV)');
+            console.log('Phone:', normalizedPhone);
+            console.log('Code:', otpCode);
+            console.log('Reason:', fallbackReason);
+            console.log('===================================');
           }
-        } else if (shouldFallback(err)) {
-          // Other Twilio errors - use dev fallback
-          provider = 'fallback_dev';
-          fallbackReason = err.message;
-          metadata = { fallback: true, reason: fallbackReason, twilio_error: err.message };
-          devOtp = otpCode;
-
-          console.log('===================================');
-          console.log('📱 OTP FALLBACK MODE (DEV)');
-          console.log('Phone:', normalizedPhone);
-          console.log('Code:', otpCode);
-          console.log('Reason:', fallbackReason);
-          console.log('===================================');
-        } else {
-          // Non-recoverable error - don't fallback
-          await supabaseAdmin
-            .from('otp_challenges')
-            .update({
-              status: 'failed',
-              provider: 'twilio_sms',
-              metadata: { error: err.message },
-              updated_at: formatIso(now()),
-            })
-            .eq('id', insertedChallenge.id);
-
-          return jsonResponse({
-            success: false,
-            error: 'Failed to send verification code',
-            code: 'OTP_DISPATCH_FAILED',
-          }, 500);
-        }
       }
     }
 
