@@ -457,6 +457,9 @@ const PerformanceAdminPanel: React.FC = () => {
       // Invalidate and refetch commission cuts data
       queryClient.invalidateQueries({ queryKey: ['performance-commission-cuts'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-commission-cuts'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
 
       setSuccess(`Commission cuts saved successfully for all ${franchises.length} franchise(s)!`);
       

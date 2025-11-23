@@ -201,6 +201,9 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-transactions'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }
@@ -231,6 +234,9 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-transactions'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }
@@ -273,6 +279,9 @@ export function useCreateExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-expenses'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-expenses'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }
@@ -295,6 +304,9 @@ export function useUpdateExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-expenses'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-expenses'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }
@@ -314,6 +326,9 @@ export function useDeleteExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-expenses'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-expenses'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }
@@ -355,6 +370,10 @@ export function useCreateCommissionScheme() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-commission-schemes'] });
+      queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-commission-schemes'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }
@@ -397,6 +416,9 @@ export function useUpsertCommissionCut() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-commission-cuts'] });
       queryClient.invalidateQueries({ queryKey: ['performance-analytics'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['performance-commission-cuts'] });
+      queryClient.refetchQueries({ queryKey: ['performance-analytics'] });
     },
   });
 }

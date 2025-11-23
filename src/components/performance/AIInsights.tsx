@@ -346,10 +346,8 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
         recommendations.push(translations.insights.lowProfitMargin.addPending(5 - analytics.pending_deals_count));
       }
       
-      // Check if commission cuts are high
-      if (analytics.commission_cuts_total > analytics.gross_revenue * 0.3) {
-        recommendations.push(translations.insights.lowProfitMargin.reduceCuts(analytics.commission_cuts_total));
-      }
+      // Note: Commission cuts are fixed in the performance program and cannot be reduced
+      // Therefore, we do not recommend reducing commission cuts
       
       // Default recommendation if no specific issues found
       if (recommendations.length === 0) {
