@@ -229,12 +229,12 @@ export function useLeads() {
 
           for (const batch of batches) {
             const { data: batchFeedbackData, error: batchError } = await supabase
-              .from('events')
+          .from('events')
               .select('id, lead_id, actor_profile_id, body, payload, created_at, updated_at')
               .in('lead_id', batch)
-              .eq('event_type', 'activity')
-              .eq('activity_type', 'feedback')
-              .order('created_at', { ascending: false });
+          .eq('event_type', 'activity')
+          .eq('activity_type', 'feedback')
+          .order('created_at', { ascending: false });
 
             if (!batchError && batchFeedbackData) {
               allFeedbackData.push(...batchFeedbackData);
