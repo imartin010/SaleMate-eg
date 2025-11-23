@@ -85,7 +85,10 @@ serve(async (req) => {
       }, 500);
     }
 
-    const { data: recentChallenges, error: recentError } = await supabaseAdmin
+    let recentChallenges: unknown[] = [];
+    let rateLimitResult: ReturnType<typeof evaluateRateLimit>;
+    
+    const { data: fetchedChallenges, error: recentError } = await supabaseAdmin
       .from('otp_challenges')
       .select('id, created_at, status, send_count')
       .eq('target', normalizedPhone)
@@ -94,17 +97,54 @@ serve(async (req) => {
 
     if (recentError) {
       console.error('Failed to fetch recent OTP challenges:', recentError);
-      return jsonResponse({ success: false, error: 'Unable to process request' }, 500);
+      console.error('Error details:', {
+        message: recentError.message,
+        code: recentError.code,
+        details: recentError.details,
+        hint: recentError.hint,
+      });
+      
+      // Check if it's a table not found error
+      if (recentError.code === 'PGRST116' || 
+          recentError.message?.includes('relation') || 
+          recentError.message?.includes('does not exist') ||
+          recentError.message?.includes('PGRST116')) {
+        console.error('❌ otp_challenges table does not exist. Migration needs to be run.');
+        return jsonResponse({ 
+          success: false, 
+          error: 'OTP system is not configured. Please run database migration: 20251114080000_create_otp_challenges.sql',
+          code: 'OTP_TABLE_MISSING',
+          details: 'The otp_challenges table does not exist. This migration must be run in Supabase SQL Editor before OTP can work.'
+        }, 500);
+      }
+      
+      // Check if it's a permission error
+      if (recentError.code === '42501' || 
+          recentError.message?.includes('permission') || 
+          recentError.message?.includes('denied') ||
+          recentError.message?.includes('permission denied')) {
+        return jsonResponse({ 
+          success: false, 
+          error: 'Database permission error. Service role may not have access to otp_challenges table.',
+          code: 'OTP_PERMISSION_ERROR',
+          details: 'Please check RLS policies and grants for the otp_challenges table.'
+        }, 500);
+      }
+      
+      // For other errors, log but continue without rate limiting (graceful degradation)
+      console.warn('⚠️ Rate limit check failed, proceeding without rate limiting:', recentError.message);
+      rateLimitResult = { allowed: true };
+    } else {
+      recentChallenges = fetchedChallenges ?? [];
+      rateLimitResult = evaluateRateLimit(
+        recentChallenges,
+        {
+          maxRequests: DEFAULT_MAX_REQUESTS,
+          windowMs: DEFAULT_WINDOW_MS,
+          maxAttempts: DEFAULT_MAX_ATTEMPTS,
+        },
+      );
     }
-
-    const rateLimitResult = evaluateRateLimit(
-      recentChallenges ?? [],
-      {
-        maxRequests: DEFAULT_MAX_REQUESTS,
-        windowMs: DEFAULT_WINDOW_MS,
-        maxAttempts: DEFAULT_MAX_ATTEMPTS,
-      },
-    );
 
     if (!rateLimitResult.allowed) {
       return jsonResponse({
@@ -142,7 +182,37 @@ serve(async (req) => {
 
     if (insertError || !insertedChallenge) {
       console.error('Failed to create OTP challenge', insertError);
-      return jsonResponse({ success: false, error: 'Failed to create OTP challenge' }, 500);
+      
+      // Check if it's a table not found error
+      if (insertError?.code === 'PGRST116' || 
+          insertError?.message?.includes('relation') || 
+          insertError?.message?.includes('does not exist')) {
+        return jsonResponse({ 
+          success: false, 
+          error: 'OTP system is not configured. Please run database migration: 20251114080000_create_otp_challenges.sql',
+          code: 'OTP_TABLE_MISSING',
+          details: 'The otp_challenges table does not exist. Run this migration in Supabase SQL Editor.'
+        }, 500);
+      }
+      
+      // Check if it's a permission error
+      if (insertError?.code === '42501' || 
+          insertError?.message?.includes('permission') || 
+          insertError?.message?.includes('denied')) {
+        return jsonResponse({ 
+          success: false, 
+          error: 'Database permission error. Service role may not have insert access.',
+          code: 'OTP_PERMISSION_ERROR',
+          details: 'Please check RLS policies and grants for the otp_challenges table.'
+        }, 500);
+      }
+      
+      return jsonResponse({ 
+        success: false, 
+        error: 'Failed to create OTP challenge. Please try again.',
+        code: 'OTP_INSERT_ERROR',
+        details: process.env.NODE_ENV === 'development' ? insertError?.message : undefined
+      }, 500);
     }
 
     let provider = 'twilio_sms';

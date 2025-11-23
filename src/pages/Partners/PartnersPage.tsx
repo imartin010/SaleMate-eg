@@ -607,9 +607,9 @@ const PartnersPage: React.FC = () => {
                     <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
                       <Building className="h-2.5 w-2.5 inline mr-1 align-middle" />
                       <span className="align-middle">{normalizeDisplayName(project.developer)}</span>
-                    </div>
-                  </div>
-                  
+          </div>
+          </div>
+
                   {/* Calculator Button - Minimal */}
                   <div className="absolute top-2 right-2">
                     <button 
@@ -620,35 +620,35 @@ const PartnersPage: React.FC = () => {
                       <Calculator className="h-2.5 w-2.5 inline mr-1 align-middle" />
                       <span className="align-middle">Calculate</span>
                     </button>
-                  </div>
-                  
+      </div>
+
                   {/* Partners Count Badge - Bottom Left */}
                   {activePartners.length > 0 && (
                     <div className="absolute bottom-2 left-2">
                       <div className="bg-gray-900/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm">
                         {activePartners.length} Partner{activePartners.length !== 1 ? 's' : ''}
-                      </div>
                     </div>
+                  </div>
                   )}
                 </div>
 
                 {/* Project Details - Clean & Minimal */}
                 <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
                   {/* Project Name - Moved to white space */}
-                  <div>
+                    <div>
                     <div className="text-base font-semibold text-gray-900 line-clamp-1">
-                      {normalizeDisplayName(project.compound_name)}
-                    </div>
+                        {normalizeDisplayName(project.compound_name)}
+              </div>
                     <p className="text-xs text-gray-500 line-clamp-1">
                       {normalizeDisplayName(project.area)}
-                    </p>
-                  </div>
+                        </p>
+                      </div>
                   
                   {/* Location - Subtle */}
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <MapPin className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                     <span className="truncate">{normalizeDisplayName(project.developer)}</span>
-                  </div>
+                    </div>
 
                   {/* Stats - Minimal Design */}
                   <div className="grid grid-cols-2 gap-2">
@@ -657,7 +657,7 @@ const PartnersPage: React.FC = () => {
                       <div className="text-lg font-semibold text-blue-600">
                         {project.starting_price ? `${(project.starting_price / 1000000).toFixed(1)}M EGP` : 'On Request'}
                       </div>
-                    </div>
+                      </div>
                     
                     <div className="text-left p-2 bg-green-50/50 rounded-lg">
                       <div className="text-xs text-gray-500 mb-0.5 font-medium">Partners</div>
@@ -666,7 +666,7 @@ const PartnersPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </CardContent>
+            </CardContent>
 
                 {/* Action Footer - Modern Button */}
                 <CardFooter className="px-3 pb-2 pt-1">
@@ -678,10 +678,10 @@ const PartnersPage: React.FC = () => {
                     Calculate Commission
                   </Button>
                 </CardFooter>
-              </Card>
+          </Card>
             );
           })}
-        </div>
+      </div>
 
         {/* Empty State */}
         {filteredProjects.length === 0 && !loading && (

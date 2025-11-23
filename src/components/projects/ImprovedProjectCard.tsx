@@ -118,6 +118,10 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
 
   const quantityError = quantity > currentAvailableLeads ? `Only ${currentAvailableLeads} leads available` : null;
 
+  // Check if this is the most purchased project
+  const isMostPurchased = project.name.toLowerCase().includes('branded residences') && 
+                          project.name.toLowerCase().includes('silversands');
+
   // Generate hero image (deterministic placeholder)
   const getHeroImage = (projectName: string) => {
     const images = [
@@ -189,9 +193,19 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             </div>
           </div>
           
-          {/* Cart Indicator - Minimal */}
+          {/* Most Purchased Badge - Orange */}
+          {isMostPurchased && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-orange-500 text-white px-2 py-0.5 rounded text-[10px] font-semibold shadow-md border border-orange-600/50">
+                <Star className="h-2.5 w-2.5 inline mr-1 align-middle fill-white" />
+                <span className="align-middle">Most Purchased</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Cart Indicator - Minimal (below most purchased badge if both exist) */}
           {cartItem && (
-            <div className="absolute top-2 right-2">
+            <div className={`absolute ${isMostPurchased ? 'top-8' : 'top-2'} right-2`}>
               <div className="bg-gray-900/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm">
                 <ShoppingCart className="h-2.5 w-2.5 inline mr-1 align-middle" />
                 <span className="align-middle">{cartItem.quantity}</span>
@@ -207,7 +221,7 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
             <div className="text-base font-semibold text-gray-900 line-clamp-1">{project.name}</div>
             <p className="text-xs text-gray-500 line-clamp-1">{project.description || 'Premium Real Estate Project'}</p>
           </div>
-          
+
           {/* Location - Subtle */}
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <MapPin className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
