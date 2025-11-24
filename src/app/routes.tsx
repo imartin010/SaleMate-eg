@@ -261,14 +261,10 @@ export const router = createBrowserRouter([
   // Draft pages (no sidebar) - removed TeamPNL route as file doesn't exist
   
   // Protected routes with AuthGuard
-  // Payment callback route (outside AppLayout to avoid header/nav, but requires auth)
+  // Payment callback route (outside AppLayout to avoid header/nav, no auth required - webhook handles processing)
   {
     path: '/payment/kashier/callback',
-    element: (
-      <AuthGuard>
-        <PaymentCallback />
-      </AuthGuard>
-    ),
+    element: <PaymentCallback />,
   },
   
   // Backend Audit - Accessible without auth to diagnose issues (outside /app to avoid AppLayout)
