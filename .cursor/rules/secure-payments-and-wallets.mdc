@@ -1,0 +1,9 @@
+Security & Payments Rules:
+
+- Never hard-code API keys, secrets, or private tokens in the codebase.
+- Use environment variables and existing config helpers.
+- For wallet and payments logic:
+  - Never bypass balance checks or transaction validation.
+  - Do not change the core payment flow or wallet balance updates without clearly explaining the impact and proposing tests/checks.---
+alwaysApply: true
+---
