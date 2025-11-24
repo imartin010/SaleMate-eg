@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SafeImage } from '../common/SafeImage';
 
 interface ProjectCardProps {
   project: Project;
@@ -172,14 +173,16 @@ export const ImprovedProjectCard: React.FC<ProjectCardProps> = ({ project, onPur
       <Card className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0" style={{ padding: 0 }}>
         {/* Hero Photo Section */}
         <div className="relative h-52 w-full overflow-hidden">
-          <img
-            src={project.coverImage || getHeroImage(project.name)}
+          <SafeImage
+            src={project.coverImage}
             alt={project.name}
+            fallbackSrc={getHeroImage(project.name)}
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = getHeroImage(project.name);
-            }}
+            placeholder={
+              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                <Building className="h-16 w-16 text-blue-300" />
+              </div>
+            }
           />
           
           {/* Subtle Overlay */}
