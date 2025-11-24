@@ -83,11 +83,13 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Handle WebSocket connection errors gracefully
 // Supabase realtime WebSocket errors are logged by the library but are usually harmless
 // We filter them to reduce console noise while preserving other error logging
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+if (typeof window !== 'undefined') {
   let wsErrorCount = 0;
   const maxWsErrorLogs = 1; // Only log once per page load
+  let hasWarned = false;
   
   const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
   
   // Override console.error to filter WebSocket connection errors
   console.error = function(...args: unknown[]) {
@@ -97,12 +99,14 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
     // Check if this is a WebSocket realtime connection error
     if (message.includes('WebSocket connection to') && 
         message.includes('realtime/v1/websocket') &&
-        message.includes('failed')) {
+        (message.includes('failed') || message.includes('error'))) {
       wsErrorCount++;
       
-      if (wsErrorCount === 1) {
+      if (!hasWarned) {
+        hasWarned = true;
         // Log a single, user-friendly warning instead of spamming errors
-        console.warn(
+        originalConsoleWarn.call(
+          console,
           '⚠️ Supabase Realtime: WebSocket connection unavailable. ' +
           'Realtime features (live updates) may not work, but the app will function normally. ' +
           'This is usually harmless and can be ignored.'
@@ -115,6 +119,21 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
     // For all other errors, use the original console.error
     originalConsoleError.apply(console, args);
   };
+  
+  // Also catch unhandled WebSocket errors from the browser
+  window.addEventListener('error', (event) => {
+    if (event.message?.includes('WebSocket') && 
+        event.message?.includes('realtime') &&
+        !hasWarned) {
+      hasWarned = true;
+      console.warn(
+        '⚠️ Supabase Realtime: WebSocket connection issue detected. ' +
+        'The app will continue to work normally.'
+      );
+      // Prevent the error from appearing in console
+      event.preventDefault();
+    }
+  }, true);
 }
 
 /**
