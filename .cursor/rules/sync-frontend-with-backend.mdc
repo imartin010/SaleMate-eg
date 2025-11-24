@@ -1,0 +1,9 @@
+For any change to API routes, database schema, or Supabase RPC:
+
+- Update:
+  - The corresponding TypeScript types / Zod schemas.
+  - The React hooks or data-fetching logic that call these endpoints.
+  - Any UI that depends on the changed data (tables, cards, filters).
+- After changes, describe how a lead/user will flow through the system end-to-end.---
+alwaysApply: true
+---
