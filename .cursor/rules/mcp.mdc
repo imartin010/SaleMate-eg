@@ -1,0 +1,21 @@
+---
+alwaysApply: true
+---
+
+This project is "Sale Mate" (real estate SaaS).
+
+Database:
+
+- PostgreSQL on Supabase.
+- You are connected to it using MCP.
+
+RULES:
+
+- Always use the database MCP tools to inspect and modify the schema and data.
+- Never ask me to run SQL manually in Supabase.
+- When you need schema changes:
+  1) Generate a migration SQL file in `/supabase/migrations`.
+  2) Explain briefly what it does.
+  3) Run it via MCP if possible.
+  4) Then update the TypeScript types / Supabase client code accordingly.
+- Always keep the codebase and the database schema in sync.
