@@ -18,6 +18,7 @@ export { Logo } from './Logo';
 export { MobileCard } from './MobileCard';
 export { PageTitle } from './PageTitle';
 export { ScrollToTop } from './ScrollToTop';
+export { SafeImage } from './SafeImage';
 export { SkeletonCard } from './SkeletonCard';
 export { StickySubmitButton } from './StickySubmitButton';
 export { Toast } from './Toast';
