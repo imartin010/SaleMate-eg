@@ -141,7 +141,7 @@ export function useAdminData() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
           fetchAllData();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_requests' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: 'transaction_type=eq.payment' }, () => {
           fetchAllData();
         })
         .subscribe();

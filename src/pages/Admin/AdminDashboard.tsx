@@ -46,7 +46,7 @@ export default function AdminDashboard() {
     // Subscribe to real-time updates
     const purchaseChannel = supabase
       .channel('purchase_requests_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_requests' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: 'transaction_type=eq.payment' }, () => {
         loadKPIs();
       })
       .subscribe();

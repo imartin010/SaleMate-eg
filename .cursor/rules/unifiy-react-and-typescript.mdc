@@ -1,0 +1,13 @@
+This project uses React + TypeScript.
+
+RULES:
+
+- Always use TypeScript with proper types, not `any`, unless absolutely necessary.
+- Prefer React functional components with hooks over class components.
+- Keep components small and focused; extract reusable UI into shared components.
+- Follow these conventions:
+  - Components: PascalCase (e.g., `LeadTable`, `WalletCard`)
+  - Hooks: useSomething (e.g., `useLeads`, `useWallet`)
+  - Files: one main component or hook per file.---
+alwaysApply: true
+---
