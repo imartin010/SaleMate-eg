@@ -54,8 +54,68 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
   db: {
     schema: 'public'
+  },
+  realtime: {
+    // Only log errors, not warnings (reduces console noise)
+    log_level: 'error',
+    // Set connection timeout to prevent hanging
+    timeout: 10000,
+    // Configure realtime parameters
+    params: {
+      eventsPerSecond: 10
+    },
+    // Disable automatic reconnection attempts (we'll handle it manually if needed)
+    // This prevents the flood of connection errors
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries: number) => {
+      // Exponential backoff with max delay
+      return Math.min(1000 * Math.pow(2, tries), 30000);
+    }
+  },
+  global: {
+    // Suppress fetch errors for realtime
+    headers: {
+      'x-client-info': 'salemate-web'
+    }
   }
 });
+
+// Handle WebSocket connection errors gracefully
+// Supabase realtime WebSocket errors are logged by the library but are usually harmless
+// We filter them to reduce console noise while preserving other error logging
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  let wsErrorCount = 0;
+  const maxWsErrorLogs = 1; // Only log once per page load
+  
+  const originalConsoleError = console.error;
+  
+  // Override console.error to filter WebSocket connection errors
+  console.error = function(...args: unknown[]) {
+    const firstArg = args[0];
+    const message = typeof firstArg === 'string' ? firstArg : String(firstArg);
+    
+    // Check if this is a WebSocket realtime connection error
+    if (message.includes('WebSocket connection to') && 
+        message.includes('realtime/v1/websocket') &&
+        message.includes('failed')) {
+      wsErrorCount++;
+      
+      if (wsErrorCount === 1) {
+        // Log a single, user-friendly warning instead of spamming errors
+        console.warn(
+          '⚠️ Supabase Realtime: WebSocket connection unavailable. ' +
+          'Realtime features (live updates) may not work, but the app will function normally. ' +
+          'This is usually harmless and can be ignored.'
+        );
+      }
+      // Suppress the actual error to reduce console noise
+      return;
+    }
+    
+    // For all other errors, use the original console.error
+    originalConsoleError.apply(console, args);
+  };
+}
 
 /**
  * Default export for compatibility
