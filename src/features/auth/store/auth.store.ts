@@ -170,20 +170,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Create the user account
+      const trimmedEmail = email.trim().toLowerCase(); // Normalize email
+      console.log('📝 Creating user account', { email: trimmedEmail, name, phone });
+      
       const { error: err, data } = await supabase.auth.signUp({
-        email, 
+        email: trimmedEmail,
         password,
         options: { 
           data: { 
             name, 
             phone,
             phone_verified: true,
-          } 
+          },
+          // Disable email confirmation since we're using OTP for phone verification
+          emailRedirectTo: undefined,
         },
       });
       
       if (err) {
-        set({ error: err.message, loading: false });
+        console.error('❌ Signup error:', err);
+        // Map common Supabase Auth errors to user-friendly messages
+        let errorMessage = err.message || err.code || 'Signup failed';
+        
+        // Handle specific error codes
+        if (err.code === 'email_address_invalid' || err.message?.includes('email_address_invalid')) {
+          errorMessage = 'Email address is invalid. Please check your email format or contact support if the issue persists.';
+        } else if (err.code === 'user_already_registered' || err.message?.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (err.code === 'signup_disabled') {
+          errorMessage = 'New signups are currently disabled. Please contact support.';
+        }
+        
+        set({ error: errorMessage, loading: false });
         return false;
       }
 

@@ -133,7 +133,13 @@ export default function SignUp() {
         navigate('/auth/login');
       }, 2000);
     } else {
-      setOtpError(error || 'Invalid verification code');
+      // Show the actual error from auth store, not a generic OTP error
+      const actualError = error || 'Signup failed. Please try again.';
+      setOtpError(actualError);
+      // Also set the main error so it's visible
+      if (error) {
+        setError(error);
+      }
     }
   };
 
