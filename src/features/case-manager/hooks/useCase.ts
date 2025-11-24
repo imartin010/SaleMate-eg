@@ -194,14 +194,14 @@ export function useCase(leadId: string): UseCaseReturn {
       }
     );
 
-    // Subscribe to activities changes (consolidated table)
+    // Subscribe to events changes (consolidated table)
     // Listen for all activity types and update relevant state
     channel.on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
-        table: 'activities',
+        table: 'events',
         filter: `lead_id=eq.${leadId}`,
       },
       async (payload) => {
