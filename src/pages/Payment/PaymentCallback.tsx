@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import PaymentGatewayService from '../../services/paymentGateway';
 import { useWallet } from '../../contexts/WalletContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabaseClient';
 
 /**
  * Payment Callback Page
@@ -66,6 +67,29 @@ export const PaymentCallback: React.FC = () => {
       }
 
       try {
+        // First, check the actual transaction status in the database
+        // This is the source of truth - webhook may have already processed it
+        let transactionStatus: string | null = null;
+        try {
+          const { data: transaction, error: txError } = await supabase
+            .from('transactions')
+            .select('status, processed_at')
+            .eq('id', transactionId)
+            .eq('transaction_type', 'payment')
+            .single();
+          
+          if (!txError && transaction) {
+            transactionStatus = transaction.status;
+            console.log('PaymentCallback: Transaction status from DB', {
+              transactionId,
+              status: transactionStatus,
+              processed_at: transaction.processed_at
+            });
+          }
+        } catch (dbError) {
+          console.warn('PaymentCallback: Could not fetch transaction status from DB', dbError);
+        }
+
         // Determine payment status from URL params
         // Kashier returns 'status=success' or 'paymentStatus=SUCCESS' in the redirect URL
         let paymentStatusToUse: 'completed' | 'failed' = 'failed';
@@ -79,16 +103,42 @@ export const PaymentCallback: React.FC = () => {
         const isFailed = 
           statusParam?.toLowerCase() === 'failed' || 
           statusParam?.toLowerCase() === 'error' ||
-          paymentStatusParam?.toUpperCase() === 'FAILED';
+          statusParam?.toLowerCase() === 'cancelled' ||
+          statusParam?.toLowerCase() === 'canceled' ||
+          paymentStatusParam?.toUpperCase() === 'FAILED' ||
+          paymentStatusParam?.toUpperCase() === 'CANCELLED';
         
         if (isSuccess) {
+          // Explicit success status in URL
           paymentStatusToUse = 'completed';
         } else if (isFailed) {
+          // Explicit failed/cancelled status in URL
           paymentStatusToUse = 'failed';
+        } else if (transactionStatus === 'completed' || transactionStatus === 'confirmed') {
+          // Transaction already processed successfully (webhook handled it)
+          paymentStatusToUse = 'completed';
+          console.log('PaymentCallback: Transaction already completed in DB, treating as success');
+        } else if (transactionStatus === 'failed' || transactionStatus === 'cancelled') {
+          // Transaction already marked as failed/cancelled
+          paymentStatusToUse = 'failed';
+          console.log('PaymentCallback: Transaction already failed/cancelled in DB');
         } else {
-          // If no status in URL, check if paymentId or orderId exists (Kashier success indicator)
+          // No explicit status in URL and transaction not yet processed
+          // If paymentId or orderId exists but no status, check if transaction is processing
+          // Otherwise, default to failed (user likely cancelled by closing modal)
           if (paymentId || orderId) {
-            paymentStatusToUse = 'completed';
+            // Check if transaction is still processing (might be pending webhook)
+            if (transactionStatus === 'processing' || transactionStatus === 'pending') {
+              // Wait a bit and check again, or default to failed for safety
+              console.warn('PaymentCallback: Payment has orderId/paymentId but no explicit status and transaction is still pending. Treating as cancelled/failed for safety.');
+              paymentStatusToUse = 'failed';
+            } else {
+              // Transaction exists but status is unclear - default to failed for safety
+              paymentStatusToUse = 'failed';
+            }
+          } else {
+            // No paymentId, orderId, or status - definitely cancelled/failed
+            paymentStatusToUse = 'failed';
           }
         }
 
@@ -150,13 +200,20 @@ export const PaymentCallback: React.FC = () => {
             });
           }, 1000); // 1 second - just enough to see success message
         } else {
-          // Only show error if payment actually failed
-          console.error('PaymentCallback: Payment failed', result);
+          // Payment failed or was cancelled
+          console.error('PaymentCallback: Payment failed or cancelled', result);
           setStatus('error');
-          setMessage(result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
+          
+          // Determine if it was cancelled vs failed
+          const wasCancelled = !isSuccess && !isFailed && !transactionStatus;
+          const message = wasCancelled 
+            ? 'Payment was cancelled. No charges were made.'
+            : (result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
+          
+          setMessage(message);
           if (showError) {
             try {
-              showError(result.error || 'Payment processing failed');
+              showError(wasCancelled ? 'Payment cancelled' : (result.error || 'Payment processing failed'));
             } catch (toastError) {
               console.error('PaymentCallback: Error showing error toast', toastError);
             }
