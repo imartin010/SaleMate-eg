@@ -62,30 +62,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: undefined, _isInitializing: true });
 
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      // First, try to restore the session from storage
+      // This will automatically refresh the token if needed (thanks to autoRefreshToken: true)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (error) {
+      if (sessionError) {
         // "Auth session missing" is expected when user is not logged in - don't treat as error
-        if (error.message !== 'Auth session missing!') {
-          console.error('Auth init: getUser error', error);
+        if (sessionError.message !== 'Auth session missing!') {
+          console.error('Auth init: getSession error', sessionError);
           // Don't set "Invalid API key" as an error during init - it's likely a client config issue
-          if (error.message.includes('Invalid API key')) {
+          if (sessionError.message.includes('Invalid API key')) {
             console.error('❌ Invalid API key detected during auth init. Check your VITE_SUPABASE_ANON_KEY in .env file.');
             // Only set error if it's not already set from supabaseClient initialization
             if (!get().error) {
               set({ error: 'Invalid API key. Please check your environment variables and restart the dev server.' });
             }
           } else {
-            set({ error: error.message });
+            set({ error: sessionError.message });
           }
         }
         set({ user: null, profile: null });
+      } else if (session?.user) {
+        // Session found - user is logged in
+        set({ user: session.user });
+        await get().refreshProfile();
       } else {
-        set({ user: user ?? null });
+        // No session - user is not logged in
+        // Try getUser as a fallback (in case session wasn't restored but user exists)
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError && userError.message !== 'Auth session missing!') {
+          console.error('Auth init: getUser fallback error', userError);
+        }
+        
         if (user) {
+          set({ user });
           await get().refreshProfile();
         } else {
-          set({ profile: null });
+          set({ user: null, profile: null });
         }
       }
 
