@@ -195,6 +195,16 @@ export const Checkout: React.FC = () => {
   };
 
   const handlePayment = async () => {
+    console.log('🚀 Starting checkout process...', {
+      paymentMethod,
+      totalLeads,
+      totalPrice,
+      grandTotal,
+      itemsCount: items.length,
+      hasEnoughBalance: hasEnoughWalletBalance,
+      currentBalance: balance
+    });
+
     // Validate minimum leads
     if (!canCheckout()) {
       alert(`Minimum order is ${MINIMUM_LEADS} leads. You have ${totalLeads} leads selected.`);
@@ -219,16 +229,25 @@ export const Checkout: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error('❌ User not authenticated');
         alert('Please log in to complete your purchase');
         setIsProcessing(false);
         setIsUploading(false);
         return;
       }
 
+      console.log('✅ User authenticated:', { userId: user.id, email: user.email });
+
       let receiptPath = '';
       
       // Upload receipt to Supabase Storage if InstaPay or Bank Transfer
       if ((paymentMethod === 'instapay' || paymentMethod === 'bank_transfer') && receiptFile) {
+        console.log('📤 Uploading receipt...', {
+          fileName: receiptFile.name,
+          fileSize: receiptFile.size,
+          fileType: receiptFile.type
+        });
+        
         // Get file extension
         const fileExtension = receiptFile.name.split('.').pop() || 'png';
         const timestamp = Date.now();
@@ -247,19 +266,33 @@ export const Checkout: React.FC = () => {
           });
 
         if (uploadError) {
-          console.error('Error uploading receipt:', uploadError);
+          console.error('❌ Error uploading receipt:', {
+            error: uploadError,
+            message: uploadError.message,
+            fileName: receiptFile.name
+          });
           alert(`Failed to upload receipt: ${uploadError.message}. Please try again.`);
           setIsProcessing(false);
           setIsUploading(false);
           return;
         }
 
-        console.log('Receipt uploaded successfully:', uploadData);
+        console.log('✅ Receipt uploaded successfully:', {
+          path: uploadData.path,
+          fullPath: uploadData.fullPath
+        });
       }
 
       // Process wallet payment first if applicable
       if (paymentMethod === 'wallet') {
         try {
+          console.log('💰 Starting wallet deduction:', {
+            userId: user.id,
+            amount: grandTotal,
+            currentBalance: balance,
+            description: `Purchase ${totalLeads} leads from ${items.length} project(s)`
+          });
+
           const { data: walletResult, error: walletError } = await supabase.rpc('deduct_from_wallet', {
             p_user_id: user.id,
             p_amount: grandTotal,
@@ -268,34 +301,79 @@ export const Checkout: React.FC = () => {
 
           // Check for RPC call error
           if (walletError) {
-            console.error('Wallet deduction RPC error:', walletError);
+            console.error('❌ Wallet deduction RPC error:', {
+              error: walletError,
+              code: walletError.code,
+              message: walletError.message,
+              details: walletError.details,
+              hint: walletError.hint,
+              userId: user.id,
+              amount: grandTotal,
+              currentBalance: balance
+            });
             alert(`Wallet payment failed: ${walletError.message}. Please try again.`);
             setIsProcessing(false);
             setIsUploading(false);
             return;
           }
 
+          // Type assertion for wallet result
+          const walletResultTyped = walletResult as {
+            success: boolean;
+            previous_balance?: number;
+            new_balance?: number;
+            ledger_entry_id?: string;
+            error?: string;
+          } | null;
+
           // Check for function-level error (function returns {success: false, error: '...'})
-          if (walletResult && walletResult.success === false) {
-            console.error('Wallet deduction failed:', walletResult);
-            alert(`Wallet payment failed: ${walletResult.error || 'Insufficient funds or unknown error'}. Please try again.`);
+          if (walletResultTyped && walletResultTyped.success === false) {
+            console.error('❌ Wallet deduction failed:', {
+              result: walletResultTyped,
+              error: walletResultTyped.error,
+              userId: user.id,
+              amount: grandTotal,
+              currentBalance: balance
+            });
+            alert(`Wallet payment failed: ${walletResultTyped.error || 'Insufficient funds or unknown error'}. Please try again.`);
             setIsProcessing(false);
             setIsUploading(false);
             return;
           }
 
           // Verify deduction was successful
-          if (!walletResult || walletResult.success !== true) {
-            console.error('Wallet deduction returned unexpected result:', walletResult);
+          if (!walletResultTyped || walletResultTyped.success !== true) {
+            console.error('❌ Wallet deduction returned unexpected result:', {
+              result: walletResultTyped,
+              userId: user.id,
+              amount: grandTotal,
+              currentBalance: balance
+            });
             alert(`Wallet payment failed: Unable to deduct funds. Please try again or contact support.`);
             setIsProcessing(false);
             setIsUploading(false);
             return;
           }
 
-          console.log('Wallet deduction successful:', walletResult);
+          console.log('✅ Wallet deduction successful:', {
+            result: walletResultTyped,
+            previousBalance: walletResultTyped.previous_balance,
+            newBalance: walletResultTyped.new_balance,
+            ledgerEntryId: walletResultTyped.ledger_entry_id
+          });
+
+          // Refresh wallet balance immediately after successful deduction
+          await refreshBalance();
+          console.log('✅ Wallet balance refreshed after deduction');
         } catch (walletErr: any) {
-          console.error('Wallet deduction exception:', walletErr);
+          console.error('❌ Wallet deduction exception:', {
+            error: walletErr,
+            message: walletErr.message,
+            stack: walletErr.stack,
+            userId: user.id,
+            amount: grandTotal,
+            currentBalance: balance
+          });
           alert(`Wallet payment failed: ${walletErr.message || 'Unknown error'}. Please try again.`);
           setIsProcessing(false);
           setIsUploading(false);
@@ -325,30 +403,114 @@ export const Checkout: React.FC = () => {
         admin_notes: null
       }));
 
-      // Insert into purchase_requests view (which will sync to lead_commerce via trigger)
-      const { error: requestError } = await supabase
-        .from('purchase_requests')
-        .insert(purchaseRequests);
+      // For wallet payments, insert directly into transactions to avoid trigger timeout
+      // For other payment methods, use purchase_requests view (which requires admin approval)
+      let createdRequests: any[] = [];
+      let requestError: any = null;
+      
+      if (paymentMethod === 'wallet') {
+        // Insert directly into transactions for wallet payments (instant processing)
+        const transactionRecords = items.map(item => ({
+          transaction_type: 'commerce',
+          transaction_category: 'allocation',
+          profile_id: user.id,
+          project_id: item.projectId,
+          commerce_type: 'allocation',
+          status: 'confirmed',
+          quantity: item.quantity,
+          amount: item.quantity * item.pricePerLead,
+          currency: 'EGP',
+          payment_method: paymentMethodName,
+          receipt_url: receiptPath || null,
+          receipt_file_name: fileName || null,
+          metadata: {
+            source: 'purchase_requests',
+            project_name: item.projectName,
+            payment_method: paymentMethodName,
+            receipt_url: receiptPath || null,
+            receipt_file_name: fileName || null
+          }
+        }));
+        
+        const { data: createdTransactions, error: txInsertError } = await supabase
+          .from('transactions')
+          .insert(transactionRecords)
+          .select('id, project_id, quantity');
+        
+        if (txInsertError) {
+          requestError = txInsertError;
+        } else {
+          createdRequests = createdTransactions || [];
+        }
+      } else {
+        // For non-wallet payments, use purchase_requests view (requires admin approval)
+        // Note: purchase_requests is a view, so we need to cast to any for TypeScript
+        const { data: requests, error: reqError } = await (supabase as any)
+          .from('purchase_requests')
+          .insert(purchaseRequests)
+          .select('id, project_id, quantity');
+        
+        if (reqError) {
+          requestError = reqError;
+        } else {
+          createdRequests = requests || [];
+        }
+      }
 
       if (requestError) {
-        console.error('Error creating purchase requests:', requestError);
+        console.error('❌ Error creating purchase requests:', {
+          error: requestError,
+          code: requestError.code,
+          message: requestError.message,
+          details: requestError.details,
+          hint: requestError.hint,
+          paymentMethod,
+          itemsCount: items.length,
+          userId: user.id
+        });
         
         // If wallet payment failed after deduction, try to refund
         if (paymentMethod === 'wallet') {
           try {
+            console.log('🔄 Attempting to refund wallet after transaction creation failure...', {
+              userId: user.id,
+              amount: grandTotal
+            });
+            
             // Try to add back to wallet - check if function exists
-            const { error: refundError } = await supabase.rpc('add_to_wallet', {
+            const { data: refundResult, error: refundError } = await supabase.rpc('add_to_wallet', {
               p_user_id: user.id,
               p_amount: grandTotal,
               p_description: 'Refund - purchase request creation failed'
-            }).catch(() => ({ error: { message: 'Refund function not available' } }));
+            }).catch((err) => {
+              console.error('Refund RPC call exception:', err);
+              return { error: { message: 'Refund function not available', originalError: err } };
+            });
             
             if (refundError) {
-              console.error('Failed to refund wallet after purchase request failure:', refundError);
+              console.error('❌ Failed to refund wallet after purchase request failure:', {
+                error: refundError,
+                userId: user.id,
+                amount: grandTotal,
+                refundResult
+              });
               alert('⚠️ IMPORTANT: Your wallet was charged but the purchase request failed. Please contact support with this error to get a refund.');
+            } else {
+              console.log('✅ Wallet refunded successfully:', {
+                refundResult,
+                userId: user.id,
+                amount: grandTotal
+              });
+              // Refresh balance after refund
+              await refreshBalance();
             }
           } catch (refundErr) {
-            console.error('Failed to refund wallet after purchase request failure:', refundErr);
+            console.error('❌ Failed to refund wallet after purchase request failure:', {
+              error: refundErr,
+              message: refundErr instanceof Error ? refundErr.message : String(refundErr),
+              userId: user.id,
+              amount: grandTotal
+            });
             alert('⚠️ IMPORTANT: Your wallet was charged but the purchase request failed. Please contact support with this error to get a refund.');
           }
         }
@@ -359,36 +521,148 @@ export const Checkout: React.FC = () => {
         return;
       }
 
-      console.log('Purchase requests created successfully');
+      console.log('✅ Purchase requests/transactions created successfully:', {
+        count: createdRequests.length,
+        transactions: createdRequests.map(tx => ({
+          id: tx.id,
+          projectId: tx.project_id,
+          quantity: tx.quantity
+        }))
+      });
       
-      // For wallet payments, ensure leads are assigned immediately
-      // The trigger should handle this, but we'll also call it directly as a backup
-      if (paymentMethod === 'wallet') {
+      // For wallet payments, assign leads immediately using the transaction IDs we just created
+      if (paymentMethod === 'wallet' && createdRequests && createdRequests.length > 0) {
         try {
-          // Get the transaction IDs that were just created
-          // We need to wait a moment for the trigger to sync purchase_requests to transactions
-          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log(`📦 Assigning leads for ${createdRequests.length} wallet purchase(s)...`);
           
-          // For each purchase request, verify leads are being assigned
-          // The trigger should have already handled this, but we log for debugging
-          for (const item of items) {
-            console.log(`Purchase request created for ${item.quantity} leads from ${item.projectName}`);
+          // Assign leads for each transaction (we already have the IDs from direct insert)
+          const assignmentPromises = createdRequests.map(async (tx) => {
+            try {
+              console.log(`🔄 Assigning leads for transaction ${tx.id} (${tx.quantity} leads)...`);
+              
+              const { data: assignResult, error: assignError } = await supabase.rpc(
+                'assign_leads_for_wallet_purchase' as any,
+                { p_transaction_id: tx.id }
+              );
+              
+              // Type assertion for assign result
+              const assignResultTyped = assignResult as {
+                success: boolean;
+                leads_assigned?: number;
+                total_assigned?: number;
+                error?: string;
+              } | null;
+              
+              if (assignError) {
+                console.error('❌ Lead assignment error for transaction', {
+                  transactionId: tx.id,
+                  error: assignError,
+                  code: assignError.code,
+                  message: assignError.message
+                });
+                return { success: false, transactionId: tx.id, error: assignError.message };
+              } else if (assignResultTyped && assignResultTyped.success) {
+                console.log(`✅ Assigned ${assignResultTyped.leads_assigned} leads for transaction ${tx.id}`, {
+                  transactionId: tx.id,
+                  leadsAssigned: assignResultTyped.leads_assigned,
+                  totalAssigned: assignResultTyped.total_assigned
+                });
+                return { success: true, transactionId: tx.id, leadsAssigned: assignResultTyped.leads_assigned || 0 };
+              } else {
+                console.warn('⚠️ Lead assignment returned false:', {
+                  transactionId: tx.id,
+                  result: assignResultTyped,
+                  error: assignResultTyped?.error
+                });
+                return { 
+                  success: false, 
+                  transactionId: tx.id, 
+                  error: assignResultTyped?.error || 'Unknown error' 
+                };
+              }
+            } catch (assignErr: any) {
+              console.error('❌ Exception during lead assignment:', {
+                transactionId: tx.id,
+                error: assignErr,
+                message: assignErr.message,
+                stack: assignErr.stack
+              });
+              return { success: false, transactionId: tx.id, error: assignErr.message };
+            }
+          });
+          
+          // Wait for all assignments to complete
+          const results = await Promise.all(assignmentPromises);
+          const successful = results.filter(r => r.success).length;
+          const failed = results.filter(r => !r.success).length;
+          
+          console.log('📊 Lead assignment summary:', {
+            total: results.length,
+            successful,
+            failed,
+            results: results.map(r => ({
+              transactionId: r.transactionId,
+              success: r.success,
+              leadsAssigned: r.leadsAssigned,
+              error: r.error
+            }))
+          });
+          
+          if (failed > 0) {
+            console.warn(`⚠️ ${failed} lead assignment(s) failed. Check console for details.`);
+            // Don't block the user - they can contact support if needed
+          }
+          
+          if (successful > 0) {
+            console.log(`✅ Successfully assigned leads for ${successful} purchase(s)`);
           }
         } catch (assignErr) {
-          // Non-critical - trigger should have handled it
-          console.warn('Lead assignment verification warning:', assignErr);
+          // Non-critical - log but don't block the user
+          console.error('❌ Lead assignment error:', {
+            error: assignErr,
+            message: assignErr instanceof Error ? assignErr.message : String(assignErr)
+          });
+        }
+      }
+      
+      // Refresh wallet balance one more time after all operations complete
+      if (paymentMethod === 'wallet') {
+        try {
+          await refreshBalance();
+          console.log('✅ Final wallet balance refresh completed');
+        } catch (refreshErr) {
+          console.warn('⚠️ Failed to refresh wallet balance after checkout:', refreshErr);
+          // Non-critical - balance will refresh on next page load
         }
       }
       
       // Clear cart on success
       clearCart();
+      console.log('✅ Cart cleared');
+      
+      // Set flag to refresh shop when user returns
+      sessionStorage.setItem('refreshShopAfterCheckout', 'true');
       
       // Success
+      console.log('🎉 Checkout completed successfully!', {
+        paymentMethod,
+        totalLeads,
+        grandTotal,
+        transactionCount: createdRequests.length
+      });
+      
       setIsProcessing(false);
       setIsUploading(false);
       setCurrentStep(3);
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('❌ Payment error (catch block):', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        paymentMethod,
+        totalLeads,
+        grandTotal
+      });
       alert('Payment failed. Please try again.');
       setIsProcessing(false);
       setIsUploading(false);
@@ -926,7 +1200,7 @@ export const Checkout: React.FC = () => {
                         ) : (
                           <>
                             <CreditCard className="h-4 w-4 mr-2" />
-                            Pay {checkoutData.totalPrice} EGP
+                            Pay {grandTotal.toFixed(0)} EGP
                           </>
                         )}
                       </Button>
