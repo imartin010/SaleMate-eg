@@ -349,6 +349,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true });
     await supabase.auth.signOut();
     set({ user: null, profile: null, loading: false });
+    
+    // Redirect to homepage after logout
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   },
   
   async refreshProfile() {
