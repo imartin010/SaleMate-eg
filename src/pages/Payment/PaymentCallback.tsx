@@ -91,29 +91,46 @@ export const PaymentCallback: React.FC = () => {
         }
 
         // Determine payment status from URL params
-        // Kashier returns 'status=success' or 'paymentStatus=SUCCESS' in the redirect URL
+        // CRITICAL: paymentStatus takes priority over status parameter
+        // Kashier can send status=success but paymentStatus=CANCELLED when user cancels
         let paymentStatusToUse: 'completed' | 'failed' = 'failed';
         
-        // Check both status and paymentStatus parameters (Kashier uses both)
-        const isSuccess = 
-          statusParam?.toLowerCase() === 'success' || 
-          statusParam?.toLowerCase() === 'completed' ||
-          paymentStatusParam?.toUpperCase() === 'SUCCESS';
+        // Check paymentStatus first (more reliable from Kashier)
+        const paymentStatusUpper = paymentStatusParam?.toUpperCase();
+        const isPaymentStatusCancelled = paymentStatusUpper === 'CANCELLED' || paymentStatusUpper === 'CANCELED';
+        const isPaymentStatusFailed = paymentStatusUpper === 'FAILED' || paymentStatusUpper === 'ERROR';
+        const isPaymentStatusSuccess = paymentStatusUpper === 'SUCCESS' || paymentStatusUpper === 'COMPLETED';
         
-        const isFailed = 
-          statusParam?.toLowerCase() === 'failed' || 
-          statusParam?.toLowerCase() === 'error' ||
-          statusParam?.toLowerCase() === 'cancelled' ||
-          statusParam?.toLowerCase() === 'canceled' ||
-          paymentStatusParam?.toUpperCase() === 'FAILED' ||
-          paymentStatusParam?.toUpperCase() === 'CANCELLED';
+        // Check status parameter (secondary, less reliable)
+        const statusLower = statusParam?.toLowerCase();
+        const isStatusSuccess = 
+          statusLower === 'success' || 
+          statusLower === 'completed';
+        const isStatusFailed = 
+          statusLower === 'failed' || 
+          statusLower === 'error' ||
+          statusLower === 'cancelled' ||
+          statusLower === 'canceled';
         
-        if (isSuccess) {
-          // Explicit success status in URL
-          paymentStatusToUse = 'completed';
-        } else if (isFailed) {
-          // Explicit failed/cancelled status in URL
+        // Priority: paymentStatus > status parameter
+        // If paymentStatus says CANCELLED, always treat as failed regardless of status parameter
+        if (isPaymentStatusCancelled) {
+          // Payment was cancelled - always fail
           paymentStatusToUse = 'failed';
+          console.log('PaymentCallback: paymentStatus=CANCELLED detected, treating as failed');
+        } else if (isPaymentStatusFailed) {
+          // Payment failed
+          paymentStatusToUse = 'failed';
+        } else if (isPaymentStatusSuccess) {
+          // Payment succeeded (only if paymentStatus explicitly says SUCCESS)
+          paymentStatusToUse = 'completed';
+        } else if (isStatusFailed) {
+          // Status parameter says failed
+          paymentStatusToUse = 'failed';
+        } else if (isStatusSuccess && !paymentStatusParam) {
+          // Only trust status=success if paymentStatus is not provided
+          // If paymentStatus exists but is not SUCCESS, don't trust status parameter
+          paymentStatusToUse = 'completed';
         } else if (transactionStatus === 'completed' || transactionStatus === 'confirmed') {
           // Transaction already processed successfully (webhook handled it)
           paymentStatusToUse = 'completed';
