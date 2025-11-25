@@ -272,12 +272,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .eq('id', data.user.id);
     }
 
-    // Handle remember me
+    // Handle remember me - store preference with timestamp
     if (rememberMe && data.session) {
-      // Extend session duration (Supabase handles this automatically)
+      // Store remember me preference with timestamp (30 days from now)
+      const rememberUntil = new Date();
+      rememberUntil.setDate(rememberUntil.getDate() + 30);
       localStorage.setItem('remember_me', 'true');
+      localStorage.setItem('remember_me_until', rememberUntil.toISOString());
+      
+      // Ensure session is persisted (Supabase handles this automatically with persistSession: true)
+      // The session will be stored in localStorage and auto-refreshed
     } else {
       localStorage.removeItem('remember_me');
+      localStorage.removeItem('remember_me_until');
     }
 
     await get().refreshProfile();
