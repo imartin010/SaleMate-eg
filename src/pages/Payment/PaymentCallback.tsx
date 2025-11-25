@@ -142,47 +142,27 @@ export const PaymentCallback: React.FC = () => {
           }
         }
 
-        // Confirm payment via RPC
-        // Note: Webhook already processes payment, so this is mainly for UX
-        // If RPC fails due to auth, that's okay - webhook handled it
-        console.log('PaymentCallback: Calling confirmPayment', { transactionId, paymentStatusToUse });
-        let result;
-        try {
-          result = await PaymentGatewayService.confirmPayment(
-            transactionId,
-            paymentStatusToUse
-          );
-          console.log('PaymentCallback: confirmPayment result', result);
-        } catch (rpcError) {
-          // If RPC fails (e.g., auth error), assume webhook processed it
-          // Still show success if URL indicates success
-          console.warn('PaymentCallback: RPC call failed, webhook may have processed payment', rpcError);
-          if (paymentStatusToUse === 'completed') {
-            result = { success: true }; // Assume success if URL says success
-          } else {
-            result = { success: false, error: 'Could not confirm payment status' };
-          }
-        }
-
-        // Check if payment was successful (either newly processed or already processed)
-        // The RPC may return success=true even if transaction was already processed
-        if (result.success && paymentStatusToUse === 'completed') {
-          console.log('PaymentCallback: Payment successful, refreshing balance and redirecting');
+        // CRITICAL: Only process payment if we have explicit success confirmation
+        // Never assume success - always verify from database first
+        console.log('PaymentCallback: Checking payment status', { transactionId, paymentStatusToUse, transactionStatus });
+        
+        // If transaction is already completed in DB, webhook handled it - just refresh UI
+        if (transactionStatus === 'completed' || transactionStatus === 'confirmed') {
+          console.log('PaymentCallback: Transaction already completed by webhook, skipping RPC call');
+          // Don't call RPC again - webhook already processed it
+          // Just show success and refresh balance
           setStatus('success');
           setMessage('Payment successful! Your wallet has been topped up.');
           
-          // Refresh wallet balance
           if (refreshBalance) {
             try {
               await refreshBalance();
               console.log('PaymentCallback: Balance refreshed');
             } catch (refreshError) {
               console.error('PaymentCallback: Error refreshing balance', refreshError);
-              // Continue anyway - balance will update on next page load
             }
           }
           
-          // Show success toast
           if (showSuccess) {
             try {
               showSuccess('Payment successful! Your wallet balance has been updated.');
@@ -191,43 +171,155 @@ export const PaymentCallback: React.FC = () => {
             }
           }
           
-          // Redirect to home immediately after balance refresh (better UX)
           setTimeout(() => {
-            console.log('PaymentCallback: Redirecting to /app/home');
             navigate('/app/home', { replace: true }).catch(() => {
-              // Fallback to public home if not authenticated
               navigate('/', { replace: true });
             });
-          }, 1000); // 1 second - just enough to see success message
-        } else {
-          // Payment failed or was cancelled
-          console.error('PaymentCallback: Payment failed or cancelled', result);
+          }, 1000);
+          return;
+        }
+        
+        // If transaction is already failed/cancelled in DB, don't process
+        if (transactionStatus === 'failed' || transactionStatus === 'cancelled') {
+          console.log('PaymentCallback: Transaction already marked as failed/cancelled in DB');
           setStatus('error');
-          
-          // Determine if it was cancelled vs failed
-          const wasCancelled = !isSuccess && !isFailed && !transactionStatus;
-          const message = wasCancelled 
-            ? 'Payment was cancelled. No charges were made.'
-            : (result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
-          
-          setMessage(message);
+          setMessage('Payment was cancelled. No charges were made.');
           if (showError) {
             try {
-              showError(wasCancelled ? 'Payment cancelled' : (result.error || 'Payment processing failed'));
+              showError('Payment cancelled');
             } catch (toastError) {
               console.error('PaymentCallback: Error showing error toast', toastError);
             }
           }
-          
-          // Redirect to home after 5 seconds
           setTimeout(() => {
-            console.log('PaymentCallback: Redirecting to /app/home (error case)');
             navigate('/app/home', { replace: true }).catch(() => {
-              // Fallback to public home if not authenticated
               navigate('/', { replace: true });
             });
-          }, 5000);
+          }, 3000);
+          return;
         }
+        
+        // Only call confirmPayment if we have explicit success status AND transaction is still pending/processing
+        // This prevents crediting wallet for cancelled payments
+        if (paymentStatusToUse === 'completed' && (transactionStatus === 'pending' || transactionStatus === 'processing' || !transactionStatus)) {
+          console.log('PaymentCallback: Calling confirmPayment for pending transaction', { transactionId, paymentStatusToUse });
+          let result;
+          try {
+            result = await PaymentGatewayService.confirmPayment(
+              transactionId,
+              paymentStatusToUse
+            );
+            console.log('PaymentCallback: confirmPayment result', result);
+            
+            if (!result.success) {
+              // RPC failed - don't assume success, treat as failed
+              console.error('PaymentCallback: confirmPayment RPC failed', result);
+              setStatus('error');
+              setMessage(result.error || 'Payment processing failed. Please contact support if the payment was deducted.');
+              if (showError) {
+                try {
+                  showError(result.error || 'Payment processing failed');
+                } catch (toastError) {
+                  console.error('PaymentCallback: Error showing error toast', toastError);
+                }
+              }
+              setTimeout(() => {
+                navigate('/app/home', { replace: true }).catch(() => {
+                  navigate('/', { replace: true });
+                });
+              }, 5000);
+              return;
+            }
+          } catch (rpcError) {
+            // RPC call failed - NEVER assume success, always treat as error
+            console.error('PaymentCallback: RPC call exception', rpcError);
+            setStatus('error');
+            setMessage('Could not confirm payment status. Please contact support if the payment was deducted.');
+            if (showError) {
+              try {
+                showError('Payment confirmation failed');
+              } catch (toastError) {
+                console.error('PaymentCallback: Error showing error toast', toastError);
+              }
+            }
+            setTimeout(() => {
+              navigate('/app/home', { replace: true }).catch(() => {
+                navigate('/', { replace: true });
+              });
+            }, 5000);
+            return;
+          }
+          
+          // Only proceed to success if RPC confirmed success
+          if (result.success) {
+            console.log('PaymentCallback: Payment confirmed successful by RPC');
+            setStatus('success');
+            setMessage('Payment successful! Your wallet has been topped up.');
+            
+            if (refreshBalance) {
+              try {
+                await refreshBalance();
+                console.log('PaymentCallback: Balance refreshed');
+              } catch (refreshError) {
+                console.error('PaymentCallback: Error refreshing balance', refreshError);
+              }
+            }
+            
+            if (showSuccess) {
+              try {
+                showSuccess('Payment successful! Your wallet balance has been updated.');
+              } catch (toastError) {
+                console.error('PaymentCallback: Error showing toast', toastError);
+              }
+            }
+            
+            setTimeout(() => {
+              navigate('/app/home', { replace: true }).catch(() => {
+                navigate('/', { replace: true });
+              });
+            }, 1000);
+            return;
+          }
+        } else {
+          // Payment was cancelled or failed - don't process
+          console.log('PaymentCallback: Payment cancelled or failed, not processing', {
+            paymentStatusToUse,
+            transactionStatus
+          });
+          setStatus('error');
+          setMessage('Payment was cancelled. No charges were made.');
+          if (showError) {
+            try {
+              showError('Payment cancelled');
+            } catch (toastError) {
+              console.error('PaymentCallback: Error showing error toast', toastError);
+            }
+          }
+          setTimeout(() => {
+            navigate('/app/home', { replace: true }).catch(() => {
+              navigate('/', { replace: true });
+            });
+          }, 3000);
+          return;
+        }
+        
+        // Fallback - should not reach here, but handle it
+        console.warn('PaymentCallback: Unexpected state, treating as failed');
+        setStatus('error');
+        setMessage('Payment status could not be determined. Please contact support.');
+        if (showError) {
+          try {
+            showError('Payment status unclear');
+          } catch (toastError) {
+            console.error('PaymentCallback: Error showing error toast', toastError);
+          }
+        }
+        setTimeout(() => {
+          navigate('/app/home', { replace: true }).catch(() => {
+            navigate('/', { replace: true });
+          });
+        }, 3000);
+        return;
       } catch (error) {
         console.error('PaymentCallback: Payment callback error:', error);
         setStatus('error');
