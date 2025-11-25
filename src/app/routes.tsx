@@ -7,6 +7,7 @@ import { AuthGuard } from '../components/auth/AuthGuard';
 import { OptionalAuthGuard } from '../components/auth/OptionalAuthGuard';
 import { CheckoutGuard } from '../components/auth/CheckoutGuard';
 import { RoleGuard } from '../components/auth/RoleGuard';
+import { HomePageGuard } from '../components/auth/HomePageGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
 import { PageErrorBoundary } from '../components/common/PageErrorBoundary';
 import { ScrollToTop } from '../components/common/ScrollToTop';
@@ -100,13 +101,15 @@ const SafePage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const router = createBrowserRouter([
-  // Main home page at root
+  // Main home page at root - redirects authenticated users to /app
   {
     path: '/',
     element: (
       <>
         <ScrollToTop />
-        <Home />
+        <HomePageGuard>
+          <Home />
+        </HomePageGuard>
       </>
     ),
   },
