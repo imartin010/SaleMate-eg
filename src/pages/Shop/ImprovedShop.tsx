@@ -58,6 +58,17 @@ export const ImprovedShop: React.FC = () => {
     loadShopProjects();
   }, []);
 
+  // Refresh projects when returning from checkout (check for flag in sessionStorage)
+  useEffect(() => {
+    const shouldRefresh = sessionStorage.getItem('refreshShopAfterCheckout');
+    if (shouldRefresh === 'true') {
+      console.log('🔄 Refreshing shop after checkout completion...');
+      sessionStorage.removeItem('refreshShopAfterCheckout');
+      loadShopProjects();
+      setLastRefresh(new Date());
+    }
+  }, []);
+
   const loadShopProjects = async () => {
     setLoading(true);
     setError(null);
@@ -160,9 +171,12 @@ export const ImprovedShop: React.FC = () => {
     }
   };
 
-  const handlePurchaseSuccess = () => {
-    // Refresh projects to update available counts
-    loadShopProjects();
+  const handlePurchaseSuccess = async () => {
+    console.log('🔄 Refreshing shop projects after successful purchase...');
+    // Refresh projects to update available leads count
+    await loadShopProjects();
+    setLastRefresh(new Date());
+    console.log('✅ Shop projects refreshed');
   };
 
   const regions = Array.from(new Set(projects.map(p => p.region))).sort();
