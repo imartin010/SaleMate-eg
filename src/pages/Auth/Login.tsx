@@ -18,7 +18,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInEmail, loading, error, clearError, resendConfirmation } = useAuthStore();
+  const { signInEmail, loading, error, clearError, resendConfirmation, user } = useAuthStore();
   
   const [showPassword, setShowPassword] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -46,12 +46,32 @@ export default function Login() {
     
     const success = await signInEmail(values.email, values.password, values.rememberMe);
     if (success) {
-      // Check if we're on performance subdomain
-      const defaultPath = isPerformanceSubdomain ? '/dashboard' : '/app';
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 100);
+      // Wait for auth store to be updated with user data
+      // Check the store state to ensure user is set before redirecting
+      let attempts = 0;
+      const checkAuthState = () => {
+        const authState = useAuthStore.getState();
+        if (authState.user) {
+          // Check if we're on performance subdomain
+          // For performance subdomain, redirect to root which has PerformanceDashboardRouter
+          // that will route users based on their role (CEO -> /dashboard, franchise employee -> /franchise/:slug)
+          const defaultPath = isPerformanceSubdomain ? '/' : '/app';
+          const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
+          navigate(from, { replace: true });
+        } else if (attempts < 20) {
+          // Retry up to 20 times (2 seconds total) to account for async state updates
+          attempts++;
+          setTimeout(checkAuthState, 100);
+        } else {
+          // Fallback: redirect anyway after timeout
+          console.warn('Login: User state not found after timeout, redirecting anyway');
+          const defaultPath = isPerformanceSubdomain ? '/' : '/app';
+          const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
+          navigate(from, { replace: true });
+        }
+      };
+      // Start checking immediately, but give a small delay for state propagation
+      setTimeout(checkAuthState, 50);
     }
   };
 
