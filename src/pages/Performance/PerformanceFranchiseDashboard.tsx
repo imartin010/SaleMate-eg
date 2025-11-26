@@ -78,6 +78,23 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const deleteExpenseMutation = useDeleteExpense();
   const updateFranchiseMutation = useUpdateFranchise();
 
+  // Calculate total taxes from transactions (to match P&L Statement calculation)
+  const totalTaxes = useMemo(() => {
+    if (!transactions) return 0;
+    return transactions
+      .filter(t => t.stage === 'contracted')
+      .reduce((sum, t) => {
+        const tax = (t.tax_amount || 0) + (t.withholding_tax || 0) + (t.income_tax || 0);
+        return sum + tax;
+      }, 0);
+  }, [transactions]);
+
+  // Calculate net profit including taxes (to match P&L Statement)
+  const netProfitWithTaxes = useMemo(() => {
+    if (!analytics) return 0;
+    return analytics.gross_revenue - (analytics.total_expenses + analytics.commission_cuts_total + totalTaxes);
+  }, [analytics, totalTaxes]);
+
   // Verify access when franchise data loads
   useEffect(() => {
     if (!franchise || !user) return;
@@ -358,33 +375,33 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
               {/* Net Revenue Card - Dynamic Color */}
               <div className={`rounded-lg border-2 shadow-sm hover:shadow-md transition-all duration-200 p-6 ${
-                analytics.net_revenue >= 0 
+                netProfitWithTaxes >= 0 
                   ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 hover:border-green-400' 
                   : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 hover:border-red-400'
               }`}>
                 <div className="flex items-center justify-between mb-4">
                   <div className={`p-2 bg-white rounded-lg shadow-sm ${
-                    analytics.net_revenue >= 0 ? 'text-green-600' : 'text-red-600'
+                    netProfitWithTaxes >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {analytics.net_revenue >= 0 ? (
+                    {netProfitWithTaxes >= 0 ? (
                       <TrendingUp className="w-5 h-5" />
                     ) : (
                       <TrendingDown className="w-5 h-5" />
                     )}
                   </div>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    analytics.net_revenue >= 0 
+                    netProfitWithTaxes >= 0 
                       ? 'text-green-700 bg-green-100 border border-green-300' 
                       : 'text-red-700 bg-red-100 border border-red-300'
                   }`}>
-                    {analytics.net_revenue >= 0 ? 'Profit' : 'Loss'}
+                    {netProfitWithTaxes >= 0 ? 'Profit' : 'Loss'}
                   </span>
                 </div>
                 <p className="text-gray-700 text-sm font-medium mb-1">Net P&L</p>
                 <p className={`text-2xl font-bold ${
-                  analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-700'
+                  netProfitWithTaxes >= 0 ? 'text-green-700' : 'text-red-700'
                 }`}>
-                  {formatCurrency(analytics.net_revenue)}
+                  {formatCurrency(netProfitWithTaxes)}
                 </p>
               </div>
 
