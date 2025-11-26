@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, X, Bot, User, Loader2, Minimize2 } from 'lucide-react';
+import { Send, User, Loader2, Minimize2 } from 'lucide-react';
 import { supabase } from '../../core/api/client';
 
 interface Message {
@@ -17,7 +17,7 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m your AI assistant. I can help you analyze franchise performance, find the most profitable franchises, compare sales volumes, and answer questions about your franchise network. What would you like to know?',
+      content: 'Hello! I\'m Mr. Blue, your AI assistant. I can help you analyze franchise performance, find the most profitable franchises, compare sales volumes, and answer questions about your franchise network. What would you like to know?',
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -103,6 +103,34 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
     }
   };
 
+  // Convert markdown-style bold (**text**) to HTML bold
+  // Also handles line breaks and preserves formatting
+  const formatMessage = (text: string): string => {
+    // Escape HTML to prevent XSS
+    const escapeHtml = (str: string) => {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    };
+
+    // First escape HTML
+    let formatted = escapeHtml(text);
+    
+    // Convert markdown bold (**text**) to HTML bold
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert line breaks to <br> tags
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    return formatted;
+  };
+
+  // Render message with HTML support for bold text
+  const renderMessage = (content: string) => {
+    const formatted = formatMessage(content);
+    return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
+  };
+
   return (
     <>
       {/* Floating Chat Button */}
@@ -110,9 +138,13 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
         <button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-          aria-label="Open AI Assistant"
+          aria-label="Open Mr. Blue"
         >
-          <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
+          <img 
+            src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/sign/Random-files/AIFAVICON.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81Mjk3ZWY4Yi00YWRkLTQ0NWEtODdhYS00YzcyZDA3N2YyODAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJSYW5kb20tZmlsZXMvQUlGQVZJQ09OLnBuZyIsImlhdCI6MTc2NDE2OTgyNiwiZXhwIjoyMDc5NTI5ODI2fQ.2VEJNBYGbj-kIp7OaRTQJqDwiMkLkGv0SAdl85ISNbw" 
+            alt="Mr. Blue" 
+            className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform"
+          />
           <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></span>
         </button>
       )}
@@ -123,11 +155,15 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
+                <img 
+                  src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/sign/Random-files/AIFAVICON.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81Mjk3ZWY4Yi00YWRkLTQ0NWEtODdhYS00YzcyZDA3N2YyODAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJSYW5kb20tZmlsZXMvQUlGQVZJQ09OLnBuZyIsImlhdCI6MTc2NDE2OTgyNiwiZXhwIjoyMDc5NTI5ODI2fQ.2VEJNBYGbj-kIp7OaRTQJqDwiMkLkGv0SAdl85ISNbw" 
+                  alt="Mr. Blue" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">AI Assistant</h3>
+                <h3 className="text-lg font-semibold text-white">Mr. Blue</h3>
                 <p className="text-xs text-purple-100">Ask about franchises</p>
               </div>
             </div>
@@ -150,8 +186,12 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
               }`}
             >
               {message.role === 'assistant' && (
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/sign/Random-files/AIFAVICON.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81Mjk3ZWY4Yi00YWRkLTQ0NWEtODdhYS00YzcyZDA3N2YyODAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJSYW5kb20tZmlsZXMvQUlGQVZJQ09OLnBuZyIsImlhdCI6MTc2NDE2OTgyNiwiZXhwIjoyMDc5NTI5ODI2fQ.2VEJNBYGbj-kIp7OaRTQJqDwiMkLkGv0SAdl85ISNbw" 
+                    alt="Mr. Blue" 
+                    className="w-full h-full object-cover rounded-full"
+                  />
                 </div>
               )}
               <div
@@ -161,7 +201,9 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
                     : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className={`text-sm whitespace-pre-wrap ${message.role === 'assistant' ? '' : 'text-white'}`}>
+                  {message.role === 'assistant' ? renderMessage(message.content) : message.content}
+                </p>
                 <p className={`text-xs mt-1 ${
                   message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
                 }`}>
@@ -177,8 +219,12 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
           ))}
           {isLoading && (
             <div className="flex items-start space-x-3 justify-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+              <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+                <img 
+                  src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/sign/Random-files/AIFAVICON.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81Mjk3ZWY4Yi00YWRkLTQ0NWEtODdhYS00YzcyZDA3N2YyODAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJSYW5kb20tZmlsZXMvQUlGQVZJQ09OLnBuZyIsImlhdCI6MTc2NDE2OTgyNiwiZXhwIjoyMDc5NTI5ODI2fQ.2VEJNBYGbj-kIp7OaRTQJqDwiMkLkGv0SAdl85ISNbw" 
+                  alt="Mr. Blue" 
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
               <div className="bg-white rounded-lg px-4 py-3 border border-gray-200 shadow-sm">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
