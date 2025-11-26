@@ -252,43 +252,43 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Professional Header */}
+      {/* Professional Header - Mobile Responsive */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <img 
                 src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
                 alt="SaleMate Performance Logo"
-                className="h-12 object-contain"
-                style={{ width: 'auto', maxWidth: '300px' }}
+                className="h-8 sm:h-12 object-contain"
+                style={{ width: 'auto', maxWidth: '100%', maxWidth: '300px' }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                 }}
               />
-              <div className="h-8 w-px bg-gray-300"></div>
+              <div className="hidden sm:block h-8 w-px bg-gray-300"></div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
+                <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                   {franchise.name}
                 </h1>
-                <p className="mt-0.5 text-sm text-gray-600">
+                <p className="mt-0.5 text-xs sm:text-sm text-gray-600">
                   Performance Dashboard
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
               {isFranchiseEmployee && !isCEO && !isAdmin && (
-                <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <Users className="w-4 h-4 text-blue-700" />
-                  <span className="text-sm font-medium text-blue-700">Franchise Manager</span>
+                <div className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-blue-700" />
+                  <span className="text-xs sm:text-sm font-medium text-blue-700">Manager</span>
               </div>
               )}
-              <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                <Users className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{franchise.headcount} Agents</span>
+              <div className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 rounded-lg border border-gray-200">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
+                <span className="text-xs sm:text-sm font-medium text-gray-700">{franchise.headcount} Agents</span>
               </div>
-              <span className={`inline-flex items-center px-3 py-1.5 rounded text-xs font-medium ${
+              <span className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-medium ${
                 franchise.is_active 
                   ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                   : 'bg-gray-200 text-gray-600 border border-gray-300'
@@ -298,17 +298,17 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Logout"
               >
-                <LogOut className="w-4 h-4" />
-                <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
               </button>
-              <div className="p-2 bg-gray-50 rounded border border-gray-200">
+              <div className="p-1.5 sm:p-2 bg-gray-50 rounded border border-gray-200">
                 <img 
                   src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png"
                   alt="Coldwell Banker"
-                  className="w-12 h-12 object-contain"
+                  className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -320,13 +320,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Professional Tabs */}
+      {/* Professional Tabs - Mobile Responsive */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1 py-3">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <nav className="flex space-x-1 py-2 sm:py-3 overflow-x-auto scrollbar-hide -mx-2 sm:mx-0 px-2 sm:px-0">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'pnl', label: 'P&L Statement', icon: FileText },
+              { id: 'pnl', label: 'P&L', icon: FileText },
               { id: 'transactions', label: 'Transactions', icon: Wallet },
               { id: 'expenses', label: 'Expenses', icon: PieChart },
               { id: 'settings', label: 'Settings', icon: Users },
@@ -336,15 +336,16 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`group relative px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  className={`group relative px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab.id
                       ? 'bg-blue-700 text-white'
                       : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50'
                   }`}
                 >
-                  <span className="flex items-center space-x-2">
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
+                  <span className="flex items-center space-x-1 sm:space-x-2">
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                   </span>
                 </button>
               );
@@ -354,42 +355,42 @@ const PerformanceFranchiseDashboard: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {activeTab === 'overview' && analytics && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Professional Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Gross Revenue Card */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all duration-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <DollarSign className="w-5 h-5 text-blue-600" />
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all duration-200 p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                   </div>
-                <p className="text-gray-700 text-sm font-medium mb-1">Gross Revenue</p>
-                <p className="text-2xl font-bold text-blue-700">
+                <p className="text-gray-700 text-xs sm:text-sm font-medium mb-1">Gross Revenue</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-700">
                     {formatCurrency(analytics.gross_revenue)}
                   </p>
               </div>
 
               {/* Net Revenue Card - Dynamic Color */}
-              <div className={`rounded-lg border-2 shadow-sm hover:shadow-md transition-all duration-200 p-6 ${
+              <div className={`rounded-lg border-2 shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-6 ${
                 netProfitWithTaxes >= 0 
                   ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 hover:border-green-400' 
                   : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 hover:border-red-400'
               }`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-2 bg-white rounded-lg shadow-sm ${
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className={`p-1.5 sm:p-2 bg-white rounded-lg shadow-sm ${
                     netProfitWithTaxes >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {netProfitWithTaxes >= 0 ? (
-                      <TrendingUp className="w-5 h-5" />
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                     ) : (
-                      <TrendingDown className="w-5 h-5" />
+                      <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                     </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${
                     netProfitWithTaxes >= 0 
                       ? 'text-green-700 bg-green-100 border border-green-300' 
                       : 'text-red-700 bg-red-100 border border-red-300'
@@ -397,8 +398,8 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     {netProfitWithTaxes >= 0 ? 'Profit' : 'Loss'}
                   </span>
                   </div>
-                <p className="text-gray-700 text-sm font-medium mb-1">Net P&L</p>
-                <p className={`text-2xl font-bold ${
+                <p className="text-gray-700 text-xs sm:text-sm font-medium mb-1">Net P&L</p>
+                <p className={`text-xl sm:text-2xl font-bold ${
                   netProfitWithTaxes >= 0 ? 'text-green-700' : 'text-red-700'
                 }`}>
                   {formatCurrency(netProfitWithTaxes)}
@@ -406,66 +407,66 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
 
               {/* Total Expenses Card */}
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border-2 border-orange-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all duration-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <Wallet className="w-5 h-5 text-orange-600" />
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border-2 border-orange-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all duration-200 p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+                    <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                     </div>
-                  <TrendingDown className="w-4 h-4 text-orange-500" />
+                  <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                   </div>
-                <p className="text-gray-700 text-sm font-medium mb-1">Total Expenses</p>
-                <p className="text-2xl font-bold text-orange-700">
+                <p className="text-gray-700 text-xs sm:text-sm font-medium mb-1">Total Expenses</p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-700">
                     {formatCurrency(analytics.total_expenses)}
                   </p>
               </div>
 
               {/* Cost Per Agent Card */}
-              <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border-2 border-purple-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <Users className="w-5 h-5 text-purple-600" />
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border-2 border-purple-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                     </div>
-                  <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full border border-purple-300">{franchise.headcount}</span>
+                  <span className="text-[10px] sm:text-xs font-bold text-purple-700 bg-purple-100 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-purple-300">{franchise.headcount}</span>
                   </div>
-                <p className="text-gray-700 text-sm font-medium mb-1">Cost Per Agent</p>
-                <p className="text-2xl font-bold text-purple-700">
+                <p className="text-gray-700 text-xs sm:text-sm font-medium mb-1">Cost Per Agent</p>
+                <p className="text-xl sm:text-2xl font-bold text-purple-700">
                     {formatCurrency(analytics.cost_per_agent)}
                   </p>
               </div>
             </div>
 
             {/* Detailed Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               {/* Sales Overview */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md border-2 border-blue-300 p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <BarChart3 className="w-5 h-5 text-blue-600" />
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md border-2 border-blue-300 p-4 sm:p-6">
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900">Sales Overview</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Sales Overview</h3>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
-                    <span className="text-gray-700 font-medium">Total Sales Volume:</span>
-                    <span className="font-bold text-blue-700">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex justify-between items-center p-2.5 sm:p-3 bg-white/60 rounded-lg">
+                    <span className="text-xs sm:text-sm text-gray-700 font-medium">Total Sales Volume:</span>
+                    <span className="text-xs sm:text-sm font-bold text-blue-700">
                       {formatCurrency(analytics.total_sales_volume)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-green-50/80 rounded-lg border border-green-200">
-                    <span className="text-gray-700 font-medium">Contracted Deals:</span>
-                    <span className="font-bold text-green-700 text-lg">
+                  <div className="flex justify-between items-center p-2.5 sm:p-3 bg-green-50/80 rounded-lg border border-green-200">
+                    <span className="text-xs sm:text-sm text-gray-700 font-medium">Contracted Deals:</span>
+                    <span className="text-sm sm:text-lg font-bold text-green-700">
                       {analytics.contracted_deals_count}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-amber-50/80 rounded-lg border border-amber-200">
-                    <span className="text-gray-700 font-medium">Pending Deals:</span>
-                    <span className="font-bold text-amber-700 text-lg">
+                  <div className="flex justify-between items-center p-2.5 sm:p-3 bg-amber-50/80 rounded-lg border border-amber-200">
+                    <span className="text-xs sm:text-sm text-gray-700 font-medium">Pending Deals:</span>
+                    <span className="text-sm sm:text-lg font-bold text-amber-700">
                       {analytics.pending_deals_count}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50/80 rounded-lg border border-red-200">
-                    <span className="text-gray-700 font-medium">Cancelled Deals:</span>
-                    <span className="font-bold text-red-700 text-lg">
+                  <div className="flex justify-between items-center p-2.5 sm:p-3 bg-red-50/80 rounded-lg border border-red-200">
+                    <span className="text-xs sm:text-sm text-gray-700 font-medium">Cancelled Deals:</span>
+                    <span className="text-sm sm:text-lg font-bold text-red-700">
                       {analytics.cancelled_deals_count}
                     </span>
                   </div>
@@ -473,17 +474,17 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
 
               {/* Expense Breakdown */}
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl shadow-md border-2 border-orange-300 p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <PieChart className="w-5 h-5 text-orange-600" />
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl shadow-md border-2 border-orange-300 p-4 sm:p-6">
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+                    <PieChart className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900">Expense Breakdown</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Expense Breakdown</h3>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
-                    <span className="text-gray-700 font-medium">Fixed Expenses:</span>
-                    <span className="font-bold text-gray-900">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex justify-between items-center p-2.5 sm:p-3 bg-white/60 rounded-lg">
+                    <span className="text-xs sm:text-sm text-gray-700 font-medium">Fixed Expenses:</span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-900">
                       {formatCurrency(analytics.fixed_expenses)}
                     </span>
                   </div>
@@ -512,28 +513,28 @@ const PerformanceFranchiseDashboard: React.FC = () => {
             </div>
 
             {/* Expected Payout Timeline */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Calendar className="w-5 h-5 text-blue-700" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-1.5 sm:p-2 bg-blue-50 rounded-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Expected Payout Timeline</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Expected Payout Timeline</h3>
               </div>
               
               {analytics.expected_payout_timeline.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No upcoming payouts</p>
+                <p className="text-sm sm:text-base text-gray-500 text-center py-6 sm:py-8">No upcoming payouts</p>
               ) : (
                 <div className="space-y-2">
                   {analytics.expected_payout_timeline.map((item) => (
                     <div
                       key={item.month}
-                      className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200"
                     >
                       <div>
-                        <p className="font-medium text-gray-900">{item.month}</p>
-                        <p className="text-sm text-gray-600">{item.count} {item.count === 1 ? 'deal' : 'deals'}</p>
+                        <p className="text-sm sm:text-base font-medium text-gray-900">{item.month}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">{item.count} {item.count === 1 ? 'deal' : 'deals'}</p>
                       </div>
-                      <p className="text-lg font-semibold text-blue-700">
+                      <p className="text-sm sm:text-lg font-semibold text-blue-700">
                         {formatCurrency(item.amount)}
                       </p>
                     </div>
@@ -572,15 +573,15 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
         {activeTab === 'transactions' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Transactions</h3>
-                <div className="flex items-center space-x-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Transactions</h3>
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
                   <button
                     onClick={() => setShowTransactionFilters(!showTransactionFilters)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-sm font-medium"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-xs sm:text-sm font-medium"
                   >
-                    <Filter className="w-4 h-4" />
+                    <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Filters</span>
                   </button>
                   <button
@@ -588,9 +589,9 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                       setTransactionToEdit(null);
                       setShowAddTransaction(true);
                     }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs sm:text-sm font-medium"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Add Transaction</span>
                   </button>
                 </div>
@@ -598,8 +599,8 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
               {/* Filter Panel */}
               {showTransactionFilters && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {/* Search */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -694,30 +695,30 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   {filteredTransactions.map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                     >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
+                      <div className="flex-1 min-w-0 w-full sm:w-auto">
+                        <p className="text-sm sm:text-base font-medium text-gray-900">
                           {formatCurrency(transaction.transaction_amount)}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
                           {transaction.project?.name 
                             ? extractName(transaction.project.name) 
                             : `Project ID: ${transaction.project_id}`}
                         </p>
                         {transaction.project?.developer && extractName(transaction.project.developer) && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 truncate">
                             {extractName(transaction.project.developer)}
                           </p>
                         )}
                         {transaction.notes && (
-                          <p className="text-xs text-gray-500 mt-1">{transaction.notes}</p>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{transaction.notes}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
+                      <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                        <div className="text-left sm:text-right">
                           <span
-                            className={`inline-block px-3 py-1 rounded-2xl text-xs font-medium ${
+                            className={`inline-block px-2 sm:px-3 py-1 rounded-2xl text-[10px] sm:text-xs font-medium ${
                               transaction.stage === 'contracted'
                                 ? 'bg-green-100 text-green-800'
                                 : transaction.stage === 'reservation'
@@ -730,7 +731,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                             {transaction.stage.toUpperCase()}
                           </span>
                           {transaction.commission_amount && (
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">
                               Commission: {formatCurrency(transaction.commission_amount)}
                             </p>
                           )}
@@ -740,10 +741,10 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                             setTransactionToEdit(transaction);
                             setShowAddTransaction(true);
                           }}
-                          className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 sm:p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
                           title="Edit transaction"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     </div>
@@ -756,22 +757,22 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
-                <div className="flex items-center space-x-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Expenses</h3>
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
                   <button
                     onClick={() => setShowExpenseFilters(!showExpenseFilters)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-sm font-medium"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-xs sm:text-sm font-medium"
                   >
-                    <Filter className="w-4 h-4" />
+                    <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Filters</span>
                   </button>
                   <button
                     onClick={() => setShowAddExpense(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs sm:text-sm font-medium"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Add Expense</span>
                   </button>
                 </div>
@@ -779,8 +780,8 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
               {/* Filter Panel */}
               {showExpenseFilters && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {/* Search */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">

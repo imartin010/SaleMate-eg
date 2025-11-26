@@ -64,21 +64,21 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 scale-100">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-0 sm:p-4 animate-fadeIn">
+      <div className="bg-white rounded-none sm:rounded-3xl max-w-md w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 scale-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-8 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-pink-50">
-          <h2 className="text-xl font-semibold text-gray-900">Add Expense</h2>
+        <div className="flex items-center justify-between p-4 sm:p-8 border-b border-gray-100 bg-gradient-to-r from-rose-50 to-pink-50 sticky top-0 bg-white z-10">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Add Expense</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}

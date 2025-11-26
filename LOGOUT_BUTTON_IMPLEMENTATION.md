@@ -171,3 +171,4 @@ Users can now easily and securely log out from any Performance dashboard with:
 - ✅ Consistent design across all dashboards
 - ✅ Error handling and safety measures
 
+
