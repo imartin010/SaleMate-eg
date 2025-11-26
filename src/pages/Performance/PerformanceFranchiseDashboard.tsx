@@ -240,6 +240,17 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              <img 
+                src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
+                alt="SaleMate Performance Logo"
+                className="h-12 object-contain"
+                style={{ width: 'auto', maxWidth: '300px' }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <div className="h-8 w-px bg-gray-300"></div>
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
                   {franchise.name}
@@ -276,6 +287,17 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <LogOut className="w-4 h-4" />
                 <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
               </button>
+              <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                <img 
+                  src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png"
+                  alt="Coldwell Banker"
+                  className="w-12 h-12 object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
