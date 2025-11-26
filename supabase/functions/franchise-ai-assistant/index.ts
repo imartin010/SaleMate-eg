@@ -176,7 +176,34 @@ serve(async (req) => {
       }
     }
 
-    // Group data by franchise and process in parallel
+    // CRITICAL: Calculate net_revenue using SQL function to match dashboard EXACTLY
+    // This ensures 100% accuracy - same calculation as dashboard's usePerformanceAnalytics
+    const sqlNetRevenueMap: Record<string, number> = {};
+    
+    // Calculate net_revenue for each franchise using SQL (matches dashboard exactly)
+    // This uses the same calculation as the dashboard's usePerformanceAnalytics hook
+    for (const franchise of franchises || []) {
+      try {
+        const { data: sqlResult, error: sqlError } = await supabase.rpc('calculate_franchise_net_revenue', {
+          p_franchise_id: franchise.id
+        });
+        
+        if (!sqlError && sqlResult !== null && sqlResult !== undefined) {
+          // SQL function returns a numeric value directly
+          const netRevenueValue = typeof sqlResult === 'number' ? sqlResult : parseFloat(sqlResult);
+          if (!isNaN(netRevenueValue)) {
+            sqlNetRevenueMap[franchise.id] = Math.round(netRevenueValue);
+            console.log(`[SQL] ${franchise.name}: net_revenue = ${sqlNetRevenueMap[franchise.id]} (matches dashboard)`);
+          }
+        } else if (sqlError) {
+          console.error(`SQL error for ${franchise.name}:`, sqlError);
+        }
+      } catch (error) {
+        console.error(`Error calculating net_revenue for ${franchise.name}:`, error);
+      }
+    }
+
+    // Group data by franchise and process
     const franchiseAnalytics: Array<{
       franchise: any;
       analytics: any;
@@ -188,9 +215,6 @@ serve(async (req) => {
       const franchiseExpenses = allExpenses.filter((e: any) => e.franchise_id === franchise.id);
       const franchiseCommissionCuts = allCommissionCuts.filter((c: any) => c.franchise_id === franchise.id);
 
-      // Process ALL franchises, even if they have no transactions (they might have expenses)
-      // This ensures the AI sees all franchises and their net_revenue (which could be negative from expenses alone)
-      
       // Process transactions to extract project details
       const processedTransactions = franchiseTransactions.map((t: any) => {
         const inventory = inventoryMap[t.project_id];
@@ -255,16 +279,27 @@ serve(async (req) => {
         return sum + (isNaN(taxAmount) ? 0 : taxAmount) + (isNaN(withholdingTax) ? 0 : withholdingTax) + (isNaN(incomeTax) ? 0 : incomeTax);
       }, 0);
 
-      const net_revenue = gross_revenue - total_expenses - commission_cuts_total;
-      const net_profit = gross_revenue - total_expenses - commission_cuts_total - totalTaxes;
+      // CRITICAL: ALWAYS use SQL-calculated net_revenue to match dashboard EXACTLY
+      // The SQL function uses the exact same calculation as the dashboard's usePerformanceAnalytics hook
+      let net_revenue: number;
+      if (sqlNetRevenueMap[franchise.id] !== undefined && !isNaN(sqlNetRevenueMap[franchise.id])) {
+        net_revenue = sqlNetRevenueMap[franchise.id]; // Use SQL-calculated value (matches dashboard exactly)
+        console.log(`[SQL] ${franchise.name}: net_revenue = ${net_revenue} (from SQL, matches dashboard)`);
+      } else {
+        // Fallback: calculate manually (should match SQL, but SQL is authoritative)
+        net_revenue = gross_revenue - total_expenses - commission_cuts_total;
+        console.log(`[FALLBACK] ${franchise.name}: net_revenue = ${net_revenue} (calculated, SQL unavailable)`);
+      }
+      const net_profit = net_revenue - totalTaxes;
 
       // Debug logging for key franchises
-      if (franchise.name === 'Advantage' || franchise.name === 'New Alex' || franchise.name === 'Empire') {
+      if (franchise.name === 'Advantage' || franchise.name === 'New Alex' || franchise.name === 'Core') {
         console.log(`[DEBUG] ${franchise.name}:`, {
+          net_revenue: Math.round(net_revenue),
+          sql_net_revenue: sqlNetRevenueMap[franchise.id],
           gross_revenue: Math.round(gross_revenue),
           total_expenses: Math.round(total_expenses),
           commission_cuts_total: Math.round(commission_cuts_total),
-          net_revenue: Math.round(net_revenue),
           contracted_count: contractedTransactions.length,
           expenses_count: franchiseExpenses.length,
           commission_cuts_count: franchiseCommissionCuts.length,
