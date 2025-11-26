@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Loader2, Minimize2 } from 'lucide-react';
 import { supabase } from '../../core/api/client';
+import { useAuthStore } from '../../features/auth/store/auth.store';
 
 interface Message {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
@@ -12,17 +14,19 @@ interface FranchiseAIAssistantProps {
   // No props needed - it's a floating widget
 }
 
+const INITIAL_MESSAGE: Message = {
+  role: 'assistant',
+  content: 'Hello! I\'m Mr. Blue, your AI assistant. I can help you analyze franchise performance, find the most profitable franchises, compare sales volumes, and answer questions about your franchise network. What would you like to know?',
+  timestamp: new Date().toISOString(),
+};
+
 export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
+  const user = useAuthStore((state) => state.user);
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Hello! I\'m Mr. Blue, your AI assistant. I can help you analyze franchise performance, find the most profitable franchises, compare sales volumes, and answer questions about your franchise network. What would you like to know?',
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,6 +34,50 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Load chat history from database on mount
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!user?.id) {
+        setIsLoadingHistory(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('franchise_ai_chat_messages')
+          .select('id, role, content, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error loading chat history:', error);
+          setIsLoadingHistory(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Convert database format to Message format
+          const loadedMessages: Message[] = data.map((msg) => ({
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+            timestamp: msg.created_at,
+          }));
+          setMessages(loadedMessages);
+        } else {
+          // No history found, use initial message
+          setMessages([INITIAL_MESSAGE]);
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadChatHistory();
+  }, [user?.id]);
 
   // Focus input when opened
   useEffect(() => {
@@ -40,8 +88,35 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
     }
   }, [isOpen]);
 
+  const saveMessage = async (message: Message): Promise<string | null> => {
+    if (!user?.id) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('franchise_ai_chat_messages')
+        .insert({
+          user_id: user.id,
+          role: message.role,
+          content: message.content,
+          created_at: message.timestamp,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Error saving message:', error);
+        return null;
+      }
+
+      return data?.id || null;
+    } catch (error) {
+      console.error('Error saving message:', error);
+      return null;
+    }
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !user?.id) return;
 
     const userMessage: Message = {
       role: 'user',
@@ -51,8 +126,15 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
 
     // Add user message immediately
     setMessages((prev) => [...prev, userMessage]);
+    const userInput = input.trim();
     setInput('');
     setIsLoading(true);
+
+    // Save user message to database
+    const userMessageId = await saveMessage(userMessage);
+    if (userMessageId) {
+      userMessage.id = userMessageId;
+    }
 
     try {
       // Get conversation history (last 10 messages for context)
@@ -66,7 +148,7 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
       // Call the edge function
       const { data, error } = await supabase.functions.invoke('franchise-ai-assistant', {
         body: {
-          question: userMessage.content,
+          question: userInput,
           conversationHistory,
         },
       });
@@ -83,6 +165,12 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Save assistant message to database
+      const assistantMessageId = await saveMessage(assistantMessage);
+      if (assistantMessageId) {
+        assistantMessage.id = assistantMessageId;
+      }
     } catch (error) {
       console.error('Error calling AI assistant:', error);
       const errorMessage: Message = {
@@ -91,6 +179,9 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // Save error message to database
+      await saveMessage(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -178,9 +269,14 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {messages.map((message, index) => (
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            messages.map((message, index) => (
             <div
-              key={index}
+              key={message.id || `msg-${index}`}
               className={`flex items-start space-x-3 ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
@@ -216,7 +312,8 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
                 </div>
               )}
             </div>
-          ))}
+          ))
+          )}
           {isLoading && (
             <div className="flex items-start space-x-3 justify-start">
               <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
