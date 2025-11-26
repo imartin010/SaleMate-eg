@@ -477,21 +477,21 @@ When answering questions:
 2. Reference specific franchise names and numbers
 3. Use currency format: EGP (Egyptian Pounds)
 4. If asked about "most selling" or "highest sales", use the total_sales field from the projects array
-5. CRITICAL - P&L Amount / Profit & Loss Questions - READ THE DATA EXACTLY:
-   - The net_revenue field in the data is ALREADY CALCULATED and matches the dashboard's "P&L Amount" EXACTLY
-   - DO NOT calculate. DO NOT interpret. DO NOT modify. DO NOT think about it. Just READ and REPORT.
-   - Look at the net_revenue number in the data for each franchise
-   - If the number is POSITIVE (like 3150876, 2021548, 1775377): The franchise is PROFITABLE. Say "EGP 3,150,876" (format with commas)
-   - If the number is NEGATIVE (like -386500, -341800, -361001): The franchise is at a LOSS. Say "-EGP 386,500" (with minus sign)
-   - When asked "which franchises are losing money", "operating at a loss", "should I be worried about", or "franchises with problems":
-     * Look through ALL franchises in the data
-     * Find ONLY those where net_revenue is NEGATIVE (has a minus sign or is less than 0)
-     * List ONLY those franchises with their exact net_revenue value
-     * DO NOT include any franchise with a positive net_revenue
-     * Example: If asked "is there any franchise I should be worried about?" and you see "New Alex" has net_revenue = -361001, answer: "Yes, you should be worried about New Alex franchise. It's operating at a loss with a P&L Amount of -EGP 361,001."
-   - The dashboard shows green for positive net_revenue (profitable) and red for negative (loss)
-   - Your answer MUST match what the dashboard shows - if dashboard shows green/positive, you say profitable. If red/negative, you say loss.
-   - IMPORTANT: Questions like "should I be worried" or "any concerns" mean: find franchises with negative net_revenue (operating at a loss)
+5. CRITICAL - P&L Amount / Profit & Loss Questions - READ THE DATA EXACTLY, DO NOT CALCULATE:
+   - The net_revenue field IS the P&L Amount shown on the dashboard
+   - DO NOT calculate anything. DO NOT interpret. DO NOT modify. DO NOT think. Just READ the number and REPORT it.
+   - To determine if a franchise is profitable or losing money:
+     * Look at the net_revenue number in the data
+     * If net_revenue > 0 (positive number): The franchise is PROFITABLE
+     * If net_revenue < 0 (negative number, has a minus sign): The franchise is OPERATING AT A LOSS
+   - When asked "which franchises are losing money", "operating at a loss", "should I be worried about":
+     * Look at the net_revenue field for EACH franchise
+     * ONLY list franchises where net_revenue is NEGATIVE (less than 0)
+     * Report the EXACT net_revenue value from the data
+     * DO NOT list any franchise with positive net_revenue
+   - Example: If "New Alex" has net_revenue = -361001, say: "Yes, you should be worried about New Alex franchise. It's operating at a loss with a P&L Amount of -EGP 361,001."
+   - Example: If "Advantage" has net_revenue = 3150876, say: "Advantage is profitable with a P&L Amount of EGP 3,150,876."
+   - REMEMBER: net_revenue IS the P&L Amount. Just read it. Don't calculate anything.
 6. If asked about "contracted deals" or "closed deals", use the contracted_sales field from the projects array
 7. The "projects" array contains aggregated data - each entry represents all transactions for that compound/developer/area combination
 8. If you don't find any matching projects:
@@ -499,28 +499,34 @@ When answering questions:
    - Instead say: "I don't have any transaction data for the project/developer/area '[X]' in the current dataset. The franchises may not have any sales for this property yet."
 9. NEVER confuse project/compound names with franchise names. If someone mentions "Central Park - Aliva", "Badya", or "Mountain View", these are PROJECTS/DEVELOPERS, NOT franchises.
 10. If you're unsure whether a term is a franchise or project, check the franchise names list first. If it's not in the franchise list, it's likely a project/developer/area name.
-11. DATA ACCURACY - READ DIRECTLY, DO NOT CALCULATE:
-   - The net_revenue values in the data are ALREADY CALCULATED and match the dashboard's "P&L Amount" exactly
-   - DO NOT recalculate. DO NOT interpret. DO NOT modify.
-   - Simply read net_revenue from the data and report it:
-     * If net_revenue = 3150876 → Dashboard shows "EGP 3,150,876" (green) → Report: "EGP 3,150,876" (profitable)
-     * If net_revenue = -386500 → Dashboard shows "-EGP 386,500" (red) → Report: "-EGP 386,500" (loss)
-     * If net_revenue = -361001 → Dashboard shows "-EGP 361,001" (red) → Report: "-EGP 361,001" (loss)
-   - The sign (positive/negative) tells you everything: positive = profit, negative = loss
-   - When asked "which franchises are losing money", "should I be worried", or "any concerns", ONLY list franchises where net_revenue < 0 (negative numbers)
-   - Format negative numbers with a minus sign: "-EGP 361,001" not "EGP -361,001"
+11. SIMPLE RULE - READ THE P&L AMOUNT, DON'T CALCULATE:
+   - net_revenue = P&L Amount shown on dashboard
+   - To know if profitable or losing: Look at net_revenue
+     * net_revenue > 0 = PROFITABLE
+     * net_revenue < 0 = OPERATING AT A LOSS
+   - Just read the number. Report it. That's it.
+   - When asked "should I be worried" or "losing money": List ONLY franchises where net_revenue < 0
+   - Report the exact number: If net_revenue = -361001, say "-EGP 361,001"
 
 Current franchise data with transaction details:
 ${JSON.stringify(dataToSend, null, 2)}
 
-VALIDATION CHECKLIST before answering "should I be worried" or "franchises operating at a loss":
-1. Look at the net_revenue field for EACH franchise in the data above
-2. Identify franchises where net_revenue is NEGATIVE (less than 0)
-3. ONLY list those franchises - do NOT include any franchise with positive net_revenue
-4. Report the exact net_revenue value from the data (e.g., if net_revenue = -361001, say "-EGP 361,001")
-5. Example correct answer: "Yes, you should be worried about New Alex franchise. It's operating at a loss with a P&L Amount of -EGP 361,001."
-6. If NO franchises have negative net_revenue, say "No, all franchises are currently profitable based on the P&L data."
+═══════════════════════════════════════════════════════════════
+CRITICAL RULE - PROFITABLE VS LOSING MONEY:
+═══════════════════════════════════════════════════════════════
+1. net_revenue = P&L Amount (already calculated, matches dashboard exactly)
+2. To know if profitable or losing:
+   - Look at net_revenue number
+   - If number is POSITIVE (like 3150876): PROFITABLE ✅
+   - If number is NEGATIVE (like -361001): OPERATING AT A LOSS ❌
+3. DO NOT calculate anything. DO NOT interpret. Just read the number.
+4. When asked "should I be worried" or "losing money":
+   - Find franchises where net_revenue < 0 (negative number)
+   - Report the exact net_revenue value
+   - Example: "Yes, you should be worried about New Alex franchise. It's operating at a loss with a P&L Amount of -EGP 361,001."
+5. DO NOT mention franchises with positive net_revenue when asked about losses.
 ${worriedNote}
+═══════════════════════════════════════════════════════════════
 
 Answer the user's question based on this data.`;
 
