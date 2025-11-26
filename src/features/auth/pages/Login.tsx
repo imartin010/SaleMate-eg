@@ -3,9 +3,9 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '../../store/auth';
-import { Logo } from '../../components/common/Logo';
-import { OTPInput } from '../../components/auth/OTPInput';
+import { useAuthStore } from '../store/auth.store';
+import { Logo } from '../../../components/common/Logo';
+import { OTPInput } from '../components/OTPInput';
 import { Loader2, LogIn, AlertCircle, Eye, EyeOff, Mail, CheckCircle, Shield, ArrowLeft } from 'lucide-react';
 
 const loginSchema = z.object({

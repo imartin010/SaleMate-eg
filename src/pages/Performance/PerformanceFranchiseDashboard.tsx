@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   usePerformanceFranchiseBySlug,
   usePerformanceAnalytics,
@@ -8,6 +8,8 @@ import {
   useDeleteExpense,
   useUpdateFranchise,
 } from '../../hooks/performance/usePerformanceData';
+import { useFranchise } from '../../contexts/FranchiseContext';
+import { useAuthStore } from '../../features/auth';
 import { 
   TrendingUp,
   TrendingDown,
@@ -41,6 +43,9 @@ import type { PerformanceTransaction } from '../../types/performance';
  */
 const PerformanceFranchiseDashboard: React.FC = () => {
   const { franchiseSlug } = useParams<{ franchiseSlug: string }>();
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const { isCEO, isAdmin, isFranchiseEmployee, canEditFranchise, franchiseSlug: userFranchiseSlug } = useFranchise();
   const [activeTab, setActiveTab] = useState<'overview' | 'pnl' | 'transactions' | 'expenses' | 'settings'>('overview');
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -70,6 +75,22 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const { data: expenses } = usePerformanceExpenses(franchise?.id);
   const deleteExpenseMutation = useDeleteExpense();
   const updateFranchiseMutation = useUpdateFranchise();
+
+  // Verify access when franchise data loads
+  useEffect(() => {
+    if (!franchise || !user) return;
+
+    // CEO and admin can view any franchise
+    if (isCEO || isAdmin) return;
+
+    // Franchise employees can only view their own franchise
+    if (isFranchiseEmployee) {
+      if (franchise.slug !== userFranchiseSlug) {
+        console.warn('Franchise employee attempting to access another franchise');
+        navigate(`/franchise/${userFranchiseSlug}`);
+      }
+    }
+  }, [franchise, user, isCEO, isAdmin, isFranchiseEmployee, userFranchiseSlug, navigate]);
   
   // Initialize settings form when franchise data loads
   React.useEffect(() => {
@@ -81,6 +102,9 @@ const PerformanceFranchiseDashboard: React.FC = () => {
       });
     }
   }, [franchise]);
+
+  // Check if current user can edit this franchise
+  const canEdit = franchise ? canEditFranchise(franchise.id) : false;
 
   // Helper function to extract clean name from potentially JSON-formatted strings
   const extractName = (value: unknown): string => {
@@ -220,9 +244,15 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
             </div>
               <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                <Users className="w-4 h-4 text-blue-700" />
-                <span className="text-sm font-medium text-blue-700">{franchise.headcount} Agents</span>
+              {isFranchiseEmployee && !isCEO && !isAdmin && (
+                <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <Users className="w-4 h-4 text-blue-700" />
+                  <span className="text-sm font-medium text-blue-700">Franchise Manager</span>
+                </div>
+              )}
+              <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                <Users className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">{franchise.headcount} Agents</span>
               </div>
               <span className={`inline-flex items-center px-3 py-1.5 rounded text-xs font-medium ${
                 franchise.is_active 
@@ -276,57 +306,75 @@ const PerformanceFranchiseDashboard: React.FC = () => {
             {/* Professional Key Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Gross Revenue Card */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all duration-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-blue-700" />
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <DollarSign className="w-5 h-5 text-blue-600" />
                   </div>
-                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                  <TrendingUp className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Gross Revenue</p>
-                <p className="text-2xl font-semibold text-blue-700">
+                <p className="text-gray-700 text-sm font-medium mb-1">Gross Revenue</p>
+                <p className="text-2xl font-bold text-blue-700">
                   {formatCurrency(analytics.gross_revenue)}
                 </p>
               </div>
 
-              {/* Net Revenue Card */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+              {/* Net Revenue Card - Dynamic Color */}
+              <div className={`rounded-lg border-2 shadow-sm hover:shadow-md transition-all duration-200 p-6 ${
+                analytics.net_revenue >= 0 
+                  ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 hover:border-green-400' 
+                  : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 hover:border-red-400'
+              }`}>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-blue-700" />
+                  <div className={`p-2 bg-white rounded-lg shadow-sm ${
+                    analytics.net_revenue >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {analytics.net_revenue >= 0 ? (
+                      <TrendingUp className="w-5 h-5" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5" />
+                    )}
                   </div>
-                  <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">Profit</span>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    analytics.net_revenue >= 0 
+                      ? 'text-green-700 bg-green-100 border border-green-300' 
+                      : 'text-red-700 bg-red-100 border border-red-300'
+                  }`}>
+                    {analytics.net_revenue >= 0 ? 'Profit' : 'Loss'}
+                  </span>
                 </div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Net Revenue</p>
-                <p className="text-2xl font-semibold text-blue-700">
+                <p className="text-gray-700 text-sm font-medium mb-1">Net P&L</p>
+                <p className={`text-2xl font-bold ${
+                  analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-700'
+                }`}>
                   {formatCurrency(analytics.net_revenue)}
                 </p>
               </div>
 
               {/* Total Expenses Card */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border-2 border-orange-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all duration-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Wallet className="w-5 h-5 text-blue-700" />
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Wallet className="w-5 h-5 text-orange-600" />
                   </div>
-                  <TrendingDown className="w-4 h-4 text-gray-400" />
+                  <TrendingDown className="w-4 h-4 text-orange-500" />
                 </div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Total Expenses</p>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-gray-700 text-sm font-medium mb-1">Total Expenses</p>
+                <p className="text-2xl font-bold text-orange-700">
                   {formatCurrency(analytics.total_expenses)}
                 </p>
               </div>
 
               {/* Cost Per Agent Card */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border-2 border-purple-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Users className="w-5 h-5 text-blue-700" />
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Users className="w-5 h-5 text-purple-600" />
                   </div>
-                  <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">{franchise.headcount}</span>
+                  <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full border border-purple-300">{franchise.headcount}</span>
                 </div>
-                <p className="text-gray-600 text-sm font-medium mb-1">Cost Per Agent</p>
-                <p className="text-2xl font-semibold text-blue-700">
+                <p className="text-gray-700 text-sm font-medium mb-1">Cost Per Agent</p>
+                <p className="text-2xl font-bold text-purple-700">
                   {formatCurrency(analytics.cost_per_agent)}
                 </p>
               </div>
@@ -335,35 +383,35 @@ const PerformanceFranchiseDashboard: React.FC = () => {
             {/* Detailed Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Sales Overview */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md border-2 border-blue-300 p-6">
                 <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <BarChart3 className="w-5 h-5 text-blue-700" />
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Sales Overview</h3>
+                  <h3 className="text-lg font-bold text-gray-900">Sales Overview</h3>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Sales Volume:</span>
-                    <span className="font-semibold text-gray-900">
+                  <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                    <span className="text-gray-700 font-medium">Total Sales Volume:</span>
+                    <span className="font-bold text-blue-700">
                       {formatCurrency(analytics.total_sales_volume)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Contracted Deals:</span>
-                    <span className="font-semibold text-green-600">
+                  <div className="flex justify-between items-center p-3 bg-green-50/80 rounded-lg border border-green-200">
+                    <span className="text-gray-700 font-medium">Contracted Deals:</span>
+                    <span className="font-bold text-green-700 text-lg">
                       {analytics.contracted_deals_count}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Pending Deals:</span>
-                    <span className="font-semibold text-yellow-600">
+                  <div className="flex justify-between items-center p-3 bg-amber-50/80 rounded-lg border border-amber-200">
+                    <span className="text-gray-700 font-medium">Pending Deals:</span>
+                    <span className="font-bold text-amber-700 text-lg">
                       {analytics.pending_deals_count}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Cancelled Deals:</span>
-                    <span className="font-semibold text-red-600">
+                  <div className="flex justify-between items-center p-3 bg-red-50/80 rounded-lg border border-red-200">
+                    <span className="text-gray-700 font-medium">Cancelled Deals:</span>
+                    <span className="font-bold text-red-700 text-lg">
                       {analytics.cancelled_deals_count}
                     </span>
                   </div>
@@ -371,36 +419,36 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
 
               {/* Expense Breakdown */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl shadow-md border-2 border-orange-300 p-6">
                 <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <PieChart className="w-5 h-5 text-blue-700" />
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <PieChart className="w-5 h-5 text-orange-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Expense Breakdown</h3>
+                  <h3 className="text-lg font-bold text-gray-900">Expense Breakdown</h3>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Fixed Expenses:</span>
-                    <span className="font-semibold text-gray-900">
+                  <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                    <span className="text-gray-700 font-medium">Fixed Expenses:</span>
+                    <span className="font-bold text-gray-900">
                       {formatCurrency(analytics.fixed_expenses)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Variable Expenses:</span>
-                    <span className="font-semibold text-gray-900">
+                  <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                    <span className="text-gray-700 font-medium">Variable Expenses:</span>
+                    <span className="font-bold text-gray-900">
                       {formatCurrency(analytics.variable_expenses)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Commission Cuts:</span>
-                    <span className="font-semibold text-gray-900">
+                  <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                    <span className="text-gray-700 font-medium">Commission Cuts:</span>
+                    <span className="font-bold text-gray-900">
                       {formatCurrency(analytics.commission_cuts_total)}
                     </span>
                   </div>
-                  <div className="pt-3 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Total:</span>
-                      <span className="font-bold text-red-600">
+                  <div className="pt-2 border-t-2 border-orange-300">
+                    <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border-2 border-red-300">
+                      <span className="font-bold text-gray-900">Total:</span>
+                      <span className="font-bold text-red-700 text-lg">
                         {formatCurrency(analytics.total_expenses + analytics.commission_cuts_total)}
                       </span>
                     </div>
@@ -852,13 +900,15 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
               
               {!isEditingSettings ? (
-                <button
-                  onClick={() => setIsEditingSettings(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>Edit Settings</span>
-                </button>
+                canEdit && (
+                  <button
+                    onClick={() => setIsEditingSettings(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>Edit Settings</span>
+                  </button>
+                )
               ) : (
                 <div className="flex items-center space-x-2">
                   <button
