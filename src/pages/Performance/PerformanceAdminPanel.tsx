@@ -13,7 +13,8 @@ import {
   Trash2,
   Save,
   X,
-  Calendar
+  Calendar,
+  LogOut
 } from 'lucide-react';
 import { 
   usePerformanceFranchises,
@@ -24,6 +25,7 @@ import {
 } from '../../hooks/performance/usePerformanceData';
 import { useProjects } from '../../hooks/performance/useProjects';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuthStore } from '../../features/auth';
 import type { CommissionRole } from '../../types/performance';
 
 // Component to list all projects from coldwell_banker_inventory
@@ -207,7 +209,20 @@ const CBProjectsList: React.FC = () => {
 const PerformanceAdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const signOut = useAuthStore((state) => state.signOut);
   const [activeTab, setActiveTab] = useState<'franchises' | 'taxes' | 'commission-cuts' | 'developers' | 'projects'>('franchises');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      // signOut already handles redirect to '/'
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+    }
+  };
   
   // Franchise management
   const [franchiseForm, setFranchiseForm] = useState({
@@ -580,6 +595,15 @@ const PerformanceAdminPanel: React.FC = () => {
                 </p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="flex items-center space-x-2 px-5 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-xl transition-all duration-300 text-sm font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+            </button>
           </div>
         </div>
       </div>
