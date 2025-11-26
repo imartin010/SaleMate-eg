@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
-import { Building2, TrendingUp, DollarSign, Users, BarChart3, Settings, Crown } from 'lucide-react';
+import { Building2, TrendingUp, DollarSign, Users, BarChart3, Settings, Crown, LogOut } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
 import { useFranchise } from '../../contexts/FranchiseContext';
 import { useAuthStore } from '../../features/auth';
@@ -127,10 +127,23 @@ const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: 
 const PerformanceCEODashboard: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const signOut = useAuthStore((state) => state.signOut);
   const { isCEO, isAdmin } = useFranchise();
   const { data: franchises, isLoading } = usePerformanceFranchises();
   const [showComparison, setShowComparison] = useState(false);
   const [franchiseRevenues, setFranchiseRevenues] = useState<Record<string, number>>({});
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      // signOut already handles redirect to '/'
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+    }
+  };
 
   // Calculate total revenue across all franchises
   const totalRevenue = useMemo(() => {
@@ -209,6 +222,15 @@ const PerformanceCEODashboard: React.FC = () => {
                   <span className="text-sm font-medium text-blue-700">CEO View</span>
                 </div>
               )}
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+              </button>
               <div className="p-2 bg-gray-50 rounded border border-gray-200">
                 <img 
                   src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png"

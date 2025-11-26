@@ -28,7 +28,8 @@ import {
   Trash2,
   Save,
   XCircle,
-  FileText
+  FileText,
+  LogOut
 } from 'lucide-react';
 import { AddTransactionModal } from '../../components/performance/AddTransactionModal';
 import { AddExpenseModal } from '../../components/performance/AddExpenseModal';
@@ -45,11 +46,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
   const { franchiseSlug } = useParams<{ franchiseSlug: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const signOut = useAuthStore((state) => state.signOut);
   const { isCEO, isAdmin, isFranchiseEmployee, canEditFranchise, franchiseSlug: userFranchiseSlug } = useFranchise();
   const [activeTab, setActiveTab] = useState<'overview' | 'pnl' | 'transactions' | 'expenses' | 'settings'>('overview');
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<PerformanceTransaction | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Settings form state
   const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -105,6 +108,17 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
   // Check if current user can edit this franchise
   const canEdit = franchise ? canEditFranchise(franchise.id) : false;
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      // signOut already handles redirect to '/'
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+    }
+  };
 
   // Helper function to extract clean name from potentially JSON-formatted strings
   const extractName = (value: unknown): string => {
@@ -261,6 +275,15 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               }`}>
                 {franchise.is_active ? 'Active' : 'Inactive'}
               </span>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+              </button>
             </div>
           </div>
         </div>
