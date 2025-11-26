@@ -52,7 +52,7 @@ export default function Login() {
       const checkAuthState = () => {
         const authState = useAuthStore.getState();
         if (authState.user) {
-          // Check if we're on performance subdomain
+      // Check if we're on performance subdomain
           // For performance subdomain, redirect to root which has PerformanceDashboardRouter
           // that will route users based on their role (CEO -> /dashboard, franchise employee -> /franchise/:slug)
           const defaultPath = isPerformanceSubdomain ? '/' : '/app';
@@ -66,8 +66,8 @@ export default function Login() {
           // Fallback: redirect anyway after timeout
           console.warn('Login: User state not found after timeout, redirecting anyway');
           const defaultPath = isPerformanceSubdomain ? '/' : '/app';
-          const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
-          navigate(from, { replace: true });
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || defaultPath;
+        navigate(from, { replace: true });
         }
       };
       // Start checking immediately, but give a small delay for state propagation

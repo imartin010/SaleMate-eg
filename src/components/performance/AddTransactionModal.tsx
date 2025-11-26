@@ -246,36 +246,36 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Project <span className="text-red-500">*</span>
             </label>
             
             {/* Search Input */}
             <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 sm:pl-10 pr-2.5 sm:pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 placeholder="Search projects..."
               />
             </div>
 
             {/* Selected Project Display */}
             {selectedProject && (
-              <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="font-medium text-blue-900">{selectedProject.compound}</p>
-                <p className="text-sm text-blue-700">{selectedProject.developer} • {selectedProject.area}</p>
+              <div className="mb-2 p-2.5 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm sm:text-base font-medium text-blue-900">{selectedProject.compound}</p>
+                <p className="text-xs sm:text-sm text-blue-700">{selectedProject.developer} • {selectedProject.area}</p>
               </div>
             )}
 
             {/* Project Dropdown */}
-            <div className="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
+            <div className="border border-gray-300 rounded-lg max-h-48 sm:max-h-60 overflow-y-auto">
               {projectsLoading ? (
-                <div className="p-4 text-center text-gray-500">Loading projects...</div>
+                <div className="p-3 sm:p-4 text-center text-xs sm:text-sm text-gray-500">Loading projects...</div>
               ) : filteredProjects.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-3 sm:p-4 text-center text-xs sm:text-sm text-gray-500">
                   {searchTerm ? 'No projects found' : 'No projects available'}
                 </div>
               ) : (
@@ -288,13 +288,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         setProjectId(project.id.toString());
                         setSearchTerm('');
                       }}
-                      className={`w-full text-left p-3 hover:bg-blue-50 transition-colors ${
+                      className={`w-full text-left p-2.5 sm:p-3 hover:bg-blue-50 transition-colors ${
                         projectId === project.id.toString() ? 'bg-blue-100' : ''
                       }`}
                     >
-                      <p className="font-medium text-gray-900">{project.compound}</p>
-                      <p className="text-sm text-gray-600">{project.developer}</p>
-                      <p className="text-xs text-gray-500">{project.area}</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-900">{project.compound}</p>
+                      <p className="text-[10px] sm:text-sm text-gray-600">{project.developer}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{project.area}</p>
                     </button>
                   ))}
                 </div>
@@ -303,7 +303,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Transaction Amount (EGP) <span className="text-red-500">*</span>
             </label>
             <input
@@ -311,21 +311,21 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
               placeholder="5000000"
               required
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
               Commission will be calculated automatically at 3.5% of transaction amount
             </p>
           </div>
 
           {/* Commission & Tax Breakdown */}
           {transactionAmountNum > 0 && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 space-y-2 border border-blue-100">
-              <h3 className="font-semibold text-gray-900 mb-2">Commission Calculation & Tax Breakdown</h3>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-3 sm:p-4 space-y-2 border border-blue-100">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Commission Calculation & Tax Breakdown</h3>
               
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">Transaction Amount</span>
                 <span className="font-medium text-gray-900">
                   {new Intl.NumberFormat('en-EG', {
@@ -337,12 +337,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 </span>
               </div>
 
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs sm:text-sm mb-1">
                 <span className="text-gray-600">Commission Rate</span>
                 <span className="font-medium text-gray-700">3.5%</span>
               </div>
               
-              <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
+              <div className="flex justify-between text-xs sm:text-sm border-t border-blue-200 pt-2 mt-2">
                 <span className="text-gray-600 font-medium">Gross Commission (3.5%)</span>
                 <span className="font-semibold text-gray-900">
                   {new Intl.NumberFormat('en-EG', {
@@ -355,7 +355,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </div>
 
               <div className="border-t border-blue-200 pt-2 space-y-1">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">14% Tax</span>
                   <span className="text-red-600 font-medium">
                     -{new Intl.NumberFormat('en-EG', {
@@ -367,7 +367,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   </span>
                 </div>
 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">5% Withholding Tax</span>
                   <span className="text-red-600 font-medium">
                     -{new Intl.NumberFormat('en-EG', {
@@ -379,7 +379,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   </span>
                 </div>
 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">4% Income Tax</span>
                   <span className="text-red-600 font-medium">
                     -{new Intl.NumberFormat('en-EG', {
@@ -394,8 +394,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
               <div className="border-t border-blue-200 pt-2">
                 <div className="flex justify-between">
-                  <span className="font-semibold text-gray-900">Net Commission (After Tax)</span>
-                  <span className="font-bold text-green-700">
+                  <span className="text-xs sm:text-sm font-semibold text-gray-900">Net Commission (After Tax)</span>
+                  <span className="text-sm sm:text-base font-bold text-green-700">
                     {new Intl.NumberFormat('en-EG', {
                       style: 'currency',
                       currency: 'EGP',
@@ -404,7 +404,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     }).format(taxBreakdown.netCommission)}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
                   Total tax deductions: 23% (14% + 5% + 4%)
                 </div>
               </div>
@@ -412,9 +412,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {/* Managerial Role Cuts */}
               {calculateRoleCuts.roleBreakdown.length > 0 && (
                 <div className="border-t-2 border-orange-200 pt-2 mt-2 space-y-1">
-                  <div className="text-xs font-semibold text-gray-700 mb-1">Managerial Role Cuts:</div>
+                  <div className="text-[10px] sm:text-xs font-semibold text-gray-700 mb-1">Managerial Role Cuts:</div>
                   {calculateRoleCuts.roleBreakdown.map((roleCut) => (
-                    <div key={roleCut.role} className="flex justify-between text-sm">
+                    <div key={roleCut.role} className="flex justify-between text-xs sm:text-sm">
                       <span className="text-gray-600">{roleCut.label}</span>
                       <span className="text-orange-600 font-medium">
                         -{new Intl.NumberFormat('en-EG', {
@@ -426,7 +426,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       </span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-xs pt-1 border-t border-orange-200">
+                  <div className="flex justify-between text-[10px] sm:text-xs pt-1 border-t border-orange-200">
                     <span className="text-gray-600 font-medium">Total Role Cuts</span>
                     <span className="text-orange-700 font-semibold">
                       -{new Intl.NumberFormat('en-EG', {
@@ -443,8 +443,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {/* Final Net Commission */}
               <div className="border-t-2 border-green-300 pt-2 mt-2">
                 <div className="flex justify-between">
-                  <span className="font-bold text-gray-900">Final Net Commission</span>
-                  <span className="font-bold text-green-700 text-lg">
+                  <span className="text-xs sm:text-sm font-bold text-gray-900">Final Net Commission</span>
+                  <span className="text-sm sm:text-lg font-bold text-green-700">
                     {new Intl.NumberFormat('en-EG', {
                       style: 'currency',
                       currency: 'EGP',
@@ -453,7 +453,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     }).format(finalNetCommission)}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
                   After taxes and role cuts
                 </div>
               </div>
@@ -462,10 +462,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           {/* Managerial Roles Checkboxes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
               Managerial Roles Involved (Optional)
             </label>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3">
               Select which managerial roles are involved in this deal. Commission cuts will be calculated automatically.
             </p>
             <div className="space-y-2">
@@ -479,9 +479,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 return (
                   <label
                     key={roleOption.role}
-                    className="flex items-center justify-between p-3 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-colors cursor-pointer"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2.5 sm:p-3 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -492,17 +492,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                             setManagerialRoles(managerialRoles.filter(r => r !== roleOption.role));
                           }
                         }}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
                       />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700">
                         {roleOption.label}
                       </span>
                     </div>
                     {cutConfig && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-[10px] sm:text-xs text-gray-500 ml-5 sm:ml-0">
                         {cutConfig.cut_per_million.toLocaleString()} EGP/million
                         {isChecked && transactionAmountNum > 0 && (
-                          <span className="ml-2 text-blue-600 font-medium">
+                          <span className="ml-1 sm:ml-2 text-blue-600 font-medium">
                             (-{new Intl.NumberFormat('en-EG', {
                               style: 'currency',
                               currency: 'EGP',
@@ -518,20 +518,20 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               })}
             </div>
             {managerialRoles.length === 0 && (
-              <p className="text-xs text-gray-400 mt-2 italic">
+              <p className="text-[10px] sm:text-xs text-gray-400 mt-2 italic">
                 No managerial roles selected - no commission cuts will be applied
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Stage <span className="text-red-500">*</span>
             </label>
             <select
               value={stage}
               onChange={(e) => setStage(e.target.value as TransactionStage)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             >
               <option value="eoi">EOI (Expression of Interest)</option>
               <option value="reservation">Reservation</option>
@@ -541,33 +541,33 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Notes (Optional)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
               rows={3}
               placeholder="Add any additional notes..."
             />
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 pt-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:space-x-3 pt-3 sm:pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createTransaction.isPending || updateTransaction.isPending}
-              className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs sm:text-sm sm:font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>
                 {isEditMode 
                   ? (updateTransaction.isPending ? 'Updating...' : 'Update Transaction')

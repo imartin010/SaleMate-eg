@@ -328,11 +328,11 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
   return (
     <div className="space-y-6">
       {/* Break-Even Analysis */}
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-md p-6 border-2 border-blue-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-md p-4 sm:p-6 border-2 border-blue-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
           <div className="flex items-center space-x-2">
-            <Target className="w-6 h-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-blue-900">{translations.breakEven.title}</h3>
+            <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <h3 className="text-base sm:text-lg font-semibold text-blue-900">{translations.breakEven.title}</h3>
           </div>
           <button
             onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
@@ -366,14 +366,14 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
           </div>
         </div>
 
-        <div className={`rounded-lg p-4 ${breakevenAnalysis.isProfitable ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border-2`}>
+        <div className={`rounded-lg p-3 sm:p-4 ${breakevenAnalysis.isProfitable ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border-2`}>
           <div className="flex items-center space-x-2">
             {breakevenAnalysis.isProfitable ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
             ) : (
-              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0" />
             )}
-            <p className={`font-semibold ${breakevenAnalysis.isProfitable ? 'text-green-900' : 'text-yellow-900'}`}>
+            <p className={`text-xs sm:text-sm font-semibold ${breakevenAnalysis.isProfitable ? 'text-green-900' : 'text-yellow-900'}`}>
               {breakevenAnalysis.isProfitable 
                 ? translations.breakEven.currentlyProfitable
                 : translations.breakEven.needToSell(breakevenAnalysis.breakevenSalesVolume)}
@@ -383,12 +383,12 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
       </div>
 
       {/* Cashflow Forecast */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="flex items-center space-x-2 mb-4">
-          <LineChart className="w-6 h-6 text-purple-600" />
-          <h3 className="text-lg font-semibold text-purple-900">{translations.cashflowForecast.title}</h3>
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-4 sm:p-6 border-2 border-purple-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex items-center space-x-2 mb-3 sm:mb-4">
+          <LineChart className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+          <h3 className="text-base sm:text-lg font-semibold text-purple-900">{translations.cashflowForecast.title}</h3>
         </div>
-        <p className="text-sm text-purple-700 mb-6">
+        <p className="text-xs sm:text-sm text-purple-700 mb-4 sm:mb-6">
           {translations.cashflowForecast.subtitle}
         </p>
 
@@ -418,18 +418,18 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
                   {formatCurrency(month.netCashflow)}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-sm">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-xs sm:text-sm">
                 <div>
                   <p className="text-gray-600">{translations.cashflowForecast.inflow}</p>
-                  <p className="font-medium text-green-700">{formatCurrency(month.commissionInflow)}</p>
+                  <p className="font-medium text-green-700 text-xs sm:text-sm">{formatCurrency(month.commissionInflow)}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">{translations.cashflowForecast.expenses}</p>
-                  <p className="font-medium text-red-700">{formatCurrency(month.expenses)}</p>
+                  <p className="font-medium text-red-700 text-xs sm:text-sm">{formatCurrency(month.expenses)}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">{translations.cashflowForecast.cumulative}</p>
-                  <p className={`font-medium ${month.cumulativeCashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  <p className={`font-medium text-xs sm:text-sm ${month.cumulativeCashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                     {formatCurrency(month.cumulativeCashflow)}
                   </p>
                 </div>
@@ -440,11 +440,11 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
       </div>
 
       {/* AI Recommendations */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border-2 border-indigo-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-4 sm:p-6 border-2 border-indigo-200" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
           <div className="flex items-center space-x-2">
-            <Bot className="w-6 h-6 text-indigo-600" />
-            <h3 className="text-lg font-semibold text-indigo-900">{translations.recommendations.title}</h3>
+            <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+            <h3 className="text-base sm:text-lg font-semibold text-indigo-900">{translations.recommendations.title}</h3>
           </div>
           <button
             onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
@@ -455,15 +455,15 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
             <span className="text-sm font-medium">{language === 'en' ? 'AR' : 'EN'}</span>
           </button>
         </div>
-        <p className="text-sm text-indigo-700 mb-6">
+        <p className="text-xs sm:text-sm text-indigo-700 mb-4 sm:mb-6">
           {translations.recommendations.subtitle}
         </p>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {recommendations.map((rec, index) => (
             <div
               key={index}
-              className={`border-2 rounded-lg p-4 ${
+              className={`border-2 rounded-lg p-3 sm:p-4 ${
                 rec.type === 'success'
                   ? 'bg-green-50 border-green-200 text-green-900'
                   : rec.type === 'warning'
@@ -473,7 +473,7 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
                   : 'bg-blue-50 border-blue-200 text-blue-900'
               }`}
             >
-              <div className="flex items-start space-x-3">
+              <div className="flex items-start space-x-2 sm:space-x-3">
                 <div className={`flex-shrink-0 ${
                   rec.type === 'success'
                     ? 'text-green-600'
@@ -485,18 +485,18 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
                 }`}>
                   {rec.icon}
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold mb-1">{rec.title}</h4>
-                  <p className="text-sm" dangerouslySetInnerHTML={{ __html: rec.description }} />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm sm:text-base font-semibold mb-1">{rec.title}</h4>
+                  <p className="text-xs sm:text-sm" dangerouslySetInnerHTML={{ __html: rec.description }} />
                 </div>
               </div>
             </div>
           ))}
 
           {recommendations.length === 0 && (
-            <div className="text-center py-8 text-indigo-700">
-              <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>{translations.recommendations.healthyForecast}</p>
+            <div className="text-center py-6 sm:py-8 text-indigo-700">
+              <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 opacity-50" />
+              <p className="text-xs sm:text-sm">{translations.recommendations.healthyForecast}</p>
             </div>
           )}
         </div>
