@@ -244,6 +244,7 @@ const PerformanceAdminPanel: React.FC = () => {
   const { data: commissionCuts } = usePerformanceCommissionCuts();
   const upsertCommissionCut = useUpsertCommissionCut();
   const [commissionCutForm, setCommissionCutForm] = useState<Record<CommissionRole, number>>({
+    sales_agent: 6000,
     team_leader: 0,
     sales_director: 0,
     head_of_sales: 0,
@@ -412,6 +413,7 @@ const PerformanceAdminPanel: React.FC = () => {
       const cutsForFirstFranchise = commissionCuts.filter(c => c.franchise_id === firstFranchiseId);
       
       const formData: Record<CommissionRole, number> = {
+        sales_agent: 6000,
         team_leader: 0,
         sales_director: 0,
         head_of_sales: 0,
@@ -419,18 +421,19 @@ const PerformanceAdminPanel: React.FC = () => {
       
       // Load values from the first franchise
       cutsForFirstFranchise.forEach(cut => {
-        if (cut.role === 'team_leader' || cut.role === 'sales_director' || cut.role === 'head_of_sales') {
+        if (cut.role === 'sales_agent' || cut.role === 'team_leader' || cut.role === 'sales_director' || cut.role === 'head_of_sales') {
           formData[cut.role] = cut.cut_per_million;
         }
       });
       
       // Only update if we have actual values (not all zeros)
-      if (formData.team_leader > 0 || formData.sales_director > 0 || formData.head_of_sales > 0) {
+      if (formData.sales_agent > 0 || formData.team_leader > 0 || formData.sales_director > 0 || formData.head_of_sales > 0) {
         setCommissionCutForm(formData);
       }
     } else if (commissionCuts && commissionCuts.length === 0 && franchises && franchises.length > 0) {
-      // No commission cuts exist yet, initialize with zeros
+      // No commission cuts exist yet, initialize with default values
       setCommissionCutForm({
+        sales_agent: 6000,
         team_leader: 0,
         sales_director: 0,
         head_of_sales: 0,
@@ -455,6 +458,7 @@ const PerformanceAdminPanel: React.FC = () => {
       
       for (const franchise of franchises) {
         cutsToSave.push(
+          { franchise_id: franchise.id, role: 'sales_agent', cut_per_million: commissionCutForm.sales_agent },
           { franchise_id: franchise.id, role: 'team_leader', cut_per_million: commissionCutForm.team_leader },
           { franchise_id: franchise.id, role: 'sales_director', cut_per_million: commissionCutForm.sales_director },
           { franchise_id: franchise.id, role: 'head_of_sales', cut_per_million: commissionCutForm.head_of_sales }
@@ -778,7 +782,7 @@ const PerformanceAdminPanel: React.FC = () => {
               These commission cuts will be applied to all franchises.
             </p>
             <div className="space-y-4 max-w-2xl">
-              {(['team_leader', 'sales_director', 'head_of_sales'] as CommissionRole[]).map((role) => {
+              {(['sales_agent', 'team_leader', 'sales_director', 'head_of_sales'] as CommissionRole[]).map((role) => {
                 const roleLabels: Record<CommissionRole, string> = {
                   team_leader: 'Team Leader',
                   sales_director: 'Sales Manager',

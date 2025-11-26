@@ -31,6 +31,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   // Managerial roles checkboxes
   const [managerialRoles, setManagerialRoles] = useState<CommissionRole[]>([]);
   const availableRoles: { role: CommissionRole; label: string }[] = [
+    { role: 'sales_agent', label: 'Sales Agent' },
     { role: 'team_leader', label: 'Team Leader' },
     { role: 'sales_director', label: 'Sales Manager' },
     { role: 'head_of_sales', label: 'Sales Director' },
