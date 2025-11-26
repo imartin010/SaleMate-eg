@@ -150,3 +150,4 @@ Then create the franchise accounts when ready.
 
 **Test the CEO dashboard now while I prepare the franchise creation guide!** 🚀
 
+

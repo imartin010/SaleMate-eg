@@ -240,39 +240,39 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
   const validSelectedData = selectedData.filter(d => d.analytics && !d.isLoading);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4">
+      <div className="bg-white rounded-none sm:rounded-3xl shadow-2xl max-w-7xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <BarChart3 className="w-8 h-8 text-white" />
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-4 sm:px-8 py-4 sm:py-6 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             <div>
-              <h2 className="text-2xl font-bold text-white">Franchise Comparison</h2>
-              <p className="text-sm text-blue-100">Compare performance metrics across franchises</p>
+              <h2 className="text-lg sm:text-2xl font-bold text-white">Franchise Comparison</h2>
+              <p className="text-xs sm:text-sm text-blue-100 hidden sm:block">Compare performance metrics across franchises</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 hover:bg-white/20 rounded-lg transition-colors"
           >
-            <X className="w-6 h-6 text-white" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </button>
         </div>
 
         {/* Franchise Selector */}
-        <div className="px-8 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-gray-700">Select Franchises to Compare:</p>
-            <div className="flex items-center space-x-2">
+        <div className="px-4 sm:px-8 py-3 sm:py-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+            <p className="text-xs sm:text-sm font-semibold text-gray-700">Select Franchises to Compare:</p>
+            <div className="flex items-center space-x-2 w-full sm:w-auto">
               <button
                 onClick={selectAll}
-                className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               >
                 Select All
               </button>
               <button
                 onClick={clearSelection}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Clear
               </button>
@@ -285,7 +285,7 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
                 <button
                   key={franchise.id}
                   onClick={() => toggleFranchise(franchise.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     isSelected
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-400'
@@ -302,18 +302,18 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
         </div>
 
         {/* Time Frame Selector */}
-        <div className="px-8 py-4 bg-indigo-50 border-b border-indigo-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Calendar className="w-5 h-5 text-indigo-600" />
-              <span className="text-sm font-semibold text-indigo-900">Time Frame:</span>
+        <div className="px-4 sm:px-8 py-3 sm:py-4 bg-indigo-50 border-b border-indigo-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+              <span className="text-xs sm:text-sm font-semibold text-indigo-900">Time Frame:</span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto scrollbar-hide w-full sm:w-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               {(['weekly', 'monthly', 'quarterly', 'half-year', 'yearly', 'all-time'] as TimeFrame[]).map((tf) => (
                 <button
                   key={tf}
                   onClick={() => setTimeFrame(tf)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
                     timeFrame === tf
                       ? 'bg-indigo-600 text-white shadow-md'
                       : 'bg-white text-indigo-700 border border-indigo-300 hover:border-indigo-400'
@@ -339,47 +339,47 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
           ))}
 
         {/* Comparison Content */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
           {selectedFranchiseIds.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Select at least one franchise to compare</p>
-              <p className="text-sm text-gray-400 mt-2">
+            <div className="text-center py-8 sm:py-12">
+              <Building2 className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-500 font-medium">Select at least one franchise to compare</p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-2">
                 Choose franchises from the list above to see their performance metrics side by side
               </p>
             </div>
           ) : validSelectedData.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-500 font-medium">Loading franchise data...</p>
-              <p className="text-sm text-gray-400 mt-2">
+            <div className="text-center py-8 sm:py-12">
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+              <p className="text-sm sm:text-base text-gray-500 font-medium">Loading franchise data...</p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-2">
                 Calculating analytics for selected franchises
               </p>
             </div>
           ) : (
             <>
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs sm:text-sm text-blue-800">
                 <span className="font-semibold">Time Frame:</span> {timeFrame === 'half-year' ? 'Half Year' : timeFrame.charAt(0).toUpperCase() + timeFrame.slice(1).replace('-', ' ')} 
                 {timeFrame !== 'all-time' && (
-                  <span className="ml-2 text-blue-600">
+                  <span className="ml-1 sm:ml-2 text-blue-600 block sm:inline mt-1 sm:mt-0">
                     ({getDateRange(timeFrame).startDate.toLocaleDateString()} - {getDateRange(timeFrame).endDate.toLocaleDateString()})
                   </span>
                 )}
               </p>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Comparison Table */}
               <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <table className="w-full min-w-[600px]">
                     <thead className="bg-gradient-to-r from-gray-50 to-slate-50">
                       <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Metric</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-700">Metric</th>
                         {validSelectedData.map((data) => (
                           <th
                             key={data.franchise.id}
-                            className="px-6 py-4 text-center text-sm font-semibold text-gray-700 min-w-[200px]"
+                            className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs sm:text-sm font-semibold text-gray-700 min-w-[150px] sm:min-w-[200px]"
                           >
                             {data.franchise.name}
                           </th>
@@ -389,9 +389,9 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
                     <tbody className="divide-y divide-gray-200">
                       {/* Gross Revenue */}
                       <tr className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700">
-                          <div className="flex items-center space-x-2">
-                            <DollarSign className="w-4 h-4 text-green-600" />
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-700">
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
                             <span>Gross Revenue</span>
                           </div>
                         </td>
@@ -400,15 +400,15 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
                           return (
                             <td
                               key={data.franchise.id}
-                              className={`px-6 py-4 text-center ${
+                              className={`px-3 sm:px-6 py-3 sm:py-4 text-center ${
                                 isBest ? 'bg-green-50 font-bold' : ''
                               }`}
                             >
-                              <div className="flex items-center justify-center space-x-2">
-                                <span className="text-sm font-mono text-gray-900">
+                              <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+                                <span className="text-xs sm:text-sm font-mono text-gray-900">
                                   {formatCurrency(data.analytics!.gross_revenue)}
                                 </span>
-                                {isBest && <Award className="w-4 h-4 text-green-600" />}
+                                {isBest && <Award className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />}
                               </div>
                             </td>
                           );
@@ -417,9 +417,9 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
 
                       {/* Net Revenue */}
                       <tr className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700">
-                          <div className="flex items-center space-x-2">
-                            <TrendingUp className="w-4 h-4 text-blue-600" />
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-700">
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
                             <span>Net Revenue</span>
                           </div>
                         </td>
@@ -623,10 +623,10 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
               </div>
 
               {/* Visual Comparison Bars */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Gross Revenue Comparison */}
-                <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Gross Revenue Comparison</h3>
+                <div className="bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Gross Revenue Comparison</h3>
                   <div className="space-y-4">
                     {validSelectedData.map((data) => {
                       const maxRevenue = Math.max(...validSelectedData.map(d => d.analytics!.gross_revenue));
@@ -635,15 +635,15 @@ export const FranchiseComparison: React.FC<FranchiseComparisonProps> = ({
                       return (
                         <div key={data.franchise.id}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">{data.franchise.name}</span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-mono text-gray-900">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700 truncate mr-2">{data.franchise.name}</span>
+                            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                              <span className="text-xs sm:text-sm font-mono text-gray-900">
                                 {formatCurrency(data.analytics!.gross_revenue)}
                               </span>
-                              {isBest && <Award className="w-4 h-4 text-green-600" />}
+                              {isBest && <Award className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />}
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                          <div className="w-full bg-gray-200 rounded-full h-5 sm:h-6 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${
                                 isBest ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'

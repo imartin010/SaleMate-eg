@@ -224,3 +224,4 @@ You now have a **complete multi-tenant franchise management system**:
 
 **Just run the migrations and you're live!** 🚀
 
+

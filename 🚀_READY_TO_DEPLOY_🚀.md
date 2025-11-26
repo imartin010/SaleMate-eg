@@ -176,3 +176,4 @@ You have a complete, professional, multi-tenant franchise management system with
 
 See `ACCOUNTS_NEED_MANUAL_CREATION.md` for detailed instructions.
 
+
