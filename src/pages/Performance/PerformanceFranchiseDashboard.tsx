@@ -16,7 +16,6 @@ import {
   DollarSign, 
   Users, 
   Calendar,
-  ArrowLeft,
   BarChart3,
   PieChart,
   Wallet,
@@ -241,13 +240,6 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <a
-                href="/dashboard"
-                className="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
-              </a>
-              <div className="h-8 w-px bg-gray-300"></div>
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
                   {franchise.name}
