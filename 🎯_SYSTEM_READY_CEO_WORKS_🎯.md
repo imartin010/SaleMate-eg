@@ -149,3 +149,4 @@ Then create the franchise accounts when ready.
 - Just need to create 22 accounts via dashboard
 
 **Test the CEO dashboard now while I prepare the franchise creation guide!** 🚀
+

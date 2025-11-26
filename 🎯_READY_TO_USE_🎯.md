@@ -172,3 +172,4 @@ Expected: Auto-redirect to Meeting Point dashboard only
 **System**: Fully functional once accounts created
 
 **You can start using the CEO dashboard immediately!** 🚀
+

@@ -175,3 +175,4 @@ You have a complete, professional, multi-tenant franchise management system with
 **The system is 95% complete - just create the franchise accounts via dashboard and you're fully deployed!** 🚀
 
 See `ACCOUNTS_NEED_MANUAL_CREATION.md` for detailed instructions.
+

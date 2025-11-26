@@ -223,3 +223,4 @@ You now have a **complete multi-tenant franchise management system**:
 - ✅ Secure at database and application level
 
 **Just run the migrations and you're live!** 🚀
+
