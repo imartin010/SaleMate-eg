@@ -130,3 +130,4 @@ If you see any issues, the console will show where it's failing.
 **Open your browser and test the full system now!** 🚀
 
 http://localhost:5173
+

@@ -61,8 +61,8 @@ export const performanceRouter = createBrowserRouter([
       <AuthGuard>
         <FranchiseProvider>
           <PerformanceRoleGuard allowedRoles={['ceo', 'admin']}>
-            <ScrollToTop />
-            <SafePage><PerformanceCEODashboard /></SafePage>
+        <ScrollToTop />
+        <SafePage><PerformanceCEODashboard /></SafePage>
           </PerformanceRoleGuard>
         </FranchiseProvider>
       </AuthGuard>
@@ -74,8 +74,8 @@ export const performanceRouter = createBrowserRouter([
       <AuthGuard>
         <FranchiseProvider>
           <FranchiseOwnerGuard>
-            <ScrollToTop />
-            <SafePage><PerformanceFranchiseDashboard /></SafePage>
+        <ScrollToTop />
+        <SafePage><PerformanceFranchiseDashboard /></SafePage>
           </FranchiseOwnerGuard>
         </FranchiseProvider>
       </AuthGuard>
@@ -87,8 +87,8 @@ export const performanceRouter = createBrowserRouter([
       <AuthGuard>
         <FranchiseProvider>
           <PerformanceRoleGuard allowedRoles={['ceo', 'admin']}>
-            <ScrollToTop />
-            <SafePage><PerformanceAdminPanel /></SafePage>
+        <ScrollToTop />
+        <SafePage><PerformanceAdminPanel /></SafePage>
           </PerformanceRoleGuard>
         </FranchiseProvider>
       </AuthGuard>

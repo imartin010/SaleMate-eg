@@ -187,3 +187,4 @@ Password: CWB2024
 **Open your browser and start using it RIGHT NOW!** 🚀
 
 http://localhost:5173
+

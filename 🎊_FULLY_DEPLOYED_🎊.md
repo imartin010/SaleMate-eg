@@ -212,3 +212,4 @@ Your multi-tenant franchise management system is **fully operational**!
 - Employees manage their franchise daily
 
 **Open your browser and start using it!** 🚀
+
