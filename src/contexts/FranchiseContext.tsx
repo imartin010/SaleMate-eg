@@ -64,24 +64,31 @@ export const FranchiseProvider: React.FC<FranchiseProviderProps> = ({ children }
 
         // If user is franchise_employee, fetch their franchise
         if (profile.role === 'franchise_employee') {
+          console.log('[FranchiseContext] Fetching franchise for employee:', user.id);
+          
           const { data: franchise, error: franchiseError } = await supabase
             .from('performance_franchises' as any)
             .select('id, slug, name')
             .eq('owner_user_id', user.id)
-            .single();
+            .maybeSingle();
 
           if (franchiseError) {
-            // User might not be linked to a franchise yet
-            console.warn('Franchise employee not linked to franchise:', franchiseError);
+            console.error('[FranchiseContext] Error fetching franchise:', franchiseError);
             setIsLoading(false);
             return;
           }
 
-          if (franchise) {
-            setFranchiseId(franchise.id);
-            setFranchiseSlug(franchise.slug);
-            setFranchiseName(franchise.name);
+          if (!franchise) {
+            console.warn('[FranchiseContext] No franchise found for employee:', user.id);
+            // Still set loading to false so UI can show error state
+            setIsLoading(false);
+            return;
           }
+
+          console.log('[FranchiseContext] Found franchise:', franchise.slug);
+          setFranchiseId(franchise.id);
+          setFranchiseSlug(franchise.slug);
+          setFranchiseName(franchise.name);
         }
 
         setIsLoading(false);
