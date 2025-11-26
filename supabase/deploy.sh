@@ -50,6 +50,9 @@ supabase functions deploy assign_leads
 echo "  📤 Deploying recalc_analytics function..."
 supabase functions deploy recalc_analytics
 
+echo "  📤 Deploying franchise-ai-assistant function..."
+supabase functions deploy franchise-ai-assistant
+
 echo "🔄 Setting up cron jobs..."
 
 # Set up analytics refresh cron job (daily at 2 AM)
