@@ -586,46 +586,48 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
   const getInsightStyle = (type: Insight['type']) => {
     switch (type) {
       case 'success':
-        return 'bg-blue-50 border-blue-200 text-gray-900';
+        return 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 text-gray-900 shadow-sm';
       case 'warning':
-        return 'bg-blue-50 border-blue-200 text-gray-900';
+        return 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300 text-gray-900 shadow-sm';
       case 'danger':
-        return 'bg-red-50 border-red-300 text-gray-900';
+        return 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 text-gray-900 shadow-sm';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-gray-900';
+        return 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-300 text-gray-900 shadow-sm';
     }
   };
 
   const getIconColor = (type: Insight['type']) => {
     switch (type) {
       case 'success':
-        return 'text-blue-700';
+        return 'text-green-600';
       case 'warning':
-        return 'text-blue-700';
+        return 'text-amber-600';
       case 'danger':
         return 'text-red-600';
       case 'info':
-        return 'text-blue-700';
+        return 'text-blue-600';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl shadow-md border-2 border-indigo-200 p-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          <Bot className="w-5 h-5 text-blue-700" />
-          <h3 className="text-lg font-semibold text-gray-900">{translations.title}</h3>
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <Bot className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h3 className="text-xl font-bold text-indigo-900">{translations.title}</h3>
         </div>
         <button
           onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-          className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors text-sm font-medium border border-blue-200"
+          className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white hover:bg-indigo-50 text-indigo-700 transition-colors text-sm font-bold border-2 border-indigo-300 shadow-sm"
           title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
         >
           <Languages className="w-4 h-4" />
           <span>{language === 'en' ? 'AR' : 'EN'}</span>
         </button>
       </div>
-      <p className="text-sm text-gray-600 mb-6">
+      <p className="text-sm text-indigo-800 font-medium mb-6">
         {translations.subtitle}
       </p>
 
@@ -633,26 +635,36 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
         {insights.map((insight, index) => (
           <div
             key={index}
-            className={`border rounded-lg p-4 ${getInsightStyle(insight.type)}`}
+            className={`border-2 rounded-xl p-5 ${getInsightStyle(insight.type)} hover:scale-[1.01] transition-transform duration-200`}
           >
             <div className="flex items-start space-x-3">
-              <div className={`flex-shrink-0 ${getIconColor(insight.type)}`}>
+              <div className={`flex-shrink-0 p-2 rounded-lg ${
+                insight.type === 'success' ? 'bg-green-100' :
+                insight.type === 'warning' ? 'bg-amber-100' :
+                insight.type === 'danger' ? 'bg-red-100' :
+                'bg-blue-100'
+              } ${getIconColor(insight.type)}`}>
                 {insight.icon}
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold mb-1 text-gray-900">{insight.title}</h4>
-                <p className="text-sm mb-2 text-gray-700" dangerouslySetInnerHTML={{ __html: insight.description }} />
+                <h4 className="font-bold mb-2 text-gray-900 text-base">{insight.title}</h4>
+                <p className="text-sm mb-3 text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: insight.description }} />
                 {insight.recommendation && (
-                  <div className="mt-2 pl-4 border-l-2 border-blue-300">
-                    <p className="text-sm font-medium mb-2 text-gray-900">{translations.recommendation}</p>
+                  <div className={`mt-3 p-3 rounded-lg border-l-4 ${
+                    insight.type === 'success' ? 'bg-green-100/50 border-green-400' :
+                    insight.type === 'warning' ? 'bg-amber-100/50 border-amber-400' :
+                    insight.type === 'danger' ? 'bg-red-100/50 border-red-400' :
+                    'bg-blue-100/50 border-blue-400'
+                  }`}>
+                    <p className="text-sm font-bold mb-2 text-gray-900">{translations.recommendation}</p>
                     {Array.isArray(insight.recommendation) ? (
-                      <ul className="text-sm space-y-1 list-disc list-inside text-gray-700">
+                      <ul className="text-sm space-y-1.5 list-disc list-inside text-gray-700 pl-1">
                         {insight.recommendation.map((rec, recIndex) => (
-                          <li key={recIndex} dangerouslySetInnerHTML={{ __html: rec }} />
+                          <li key={recIndex} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: rec }} />
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: insight.recommendation }} />
+                      <p className="text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: insight.recommendation }} />
                     )}
                   </div>
                 )}

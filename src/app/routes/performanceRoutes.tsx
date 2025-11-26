@@ -2,6 +2,8 @@
 import React, { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AuthGuard } from '../../components/auth/AuthGuard';
+import { PerformanceRoleGuard, FranchiseOwnerGuard } from '../../components/auth/PerformanceRoleGuard';
+import { FranchiseProvider } from '../../contexts/FranchiseContext';
 import { ErrorBoundary, FastFallback } from '../../components/common/ErrorBoundary';
 import { PageErrorBoundary } from '../../components/common/PageErrorBoundary';
 import { ScrollToTop } from '../../components/common/ScrollToTop';
@@ -12,6 +14,7 @@ const PerformanceHome = React.lazy(() => import('../../pages/Performance/Perform
 const PerformanceCEODashboard = React.lazy(() => import('../../pages/Performance/PerformanceCEODashboard'));
 const PerformanceFranchiseDashboard = React.lazy(() => import('../../pages/Performance/PerformanceFranchiseDashboard'));
 const PerformanceAdminPanel = React.lazy(() => import('../../pages/Performance/PerformanceAdminPanel'));
+const PerformanceDashboardRouter = React.lazy(() => import('../../pages/Performance/PerformanceDashboardRouter'));
 
 // Auth pages  
 const Login = React.lazy(() => import('../../pages/Auth/Login'));
@@ -44,7 +47,11 @@ export const performanceRouter = createBrowserRouter([
     element: (
       <>
         <ScrollToTop />
-        <SafePage><PerformanceHome /></SafePage>
+        <AuthGuard>
+          <FranchiseProvider>
+            <SafePage><PerformanceDashboardRouter /></SafePage>
+          </FranchiseProvider>
+        </AuthGuard>
       </>
     ),
   },
@@ -52,8 +59,12 @@ export const performanceRouter = createBrowserRouter([
     path: '/dashboard',
     element: (
       <AuthGuard>
-        <ScrollToTop />
-        <SafePage><PerformanceCEODashboard /></SafePage>
+        <FranchiseProvider>
+          <PerformanceRoleGuard allowedRoles={['ceo', 'admin']}>
+            <ScrollToTop />
+            <SafePage><PerformanceCEODashboard /></SafePage>
+          </PerformanceRoleGuard>
+        </FranchiseProvider>
       </AuthGuard>
     ),
   },
@@ -61,8 +72,12 @@ export const performanceRouter = createBrowserRouter([
     path: '/franchise/:franchiseSlug',
     element: (
       <AuthGuard>
-        <ScrollToTop />
-        <SafePage><PerformanceFranchiseDashboard /></SafePage>
+        <FranchiseProvider>
+          <FranchiseOwnerGuard>
+            <ScrollToTop />
+            <SafePage><PerformanceFranchiseDashboard /></SafePage>
+          </FranchiseOwnerGuard>
+        </FranchiseProvider>
       </AuthGuard>
     ),
   },
@@ -70,8 +85,12 @@ export const performanceRouter = createBrowserRouter([
     path: '/admin',
     element: (
       <AuthGuard>
-        <ScrollToTop />
-        <SafePage><PerformanceAdminPanel /></SafePage>
+        <FranchiseProvider>
+          <PerformanceRoleGuard allowedRoles={['ceo', 'admin']}>
+            <ScrollToTop />
+            <SafePage><PerformanceAdminPanel /></SafePage>
+          </PerformanceRoleGuard>
+        </FranchiseProvider>
       </AuthGuard>
     ),
   },

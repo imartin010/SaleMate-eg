@@ -1,6 +1,12 @@
 /**
  * Performance Data Hooks
  * React hooks for fetching and managing performance data
+ * 
+ * MULTI-TENANT SECURITY:
+ * - Data isolation is enforced by PostgreSQL RLS (Row Level Security) policies
+ * - Franchise employees automatically see only their franchise data
+ * - CEO and admin roles see all franchise data
+ * - No additional filtering needed in these hooks - database handles it
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

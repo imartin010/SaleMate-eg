@@ -3,10 +3,10 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '../../store/auth';
-import { Logo } from '../../components/common/Logo';
-import { PhoneInput } from '../../components/auth/PhoneInput';
-import { OTPInput } from '../../components/auth/OTPInput';
+import { useAuthStore } from '../store/auth.store';
+import { Logo } from '../../../components/common/Logo';
+import { PhoneInput } from '../components/PhoneInput';
+import { OTPInput } from '../components/OTPInput';
 import { Loader2, AlertCircle, Eye, EyeOff, CheckCircle, UserPlus, Users, ArrowLeft, Shield } from 'lucide-react';
 
 const signupSchema = z.object({

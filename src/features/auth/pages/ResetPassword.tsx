@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../../store/auth';
-import { Logo } from '../../components/common/Logo';
+import { useAuthStore } from '../store/auth.store';
+import { Logo } from '../../../components/common/Logo';
 import { Loader2, Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 
 const resetSchema = z.object({

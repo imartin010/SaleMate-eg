@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
-import { Building2, TrendingUp, DollarSign, Users, BarChart3, Settings } from 'lucide-react';
+import { Building2, TrendingUp, DollarSign, Users, BarChart3, Settings, Crown } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
+import { useFranchise } from '../../contexts/FranchiseContext';
+import { useAuthStore } from '../../features/auth';
 
 // Hook for animated counter effect
 const useCounter = (target: number, duration: number = 2000) => {
@@ -83,18 +85,22 @@ const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: 
         )}
       </div>
       
-      <div className="space-y-3 bg-blue-50 rounded-lg p-4 mb-4 border border-blue-100">
+      <div className={`space-y-3 rounded-lg p-4 mb-4 border-2 ${
+        analytics && analytics.net_revenue >= 0 
+          ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' 
+          : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200'
+      }`}>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 font-medium">P&L Amount</span>
-          <span className={`font-semibold ${
-            analytics && analytics.net_revenue >= 0 ? 'text-blue-700' : 'text-red-600'
+          <span className="text-gray-700 font-medium">P&L Amount</span>
+          <span className={`font-bold text-base ${
+            analytics && analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-600'
           }`}>
             {analytics ? formatCurrency(analytics.net_revenue) : 'Loading...'}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 font-medium">Performance/Agent</span>
-          <span className="font-semibold text-blue-700">
+          <span className="text-gray-700 font-medium">Performance/Agent</span>
+          <span className="font-semibold text-gray-900">
             {analytics ? 
               formatCurrency(franchise.headcount > 0 ? analytics.total_sales_volume / franchise.headcount : 0) 
               : 'Loading...'}
@@ -120,6 +126,8 @@ const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: 
  */
 const PerformanceCEODashboard: React.FC = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const { isCEO, isAdmin } = useFranchise();
   const { data: franchises, isLoading } = usePerformanceFranchises();
   const [showComparison, setShowComparison] = useState(false);
   const [franchiseRevenues, setFranchiseRevenues] = useState<Record<string, number>>({});
@@ -195,6 +203,12 @@ const PerformanceCEODashboard: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              {isCEO && (
+                <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <Crown className="w-4 h-4 text-blue-700" />
+                  <span className="text-sm font-medium text-blue-700">CEO View</span>
+                </div>
+              )}
               <div className="p-2 bg-gray-50 rounded border border-gray-200">
                 <img 
                   src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png"
