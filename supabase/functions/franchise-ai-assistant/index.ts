@@ -249,30 +249,78 @@ serve(async (req) => {
       }
     }
 
-    // Build context for AI
+    // Build context for AI - optimize by aggregating transactions
     const franchiseDataContext = franchiseAnalytics.map(({ franchise, analytics, transactions }) => {
+      // Aggregate transactions by project/developer/area to reduce token usage
+      // Group by unique combination of compound+developer+area
+      const transactionGroups: Record<string, {
+        compound: string | null;
+        developer: string | null;
+        area: string | null;
+        compound_normalized: string | null;
+        developer_normalized: string | null;
+        area_normalized: string | null;
+        total_amount: number;
+        count: number;
+        contracted_amount: number;
+        contracted_count: number;
+      }> = {};
+
+      transactions.forEach((t: any) => {
+        // Create a unique key for grouping
+        const key = `${t.compound_normalized || ''}|${t.developer_normalized || ''}|${t.area_normalized || ''}`;
+        
+        if (!transactionGroups[key]) {
+          transactionGroups[key] = {
+            compound: t.compound,
+            developer: t.developer,
+            area: t.area,
+            compound_normalized: t.compound_normalized,
+            developer_normalized: t.developer_normalized,
+            area_normalized: t.area_normalized,
+            total_amount: 0,
+            count: 0,
+            contracted_amount: 0,
+            contracted_count: 0,
+          };
+        }
+        
+        transactionGroups[key].total_amount += t.transaction_amount;
+        transactionGroups[key].count += 1;
+        
+        if (t.stage === 'contracted') {
+          transactionGroups[key].contracted_amount += t.transaction_amount;
+          transactionGroups[key].contracted_count += 1;
+        }
+      });
+
+      // Convert to array and sort by total amount (descending) - keep top 50 to limit size
+      const topTransactions = Object.values(transactionGroups)
+        .sort((a, b) => b.total_amount - a.total_amount)
+        .slice(0, 50);
+
       return {
         name: franchise.name,
-        slug: franchise.slug,
         headcount: franchise.headcount,
         is_active: franchise.is_active,
         gross_revenue: analytics.gross_revenue,
         net_profit: analytics.net_profit,
         total_sales_volume: analytics.total_sales_volume,
-        total_expenses: analytics.total_expenses,
         contracted_deals: analytics.contracted_deals_count,
-        cost_per_agent: analytics.cost_per_agent,
+        total_deals: analytics.total_deals_count,
         performance_per_agent: analytics.performance_per_agent,
-        transactions: transactions.map((t: any) => ({
-          transaction_amount: t.transaction_amount,
-          stage: t.stage, // Include stage (eoi, reservation, contracted, cancelled)
+        // Send aggregated transaction data instead of all individual transactions
+        projects: topTransactions.map(t => ({
           compound: t.compound,
           developer: t.developer,
           area: t.area,
-          // Include normalized fields for better search
           compound_normalized: t.compound_normalized,
           developer_normalized: t.developer_normalized,
           area_normalized: t.area_normalized,
+          total_sales: t.total_amount,
+          total_deals: t.count,
+          contracted_sales: t.contracted_amount,
+          contracted_deals: t.contracted_count,
         })),
       };
     });
@@ -297,10 +345,12 @@ You have access to data about all franchises including:
 - Expenses and costs
 - Number of contracted deals (contracted_deals_count) and total deals (total_deals_count)
 - Performance metrics per agent
-- **Detailed transaction data** including ALL transaction stages (eoi, reservation, contracted, cancelled):
-  * Transaction amounts for each deal
-  * Transaction stage (eoi, reservation, contracted, cancelled)
-  * Project/Compound names (e.g., "Badya", "Central Park - Aliva", "Club Park - Aliva")
+- **Aggregated project data** grouped by compound/developer/area combinations:
+  * Total sales volume per project (total_sales)
+  * Total number of deals per project (total_deals)
+  * Contracted sales volume per project (contracted_sales)
+  * Number of contracted deals per project (contracted_deals)
+  * Project/Compound names (e.g., "Badya", "Central Park - Aliva")
   * Developer names (e.g., "Mountain View", "Palm Hills Developments")
   * Area/Location names (e.g., "Mostakbal City", "October Gardens")
   * Normalized search fields (compound_normalized, developer_normalized, area_normalized) for case-insensitive matching
@@ -310,12 +360,12 @@ When answering questions like "who is the most selling franchise in [PROJECT/DEV
 1. Understand that [PROJECT/DEVELOPER/AREA] is NOT a franchise name - it's a project, developer, or location
 2. Normalize the search term: convert to lowercase and trim whitespace (e.g., "Central Park - Aliva" → "central park - aliva")
 3. For EACH franchise in the data:
-   a. Look through its "transactions" array
-   b. Search for transactions where ANY of these conditions match (use SUBSTRING/CONTAINS matching, not exact match):
+   a. Look through its "projects" array (this contains aggregated data grouped by compound/developer/area)
+   b. Search for projects where ANY of these conditions match (use SUBSTRING/CONTAINS matching, not exact match):
       - compound_normalized includes/contains the normalized search term, OR
       - developer_normalized includes/contains the normalized search term, OR
       - area_normalized includes/contains the normalized search term
-   c. Sum the transaction_amount for all matching transactions
+   c. Sum the total_sales for all matching projects
 4. Compare the totals across all franchises
 5. Identify which franchise has the highest total
 6. Report: "[Franchise Name] is the most selling franchise in [PROJECT/DEVELOPER/AREA] with EGP [total amount] in sales"
@@ -328,26 +378,27 @@ MATCHING EXAMPLES:
 
 EXAMPLE QUESTIONS AND ANSWERS:
 Q: "who is the most selling franchise in Badya"
-A: Search transactions for compound/developer/area matching "badya" (case-insensitive). Sum transaction amounts per franchise. Report the franchise with highest total.
+A: Search the "projects" array for each franchise, find projects where compound/developer/area matches "badya" (case-insensitive). Sum total_sales for matching projects per franchise. Report the franchise with highest total.
 
 Q: "who is the most selling franchise in Central Park - Aliva"
-A: Search transactions for compound matching "central park - aliva" (case-insensitive). Sum transaction amounts per franchise. Report the franchise with highest total.
+A: Search the "projects" array for each franchise, find projects where compound matches "central park - aliva" (case-insensitive). Sum total_sales for matching projects per franchise. Report the franchise with highest total.
 
 Q: "which franchise sells the most in Mountain View"
-A: Search transactions for developer matching "mountain view" (case-insensitive). Sum transaction amounts per franchise. Report the franchise with highest total.
+A: Search the "projects" array for each franchise, find projects where developer matches "mountain view" (case-insensitive). Sum total_sales for matching projects per franchise. Report the franchise with highest total.
 
 When answering questions:
 1. Be concise and data-driven
 2. Reference specific franchise names and numbers
 3. Use currency format: EGP (Egyptian Pounds)
-4. If asked about "most selling" or "highest sales", calculate from transaction amounts
+4. If asked about "most selling" or "highest sales", use the total_sales field from the projects array
 5. If asked about "most profitable", refer to net_profit
-6. If asked about "contracted deals" or "closed deals", only count transactions with stage === "contracted"
-7. If you don't find any matching transactions:
+6. If asked about "contracted deals" or "closed deals", use the contracted_sales field from the projects array
+7. The "projects" array contains aggregated data - each entry represents all transactions for that compound/developer/area combination
+8. If you don't find any matching projects:
    - DO NOT say "I don't have data on a franchise named [X]" - that's wrong!
    - Instead say: "I don't have any transaction data for the project/developer/area '[X]' in the current dataset. The franchises may not have any sales for this property yet."
-8. NEVER confuse project/compound names with franchise names. If someone mentions "Central Park - Aliva", "Badya", or "Mountain View", these are PROJECTS/DEVELOPERS, NOT franchises.
-9. If you're unsure whether a term is a franchise or project, check the franchise names list first. If it's not in the franchise list, it's likely a project/developer/area name.
+9. NEVER confuse project/compound names with franchise names. If someone mentions "Central Park - Aliva", "Badya", or "Mountain View", these are PROJECTS/DEVELOPERS, NOT franchises.
+10. If you're unsure whether a term is a franchise or project, check the franchise names list first. If it's not in the franchise list, it's likely a project/developer/area name.
 
 Current franchise data with transaction details:
 ${JSON.stringify(franchiseDataContext, null, 2)}
