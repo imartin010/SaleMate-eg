@@ -130,7 +130,53 @@ serve(async (req) => {
       return text.trim().toLowerCase();
     };
 
-    // Fetch analytics for all franchises
+    // OPTIMIZATION: Fetch all data in parallel using Promise.all
+    const franchiseIds = (franchises || []).map(f => f.id);
+    
+    // Parallel fetch: transactions, expenses, commission cuts for all franchises at once
+    const [transactionsResult, expensesResult, commissionCutsResult] = await Promise.all([
+      // Get aggregated transaction data with project info in one query
+      supabase
+        .from('performance_transactions')
+        .select('franchise_id, transaction_amount, stage, commission_amount, project_id, tax_amount, withholding_tax, income_tax')
+        .in('franchise_id', franchiseIds),
+      
+      // Get all expenses
+      supabase
+        .from('performance_expenses')
+        .select('*')
+        .in('franchise_id', franchiseIds),
+      
+      // Get all commission cuts
+      supabase
+        .from('performance_commission_cuts')
+        .select('*')
+        .in('franchise_id', franchiseIds),
+    ]);
+
+    const allTransactions = transactionsResult.data || [];
+    const allExpenses = expensesResult.data || [];
+    const allCommissionCuts = commissionCutsResult.data || [];
+
+    // Get unique project IDs and fetch inventory in parallel
+    const projectIds = [...new Set(allTransactions.map((t: any) => t.project_id).filter(Boolean))];
+    let inventoryMap: Record<number, any> = {};
+    
+    if (projectIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: inventoryData } = await (supabase as any)
+        .from('salemate-inventory')
+        .select('id, compound, developer, area')
+        .in('id', projectIds);
+      
+      if (inventoryData) {
+        inventoryData.forEach((item: any) => {
+          inventoryMap[item.id] = item;
+        });
+      }
+    }
+
+    // Group data by franchise and process in parallel
     const franchiseAnalytics: Array<{
       franchise: any;
       analytics: any;
@@ -138,63 +184,26 @@ serve(async (req) => {
     }> = [];
 
     for (const franchise of franchises || []) {
-      // Get ALL transactions (not just contracted) to have complete data
-      // This allows the AI to answer questions about all sales stages
-      const { data: transactions } = await supabase
-        .from('performance_transactions')
-        .select('id, transaction_amount, stage, commission_amount, project_id, tax_amount, withholding_tax, income_tax')
-        .eq('franchise_id', franchise.id)
-        .order('created_at', { ascending: false });
+      const franchiseTransactions = allTransactions.filter((t: any) => t.franchise_id === franchise.id);
+      const franchiseExpenses = allExpenses.filter((e: any) => e.franchise_id === franchise.id);
+      const franchiseCommissionCuts = allCommissionCuts.filter((c: any) => c.franchise_id === franchise.id);
 
-      // Get expenses
-      const { data: expenses } = await supabase
-        .from('performance_expenses')
-        .select('*')
-        .eq('franchise_id', franchise.id);
-
-      // Get commission cuts
-      const { data: commissionCuts } = await supabase
-        .from('performance_commission_cuts')
-        .select('*')
-        .eq('franchise_id', franchise.id);
-
-      if (transactions && expenses && commissionCuts) {
-        // Fetch project details for all transactions
-        const projectIds = transactions.map((t: any) => t.project_id).filter(Boolean);
-        let inventoryMap: Record<number, any> = {};
-        
-        if (projectIds.length > 0) {
-          // Fetch inventory data - use type cast for table name with hyphen
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: inventoryData } = await (supabase as any)
-            .from('salemate-inventory')
-            .select('id, compound, developer, area')
-            .in('id', projectIds);
-          
-          if (inventoryData) {
-            inventoryData.forEach((item: any) => {
-              inventoryMap[item.id] = item;
-            });
-          }
-        }
-
+      if (franchiseTransactions.length > 0) {
         // Process transactions to extract project details
-        const processedTransactions = transactions.map((t: any) => {
+        const processedTransactions = franchiseTransactions.map((t: any) => {
           const inventory = inventoryMap[t.project_id];
           const compound = parseInventoryField(inventory?.compound);
           const developer = parseInventoryField(inventory?.developer);
           const area = parseInventoryField(inventory?.area);
           
           return {
-            id: t.id,
             transaction_amount: parseFloat(t.transaction_amount),
             commission_amount: t.commission_amount ? parseFloat(t.commission_amount) : 0,
-            stage: t.stage, // Include stage so AI knows transaction status
+            stage: t.stage,
             project_id: t.project_id,
             compound: compound,
             developer: developer,
             area: area,
-            // Add normalized fields for better search matching
             compound_normalized: normalizeForSearch(compound),
             developer_normalized: normalizeForSearch(developer),
             area_normalized: normalizeForSearch(area),
@@ -202,15 +211,15 @@ serve(async (req) => {
         });
 
         // Calculate analytics - only use contracted transactions for revenue/profit calculations
-        const contractedTransactions = transactions.filter((t: any) => t.stage === 'contracted');
+        const contractedTransactions = franchiseTransactions.filter((t: any) => t.stage === 'contracted');
         const gross_revenue = contractedTransactions.reduce((sum, t) => sum + (t.commission_amount || 0), 0);
         const total_sales_volume = contractedTransactions.reduce((sum, t) => sum + parseFloat(t.transaction_amount), 0);
-        const total_expenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-        const fixed_expenses = expenses.filter(e => e.expense_type === 'fixed').reduce((sum, e) => sum + e.amount, 0);
-        const variable_expenses = expenses.filter(e => e.expense_type === 'variable').reduce((sum, e) => sum + e.amount, 0);
+        const total_expenses = franchiseExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const fixed_expenses = franchiseExpenses.filter(e => e.expense_type === 'fixed').reduce((sum, e) => sum + e.amount, 0);
+        const variable_expenses = franchiseExpenses.filter(e => e.expense_type === 'variable').reduce((sum, e) => sum + e.amount, 0);
         
         const millions = total_sales_volume / 1_000_000;
-        const commission_cuts_total = commissionCuts.reduce((sum, cut) => sum + (cut.cut_per_million * millions), 0);
+        const commission_cuts_total = franchiseCommissionCuts.reduce((sum, cut) => sum + (cut.cut_per_million * millions), 0);
         
         // Calculate taxes
         const totalTaxes = contractedTransactions.reduce((sum, t) => {
@@ -225,7 +234,6 @@ serve(async (req) => {
           franchise: {
             id: franchise.id,
             name: franchise.name,
-            slug: franchise.slug,
             headcount: franchise.headcount,
             is_active: franchise.is_active,
           },
@@ -240,11 +248,11 @@ serve(async (req) => {
             commission_cuts_total,
             total_taxes: totalTaxes,
             contracted_deals_count: contractedTransactions.length,
-            total_deals_count: transactions.length, // All stages
+            total_deals_count: franchiseTransactions.length,
             cost_per_agent: franchise.headcount > 0 ? total_expenses / franchise.headcount : 0,
             performance_per_agent: franchise.headcount > 0 ? total_sales_volume / franchise.headcount : 0,
           },
-          transactions: processedTransactions, // Includes ALL transaction stages
+          transactions: processedTransactions,
         });
       }
     }
@@ -294,10 +302,10 @@ serve(async (req) => {
         }
       });
 
-      // Convert to array and sort by total amount (descending) - keep top 50 to limit size
+      // Convert to array and sort by total amount (descending) - keep top 20 to reduce tokens and speed up
       const topTransactions = Object.values(transactionGroups)
         .sort((a, b) => b.total_amount - a.total_amount)
-        .slice(0, 50);
+        .slice(0, 20);
 
       return {
         name: franchise.name,
@@ -418,13 +426,13 @@ Answer the user's question based on this data.`;
     // Add current question
     messages.push({ role: 'user', content: question });
 
-    // Call OpenAI
+    // Call OpenAI - use gpt-4o-mini for faster responses (10x faster, 60x cheaper)
     console.log('📍 Calling OpenAI for franchise assistant');
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini', // Faster and cheaper than gpt-4o
       messages: messages,
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 500, // Reduced for faster response
     });
 
     const aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
