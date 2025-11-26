@@ -11,7 +11,8 @@ import {
   Bot,
   LineChart,
   Wallet,
-  Languages
+  Languages,
+  Users
 } from 'lucide-react';
 import type { FranchiseAnalytics, PerformanceFranchise, PerformanceTransaction, PerformanceExpense } from '../../types/performance';
 
@@ -38,6 +39,7 @@ interface BreakevenAnalysis {
   monthlyExpenses: number;
   averageCommissionRate: number;
   breakevenSalesVolume: number;
+  breakevenSalesVolumePerAgent: number;
   currentMonthlySales: number;
   monthsToBreakeven: number;
   isProfitable: boolean;
@@ -60,6 +62,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
         monthlyExpenses: 'Monthly Expenses',
         avgCommissionRate: 'Average Commission Rate',
         breakEvenSales: 'Break-Even Sales Volume',
+        breakEvenPerAgent: 'Break-Even Per Agent',
+        breakEvenPerAgentDesc: 'Each agent should sell this amount monthly to reach break-even',
         currentMonthlySales: 'Current Monthly Sales',
         currentlyProfitable: 'Currently Profitable',
         needToSell: (amount: number) => `Need to sell ${amount.toLocaleString('en-US', { style: 'currency', currency: 'EGP', minimumFractionDigits: 0 })} monthly to break even`
@@ -90,6 +94,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
         monthlyExpenses: 'المصروفات الشهرية',
         avgCommissionRate: 'متوسط معدل العمولة',
         breakEvenSales: 'حجم مبيعات التعادل',
+        breakEvenPerAgent: 'التعادل لكل وكيل',
+        breakEvenPerAgentDesc: 'كل وكيل محتاج يبيع المبلغ ده شهرياً عشان يوصل للتعادل',
         currentMonthlySales: 'المبيعات الشهرية الحالية',
         currentlyProfitable: 'ربح حالياً',
         needToSell: (amount: number) => `محتاج تبيع <span dir="ltr">${amount.toLocaleString()}</span> جنيه شهرياً عشان توصل للتعادل`
@@ -191,15 +197,21 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
 
     const isProfitable = analytics.net_revenue > 0;
 
+    // Calculate break-even sales volume per agent
+    const breakevenSalesVolumePerAgent = franchise.headcount > 0
+      ? breakevenSalesVolume / franchise.headcount
+      : breakevenSalesVolume;
+
     return {
       monthlyExpenses,
       averageCommissionRate: STANDARD_COMMISSION_RATE,
       breakevenSalesVolume,
+      breakevenSalesVolumePerAgent,
       currentMonthlySales,
       monthsToBreakeven: Math.max(0, monthsToBreakeven),
       isProfitable
     };
-  }, [monthlyExpenses, transactions, analytics.net_revenue, analytics.commission_cuts_total, analytics.total_sales_volume]);
+  }, [monthlyExpenses, transactions, analytics.net_revenue, analytics.commission_cuts_total, analytics.total_sales_volume, franchise.headcount]);
 
   // Calculate cashflow forecast
   const cashflowForecast: CashflowMonth[] = useMemo(() => {
@@ -364,6 +376,16 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
             <p className="text-sm text-gray-600 mb-1">{translations.breakEven.currentMonthlySales}</p>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(breakevenAnalysis.currentMonthlySales)}</p>
           </div>
+        </div>
+
+        {/* Break-Even Per Agent */}
+        <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-4 border-2 border-blue-300 mb-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <Users className="w-5 h-5 text-blue-700" />
+            <p className="text-sm font-semibold text-blue-900">{translations.breakEven.breakEvenPerAgent}</p>
+          </div>
+          <p className="text-xs text-blue-700 mb-3">{translations.breakEven.breakEvenPerAgentDesc}</p>
+          <p className="text-3xl font-bold text-blue-800">{formatCurrency(breakevenAnalysis.breakevenSalesVolumePerAgent)}</p>
         </div>
 
         <div className={`rounded-lg p-3 sm:p-4 ${breakevenAnalysis.isProfitable ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border-2`}>
