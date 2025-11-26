@@ -311,13 +311,16 @@ serve(async (req) => {
         name: franchise.name,
         headcount: franchise.headcount,
         is_active: franchise.is_active,
-        gross_revenue: analytics.gross_revenue,
-        net_revenue: analytics.net_revenue, // This matches the dashboard's "P&L Amount"
-        net_profit: analytics.net_profit, // Net profit after taxes (for reference)
-        total_sales_volume: analytics.total_sales_volume,
+        // Financial metrics - net_revenue is what appears on dashboard as "P&L Amount"
+        gross_revenue: Math.round(analytics.gross_revenue),
+        net_revenue: Math.round(analytics.net_revenue), // This matches the dashboard's "P&L Amount" exactly
+        net_profit: Math.round(analytics.net_profit), // Net profit after taxes (for reference only)
+        total_expenses: Math.round(analytics.total_expenses),
+        commission_cuts_total: Math.round(analytics.commission_cuts_total),
+        total_sales_volume: Math.round(analytics.total_sales_volume),
         contracted_deals: analytics.contracted_deals_count,
         total_deals: analytics.total_deals_count,
-        performance_per_agent: analytics.performance_per_agent,
+        performance_per_agent: Math.round(analytics.performance_per_agent),
         // Send aggregated transaction data instead of all individual transactions
         projects: topTransactions.map(t => ({
           compound: t.compound,
@@ -326,9 +329,9 @@ serve(async (req) => {
           compound_normalized: t.compound_normalized,
           developer_normalized: t.developer_normalized,
           area_normalized: t.area_normalized,
-          total_sales: t.total_amount,
+          total_sales: Math.round(t.total_amount),
           total_deals: t.count,
-          contracted_sales: t.contracted_amount,
+          contracted_sales: Math.round(t.contracted_amount),
           contracted_deals: t.contracted_count,
         })),
       };
@@ -400,12 +403,15 @@ When answering questions:
 2. Reference specific franchise names and numbers
 3. Use currency format: EGP (Egyptian Pounds)
 4. If asked about "most selling" or "highest sales", use the total_sales field from the projects array
-5. If asked about "most profitable", "P&L", "profit and loss", or "operating at a loss", refer to net_revenue (this matches what the dashboard shows as "P&L Amount")
-   - net_revenue is calculated as: gross_revenue - total_expenses - commission_cuts_total
-   - If net_revenue is negative, the franchise is operating at a loss
-   - If net_revenue is positive, the franchise is profitable
-   - IMPORTANT: net_revenue is what appears on the dashboard as "P&L Amount"
-   - net_profit (which includes taxes) is also available but is NOT what the dashboard displays
+5. If asked about "most profitable", "P&L", "profit and loss", "operating at a loss", or "franchises with negative revenue", you MUST use the net_revenue field (this is EXACTLY what the dashboard shows as "P&L Amount")
+   - net_revenue formula: gross_revenue - total_expenses - commission_cuts_total
+   - net_revenue is the EXACT same value shown on the dashboard cards as "P&L Amount"
+   - If net_revenue is NEGATIVE (less than 0), the franchise is operating at a loss
+   - If net_revenue is POSITIVE (greater than or equal to 0), the franchise is profitable
+   - CRITICAL: The dashboard displays net_revenue as "P&L Amount" - your answers MUST match these exact numbers
+   - When listing franchises "operating at a loss", ONLY include franchises where net_revenue < 0
+   - When showing net_revenue values, display them EXACTLY as they appear in the data (positive numbers are positive, negative numbers are negative)
+   - DO NOT confuse net_revenue with net_profit - net_profit includes taxes and is NOT what the dashboard shows
 6. If asked about "contracted deals" or "closed deals", use the contracted_sales field from the projects array
 7. The "projects" array contains aggregated data - each entry represents all transactions for that compound/developer/area combination
 8. If you don't find any matching projects:
@@ -413,7 +419,7 @@ When answering questions:
    - Instead say: "I don't have any transaction data for the project/developer/area '[X]' in the current dataset. The franchises may not have any sales for this property yet."
 9. NEVER confuse project/compound names with franchise names. If someone mentions "Central Park - Aliva", "Badya", or "Mountain View", these are PROJECTS/DEVELOPERS, NOT franchises.
 10. If you're unsure whether a term is a franchise or project, check the franchise names list first. If it's not in the franchise list, it's likely a project/developer/area name.
-11. CRITICAL: When reporting profit/loss, always use net_revenue (not net_profit) to match the dashboard. If net_revenue is negative, say "operating at a loss" and show the negative value with a minus sign (e.g., "-EGP 386,500").
+11. DATA ACCURACY: The net_revenue values in the data are calculated using the EXACT same formula as the dashboard. If you see a franchise with net_revenue = 3150876, that means the dashboard shows "EGP 3,150,876" as the P&L Amount. If net_revenue is negative, the dashboard shows it in red. Always report the exact net_revenue value from the data.
 
 Current franchise data with transaction details:
 ${JSON.stringify(franchiseDataContext, null, 2)}
