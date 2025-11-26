@@ -41,6 +41,7 @@ interface BreakevenAnalysis {
   breakevenSalesVolume: number;
   breakevenSalesVolumePerAgent: number;
   currentMonthlySales: number;
+  currentMonthlySalesPerAgent: number;
   monthsToBreakeven: number;
   isProfitable: boolean;
 }
@@ -65,6 +66,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
         breakEvenPerAgent: 'Break-Even Per Agent',
         breakEvenPerAgentDesc: 'Each agent should sell this amount monthly to reach break-even',
         currentMonthlySales: 'Current Monthly Sales',
+        currentPerAgent: 'Current Performance Per Agent',
+        currentPerAgentDesc: 'Average monthly sales per agent (last 3 months)',
         currentlyProfitable: 'Currently Profitable',
         needToSell: (amount: number) => `Need to sell ${amount.toLocaleString('en-US', { style: 'currency', currency: 'EGP', minimumFractionDigits: 0 })} monthly to break even`
       },
@@ -97,6 +100,8 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
         breakEvenPerAgent: 'التعادل لكل وكيل',
         breakEvenPerAgentDesc: 'كل وكيل محتاج يبيع المبلغ ده شهرياً عشان يوصل للتعادل',
         currentMonthlySales: 'المبيعات الشهرية الحالية',
+        currentPerAgent: 'الأداء الحالي لكل وكيل',
+        currentPerAgentDesc: 'متوسط المبيعات الشهرية لكل وكيل (آخر 3 شهور)',
         currentlyProfitable: 'ربح حالياً',
         needToSell: (amount: number) => `محتاج تبيع <span dir="ltr">${amount.toLocaleString()}</span> جنيه شهرياً عشان توصل للتعادل`
       },
@@ -202,12 +207,18 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
       ? breakevenSalesVolume / franchise.headcount
       : breakevenSalesVolume;
 
+    // Calculate current monthly sales per agent
+    const currentMonthlySalesPerAgent = franchise.headcount > 0
+      ? currentMonthlySales / franchise.headcount
+      : currentMonthlySales;
+
     return {
       monthlyExpenses,
       averageCommissionRate: STANDARD_COMMISSION_RATE,
       breakevenSalesVolume,
       breakevenSalesVolumePerAgent,
       currentMonthlySales,
+      currentMonthlySalesPerAgent,
       monthsToBreakeven: Math.max(0, monthsToBreakeven),
       isProfitable
     };
@@ -378,14 +389,55 @@ export const ForecastingSystem: React.FC<ForecastingSystemProps> = ({
           </div>
         </div>
 
-        {/* Break-Even Per Agent */}
-        <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-4 border-2 border-blue-300 mb-6">
-          <div className="flex items-center space-x-2 mb-2">
-            <Users className="w-5 h-5 text-blue-700" />
-            <p className="text-sm font-semibold text-blue-900">{translations.breakEven.breakEvenPerAgent}</p>
+        {/* Per Agent Analysis */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Break-Even Per Agent */}
+          <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-4 border-2 border-blue-300">
+            <div className="flex items-center space-x-2 mb-2">
+              <Target className="w-5 h-5 text-blue-700" />
+              <p className="text-sm font-semibold text-blue-900">{translations.breakEven.breakEvenPerAgent}</p>
+            </div>
+            <p className="text-xs text-blue-700 mb-3">{translations.breakEven.breakEvenPerAgentDesc}</p>
+            <p className="text-3xl font-bold text-blue-800">{formatCurrency(breakevenAnalysis.breakevenSalesVolumePerAgent)}</p>
           </div>
-          <p className="text-xs text-blue-700 mb-3">{translations.breakEven.breakEvenPerAgentDesc}</p>
-          <p className="text-3xl font-bold text-blue-800">{formatCurrency(breakevenAnalysis.breakevenSalesVolumePerAgent)}</p>
+
+          {/* Current Performance Per Agent */}
+          <div className={`bg-gradient-to-r rounded-lg p-4 border-2 ${
+            breakevenAnalysis.currentMonthlySalesPerAgent >= breakevenAnalysis.breakevenSalesVolumePerAgent
+              ? 'from-green-100 to-emerald-100 border-green-300'
+              : 'from-orange-100 to-amber-100 border-orange-300'
+          }`}>
+            <div className="flex items-center space-x-2 mb-2">
+              <Users className={`w-5 h-5 ${
+                breakevenAnalysis.currentMonthlySalesPerAgent >= breakevenAnalysis.breakevenSalesVolumePerAgent
+                  ? 'text-green-700'
+                  : 'text-orange-700'
+              }`} />
+              <p className={`text-sm font-semibold ${
+                breakevenAnalysis.currentMonthlySalesPerAgent >= breakevenAnalysis.breakevenSalesVolumePerAgent
+                  ? 'text-green-900'
+                  : 'text-orange-900'
+              }`}>{translations.breakEven.currentPerAgent}</p>
+            </div>
+            <p className={`text-xs mb-3 ${
+              breakevenAnalysis.currentMonthlySalesPerAgent >= breakevenAnalysis.breakevenSalesVolumePerAgent
+                ? 'text-green-700'
+                : 'text-orange-700'
+            }`}>{translations.breakEven.currentPerAgentDesc}</p>
+            <p className={`text-3xl font-bold ${
+              breakevenAnalysis.currentMonthlySalesPerAgent >= breakevenAnalysis.breakevenSalesVolumePerAgent
+                ? 'text-green-800'
+                : 'text-orange-800'
+            }`}>{formatCurrency(breakevenAnalysis.currentMonthlySalesPerAgent)}</p>
+            {breakevenAnalysis.currentMonthlySalesPerAgent < breakevenAnalysis.breakevenSalesVolumePerAgent && (
+              <p className="text-xs text-orange-700 mt-2 font-medium">
+                {language === 'en' 
+                  ? `Need ${formatCurrency(breakevenAnalysis.breakevenSalesVolumePerAgent - breakevenAnalysis.currentMonthlySalesPerAgent)} more per agent`
+                  : `محتاج ${formatCurrency(breakevenAnalysis.breakevenSalesVolumePerAgent - breakevenAnalysis.currentMonthlySalesPerAgent)} أكتر لكل وكيل`
+                }
+              </p>
+            )}
+          </div>
         </div>
 
         <div className={`rounded-lg p-3 sm:p-4 ${breakevenAnalysis.isProfitable ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border-2`}>
