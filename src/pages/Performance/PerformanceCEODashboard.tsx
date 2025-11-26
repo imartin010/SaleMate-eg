@@ -62,39 +62,39 @@ const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: 
   return (
     <a
       href={`/franchise/${franchise.slug}`}
-      className="group block p-6 bg-white rounded-3xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+      className="group block p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all duration-200 cursor-pointer"
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
             {franchise.name}
           </h3>
           <div className="flex items-center space-x-2 mt-2">
-            <Users className="w-4 h-4 text-gray-400" />
-            <p className="text-sm text-gray-600 font-medium">
+            <Users className="w-4 h-4 text-blue-600" />
+            <p className="text-sm text-gray-600">
               {franchise.headcount} {franchise.headcount === 1 ? 'agent' : 'agents'}
             </p>
           </div>
         </div>
         {franchise.is_active && (
-          <span className="inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-semibold bg-emerald-100 text-emerald-700">
-            ● Active
+          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            Active
           </span>
         )}
       </div>
       
-      <div className="space-y-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 mb-4">
+      <div className="space-y-3 bg-blue-50 rounded-lg p-4 mb-4 border border-blue-100">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">P&L Amount</span>
-          <span className={`font-bold text-base ${
-            analytics && analytics.net_revenue >= 0 ? 'text-green-700' : 'text-red-700'
+          <span className="text-gray-600 font-medium">P&L Amount</span>
+          <span className={`font-semibold ${
+            analytics && analytics.net_revenue >= 0 ? 'text-blue-700' : 'text-red-600'
           }`}>
             {analytics ? formatCurrency(analytics.net_revenue) : 'Loading...'}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Performance/Agent</span>
-          <span className="font-bold text-gray-900">
+          <span className="text-gray-600 font-medium">Performance/Agent</span>
+          <span className="font-semibold text-blue-700">
             {analytics ? 
               formatCurrency(franchise.headcount > 0 ? analytics.total_sales_volume / franchise.headcount : 0) 
               : 'Loading...'}
@@ -102,15 +102,13 @@ const FranchiseCard: React.FC<{ franchise: any; onRevenueUpdate?: (franchiseId: 
         </div>
       </div>
       
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-blue-600 font-semibold group-hover:text-blue-700">
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+        <span className="text-sm text-blue-700 font-medium">
           View Dashboard
         </span>
-        <div className="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-          <svg className="w-4 h-4 text-blue-600 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
+        <svg className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
       </div>
     </a>
   );
@@ -160,9 +158,9 @@ const PerformanceCEODashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-gray-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading franchises...</p>
         </div>
       </div>
@@ -170,39 +168,41 @@ const PerformanceCEODashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-screen bg-gray-50">
+      {/* Professional Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex flex-col items-start">
+            <div className="flex items-center space-x-4">
               <img 
-                src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo_white.png"
+                src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
                 alt="SaleMate Performance Logo"
-                className="h-20 object-contain mb-4"
-                style={{ width: 'auto', maxWidth: '600px' }}
+                className="h-12 object-contain"
+                style={{ width: 'auto', maxWidth: '300px' }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                 }}
               />
-              <p className="text-xl text-blue-100 font-medium">
-                Coldwell Banker Franchise Management Dashboard
-              </p>
+              <div className="h-8 w-px bg-gray-300"></div>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  Franchise Management Dashboard
+                </h1>
+                <p className="text-sm text-gray-600 mt-0.5">
+                  Coldwell Banker Performance Analytics
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white rounded-3xl border border-white/20 shadow-lg">
+              <div className="p-2 bg-gray-50 rounded border border-gray-200">
                 <img 
                   src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/coldwell-banker-logo.png"
                   alt="Coldwell Banker"
-                  className="w-20 h-20 object-contain"
+                  className="w-12 h-12 object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
-                    // Fallback to Building icon if logo fails to load
-                    const fallback = document.createElement('div');
-                    fallback.innerHTML = '<svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>';
-                    target.parentNode?.appendChild(fallback);
                   }}
                 />
               </div>
@@ -213,91 +213,79 @@ const PerformanceCEODashboard: React.FC = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Modern Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Professional Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {/* Total Franchises */}
-          <div className="group relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                  <Building2 className="w-6 h-6 text-white" />
-                </div>
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Building2 className="w-5 h-5 text-blue-700" />
               </div>
-              <p className="text-blue-100 text-sm font-medium mb-1">Total Franchises</p>
-              <p className="text-4xl font-bold text-white tracking-tight">
-                {animatedTotalFranchises}
-              </p>
             </div>
+            <p className="text-gray-600 text-sm font-medium mb-1">Total Franchises</p>
+            <p className="text-3xl font-semibold text-blue-700">
+              {animatedTotalFranchises}
+            </p>
           </div>
 
           {/* Active Franchises */}
-          <div className="group relative bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-2xl">Live</span>
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-blue-700" />
               </div>
-              <p className="text-emerald-100 text-sm font-medium mb-1">Active Franchises</p>
-              <p className="text-4xl font-bold text-white tracking-tight">
-                {animatedActiveFranchises}
-              </p>
+              <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">Active</span>
             </div>
+            <p className="text-gray-600 text-sm font-medium mb-1">Active Franchises</p>
+            <p className="text-3xl font-semibold text-blue-700">
+              {animatedActiveFranchises}
+            </p>
           </div>
 
           {/* Total Headcount */}
-          <div className="group relative bg-gradient-to-br from-purple-500 to-violet-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Users className="w-5 h-5 text-blue-700" />
               </div>
-              <p className="text-purple-100 text-sm font-medium mb-1">Total Agents</p>
-              <p className="text-4xl font-bold text-white tracking-tight">
-                {animatedTotalAgents}
-              </p>
             </div>
+            <p className="text-gray-600 text-sm font-medium mb-1">Total Agents</p>
+            <p className="text-3xl font-semibold text-blue-700">
+              {animatedTotalAgents}
+            </p>
           </div>
 
           {/* Revenue */}
-          <div className="group relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                  <DollarSign className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xs font-semibold text-white/80 bg-white/20 px-3 py-1 rounded-2xl">Live</span>
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <DollarSign className="w-5 h-5 text-blue-700" />
               </div>
-              <p className="text-amber-100 text-sm font-medium mb-1">Total Revenue</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight break-words">
-                {formatCurrency(totalRevenue)}
-              </p>
+              <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">Live</span>
             </div>
+            <p className="text-gray-600 text-sm font-medium mb-1">Total Revenue</p>
+            <p className="text-xl font-semibold text-blue-700 break-words">
+              {formatCurrency(totalRevenue)}
+            </p>
           </div>
         </div>
 
         {/* Franchises Grid */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100">
-          <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">All Franchises</h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <h2 className="text-xl font-semibold text-gray-900">All Franchises</h2>
+              <p className="text-sm text-gray-600 mt-0.5">
                 Click on a franchise to view detailed performance
               </p>
             </div>
             {franchises && franchises.length > 1 && (
               <button
                 onClick={() => setShowComparison(true)}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all"
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
               >
-                <BarChart3 className="w-5 h-5" />
-                <span className="font-semibold">Compare Franchises</span>
+                <BarChart3 className="w-4 h-4" />
+                <span>Compare Franchises</span>
               </button>
             )}
           </div>
@@ -330,10 +318,10 @@ const PerformanceCEODashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <button
           onClick={() => navigate('/admin')}
-          className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-2xl hover:from-gray-800 hover:to-gray-950 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+          className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium"
         >
-          <Settings className="w-5 h-5" />
-          <span className="font-semibold text-lg">Admin Panel</span>
+          <Settings className="w-4 h-4" />
+          <span>Admin Panel</span>
         </button>
       </div>
 

@@ -157,35 +157,35 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
   const isProfitable = netProfit > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border-2 border-indigo-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <FileText className="w-8 h-8 text-indigo-600" />
+            <FileText className="w-6 h-6 text-blue-700" />
             <div>
-              <h2 className="text-2xl font-bold text-indigo-900">Profit & Loss Statement</h2>
-              <p className="text-sm text-indigo-700">{franchise.name}</p>
+              <h2 className="text-xl font-semibold text-gray-900">Profit & Loss Statement</h2>
+              <p className="text-sm text-gray-600 mt-0.5">{franchise.name}</p>
             </div>
           </div>
-          <div className={`px-6 py-3 rounded-lg border-2 ${
+          <div className={`px-4 py-3 rounded-lg border ${
             isProfitable 
-              ? 'bg-green-50 border-green-200 text-green-900' 
-              : 'bg-red-50 border-red-200 text-red-900'
+              ? 'bg-blue-50 border-blue-300 text-blue-900' 
+              : 'bg-red-50 border-red-300 text-red-900'
           }`}>
             <p className="text-sm font-medium mb-1">Net {isProfitable ? 'Profit' : 'Loss'}</p>
-            <p className={`text-2xl font-bold ${isProfitable ? 'text-green-700' : 'text-red-700'}`}>
+            <p className={`text-xl font-semibold ${isProfitable ? 'text-blue-700' : 'text-red-700'}`}>
               {formatCurrency(Math.abs(netProfit))}
             </p>
           </div>
         </div>
-        <p className="text-sm text-indigo-600">
+        <p className="text-sm text-gray-600">
           Comprehensive financial overview showing revenue, expenses, and profitability
         </p>
       </div>
 
       {/* Main PNL Statement */}
-      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6">
           <div className="space-y-1">
             {pnlRows.map((row, index) => {
@@ -201,34 +201,32 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-between py-3 px-4 rounded-lg ${
+                  className={`flex items-center justify-between py-3 px-4 rounded ${
                     isTotal
-                      ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 font-bold'
+                      ? 'bg-blue-700 text-white font-semibold'
                       : isSubtotal
-                      ? 'bg-gray-50 border-l-4 border-indigo-400 font-semibold'
+                      ? 'bg-blue-50 border-l-4 border-blue-400 font-semibold'
                       : row.indent
                       ? 'pl-8 text-gray-600'
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-blue-50'
                   }`}
                 >
                   <div className="flex items-center space-x-2">
-                    {isRevenue && <Plus className="w-4 h-4 text-green-600" />}
-                    {isExpense && <Minus className="w-4 h-4 text-red-600" />}
-                    <span className={isTotal ? 'text-lg' : isSubtotal ? 'text-base' : 'text-sm'}>
+                    {isRevenue && <Plus className="w-4 h-4 text-gray-500" />}
+                    {isExpense && <Minus className="w-4 h-4 text-gray-500" />}
+                    <span className={isTotal ? 'text-base' : isSubtotal ? 'text-sm' : 'text-sm'}>
                       {row.label}
                     </span>
                   </div>
                   <span
-                    className={`font-mono text-lg ${
+                    className={`font-mono ${
                       isTotal
-                        ? isProfitable
-                          ? 'text-green-700'
-                          : 'text-red-700'
+                        ? 'text-base text-white'
                         : isRevenue
-                        ? 'text-green-700'
+                        ? 'text-sm text-gray-900'
                         : isExpense
-                        ? 'text-red-700'
-                        : 'text-gray-700'
+                        ? 'text-sm text-gray-900'
+                        : 'text-sm text-gray-700'
                     }`}
                   >
                     {row.amount !== 0 && (
@@ -246,10 +244,10 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
       </div>
 
       {/* Monthly Breakdown */}
-      <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6">
           <div className="flex items-center space-x-2 mb-4">
-            <Calendar className="w-6 h-6 text-indigo-600" />
+            <Calendar className="w-5 h-5 text-blue-700" />
             <h3 className="text-lg font-semibold text-gray-900">Monthly P&L Breakdown (Last 12 Months)</h3>
           </div>
 
@@ -287,16 +285,16 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-gradient-to-r from-indigo-50 to-purple-50 border-t-2 border-indigo-200 font-bold">
+                <tr className="bg-blue-50 border-t-2 border-blue-300 font-semibold">
                   <td className="py-3 px-4 text-sm text-gray-900">Total</td>
-                  <td className="py-3 px-4 text-sm text-right font-mono text-green-700">
+                  <td className="py-3 px-4 text-sm text-right font-mono text-blue-700">
                     {formatCurrency(monthlyPNL.reduce((sum, m) => sum + m.revenue, 0))}
                   </td>
-                  <td className="py-3 px-4 text-sm text-right font-mono text-red-700">
+                  <td className="py-3 px-4 text-sm text-right font-mono text-gray-900">
                     {formatCurrency(monthlyPNL.reduce((sum, m) => sum + m.expenses, 0))}
                   </td>
                   <td className={`py-3 px-4 text-sm text-right font-mono ${
-                    monthlyPNL.reduce((sum, m) => sum + m.profit, 0) >= 0 ? 'text-green-700' : 'text-red-700'
+                    monthlyPNL.reduce((sum, m) => sum + m.profit, 0) >= 0 ? 'text-blue-700' : 'text-red-600'
                   }`}>
                     {formatCurrency(monthlyPNL.reduce((sum, m) => sum + m.profit, 0))}
                   </td>
@@ -309,45 +307,45 @@ export const PNLStatement: React.FC<PNLStatementProps> = ({
 
       {/* Key Metrics Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border-2 border-green-200">
+        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2 mb-2">
-            <TrendingUp className="w-5 h-5 text-green-600" />
-            <p className="text-sm font-medium text-green-700">Gross Revenue</p>
+            <TrendingUp className="w-5 h-5 text-blue-700" />
+            <p className="text-sm font-medium text-gray-700">Gross Revenue</p>
           </div>
-          <p className="text-2xl font-bold text-green-900">{formatCurrency(analytics.gross_revenue)}</p>
-          <p className="text-xs text-green-600 mt-1">Total commissions earned</p>
+          <p className="text-2xl font-semibold text-blue-700">{formatCurrency(analytics.gross_revenue)}</p>
+          <p className="text-xs text-gray-600 mt-1">Total commissions earned</p>
         </div>
 
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-6 border-2 border-red-200">
+        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center space-x-2 mb-2">
-            <TrendingDown className="w-5 h-5 text-red-600" />
-            <p className="text-sm font-medium text-red-700">Total Expenses</p>
+            <TrendingDown className="w-5 h-5 text-gray-700" />
+            <p className="text-sm font-medium text-gray-700">Total Expenses</p>
           </div>
-          <p className="text-2xl font-bold text-red-900">
+          <p className="text-2xl font-semibold text-gray-900">
             {formatCurrency(analytics.total_expenses + analytics.commission_cuts_total + totalTaxes)}
           </p>
-          <p className="text-xs text-red-600 mt-1">Fixed + Variable + Cuts + Taxes</p>
+          <p className="text-xs text-gray-600 mt-1">Fixed + Variable + Cuts + Taxes</p>
         </div>
 
-        <div className={`bg-gradient-to-br rounded-lg p-6 border-2 ${
+        <div className={`bg-white rounded-lg p-6 border shadow-sm ${
           isProfitable
-            ? 'from-green-50 to-emerald-50 border-green-200'
-            : 'from-red-50 to-rose-50 border-red-200'
+            ? 'border-blue-200'
+            : 'border-red-300'
         }`}>
           <div className="flex items-center space-x-2 mb-2">
             {isProfitable ? (
-              <TrendingUp className="w-5 h-5 text-green-600" />
+              <TrendingUp className="w-5 h-5 text-blue-700" />
             ) : (
               <TrendingDown className="w-5 h-5 text-red-600" />
             )}
-            <p className={`text-sm font-medium ${isProfitable ? 'text-green-700' : 'text-red-700'}`}>
+            <p className={`text-sm font-medium ${isProfitable ? 'text-blue-700' : 'text-red-700'}`}>
               Net {isProfitable ? 'Profit' : 'Loss'}
             </p>
           </div>
-          <p className={`text-2xl font-bold ${isProfitable ? 'text-green-900' : 'text-red-900'}`}>
+          <p className={`text-2xl font-semibold ${isProfitable ? 'text-blue-700' : 'text-red-700'}`}>
             {formatCurrency(Math.abs(netProfit))}
           </p>
-          <p className={`text-xs mt-1 ${isProfitable ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-xs mt-1 ${isProfitable ? 'text-gray-600' : 'text-red-600'}`}>
             {((netProfit / analytics.gross_revenue) * 100).toFixed(1)}% margin
           </p>
         </div>
