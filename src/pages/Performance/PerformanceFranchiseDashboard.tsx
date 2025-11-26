@@ -277,12 +277,12 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
               {isFranchiseEmployee && !isCEO && !isAdmin && (
                 <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
                   <Users className="w-4 h-4 text-blue-700" />
                   <span className="text-sm font-medium text-blue-700">Franchise Manager</span>
-                </div>
+              </div>
               )}
               <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
                 <Users className="w-4 h-4 text-gray-600" />
@@ -364,13 +364,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-2 bg-white rounded-lg shadow-sm">
                     <DollarSign className="w-5 h-5 text-blue-600" />
-                  </div>
+                    </div>
                   <TrendingUp className="w-4 h-4 text-blue-600" />
-                </div>
+                  </div>
                 <p className="text-gray-700 text-sm font-medium mb-1">Gross Revenue</p>
                 <p className="text-2xl font-bold text-blue-700">
-                  {formatCurrency(analytics.gross_revenue)}
-                </p>
+                    {formatCurrency(analytics.gross_revenue)}
+                  </p>
               </div>
 
               {/* Net Revenue Card - Dynamic Color */}
@@ -388,7 +388,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     ) : (
                       <TrendingDown className="w-5 h-5" />
                     )}
-                  </div>
+                    </div>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                     netProfitWithTaxes >= 0 
                       ? 'text-green-700 bg-green-100 border border-green-300' 
@@ -396,13 +396,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   }`}>
                     {netProfitWithTaxes >= 0 ? 'Profit' : 'Loss'}
                   </span>
-                </div>
+                  </div>
                 <p className="text-gray-700 text-sm font-medium mb-1">Net P&L</p>
                 <p className={`text-2xl font-bold ${
                   netProfitWithTaxes >= 0 ? 'text-green-700' : 'text-red-700'
                 }`}>
                   {formatCurrency(netProfitWithTaxes)}
-                </p>
+                  </p>
               </div>
 
               {/* Total Expenses Card */}
@@ -410,13 +410,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-2 bg-white rounded-lg shadow-sm">
                     <Wallet className="w-5 h-5 text-orange-600" />
-                  </div>
+                    </div>
                   <TrendingDown className="w-4 h-4 text-orange-500" />
-                </div>
+                  </div>
                 <p className="text-gray-700 text-sm font-medium mb-1">Total Expenses</p>
                 <p className="text-2xl font-bold text-orange-700">
-                  {formatCurrency(analytics.total_expenses)}
-                </p>
+                    {formatCurrency(analytics.total_expenses)}
+                  </p>
               </div>
 
               {/* Cost Per Agent Card */}
@@ -424,13 +424,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-2 bg-white rounded-lg shadow-sm">
                     <Users className="w-5 h-5 text-purple-600" />
-                  </div>
+                    </div>
                   <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full border border-purple-300">{franchise.headcount}</span>
-                </div>
+                  </div>
                 <p className="text-gray-700 text-sm font-medium mb-1">Cost Per Agent</p>
                 <p className="text-2xl font-bold text-purple-700">
-                  {formatCurrency(analytics.cost_per_agent)}
-                </p>
+                    {formatCurrency(analytics.cost_per_agent)}
+                  </p>
               </div>
             </div>
 
@@ -955,13 +955,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               
               {!isEditingSettings ? (
                 canEdit && (
-                  <button
-                    onClick={() => setIsEditingSettings(true)}
+                <button
+                  onClick={() => setIsEditingSettings(true)}
                     className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    <span>Edit Settings</span>
-                  </button>
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>Edit Settings</span>
+                </button>
                 )
               ) : (
                 <div className="flex items-center space-x-2">
