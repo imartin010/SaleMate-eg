@@ -80,7 +80,12 @@ const PerformanceHero = () => {
             initial="initial"
             animate="animate"
           >
-            <Logo variant="full" size="xl" className="scale-150 sm:scale-175 lg:scale-200 transform" />
+            <Logo 
+              variant="full" 
+              size="xl" 
+              className="scale-150 sm:scale-175 lg:scale-200 transform"
+              logoUrl="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
+            />
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
