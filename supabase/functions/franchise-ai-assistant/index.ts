@@ -188,99 +188,113 @@ serve(async (req) => {
       const franchiseExpenses = allExpenses.filter((e: any) => e.franchise_id === franchise.id);
       const franchiseCommissionCuts = allCommissionCuts.filter((c: any) => c.franchise_id === franchise.id);
 
-      if (franchiseTransactions.length > 0) {
-        // Process transactions to extract project details
-        const processedTransactions = franchiseTransactions.map((t: any) => {
-          const inventory = inventoryMap[t.project_id];
-          const compound = parseInventoryField(inventory?.compound);
-          const developer = parseInventoryField(inventory?.developer);
-          const area = parseInventoryField(inventory?.area);
-          
-          return {
-            transaction_amount: parseFloat(t.transaction_amount),
-            commission_amount: t.commission_amount ? parseFloat(t.commission_amount) : 0,
-            stage: t.stage,
-            project_id: t.project_id,
-            compound: compound,
-            developer: developer,
-            area: area,
-            compound_normalized: normalizeForSearch(compound),
-            developer_normalized: normalizeForSearch(developer),
-            area_normalized: normalizeForSearch(area),
-          };
-        });
+      // Process ALL franchises, even if they have no transactions (they might have expenses)
+      // This ensures the AI sees all franchises and their net_revenue (which could be negative from expenses alone)
+      
+      // Process transactions to extract project details
+      const processedTransactions = franchiseTransactions.map((t: any) => {
+        const inventory = inventoryMap[t.project_id];
+        const compound = parseInventoryField(inventory?.compound);
+        const developer = parseInventoryField(inventory?.developer);
+        const area = parseInventoryField(inventory?.area);
+        
+        return {
+          transaction_amount: parseFloat(t.transaction_amount),
+          commission_amount: t.commission_amount ? parseFloat(t.commission_amount) : 0,
+          stage: t.stage,
+          project_id: t.project_id,
+          compound: compound,
+          developer: developer,
+          area: area,
+          compound_normalized: normalizeForSearch(compound),
+          developer_normalized: normalizeForSearch(developer),
+          area_normalized: normalizeForSearch(area),
+        };
+      });
 
-        // Calculate analytics - only use contracted transactions for revenue/profit calculations
-        const contractedTransactions = franchiseTransactions.filter((t: any) => t.stage === 'contracted');
-        
-        // Parse all numeric values to ensure correct calculations
-        const gross_revenue = contractedTransactions.reduce((sum, t) => {
-          const commission = t.commission_amount ? parseFloat(t.commission_amount) : 0;
-          return sum + (isNaN(commission) ? 0 : commission);
-        }, 0);
-        
-        const total_sales_volume = contractedTransactions.reduce((sum, t) => {
-          const amount = parseFloat(t.transaction_amount);
-          return sum + (isNaN(amount) ? 0 : amount);
-        }, 0);
-        
-        const total_expenses = franchiseExpenses.reduce((sum, e) => {
-          const amount = typeof e.amount === 'number' ? e.amount : parseFloat(e.amount);
-          return sum + (isNaN(amount) ? 0 : amount);
-        }, 0);
-        
-        const fixed_expenses = franchiseExpenses.filter(e => e.expense_type === 'fixed').reduce((sum, e) => {
-          const amount = typeof e.amount === 'number' ? e.amount : parseFloat(e.amount);
-          return sum + (isNaN(amount) ? 0 : amount);
-        }, 0);
-        
-        const variable_expenses = franchiseExpenses.filter(e => e.expense_type === 'variable').reduce((sum, e) => {
-          const amount = typeof e.amount === 'number' ? e.amount : parseFloat(e.amount);
-          return sum + (isNaN(amount) ? 0 : amount);
-        }, 0);
-        
-        const millions = total_sales_volume / 1_000_000;
-        const commission_cuts_total = franchiseCommissionCuts.reduce((sum, cut) => {
-          const cutPerMillion = typeof cut.cut_per_million === 'number' ? cut.cut_per_million : parseFloat(cut.cut_per_million);
-          return sum + (isNaN(cutPerMillion) ? 0 : cutPerMillion * millions);
-        }, 0);
-        
-        // Calculate taxes
-        const totalTaxes = contractedTransactions.reduce((sum, t) => {
-          const taxAmount = t.tax_amount ? parseFloat(t.tax_amount) : 0;
-          const withholdingTax = t.withholding_tax ? parseFloat(t.withholding_tax) : 0;
-          const incomeTax = t.income_tax ? parseFloat(t.income_tax) : 0;
-          return sum + (isNaN(taxAmount) ? 0 : taxAmount) + (isNaN(withholdingTax) ? 0 : withholdingTax) + (isNaN(incomeTax) ? 0 : incomeTax);
-        }, 0);
+      // Calculate analytics - only use contracted transactions for revenue/profit calculations
+      const contractedTransactions = franchiseTransactions.filter((t: any) => t.stage === 'contracted');
+      
+      // Parse all numeric values to ensure correct calculations
+      const gross_revenue = contractedTransactions.reduce((sum, t) => {
+        const commission = t.commission_amount ? parseFloat(t.commission_amount) : 0;
+        return sum + (isNaN(commission) ? 0 : commission);
+      }, 0);
+      
+      const total_sales_volume = contractedTransactions.reduce((sum, t) => {
+        const amount = parseFloat(t.transaction_amount);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+      
+      const total_expenses = franchiseExpenses.reduce((sum, e) => {
+        const amount = typeof e.amount === 'number' ? e.amount : parseFloat(e.amount);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+      
+      const fixed_expenses = franchiseExpenses.filter(e => e.expense_type === 'fixed').reduce((sum, e) => {
+        const amount = typeof e.amount === 'number' ? e.amount : parseFloat(e.amount);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+      
+      const variable_expenses = franchiseExpenses.filter(e => e.expense_type === 'variable').reduce((sum, e) => {
+        const amount = typeof e.amount === 'number' ? e.amount : parseFloat(e.amount);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+      
+      const millions = total_sales_volume / 1_000_000;
+      const commission_cuts_total = franchiseCommissionCuts.reduce((sum, cut) => {
+        const cutPerMillion = typeof cut.cut_per_million === 'number' ? cut.cut_per_million : parseFloat(cut.cut_per_million);
+        return sum + (isNaN(cutPerMillion) ? 0 : cutPerMillion * millions);
+      }, 0);
+      
+      // Calculate taxes
+      const totalTaxes = contractedTransactions.reduce((sum, t) => {
+        const taxAmount = t.tax_amount ? parseFloat(t.tax_amount) : 0;
+        const withholdingTax = t.withholding_tax ? parseFloat(t.withholding_tax) : 0;
+        const incomeTax = t.income_tax ? parseFloat(t.income_tax) : 0;
+        return sum + (isNaN(taxAmount) ? 0 : taxAmount) + (isNaN(withholdingTax) ? 0 : withholdingTax) + (isNaN(incomeTax) ? 0 : incomeTax);
+      }, 0);
 
-        const net_revenue = gross_revenue - total_expenses - commission_cuts_total;
-        const net_profit = gross_revenue - total_expenses - commission_cuts_total - totalTaxes;
+      const net_revenue = gross_revenue - total_expenses - commission_cuts_total;
+      const net_profit = gross_revenue - total_expenses - commission_cuts_total - totalTaxes;
 
-        franchiseAnalytics.push({
-          franchise: {
-            id: franchise.id,
-            name: franchise.name,
-            headcount: franchise.headcount,
-            is_active: franchise.is_active,
-          },
-          analytics: {
-            gross_revenue,
-            net_revenue,
-            net_profit,
-            total_sales_volume,
-            total_expenses,
-            fixed_expenses,
-            variable_expenses,
-            commission_cuts_total,
-            total_taxes: totalTaxes,
-            contracted_deals_count: contractedTransactions.length,
-            total_deals_count: franchiseTransactions.length,
-            cost_per_agent: franchise.headcount > 0 ? total_expenses / franchise.headcount : 0,
-            performance_per_agent: franchise.headcount > 0 ? total_sales_volume / franchise.headcount : 0,
-          },
-          transactions: processedTransactions,
+      // Debug logging for key franchises
+      if (franchise.name === 'Advantage' || franchise.name === 'New Alex' || franchise.name === 'Empire') {
+        console.log(`[DEBUG] ${franchise.name}:`, {
+          gross_revenue: Math.round(gross_revenue),
+          total_expenses: Math.round(total_expenses),
+          commission_cuts_total: Math.round(commission_cuts_total),
+          net_revenue: Math.round(net_revenue),
+          contracted_count: contractedTransactions.length,
+          expenses_count: franchiseExpenses.length,
+          commission_cuts_count: franchiseCommissionCuts.length,
         });
       }
+
+      franchiseAnalytics.push({
+        franchise: {
+          id: franchise.id,
+          name: franchise.name,
+          headcount: franchise.headcount,
+          is_active: franchise.is_active,
+        },
+        analytics: {
+          gross_revenue,
+          net_revenue,
+          net_profit,
+          total_sales_volume,
+          total_expenses,
+          fixed_expenses,
+          variable_expenses,
+          commission_cuts_total,
+          total_taxes: totalTaxes,
+          contracted_deals_count: contractedTransactions.length,
+          total_deals_count: franchiseTransactions.length,
+          cost_per_agent: franchise.headcount > 0 ? total_expenses / franchise.headcount : 0,
+          performance_per_agent: franchise.headcount > 0 ? total_sales_volume / franchise.headcount : 0,
+        },
+        transactions: processedTransactions,
+      });
     }
 
     // Build context for AI - optimize by aggregating transactions
@@ -337,6 +351,16 @@ serve(async (req) => {
       // Round to 2 decimal places for consistency, then round to integer for display
       const net_revenue_rounded = Math.round(analytics.net_revenue);
       
+      // Debug logging for data sent to AI
+      if (franchise.name === 'Advantage' || franchise.name === 'New Alex' || franchise.name === 'Empire') {
+        console.log(`[DEBUG AI DATA] ${franchise.name}:`, {
+          net_revenue_sent: net_revenue_rounded,
+          gross_revenue: Math.round(analytics.gross_revenue),
+          total_expenses: Math.round(analytics.total_expenses),
+          commission_cuts_total: Math.round(analytics.commission_cuts_total),
+        });
+      }
+      
       return {
         name: franchise.name,
         headcount: franchise.headcount,
@@ -367,6 +391,25 @@ serve(async (req) => {
         })),
       };
     });
+
+    // Pre-process question to detect "worried about" or "losing money" queries
+    const isWorriedQuestion = question.toLowerCase().includes('worried') || 
+                               question.toLowerCase().includes('losing') || 
+                               question.toLowerCase().includes('operating at a loss') ||
+                               question.toLowerCase().includes('concern');
+    
+    // If asking about franchises to worry about, pre-filter to only show negative net_revenue franchises
+    let dataToSend = franchiseDataContext;
+    let worriedNote = '';
+    if (isWorriedQuestion) {
+      const negativeRevenueFranchises = franchiseDataContext.filter((f: any) => f.net_revenue < 0);
+      if (negativeRevenueFranchises.length > 0) {
+        dataToSend = negativeRevenueFranchises;
+        worriedNote = `\n\nCRITICAL: The user is asking about franchises to be worried about. The data below contains ONLY franchises with negative net_revenue (operating at a loss). You MUST only mention these franchises. Do NOT mention any franchise with positive net_revenue.`;
+      } else {
+        worriedNote = `\n\nNOTE: The user is asking about franchises to be worried about, but there are NO franchises with negative net_revenue in the data. All franchises are profitable.`;
+      }
+    }
 
     // Build system prompt
     const systemPrompt = `You are an AI assistant for a CEO managing multiple real estate franchises. Your role is to answer questions about franchise performance, sales, profitability, and operations.
@@ -439,14 +482,16 @@ When answering questions:
    - DO NOT calculate. DO NOT interpret. DO NOT modify. DO NOT think about it. Just READ and REPORT.
    - Look at the net_revenue number in the data for each franchise
    - If the number is POSITIVE (like 3150876, 2021548, 1775377): The franchise is PROFITABLE. Say "EGP 3,150,876" (format with commas)
-   - If the number is NEGATIVE (like -386500, -341800): The franchise is at a LOSS. Say "-EGP 386,500" (with minus sign)
-   - When asked "which franchises are losing money" or "operating at a loss":
+   - If the number is NEGATIVE (like -386500, -341800, -361001): The franchise is at a LOSS. Say "-EGP 386,500" (with minus sign)
+   - When asked "which franchises are losing money", "operating at a loss", "should I be worried about", or "franchises with problems":
      * Look through ALL franchises in the data
      * Find ONLY those where net_revenue is NEGATIVE (has a minus sign or is less than 0)
-     * List ONLY those franchises
+     * List ONLY those franchises with their exact net_revenue value
      * DO NOT include any franchise with a positive net_revenue
+     * Example: If asked "is there any franchise I should be worried about?" and you see "New Alex" has net_revenue = -361001, answer: "Yes, you should be worried about New Alex franchise. It's operating at a loss with a P&L Amount of -EGP 361,001."
    - The dashboard shows green for positive net_revenue (profitable) and red for negative (loss)
    - Your answer MUST match what the dashboard shows - if dashboard shows green/positive, you say profitable. If red/negative, you say loss.
+   - IMPORTANT: Questions like "should I be worried" or "any concerns" mean: find franchises with negative net_revenue (operating at a loss)
 6. If asked about "contracted deals" or "closed deals", use the contracted_sales field from the projects array
 7. The "projects" array contains aggregated data - each entry represents all transactions for that compound/developer/area combination
 8. If you don't find any matching projects:
@@ -460,11 +505,22 @@ When answering questions:
    - Simply read net_revenue from the data and report it:
      * If net_revenue = 3150876 → Dashboard shows "EGP 3,150,876" (green) → Report: "EGP 3,150,876" (profitable)
      * If net_revenue = -386500 → Dashboard shows "-EGP 386,500" (red) → Report: "-EGP 386,500" (loss)
+     * If net_revenue = -361001 → Dashboard shows "-EGP 361,001" (red) → Report: "-EGP 361,001" (loss)
    - The sign (positive/negative) tells you everything: positive = profit, negative = loss
-   - When asked "which franchises are losing money", ONLY list franchises where net_revenue < 0 (negative numbers)
+   - When asked "which franchises are losing money", "should I be worried", or "any concerns", ONLY list franchises where net_revenue < 0 (negative numbers)
+   - Format negative numbers with a minus sign: "-EGP 361,001" not "EGP -361,001"
 
 Current franchise data with transaction details:
-${JSON.stringify(franchiseDataContext, null, 2)}
+${JSON.stringify(dataToSend, null, 2)}
+
+VALIDATION CHECKLIST before answering "should I be worried" or "franchises operating at a loss":
+1. Look at the net_revenue field for EACH franchise in the data above
+2. Identify franchises where net_revenue is NEGATIVE (less than 0)
+3. ONLY list those franchises - do NOT include any franchise with positive net_revenue
+4. Report the exact net_revenue value from the data (e.g., if net_revenue = -361001, say "-EGP 361,001")
+5. Example correct answer: "Yes, you should be worried about New Alex franchise. It's operating at a loss with a P&L Amount of -EGP 361,001."
+6. If NO franchises have negative net_revenue, say "No, all franchises are currently profitable based on the P&L data."
+${worriedNote}
 
 Answer the user's question based on this data.`;
 
@@ -486,7 +542,7 @@ Answer the user's question based on this data.`;
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // Faster and cheaper than gpt-4o
       messages: messages,
-      temperature: 0.7,
+      temperature: 0.3, // Lower temperature for more consistent, factual responses
       max_tokens: 500, // Reduced for faster response
     });
 
