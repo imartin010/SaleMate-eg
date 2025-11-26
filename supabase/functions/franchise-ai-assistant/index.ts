@@ -312,7 +312,8 @@ serve(async (req) => {
         headcount: franchise.headcount,
         is_active: franchise.is_active,
         gross_revenue: analytics.gross_revenue,
-        net_profit: analytics.net_profit,
+        net_revenue: analytics.net_revenue, // This matches the dashboard's "P&L Amount"
+        net_profit: analytics.net_profit, // Net profit after taxes (for reference)
         total_sales_volume: analytics.total_sales_volume,
         contracted_deals: analytics.contracted_deals_count,
         total_deals: analytics.total_deals_count,
@@ -399,7 +400,12 @@ When answering questions:
 2. Reference specific franchise names and numbers
 3. Use currency format: EGP (Egyptian Pounds)
 4. If asked about "most selling" or "highest sales", use the total_sales field from the projects array
-5. If asked about "most profitable", refer to net_profit
+5. If asked about "most profitable", "P&L", "profit and loss", or "operating at a loss", refer to net_revenue (this matches what the dashboard shows as "P&L Amount")
+   - net_revenue is calculated as: gross_revenue - total_expenses - commission_cuts_total
+   - If net_revenue is negative, the franchise is operating at a loss
+   - If net_revenue is positive, the franchise is profitable
+   - IMPORTANT: net_revenue is what appears on the dashboard as "P&L Amount"
+   - net_profit (which includes taxes) is also available but is NOT what the dashboard displays
 6. If asked about "contracted deals" or "closed deals", use the contracted_sales field from the projects array
 7. The "projects" array contains aggregated data - each entry represents all transactions for that compound/developer/area combination
 8. If you don't find any matching projects:
@@ -407,6 +413,7 @@ When answering questions:
    - Instead say: "I don't have any transaction data for the project/developer/area '[X]' in the current dataset. The franchises may not have any sales for this property yet."
 9. NEVER confuse project/compound names with franchise names. If someone mentions "Central Park - Aliva", "Badya", or "Mountain View", these are PROJECTS/DEVELOPERS, NOT franchises.
 10. If you're unsure whether a term is a franchise or project, check the franchise names list first. If it's not in the franchise list, it's likely a project/developer/area name.
+11. CRITICAL: When reporting profit/loss, always use net_revenue (not net_profit) to match the dashboard. If net_revenue is negative, say "operating at a loss" and show the negative value with a minus sign (e.g., "-EGP 386,500").
 
 Current franchise data with transaction details:
 ${JSON.stringify(franchiseDataContext, null, 2)}
