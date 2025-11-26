@@ -603,24 +603,24 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {/* Search */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                         Search
                       </label>
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                         <input
                           type="text"
                           value={transactionSearch}
                           onChange={(e) => setTransactionSearch(e.target.value)}
                           placeholder="Search by amount, project, notes..."
-                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                         />
                         {transactionSearch && (
                           <button
                             onClick={() => setTransactionSearch('')}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-2.5 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         )}
                       </div>
@@ -628,13 +628,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
                     {/* Stage Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                         Stage
                       </label>
                       <select
                         value={transactionStageFilter}
                         onChange={(e) => setTransactionStageFilter(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       >
                         <option value="all">All Stages</option>
                         <option value="eoi">EOI</option>
@@ -646,7 +646,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   </div>
 
                   {/* Results Count */}
-                  <div className="mt-4 flex items-center justify-between text-sm">
+                  <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
                     <span className="text-gray-600">
                       Showing {filteredTransactions.length} of {transactions?.length || 0} transactions
                     </span>
@@ -784,24 +784,24 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {/* Search */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                         Search
                       </label>
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                         <input
                           type="text"
                           value={expenseSearch}
                           onChange={(e) => setExpenseSearch(e.target.value)}
                           placeholder="Search by category, description, amount..."
-                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                         />
                         {expenseSearch && (
                           <button
                             onClick={() => setExpenseSearch('')}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-2.5 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         )}
                       </div>
@@ -809,13 +809,13 @@ const PerformanceFranchiseDashboard: React.FC = () => {
 
                     {/* Type Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                         Type
                       </label>
                       <select
                         value={expenseTypeFilter}
                         onChange={(e) => setExpenseTypeFilter(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       >
                         <option value="all">All Types</option>
                         <option value="fixed">Fixed</option>
@@ -825,7 +825,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                   </div>
 
                   {/* Results Count */}
-                  <div className="mt-4 flex items-center justify-between text-sm">
+                  <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
                     <span className="text-gray-600">
                       Showing {filteredExpenses.length} of {expenses?.length || 0} expenses
                     </span>
@@ -941,16 +941,16 @@ const PerformanceFranchiseDashboard: React.FC = () => {
         )}
 
         {activeTab === 'settings' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Users className="w-5 h-5 text-gray-700" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Franchise Settings</h3>
-                  <p className="text-sm text-gray-600 mt-0.5">Manage franchise information</p>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Franchise Settings</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Manage franchise information</p>
                 </div>
               </div>
               
@@ -958,14 +958,14 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 canEdit && (
                 <button
                   onClick={() => setIsEditingSettings(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium"
+                    className="w-full sm:w-auto flex items-center justify-center space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs sm:text-sm font-medium"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Edit Settings</span>
                 </button>
                 )
               ) : (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       setIsEditingSettings(false);
@@ -978,9 +978,9 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                         });
                       }
                     }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-sm font-medium"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors text-xs sm:text-sm font-medium"
                   >
-                    <XCircle className="w-4 h-4" />
+                    <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>Cancel</span>
                   </button>
                   <button
@@ -997,9 +997,9 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                       }
                     }}
                     disabled={updateFranchiseMutation.isPending}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="w-4 h-4" />
+                    <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>{updateFranchiseMutation.isPending ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                 </div>
@@ -1007,10 +1007,10 @@ const PerformanceFranchiseDashboard: React.FC = () => {
             </div>
 
             {/* Form */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Franchise Name */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Franchise Name
                 </label>
                 {isEditingSettings ? (
@@ -1018,38 +1018,38 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     type="text"
                     value={settingsForm.name}
                     onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-base"
+                    className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm sm:text-base"
                     placeholder="Enter franchise name"
                   />
                 ) : (
-                  <p className="text-lg font-semibold text-gray-900">{franchise.name}</p>
+                  <p className="text-base sm:text-lg font-semibold text-gray-900">{franchise.name}</p>
                 )}
               </div>
 
               {/* Headcount */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Agent Headcount
                 </label>
                 {isEditingSettings ? (
-                  <div className="flex items-center space-x-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-3">
                     <input
                       type="number"
                       value={settingsForm.headcount}
                       onChange={(e) => setSettingsForm({ ...settingsForm, headcount: parseInt(e.target.value) || 0 })}
                       min="0"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-base"
+                      className="flex-1 px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm sm:text-base"
                       placeholder="Number of agents"
                     />
-                    <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg border border-gray-200">
-                      <Users className="w-4 h-4 text-gray-600" />
-                      <span className="text-sm font-medium text-gray-700">Agents</span>
+                    <div className="flex items-center justify-center sm:justify-start space-x-2 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 rounded-lg border border-gray-200">
+                      <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
+                      <span className="text-xs sm:text-sm font-medium text-gray-700">Agents</span>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-gray-600" />
-                    <p className="text-lg font-semibold text-gray-900">{franchise.headcount} Agents</p>
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                    <p className="text-base sm:text-lg font-semibold text-gray-900">{franchise.headcount} Agents</p>
                   </div>
                 )}
               </div>
@@ -1085,7 +1085,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className={`inline-flex items-center px-3 py-1.5 rounded text-sm font-medium ${
+                  <div className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-medium ${
                     franchise.is_active 
                       ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                       : 'bg-gray-200 text-gray-600 border border-gray-300'
@@ -1096,14 +1096,14 @@ const PerformanceFranchiseDashboard: React.FC = () => {
               </div>
 
               {/* Info Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Franchise Slug</p>
-                  <p className="text-base font-mono text-gray-900">{franchise.slug}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Franchise Slug</p>
+                  <p className="text-sm sm:text-base font-mono text-gray-900 break-all">{franchise.slug}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Franchise ID</p>
-                  <p className="text-xs font-mono text-gray-600 break-all">{franchise.id}</p>
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Franchise ID</p>
+                  <p className="text-[10px] sm:text-xs font-mono text-gray-600 break-all">{franchise.id}</p>
                 </div>
               </div>
             </div>

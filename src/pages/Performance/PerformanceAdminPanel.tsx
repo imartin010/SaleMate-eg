@@ -98,38 +98,38 @@ const CBProjectsList: React.FC = () => {
   }
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">All Projects</h2>
+    <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">All Projects</h2>
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700">
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-2xl text-xs sm:text-sm text-red-700">
           {error}
         </div>
       )}
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700">
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-2xl text-xs sm:text-sm text-green-700">
           {success}
         </div>
       )}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {projects.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No projects found</p>
-            <p className="text-sm text-gray-400 mt-2">Add a project to get started</p>
+          <div className="text-center py-8 sm:py-12">
+            <FileText className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-gray-500">No projects found</p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-2">Add a project to get started</p>
           </div>
         ) : (
           projects.map((project) => (
-            <div key={project.id} className="p-4 border-2 border-gray-200 rounded-xl">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">
+            <div key={project.id} className="p-3 sm:p-4 border-2 border-gray-200 rounded-xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                     {project.compound}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
                     Developer: {project.developer}
                   </p>
                   {project.area && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 truncate">
                       Area: {project.area}
                     </p>
                   )}
@@ -137,8 +137,8 @@ const CBProjectsList: React.FC = () => {
               </div>
               
               {/* Commission Rate & Payout Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 sm:p-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs">
                   <div className="flex items-start gap-2">
                     <DollarSign className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
@@ -157,14 +157,14 @@ const CBProjectsList: React.FC = () => {
               </div>
               
               {/* Input Fields */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 sm:gap-2">
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Commission Rate (%)</label>
                   <input
                     type="number"
                     step="0.01"
                     defaultValue={project.commission_rate}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
                     placeholder="Rate %"
                     id={`rate-${project.id}`}
                   />
@@ -174,12 +174,12 @@ const CBProjectsList: React.FC = () => {
                   <input
                     type="number"
                     defaultValue={project.developer_payout_months}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
                     placeholder="Months"
                     id={`months-${project.id}`}
                   />
                 </div>
-                <div className="pt-5">
+                <div className="pt-0 sm:pt-5">
                   <button
                     onClick={() => {
                       const rateInput = document.getElementById(`rate-${project.id}`) as HTMLInputElement;
@@ -191,10 +191,10 @@ const CBProjectsList: React.FC = () => {
                       );
                     }}
                     disabled={loading}
-                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="w-full sm:w-auto p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center"
                     title="Save changes"
                   >
-                    <Save className="w-4 h-4" />
+                    <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               </div>
@@ -583,7 +583,7 @@ const PerformanceAdminPanel: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <button
@@ -615,7 +615,7 @@ const PerformanceAdminPanel: React.FC = () => {
       {/* Tabs */}
       <div className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-2 py-4 overflow-x-auto">
+          <nav className="flex space-x-1 sm:space-x-2 py-2 sm:py-4 overflow-x-auto scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
             {[
               { id: 'franchises', label: 'Franchises', icon: Building2 },
               { id: 'taxes', label: 'Tax Rates', icon: DollarSign },
@@ -628,15 +628,16 @@ const PerformanceAdminPanel: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`group relative px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 whitespace-nowrap ${
+                  className={`group relative px-3 sm:px-6 py-2 sm:py-3 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="flex items-center space-x-2">
-                    <Icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
+                  <span className="flex items-center space-x-1 sm:space-x-2">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                   </span>
                   {activeTab === tab.id && (
                     <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-600 rounded-full" />
@@ -652,59 +653,59 @@ const PerformanceAdminPanel: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Messages */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-2xl text-xs sm:text-sm text-red-700">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-2xl text-xs sm:text-sm text-green-700">
             {success}
           </div>
         )}
 
         {/* Franchises Tab */}
         {activeTab === 'franchises' && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Franchise</h2>
-            <form onSubmit={handleCreateFranchise} className="space-y-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Add New Franchise</h2>
+            <form onSubmit={handleCreateFranchise} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Franchise Name *</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Franchise Name *</label>
                 <input
                   type="text"
                   value={franchiseForm.name}
                   onChange={(e) => setFranchiseForm({ ...franchiseForm, name: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slug (optional, auto-generated if empty)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Slug (optional, auto-generated if empty)</label>
                 <input
                   type="text"
                   value={franchiseForm.slug}
                   onChange={(e) => setFranchiseForm({ ...franchiseForm, slug: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   placeholder="auto-generated"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Headcount *</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Headcount *</label>
                 <input
                   type="number"
                   value={franchiseForm.headcount}
                   onChange={(e) => setFranchiseForm({ ...franchiseForm, headcount: parseInt(e.target.value) || 0 })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   required
                   min="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Owner User ID (optional)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Owner User ID (optional)</label>
                 <input
                   type="text"
                   value={franchiseForm.owner_user_id}
                   onChange={(e) => setFranchiseForm({ ...franchiseForm, owner_user_id: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
               <div className="flex items-center">
@@ -719,7 +720,7 @@ const PerformanceAdminPanel: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-xs sm:text-sm"
               >
                 {loading ? 'Creating...' : 'Create Franchise'}
               </button>
@@ -729,44 +730,44 @@ const PerformanceAdminPanel: React.FC = () => {
 
         {/* Tax Rates Tab */}
         {activeTab === 'taxes' && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Tax Rates Configuration</h2>
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Tax Rates Configuration</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={taxRates.tax_rate}
                   onChange={(e) => setTaxRates({ ...taxRates, tax_rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Withholding Tax Rate (%)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Withholding Tax Rate (%)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={taxRates.withholding_tax_rate}
                   onChange={(e) => setTaxRates({ ...taxRates, withholding_tax_rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Income Tax Rate (%)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Income Tax Rate (%)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={taxRates.income_tax_rate}
                   onChange={(e) => setTaxRates({ ...taxRates, income_tax_rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
               <p className="text-sm text-gray-500">Total Tax Rate: {(taxRates.tax_rate + taxRates.withholding_tax_rate + taxRates.income_tax_rate).toFixed(2)}%</p>
               <button
                 onClick={handleSaveTaxRates}
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-xs sm:text-sm"
               >
                 {loading ? 'Saving...' : 'Save Tax Rates'}
               </button>
@@ -776,9 +777,9 @@ const PerformanceAdminPanel: React.FC = () => {
 
         {/* Commission Cuts Tab */}
         {activeTab === 'commission-cuts' && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Commission Cuts per Million</h2>
-            <p className="text-sm text-gray-500 mb-6">
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Commission Cuts per Million</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
               These commission cuts will be applied to all franchises.
             </p>
             <div className="space-y-4 max-w-2xl">
@@ -826,29 +827,29 @@ const PerformanceAdminPanel: React.FC = () => {
 
         {/* Developers Tab */}
         {activeTab === 'developers' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Add Developer Form */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Developers</h2>
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Developers</h2>
                 <button
                   onClick={() => setShowAddDeveloper(!showAddDeveloper)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm w-full sm:w-auto justify-center"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>{showAddDeveloper ? 'Cancel' : 'Add New Developer'}</span>
                 </button>
               </div>
               
               {showAddDeveloper && (
-                <form onSubmit={handleAddDeveloper} className="mb-6 p-6 bg-gray-50 rounded-2xl border-2 border-gray-200">
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Developer Name *</label>
+                <form onSubmit={handleAddDeveloper} className="mb-4 sm:mb-6 p-4 sm:p-6 bg-gray-50 rounded-2xl border-2 border-gray-200">
+                  <div className="mb-3 sm:mb-4">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Developer Name *</label>
                     <input
                       type="text"
                       value={developerForm.name}
                       onChange={(e) => setDeveloperForm({ name: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="Enter developer name"
                       required
                     />
@@ -856,32 +857,32 @@ const PerformanceAdminPanel: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                    className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-xs sm:text-sm"
                   >
                     {loading ? 'Adding...' : 'Add Developer'}
                   </button>
                 </form>
               )}
               
-              <p className="text-sm text-gray-500 mb-6">
+              <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
                 Developers are automatically extracted from existing projects in the Coldwell Banker inventory.
               </p>
             </div>
 
             {/* Developers List */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">All Developers ({developers.length})</h3>
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">All Developers ({developers.length})</h3>
               {developers.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No developers found</p>
-                  <p className="text-sm text-gray-400 mt-2">Add a developer or create a project to see developers here</p>
+                <div className="text-center py-8 sm:py-12">
+                  <FileText className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                  <p className="text-sm sm:text-base text-gray-500">No developers found</p>
+                  <p className="text-xs sm:text-sm text-gray-400 mt-2">Add a developer or create a project to see developers here</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {developers.map((developer, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
-                      <p className="font-medium text-gray-900">{developer}</p>
+                    <div key={index} className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+                      <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{developer}</p>
                     </div>
                   ))}
                 </div>
@@ -892,28 +893,28 @@ const PerformanceAdminPanel: React.FC = () => {
 
         {/* Projects Tab */}
         {activeTab === 'projects' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Add Project Form */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Project</h2>
-              <form onSubmit={handleCreateProject} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Add New Project</h2>
+              <form onSubmit={handleCreateProject} className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Compound Name *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Compound Name *</label>
                     <input
                       type="text"
                       value={projectForm.compound}
                       onChange={(e) => setProjectForm({ ...projectForm, compound: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Developer *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Developer *</label>
                     <select
                       value={projectForm.developer}
                       onChange={(e) => setProjectForm({ ...projectForm, developer: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       required
                     >
                       <option value="">Select Developer</option>
@@ -928,32 +929,32 @@ const PerformanceAdminPanel: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Area</label>
                     <input
                       type="text"
                       value={projectForm.area}
                       onChange={(e) => setProjectForm({ ...projectForm, area: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%) *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Commission Rate (%) *</label>
                     <input
                       type="number"
                       step="0.01"
                       value={projectForm.commission_rate}
                       onChange={(e) => setProjectForm({ ...projectForm, commission_rate: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Payout Time (Months) *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Payout Time (Months) *</label>
                     <input
                       type="number"
                       value={projectForm.developer_payout_months}
                       onChange={(e) => setProjectForm({ ...projectForm, developer_payout_months: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       required
                       min="1"
                     />
@@ -962,7 +963,7 @@ const PerformanceAdminPanel: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-xs sm:text-sm"
                 >
                   {loading ? 'Creating...' : 'Create Project & Set Commission'}
                 </button>

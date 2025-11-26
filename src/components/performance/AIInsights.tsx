@@ -610,35 +610,35 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl shadow-md border-2 border-indigo-200 p-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl shadow-md border-2 border-indigo-200 p-4 sm:p-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
-          <div className="p-2 bg-white rounded-lg shadow-sm">
-            <Bot className="w-6 h-6 text-indigo-600" />
+          <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+            <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
           </div>
-          <h3 className="text-xl font-bold text-indigo-900">{translations.title}</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-indigo-900">{translations.title}</h3>
         </div>
         <button
           onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-          className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white hover:bg-indigo-50 text-indigo-700 transition-colors text-sm font-bold border-2 border-indigo-300 shadow-sm"
+          className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white hover:bg-indigo-50 text-indigo-700 transition-colors text-xs sm:text-sm font-bold border-2 border-indigo-300 shadow-sm"
           title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
         >
-          <Languages className="w-4 h-4" />
+          <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           <span>{language === 'en' ? 'AR' : 'EN'}</span>
         </button>
       </div>
-      <p className="text-sm text-indigo-800 font-medium mb-6">
+      <p className="text-xs sm:text-sm text-indigo-800 font-medium mb-4 sm:mb-6">
         {translations.subtitle}
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {insights.map((insight, index) => (
           <div
             key={index}
-            className={`border-2 rounded-xl p-5 ${getInsightStyle(insight.type)} hover:scale-[1.01] transition-transform duration-200`}
+            className={`border-2 rounded-xl p-3 sm:p-5 ${getInsightStyle(insight.type)} hover:scale-[1.01] transition-transform duration-200`}
           >
-            <div className="flex items-start space-x-3">
-              <div className={`flex-shrink-0 p-2 rounded-lg ${
+            <div className="flex items-start space-x-2 sm:space-x-3">
+              <div className={`flex-shrink-0 p-1.5 sm:p-2 rounded-lg ${
                 insight.type === 'success' ? 'bg-green-100' :
                 insight.type === 'warning' ? 'bg-amber-100' :
                 insight.type === 'danger' ? 'bg-red-100' :
@@ -646,25 +646,25 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
               } ${getIconColor(insight.type)}`}>
                 {insight.icon}
               </div>
-              <div className="flex-1">
-                <h4 className="font-bold mb-2 text-gray-900 text-base">{insight.title}</h4>
-                <p className="text-sm mb-3 text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: insight.description }} />
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold mb-1.5 sm:mb-2 text-gray-900 text-sm sm:text-base">{insight.title}</h4>
+                <p className="text-xs sm:text-sm mb-2 sm:mb-3 text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: insight.description }} />
                 {insight.recommendation && (
-                  <div className={`mt-3 p-3 rounded-lg border-l-4 ${
+                  <div className={`mt-2 sm:mt-3 p-2.5 sm:p-3 rounded-lg border-l-4 ${
                     insight.type === 'success' ? 'bg-green-100/50 border-green-400' :
                     insight.type === 'warning' ? 'bg-amber-100/50 border-amber-400' :
                     insight.type === 'danger' ? 'bg-red-100/50 border-red-400' :
                     'bg-blue-100/50 border-blue-400'
                   }`}>
-                    <p className="text-sm font-bold mb-2 text-gray-900">{translations.recommendation}</p>
+                    <p className="text-xs sm:text-sm font-bold mb-1.5 sm:mb-2 text-gray-900">{translations.recommendation}</p>
                     {Array.isArray(insight.recommendation) ? (
-                      <ul className="text-sm space-y-1.5 list-disc list-inside text-gray-700 pl-1">
+                      <ul className="text-xs sm:text-sm space-y-1 sm:space-y-1.5 list-disc list-inside text-gray-700 pl-1">
                         {insight.recommendation.map((rec, recIndex) => (
                           <li key={recIndex} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: rec }} />
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: insight.recommendation }} />
+                      <p className="text-xs sm:text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: insight.recommendation }} />
                     )}
                   </div>
                 )}
@@ -674,9 +674,9 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ analytics, franchise }) 
         ))}
 
         {insights.length === 0 && (
-          <div className="text-center py-8 text-gray-600">
-            <Lightbulb className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>{translations.noData}</p>
+          <div className="text-center py-6 sm:py-8 text-gray-600">
+            <Lightbulb className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 opacity-50" />
+            <p className="text-xs sm:text-sm">{translations.noData}</p>
           </div>
         )}
       </div>

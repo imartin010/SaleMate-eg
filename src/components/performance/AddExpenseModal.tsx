@@ -173,20 +173,20 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 pt-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:space-x-3 pt-3 sm:pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createExpense.isPending}
-              className="px-6 py-4 bg-gradient-to-r from-rose-600 to-pink-600 text-white font-semibold rounded-2xl hover:from-rose-700 hover:to-pink-700 shadow-lg shadow-rose-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-4 bg-gradient-to-r from-rose-600 to-pink-600 text-white text-xs sm:text-sm sm:font-semibold rounded-2xl hover:from-rose-700 hover:to-pink-700 shadow-lg shadow-rose-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>{createExpense.isPending ? 'Adding...' : 'Add Expense'}</span>
             </button>
           </div>
