@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePerformanceFranchises, usePerformanceAnalytics } from '../../hooks/performance/usePerformanceData';
 import { Building2, TrendingUp, DollarSign, Users, BarChart3, Settings, Crown, LogOut } from 'lucide-react';
 import { FranchiseComparison } from '../../components/performance/FranchiseComparison';
+import { FranchiseAIAssistant } from '../../components/performance/FranchiseAIAssistant';
 import { useFranchise } from '../../contexts/FranchiseContext';
 import { useAuthStore } from '../../features/auth';
 
@@ -368,6 +369,9 @@ const PerformanceCEODashboard: React.FC = () => {
           onClose={() => setShowComparison(false)}
         />
       )}
+
+      {/* AI Assistant - Floating Chatbot */}
+      <FranchiseAIAssistant />
     </div>
   );
 };
