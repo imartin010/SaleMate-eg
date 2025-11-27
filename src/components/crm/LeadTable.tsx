@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, MapPin, Building, Calendar, MessageSquare, Save, X, ChevronDown, ChevronUp, Sparkles, Target, Flame, CalendarCheck, TrendingUp, PhoneOff, PhoneMissed, MessageCircle, XCircle, Ban, PowerOff, Wallet } from 'lucide-react';
+import { Phone, Mail, MapPin, Building, Calendar, MessageSquare, Save, X, ChevronDown, ChevronUp, Sparkles, Target, Flame, CalendarCheck, TrendingUp, PhoneOff, PhoneMissed, MessageCircle, XCircle, Ban, PowerOff, Wallet, Clock } from 'lucide-react';
 import { Lead, LeadStage } from '../../hooks/crm/useLeads';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
@@ -13,6 +12,7 @@ import { LeadDetailModal } from './LeadDetailModal';
 import { MaskedPhone } from './MaskedPhone';
 import { format } from 'date-fns';
 import { extractName } from '../../lib/formatters';
+import { createPortal } from 'react-dom';
 
 interface LeadTableProps {
   leads: Lead[];
@@ -55,20 +55,20 @@ const getStageIcon = (stage: LeadStage): React.ReactElement => {
 
 const getStageColor = (stage: LeadStage): string => {
   const colors: Record<LeadStage, string> = {
-    'New Lead': 'bg-blue-100 text-blue-800',
-    'Potential': 'bg-purple-100 text-purple-800',
-    'Hot Case': 'bg-orange-100 text-orange-800',
-    'Meeting Done': 'bg-green-100 text-green-800',
-    'Closed Deal': 'bg-emerald-100 text-emerald-800 font-semibold',
-    'No Answer': 'bg-gray-100 text-gray-800',
-    'Call Back': 'bg-yellow-100 text-yellow-800',
-    'Whatsapp': 'bg-green-100 text-green-800',
-    'Non Potential': 'bg-red-100 text-red-800',
-    'Wrong Number': 'bg-red-100 text-red-800',
-    'Switched Off': 'bg-slate-100 text-slate-800',
-    'Low Budget': 'bg-amber-100 text-amber-800',
+    'New Lead': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Potential': 'bg-purple-100 text-purple-800 border-purple-200',
+    'Hot Case': 'bg-orange-100 text-orange-800 border-orange-200',
+    'Meeting Done': 'bg-green-100 text-green-800 border-green-200',
+    'Closed Deal': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'No Answer': 'bg-gray-100 text-gray-800 border-gray-200',
+    'Call Back': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'Whatsapp': 'bg-green-100 text-green-800 border-green-200',
+    'Non Potential': 'bg-red-100 text-red-800 border-red-200',
+    'Wrong Number': 'bg-red-100 text-red-800 border-red-200',
+    'Switched Off': 'bg-slate-100 text-slate-800 border-slate-200',
+    'Low Budget': 'bg-amber-100 text-amber-800 border-amber-200',
   };
-  return colors[stage] || 'bg-gray-100 text-gray-800';
+  return colors[stage] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
 
 const getPlatformColor = (platform: string): string => {
@@ -93,6 +93,9 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [revealedPhoneId, setRevealedPhoneId] = useState<string | null>(null);
+  const [openStageDropdown, setOpenStageDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+  const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const handleFeedbackEdit = (leadId: string, currentFeedback: string) => {
     setEditingFeedbackId(leadId);
@@ -119,6 +122,39 @@ export const LeadTable: React.FC<LeadTableProps> = ({
     setShowDetailModal(false);
     setSelectedLead(null);
   };
+
+  // Calculate dropdown position when it opens
+  useEffect(() => {
+    if (openStageDropdown) {
+      const badgeElement = badgeRefs.current.get(openStageDropdown);
+      if (badgeElement) {
+        const rect = badgeElement.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left
+        });
+      }
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [openStageDropdown]);
+
+  // Close stage dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openStageDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('[data-stage-dropdown]') && !target.closest('[data-stage-dropdown-menu]')) {
+          setOpenStageDropdown(null);
+        }
+      }
+    };
+
+    if (openStageDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openStageDropdown]);
 
   if (leads.length === 0) {
     return (
@@ -256,24 +292,25 @@ export const LeadTable: React.FC<LeadTableProps> = ({
 
                 {/* Stage */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <Select
-                    value={lead.stage}
-                    onValueChange={(value) => onUpdateStage(lead.id, value as LeadStage)}
+                  <div 
+                    className="relative inline-block" 
+                    onClick={(e) => e.stopPropagation()} 
+                    data-stage-dropdown
+                    ref={(el) => {
+                      if (el) {
+                        badgeRefs.current.set(lead.id, el);
+                      } else {
+                        badgeRefs.current.delete(lead.id);
+                      }
+                    }}
                   >
-                    <SelectTrigger className={`w-[140px] ${getStageColor(lead.stage)}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STAGES.map((stage) => (
-                        <SelectItem key={stage} value={stage}>
-                          <div className="flex items-center gap-2">
-                            {getStageIcon(stage)}
-                            <span>{stage}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Badge 
+                      className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 cursor-pointer hover:opacity-80 transition-opacity border whitespace-nowrap`}
+                      onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
+                    >
+                      {lead.stage}
+                    </Badge>
+                  </div>
                 </td>
 
                 {/* Feedback - Very Important Section */}
@@ -335,7 +372,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                             </div>
                             <div className="text-xs text-gray-500 flex items-center justify-between">
                               <span>Click to {lead.feedback ? 'edit' : 'add'} feedback</span>
-                              {lead.feedback_history && lead.feedback_history.length > 0 && (
+                              {lead.feedback_history && lead.feedback_history.length > 0 ? (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -343,8 +380,10 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                                       expandedFeedbackId === lead.id ? null : lead.id
                                     );
                                   }}
-                                  className="flex items-center text-[#257CFF] hover:text-[#F45A2A]"
+                                  className="flex items-center text-[#257CFF] hover:text-[#F45A2A] font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                                  title={`View ${lead.feedback_history.length} previous feedback ${lead.feedback_history.length === 1 ? 'entry' : 'entries'}`}
                                 >
+                                  <Clock className="h-3 w-3 mr-1" />
                                   <span className="mr-1">History ({lead.feedback_history.length})</span>
                                   {expandedFeedbackId === lead.id ? (
                                     <ChevronUp className="h-3 w-3" />
@@ -352,6 +391,8 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                                     <ChevronDown className="h-3 w-3" />
                                   )}
                                 </button>
+                              ) : (
+                                <span className="text-gray-400 text-[10px]">No history yet</span>
                               )}
                             </div>
                           </div>
@@ -393,6 +434,47 @@ export const LeadTable: React.FC<LeadTableProps> = ({
         onClose={handleCloseModal}
         onUpdateStage={onUpdateStage}
       />
+
+      {/* Stage Dropdown Portal - Renders outside table container */}
+      {openStageDropdown && dropdownPosition && createPortal(
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="fixed z-[9999] bg-white rounded-lg shadow-2xl border border-gray-200 w-[180px] max-h-[240px] overflow-hidden flex flex-col"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`
+            }}
+            data-stage-dropdown-menu
+          >
+            <div className="overflow-y-auto py-1 flex-1">
+              {STAGES.map((stage) => {
+                const lead = leads.find(l => l.id === openStageDropdown);
+                if (!lead) return null;
+                return (
+                  <button
+                    key={stage}
+                    onClick={async () => {
+                      onUpdateStage(lead.id, stage);
+                      setOpenStageDropdown(null);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition-colors whitespace-nowrap flex items-center gap-2 ${
+                      lead.stage === stage ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    {getStageIcon(stage)}
+                    <span>{stage}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

@@ -4,18 +4,22 @@ import { Lead, LeadStage } from './useLeads';
 export interface LeadFilters {
   search: string;
   stage?: LeadStage | 'all';
+  stages?: LeadStage[]; // For filtering by multiple stages (e.g., quality leads)
   project?: string | 'all';
   platform?: string | 'all';
   dateRange?: 'week' | 'month' | 'quarter' | 'all';
+  hasBudget?: boolean; // For pipeline filter (leads with budget entered)
 }
 
 export function useLeadFilters(leads: Lead[]) {
   const [filters, setFilters] = useState<LeadFilters>({
     search: '',
-    stage: 'all',
-    project: 'all',
-    platform: 'all',
-    dateRange: 'all',
+    stage: undefined,
+    stages: undefined,
+    project: undefined,
+    platform: undefined,
+    dateRange: undefined,
+    hasBudget: undefined,
   });
 
   const filteredLeads = useMemo(() => {
@@ -33,9 +37,21 @@ export function useLeadFilters(leads: Lead[]) {
       );
     }
 
-    // Stage filter
-    if (filters.stage && filters.stage !== 'all') {
+    // Multiple stages filter (for quality leads) - takes precedence over single stage
+    if (filters.stages && filters.stages.length > 0) {
+      result = result.filter((lead) => filters.stages!.includes(lead.stage));
+    } else if (filters.stage && filters.stage !== 'all') {
+      // Stage filter (single stage) - only apply if stages filter is not set
       result = result.filter((lead) => lead.stage === filters.stage);
+    }
+
+    // Budget filter (for pipeline - leads with budget entered)
+    if (filters.hasBudget !== undefined) {
+      if (filters.hasBudget) {
+        result = result.filter((lead) => lead.budget !== null && lead.budget !== undefined && lead.stage !== 'Closed Deal');
+      } else {
+        result = result.filter((lead) => lead.budget === null || lead.budget === undefined);
+      }
     }
 
     // Project filter
@@ -80,13 +96,21 @@ export function useLeadFilters(leads: Lead[]) {
     []
   );
 
+  const updateMultipleFilters = useCallback((updates: Partial<LeadFilters>) => {
+    setFilters((prev) => ({ ...prev, ...updates }));
+  }, []);
+
   const clearFilters = useCallback(() => {
+    // Reset all filters to their default/empty state
+    // Using direct object instead of functional update to ensure clean reset
     setFilters({
       search: '',
-      stage: 'all',
-      project: 'all',
-      platform: 'all',
-      dateRange: 'all',
+      stage: undefined,
+      stages: undefined,
+      project: undefined,
+      platform: undefined,
+      dateRange: undefined,
+      hasBudget: undefined,
     });
   }, []);
 
@@ -94,9 +118,11 @@ export function useLeadFilters(leads: Lead[]) {
     return (
       filters.search !== '' ||
       (filters.stage && filters.stage !== 'all') ||
+      (filters.stages && filters.stages.length > 0) ||
       (filters.project && filters.project !== 'all') ||
       (filters.platform && filters.platform !== 'all') ||
-      (filters.dateRange && filters.dateRange !== 'all')
+      (filters.dateRange && filters.dateRange !== 'all') ||
+      filters.hasBudget !== undefined
     );
   }, [filters]);
 
@@ -104,6 +130,7 @@ export function useLeadFilters(leads: Lead[]) {
     filters,
     filteredLeads,
     updateFilter,
+    updateMultipleFilters,
     clearFilters,
     hasActiveFilters,
   };
