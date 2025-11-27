@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TimeAnalytics } from '../../../hooks/crm/useCRMAnalytics';
 import { Loader2 } from 'lucide-react';
+import { useInView } from 'framer-motion';
 
 interface TimeSeriesChartProps {
   data: TimeAnalytics[];
@@ -9,6 +10,16 @@ interface TimeSeriesChartProps {
 }
 
 export function TimeSeriesChart({ data, loading }: TimeSeriesChartProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '0px' });
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
+  useEffect(() => {
+    if (isInView && !shouldAnimate) {
+      const timer = setTimeout(() => setShouldAnimate(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isInView, shouldAnimate]);
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -34,32 +45,35 @@ export function TimeSeriesChart({ data, loading }: TimeSeriesChartProps) {
   }));
 
   return (
-    <div className="w-full">
+    <div ref={ref} className="w-full min-h-[400px]">
       <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-          <XAxis
-            dataKey="period"
-            tick={{ fill: '#6b7280' }}
-            angle={-45}
-            textAnchor="end"
-            height={80}
-          />
-          <YAxis tick={{ fill: '#6b7280' }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-            }}
-            formatter={(value: number, name: string) => {
-              if (name === 'conversionRate') {
-                return [`${value.toFixed(2)}%`, 'Conversion Rate'];
-              }
-              return [value, name === 'created' ? 'Leads Created' : 'Leads Closed'];
-            }}
-          />
-          <Legend />
+        <LineChart 
+          data={chartData} 
+          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+        >
+            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+            <XAxis
+              dataKey="period"
+              tick={{ fill: '#6b7280' }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+            />
+            <YAxis tick={{ fill: '#6b7280' }} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+              }}
+              formatter={(value: number, name: string) => {
+                if (name === 'conversionRate') {
+                  return [`${value.toFixed(2)}%`, 'Conversion Rate'];
+                }
+                return [value, name === 'created' ? 'Leads Created' : 'Leads Closed'];
+              }}
+            />
+            <Legend />
           <Line
             type="monotone"
             dataKey="created"
@@ -68,6 +82,9 @@ export function TimeSeriesChart({ data, loading }: TimeSeriesChartProps) {
             name="Leads Created"
             dot={{ fill: '#3b82f6', r: 4 }}
             activeDot={{ r: 6 }}
+            isAnimationActive={shouldAnimate}
+            animationBegin={0}
+            animationDuration={1000}
           />
           <Line
             type="monotone"
@@ -77,9 +94,12 @@ export function TimeSeriesChart({ data, loading }: TimeSeriesChartProps) {
             name="Leads Closed"
             dot={{ fill: '#10b981', r: 4 }}
             activeDot={{ r: 6 }}
+            isAnimationActive={shouldAnimate}
+            animationBegin={300}
+            animationDuration={1000}
           />
-        </LineChart>
-      </ResponsiveContainer>
+          </LineChart>
+        </ResponsiveContainer>
     </div>
   );
 }
