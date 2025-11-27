@@ -9,6 +9,13 @@ export interface LeadFilters {
   platform?: string | 'all';
   dateRange?: 'week' | 'month' | 'quarter' | 'all';
   hasBudget?: boolean; // For pipeline filter (leads with budget entered)
+  // Advanced search filters
+  createdDateFrom?: string; // ISO date string
+  createdDateTo?: string; // ISO date string
+  budgetMin?: number;
+  budgetMax?: number;
+  assignedTo?: string; // user ID
+  owner?: string; // user ID
 }
 
 export function useLeadFilters(leads: Lead[]) {
@@ -20,6 +27,12 @@ export function useLeadFilters(leads: Lead[]) {
     platform: undefined,
     dateRange: undefined,
     hasBudget: undefined,
+    createdDateFrom: undefined,
+    createdDateTo: undefined,
+    budgetMin: undefined,
+    budgetMax: undefined,
+    assignedTo: undefined,
+    owner: undefined,
   });
 
   const filteredLeads = useMemo(() => {
@@ -64,7 +77,7 @@ export function useLeadFilters(leads: Lead[]) {
       result = result.filter((lead) => lead.source === filters.platform);
     }
 
-    // Date range filter
+    // Date range filter (legacy - for backward compatibility)
     if (filters.dateRange && filters.dateRange !== 'all') {
       const now = new Date();
       const cutoffDate = new Date();
@@ -84,6 +97,35 @@ export function useLeadFilters(leads: Lead[]) {
       result = result.filter(
         (lead) => new Date(lead.created_at) >= cutoffDate
       );
+    }
+
+    // Advanced date range filters (takes precedence over legacy dateRange)
+    if (filters.createdDateFrom) {
+      const fromDate = new Date(filters.createdDateFrom);
+      result = result.filter((lead) => new Date(lead.created_at) >= fromDate);
+    }
+    if (filters.createdDateTo) {
+      const toDate = new Date(filters.createdDateTo);
+      toDate.setHours(23, 59, 59, 999); // Include the entire day
+      result = result.filter((lead) => new Date(lead.created_at) <= toDate);
+    }
+
+    // Budget range filters
+    if (filters.budgetMin !== undefined) {
+      result = result.filter((lead) => lead.budget !== null && lead.budget !== undefined && lead.budget >= filters.budgetMin!);
+    }
+    if (filters.budgetMax !== undefined) {
+      result = result.filter((lead) => lead.budget !== null && lead.budget !== undefined && lead.budget <= filters.budgetMax!);
+    }
+
+    // Assigned to filter
+    if (filters.assignedTo) {
+      result = result.filter((lead) => lead.assigned_to_id === filters.assignedTo);
+    }
+
+    // Owner filter
+    if (filters.owner) {
+      result = result.filter((lead) => lead.owner_id === filters.owner);
     }
 
     return result;
@@ -111,6 +153,12 @@ export function useLeadFilters(leads: Lead[]) {
       platform: undefined,
       dateRange: undefined,
       hasBudget: undefined,
+      createdDateFrom: undefined,
+      createdDateTo: undefined,
+      budgetMin: undefined,
+      budgetMax: undefined,
+      assignedTo: undefined,
+      owner: undefined,
     });
   }, []);
 
@@ -122,9 +170,19 @@ export function useLeadFilters(leads: Lead[]) {
       (filters.project && filters.project !== 'all') ||
       (filters.platform && filters.platform !== 'all') ||
       (filters.dateRange && filters.dateRange !== 'all') ||
-      filters.hasBudget !== undefined
+      filters.hasBudget !== undefined ||
+      filters.createdDateFrom !== undefined ||
+      filters.createdDateTo !== undefined ||
+      filters.budgetMin !== undefined ||
+      filters.budgetMax !== undefined ||
+      filters.assignedTo !== undefined ||
+      filters.owner !== undefined
     );
   }, [filters]);
+
+  const loadFilters = useCallback((newFilters: Partial<LeadFilters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  }, []);
 
   return {
     filters,
@@ -132,6 +190,7 @@ export function useLeadFilters(leads: Lead[]) {
     updateFilter,
     updateMultipleFilters,
     clearFilters,
+    loadFilters,
     hasActiveFilters,
   };
 }

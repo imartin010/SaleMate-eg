@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -7,13 +7,18 @@ import {
   LayoutGrid, List, Phone, Mail, MessageCircle,
   X, Check, Eye, Edit, Briefcase,
   RefreshCw, BarChart3, Users, TrendingUp,
-  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload, Clock, ChevronDown, ChevronUp
+  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload, Clock, ChevronDown, ChevronUp, Calendar
 } from 'lucide-react';
 import { useLeads, Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { useLeadFilters } from '../../hooks/crm/useLeadFilters';
 import { useLeadStats } from '../../hooks/crm/useLeadStats';
 import { useDuplicateDetection } from '../../hooks/crm/useDuplicateDetection';
+import { useCustomColumns, CustomColumnsProvider } from '../../hooks/crm/useCustomColumns';
 import { DuplicateLeadsModal } from '../../components/crm/DuplicateLeadsModal';
+import { SavedFiltersManager } from '../../components/crm/SavedFiltersManager';
+import { AdvancedSearch } from '../../components/crm/AdvancedSearch';
+import { CustomColumnsManager } from '../../components/crm/CustomColumnsManager';
+import { CalendarView } from '../../components/crm/CalendarView';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
@@ -37,7 +42,7 @@ interface Project {
   name: string;
 }
 
-type ViewMode = 'table' | 'kanban' | 'cards';
+type ViewMode = 'table' | 'kanban' | 'cards' | 'calendar';
 
 const STAGES: LeadStage[] = [
   'New Lead',
@@ -72,16 +77,16 @@ export const getStageColor = (stage: LeadStage): string => {
   return colors[stage] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
 
-export default function ModernCRM() {
+function ModernCRMContent() {
   const navigate = useNavigate();
   const { leads, loading, error, fetchLeads, createLead, updateLead } = useLeads();
-  const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters, updateMultipleFilters } = useLeadFilters(leads);
+  const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters, updateMultipleFilters, loadFilters } = useLeadFilters(leads);
   const stats = useLeadStats(leads);
 
   // Load view mode from localStorage or default to 'cards'
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem('crm_view_mode') as ViewMode;
-    return savedViewMode && ['table', 'kanban', 'cards'].includes(savedViewMode) 
+    return savedViewMode && ['table', 'kanban', 'cards', 'calendar'].includes(savedViewMode) 
       ? savedViewMode 
       : 'cards';
   });
@@ -113,6 +118,9 @@ export default function ModernCRM() {
 
   // Duplicate detection
   const { isDuplicate, getAllDuplicates } = useDuplicateDetection(leads);
+
+  // Custom columns
+  const { visibleColumns } = useCustomColumns();
 
   // Enhanced search - search across all fields
   const searchFilteredLeads = useMemo(() => {
@@ -692,7 +700,80 @@ export default function ModernCRM() {
             })}
           </motion.div>
 
-          {/* Search and Filters Bar - Mobile First */}
+          {/* Action Buttons Row - Floating above search bar */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/80 backdrop-blur-sm rounded-xl p-2 md:p-3 border border-indigo-100 shadow-md relative z-10"
+          >
+            <div className="flex items-center gap-2 flex-wrap">
+              <motion.div 
+                className="flex-shrink-0"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant={showFilters ? 'default' : 'outline'}
+                  onClick={() => setShowFilters(!showFilters)}
+                  size="sm"
+                  className="rounded-xl h-9 md:h-10"
+                >
+                  <motion.div
+                    animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                  </motion.div>
+                  <span className="text-sm">Filters</span>
+                  {hasActiveFilters && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-2 bg-indigo-600 text-white rounded-full px-1.5 py-0.5 text-xs"
+                    >
+                      {Object.values(filters).filter(Boolean).length}
+                    </motion.span>
+                  )}
+                </Button>
+              </motion.div>
+              {/* Advanced Search */}
+              <div className="flex-shrink-0">
+                <AdvancedSearch
+                  filters={filters}
+                  onFiltersChange={updateMultipleFilters}
+                />
+              </div>
+              {/* Saved Filters - Only show in table view */}
+              {viewMode === 'table' && (
+                <div className="flex-shrink-0">
+                  <SavedFiltersManager
+                    currentFilters={filters}
+                    onLoadFilter={loadFilters}
+                  />
+                </div>
+              )}
+              {/* Custom Columns - Only show in table view */}
+              {viewMode === 'table' && (
+                <div className="flex-shrink-0">
+                  <CustomColumnsManager />
+                </div>
+              )}
+              <motion.div
+                whileTap={{ rotate: 180, scale: 0.9 }}
+                transition={{ duration: 0.5 }}
+                className="md:whileHover={{ rotate: 180 }} flex-shrink-0"
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchLeads}
+                  className="rounded-xl h-9 w-9 md:h-10 md:w-auto md:px-3 touch-manipulation"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Search Bar - Separate container, full width */}
           <motion.div
             variants={itemVariants}
             className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:rounded-2xl md:p-4 lg:p-6 border border-indigo-100 shadow-lg relative overflow-hidden"
@@ -713,93 +794,54 @@ export default function ModernCRM() {
                 ease: "linear",
               }}
             />
-            <div className="flex flex-col gap-3 md:flex-row md:gap-4">
-              {/* Search - Mobile First */}
-              <motion.div 
-                className="flex-1 relative w-full"
-                whileFocus={{ scale: 1.01 }}
+            {/* Search Bar - Full Width */}
+            <motion.div 
+              className="relative w-full"
+              whileFocus={{ scale: 1.01 }}
+            >
+              <motion.div
+                animate={{
+                  rotate: searchQuery ? [0, 10, -10, 0] : 0,
+                }}
+                transition={{ duration: 0.5 }}
+                className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 z-10"
               >
-                <motion.div
-                  animate={{
-                    rotate: searchQuery ? [0, 10, -10, 0] : 0,
-                  }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 z-10"
-                >
-                  <Search className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
-                </motion.div>
-                <Input
-                  type="text"
-                  placeholder="Search leads..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 md:pl-12 h-11 md:h-12 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 relative z-0 text-sm md:text-base"
-                />
-                {searchQuery && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 z-10"
-                  >
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="p-1 active:bg-gray-100 md:hover:bg-gray-100 rounded-full transition-colors touch-manipulation"
-                    >
-                      <X className="h-4 w-4 text-gray-400" />
-                    </button>
-                  </motion.div>
-                )}
+                <Search className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
               </motion.div>
-
-              {/* Quick Filters - Mobile First */}
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <motion.div 
-                  className="flex-1 md:flex-none"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    variant={showFilters ? 'default' : 'outline'}
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="rounded-xl h-11 md:h-12 relative overflow-hidden w-full md:w-auto"
-                  >
-                    <motion.div
-                      animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Filter className="h-4 w-4 mr-2 inline" />
-                    </motion.div>
-                    <span className="text-sm md:text-base">Filters</span>
-                    {hasActiveFilters && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="ml-2 bg-indigo-600 text-white rounded-full px-2 py-0.5 text-xs"
-                      >
-                        {Object.values(filters).filter(Boolean).length}
-                      </motion.span>
-                    )}
-                  </Button>
-                </motion.div>
+              <Input
+                type="text"
+                placeholder="Search leads..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 md:pl-12 h-11 md:h-12 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 relative z-0 text-sm md:text-base w-full"
+              />
+              {searchQuery && (
                 <motion.div
-                  whileTap={{ rotate: 180, scale: 0.9 }}
-                  transition={{ duration: 0.5 }}
-                  className="md:whileHover={{ rotate: 180 }}"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 z-10"
                 >
-                  <Button
-                    variant="outline"
-                    onClick={fetchLeads}
-                    className="rounded-xl h-11 w-11 md:h-12 md:w-auto md:px-4 touch-manipulation"
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="p-1 active:bg-gray-100 md:hover:bg-gray-100 rounded-full transition-colors touch-manipulation"
                   >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
+                    <X className="h-4 w-4 text-gray-400" />
+                  </button>
                 </motion.div>
-              </div>
-            </div>
+              )}
+            </motion.div>
+          </motion.div>
 
-            {/* Clear Filters Button - Appears when filters are active */}
-            {hasActiveFilters && (
-              <div className="mt-3 md:mt-4 relative z-50">
+          {/* Filters Section Container - Only show when filters are active or filters panel is open */}
+          {(hasActiveFilters || showFilters) && (
+            <motion.div
+              variants={itemVariants}
+              className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:rounded-2xl md:p-4 lg:p-6 border border-indigo-100 shadow-lg relative overflow-hidden"
+            >
+              {/* Clear Filters Button - Appears when filters are active */}
+              {hasActiveFilters && (
+              <div className="mb-3 md:mb-4 relative z-50">
                 <Button
                   type="button"
                   onClick={(e) => {
@@ -829,7 +871,7 @@ export default function ModernCRM() {
                   animate={{ opacity: 1, height: 'auto', y: 0 }}
                   exit={{ opacity: 0, height: 0, y: -20 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="hidden md:block mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200 space-y-3 md:space-y-4 relative z-10"
+                  className="hidden md:block pt-3 md:pt-4 border-t border-gray-200 space-y-3 md:space-y-4 relative z-10"
                 >
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
                   <div>
@@ -905,7 +947,8 @@ export default function ModernCRM() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+            </motion.div>
+          )}
 
           {/* View Mode Toggle and Bulk Actions - Mobile First */}
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -950,7 +993,10 @@ export default function ModernCRM() {
                   <Button
                     variant={viewMode === 'table' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode('table')}
+                    onClick={() => {
+                      setViewMode('table');
+                      localStorage.setItem('crm_view_mode', 'table');
+                    }}
                     className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
                   >
                     <motion.div
@@ -969,7 +1015,10 @@ export default function ModernCRM() {
                   <Button
                     variant={viewMode === 'kanban' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode('kanban')}
+                    onClick={() => {
+                      setViewMode('kanban');
+                      localStorage.setItem('crm_view_mode', 'kanban');
+                    }}
                     className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
                   >
                     <motion.div
@@ -988,11 +1037,31 @@ export default function ModernCRM() {
                   <Button
                     variant={viewMode === 'cards' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode('cards')}
+                    onClick={() => {
+                      setViewMode('cards');
+                      localStorage.setItem('crm_view_mode', 'cards');
+                    }}
                     className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
                   >
                     <Grid3x3 className="h-4 w-4" />
                     <span className="hidden md:inline ml-2">Cards</span>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="md:whileHover={{ scale: 1.1 }}"
+                >
+                  <Button
+                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => {
+                      setViewMode('calendar');
+                      localStorage.setItem('crm_view_mode', 'calendar');
+                    }}
+                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden md:inline ml-2">Calendar</span>
                   </Button>
                 </motion.div>
               </motion.div>
@@ -1190,6 +1259,7 @@ export default function ModernCRM() {
                   <table className="w-full min-w-[640px]">
                     <thead className="bg-indigo-50 border-b border-indigo-100">
                       <tr>
+                        {/* Select column - always show */}
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left">
                           <input
                             type="checkbox"
@@ -1198,13 +1268,22 @@ export default function ModernCRM() {
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 md:w-auto md:h-auto"
                           />
                         </th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden sm:table-cell">Contact</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Project</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Stage</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Budget</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider min-w-[200px]">Feedback</th>
-                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                        {/* Dynamic columns based on visibleColumns */}
+                        {visibleColumns.map((column) => {
+                          if (column.id === 'select') return null; // Skip select as it's always shown
+                          return (
+                            <th
+                              key={column.id}
+                              className={`px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider ${
+                                column.id === 'contact' ? 'hidden sm:table-cell' : ''
+                              } ${column.id === 'budget' ? 'hidden lg:table-cell' : ''} ${
+                                column.id === 'feedback' ? 'min-w-[200px]' : ''
+                              }`}
+                            >
+                              {column.label}
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -1236,322 +1315,352 @@ export default function ModernCRM() {
                               className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 md:w-auto md:h-auto"
                             />
                           </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p 
-                                  className="font-medium text-gray-900 text-sm md:text-base cursor-pointer hover:text-indigo-600 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/app/crm/case/${lead.id}`);
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      navigate(`/app/crm/case/${lead.id}`);
-                                    }
-                                  }}
-                                >
-                                  {lead.client_name}
-                                </p>
-                                {isDuplicate(lead.id) && (
-                                  <Badge
-                                    className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-2 py-0.5 cursor-pointer hover:bg-orange-200 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedDuplicateLead(lead);
-                                      setShowDuplicateModal(true);
-                                    }}
-                                  >
-                                    Duplicated
-                                  </Badge>
-                                )}
-                              </div>
-                              {lead.company_name && (
-                                <p className="text-xs md:text-sm text-gray-500">{lead.company_name}</p>
-                              )}
-                              {/* Mobile: Show contact icons inline */}
-                              <div className="flex items-center gap-2 mt-1 sm:hidden">
-                                {lead.client_phone && (
-                                  <motion.button
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => handleCall(lead.client_phone!)}
-                                    className="text-indigo-600 p-1 rounded-full active:bg-indigo-100 transition-colors touch-manipulation"
-                                    title="Call"
-                                  >
-                                    <Phone className="h-3.5 w-3.5" />
-                                  </motion.button>
-                                )}
-                                {lead.client_phone && (
-                                  <motion.button
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => handleWhatsApp(lead.client_phone!)}
-                                    className="text-green-600 p-1 rounded-full active:bg-green-100 transition-colors touch-manipulation"
-                                    title="WhatsApp"
-                                  >
-                                    <MessageCircle className="h-3.5 w-3.5" />
-                                  </motion.button>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3 hidden sm:table-cell">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {lead.client_phone && (
-                                <div className="flex items-center gap-1 text-sm text-gray-700">
-                                  <Phone className="h-3.5 w-3.5 text-gray-400" />
-                                  <MaskedPhone 
-                                    phone={lead.client_phone} 
-                                    leadId={lead.id}
-                                    isRevealed={revealedPhoneId === lead.id}
-                                    onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
-                                  />
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1">
-                                {lead.client_phone && (
-                                  <motion.button
-                                    whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => handleCall(lead.client_phone!)}
-                                    className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors touch-manipulation"
-                                    title="Call"
-                                  >
-                                    <Phone className="h-4 w-4" />
-                                  </motion.button>
-                                )}
-                                {lead.client_phone && (
-                                  <motion.button
-                                    whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => handleWhatsApp(lead.client_phone!)}
-                                    className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors touch-manipulation"
-                                    title="WhatsApp"
-                                  >
-                                    <MessageCircle className="h-4 w-4" />
-                                  </motion.button>
-                                )}
-                                {lead.client_email && (
-                                  <motion.button
-                                    whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => handleEmail(lead.client_email!)}
-                                    className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors touch-manipulation"
-                                    title="Email"
-                                  >
-                                    <Mail className="h-4 w-4" />
-                                  </motion.button>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3">
-                            <div className="flex items-center gap-1.5">
-                              <Building2 className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0 hidden sm:inline" />
-                              <p className={`text-xs md:text-sm truncate max-w-[120px] lg:max-w-none ${lead.project ? 'text-gray-900 font-medium' : 'text-gray-400 italic'}`}>
-                                {lead.project?.name || 'No Project'}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3">
-                            <div 
-                              className="relative inline-block" 
-                              onClick={(e) => e.stopPropagation()} 
-                              data-stage-dropdown
-                              ref={(el) => {
-                                if (el) {
-                                  badgeRefs.current.set(lead.id, el);
-                                } else {
-                                  badgeRefs.current.delete(lead.id);
-                                }
-                              }}
-                            >
-                              <Badge 
-                                className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 cursor-pointer hover:opacity-80 transition-opacity border whitespace-nowrap`}
-                                onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
-                              >
-                                {lead.stage}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3 hidden lg:table-cell">
-                            {editingBudgetId === lead.id ? (
-                              <div className="flex items-center gap-1">
-                                <Input
-                                  type="number"
-                                  value={budgetValue}
-                                  onChange={(e) => setBudgetValue(e.target.value)}
-                                  onBlur={async () => {
-                                    const numValue = budgetValue.trim() === '' ? undefined : parseFloat(budgetValue);
-                                    if (numValue !== undefined && !isNaN(numValue)) {
-                                      await updateLead(lead.id, { budget: numValue });
-                                    } else if (budgetValue.trim() === '') {
-                                      await updateLead(lead.id, { budget: undefined });
-                                    }
-                                    setEditingBudgetId(null);
-                                    setBudgetValue('');
-                                  }}
-                                  onKeyDown={async (e) => {
-                                    if (e.key === 'Enter') {
-                                      e.currentTarget.blur();
-                                    } else if (e.key === 'Escape') {
-                                      setEditingBudgetId(null);
-                                      setBudgetValue('');
-                                    }
-                                  }}
-                                  className="h-7 md:h-8 text-xs md:text-sm w-24 md:w-32"
-                                  autoFocus
-                                  placeholder="Budget"
-                                />
-                              </div>
-                            ) : (
-                              <p 
-                                className="text-xs md:text-sm font-medium text-gray-900 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 -mx-1 px-1 py-0.5 rounded transition-colors"
-                                onClick={() => {
-                                  setEditingBudgetId(lead.id);
-                                  setBudgetValue(lead.budget?.toString() || '');
-                                }}
-                                title="Click to edit budget"
-                              >
-                                {lead.budget ? `EGP ${lead.budget.toLocaleString()}` : '-'}
-                              </p>
-                            )}
-                          </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3">
-                            {editingFeedbackId === lead.id ? (
-                              <div className="space-y-2 min-w-[200px]">
-                                <div className="relative">
-                                  <Textarea
-                                    value={feedbackValue}
-                                    onChange={(e) => setFeedbackValue(e.target.value)}
-                                    placeholder="Enter your feedback here..."
-                                    className="w-full min-h-[80px] text-xs md:text-sm resize-none border-2 border-indigo-500 focus:border-indigo-600 shadow-md"
-                                    autoFocus
-                                  />
-                                  <div className="absolute top-2 right-2 text-xs text-gray-400">
-                                    {feedbackValue.length} chars
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={async () => {
-                                      await updateLead(lead.id, { feedback: feedbackValue });
-                                      setEditingFeedbackId(null);
-                                      setFeedbackValue('');
-                                    }}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-7"
-                                  >
-                                    <Save className="h-3 w-3 mr-1" />
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingFeedbackId(null);
-                                      setFeedbackValue('');
-                                    }}
-                                    className="text-xs h-7"
-                                  >
-                                    <X className="h-3 w-3 mr-1" />
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-2 min-w-[200px]">
-                                <div
-                                  onClick={() => {
-                                    setEditingFeedbackId(lead.id);
-                                    setFeedbackValue(lead.feedback || '');
-                                  }}
-                                  className="group relative cursor-pointer"
-                                >
-                                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-gray-300 group-hover:border-indigo-500 rounded-lg p-2 md:p-3 min-h-[60px] transition-all duration-200 group-hover:shadow-md">
-                                    <div className="flex items-start gap-2">
-                                      <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-                                      <div className="flex-1">
-                                        {lead.feedback ? (
-                                          <p className="text-xs md:text-sm text-gray-700 whitespace-pre-wrap line-clamp-2">
-                                            {lead.feedback}
-                                          </p>
-                                        ) : (
-                                          <p className="text-xs md:text-sm text-gray-400 italic">
-                                            Click to add feedback...
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1 flex items-center justify-between">
-                                      <span>Click to {lead.feedback ? 'edit' : 'add'} feedback</span>
-                                      {lead.feedback_history && lead.feedback_history.length > 0 ? (
-                                        <button
+                          {/* Dynamic columns based on visibleColumns */}
+                          {visibleColumns.map((column) => {
+                            if (column.id === 'select') return null; // Skip select as it's always shown
+                            
+                            let cellContent: React.ReactNode = null;
+                            let cellClassName = `px-2 py-2 md:px-4 md:py-3 ${
+                              column.id === 'contact' ? 'hidden sm:table-cell' : ''
+                            } ${column.id === 'budget' ? 'hidden lg:table-cell' : ''}`;
+
+                            switch (column.id) {
+                              case 'name':
+                                cellContent = (
+                                  <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p 
+                                        className="font-medium text-gray-900 text-sm md:text-base cursor-pointer hover:text-indigo-600 transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/app/crm/case/${lead.id}`);
+                                        }}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            navigate(`/app/crm/case/${lead.id}`);
+                                          }
+                                        }}
+                                      >
+                                        {lead.client_name}
+                                      </p>
+                                      {isDuplicate(lead.id) && (
+                                        <Badge
+                                          className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-2 py-0.5 cursor-pointer hover:bg-orange-200 transition-colors"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            setExpandedFeedbackId(
-                                              expandedFeedbackId === lead.id ? null : lead.id
-                                            );
+                                            setSelectedDuplicateLead(lead);
+                                            setShowDuplicateModal(true);
                                           }}
-                                          className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium px-2 py-0.5 rounded hover:bg-indigo-50 transition-colors"
-                                          title={`View ${lead.feedback_history.length} previous feedback ${lead.feedback_history.length === 1 ? 'entry' : 'entries'}`}
                                         >
-                                          <Clock className="h-3 w-3 mr-1" />
-                                          <span className="mr-1">History ({lead.feedback_history.length})</span>
-                                          {expandedFeedbackId === lead.id ? (
-                                            <ChevronUp className="h-3 w-3" />
-                                          ) : (
-                                            <ChevronDown className="h-3 w-3" />
-                                          )}
-                                        </button>
-                                      ) : (
-                                        <span className="text-gray-400 text-[10px]">No history</span>
+                                          Duplicated
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {lead.company_name && (
+                                      <p className="text-xs md:text-sm text-gray-500">{lead.company_name}</p>
+                                    )}
+                                    {/* Mobile: Show contact icons inline */}
+                                    <div className="flex items-center gap-2 mt-1 sm:hidden">
+                                      {lead.client_phone && (
+                                        <motion.button
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={() => handleCall(lead.client_phone!)}
+                                          className="text-indigo-600 p-1 rounded-full active:bg-indigo-100 transition-colors touch-manipulation"
+                                          title="Call"
+                                        >
+                                          <Phone className="h-3.5 w-3.5" />
+                                        </motion.button>
+                                      )}
+                                      {lead.client_phone && (
+                                        <motion.button
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={() => handleWhatsApp(lead.client_phone!)}
+                                          className="text-green-600 p-1 rounded-full active:bg-green-100 transition-colors touch-manipulation"
+                                          title="WhatsApp"
+                                        >
+                                          <MessageCircle className="h-3.5 w-3.5" />
+                                        </motion.button>
                                       )}
                                     </div>
                                   </div>
-                                </div>
-                                {expandedFeedbackId === lead.id && lead.feedback_history && (
-                                  <FeedbackHistory history={lead.feedback_history} />
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-2 py-2 md:px-4 md:py-3">
-                            <div className="flex items-center gap-1 md:gap-2">
-                              <motion.button
-                                whileTap={{ scale: 0.9 }}
-                                whileHover={{ scale: 1.2 }}
-                                onClick={() => navigate(`/app/crm/case/${lead.id}`)}
-                                className="text-purple-600 hover:text-purple-800 p-1.5 md:p-1 rounded-full active:bg-purple-100 md:hover:bg-purple-100 transition-colors touch-manipulation"
-                                title="Manage Case"
-                              >
-                                <Briefcase className="h-4 w-4" />
-                              </motion.button>
-                              <motion.button
-                                whileTap={{ scale: 0.9 }}
-                                whileHover={{ scale: 1.2 }}
-                                onClick={() => handleCall(lead.client_phone || '')}
-                                disabled={!lead.client_phone}
-                                className="text-indigo-600 hover:text-indigo-800 p-1.5 md:p-1 rounded-full active:bg-indigo-100 md:hover:bg-indigo-100 transition-colors touch-manipulation disabled:opacity-50"
-                                title="Call"
-                              >
-                                <Phone className="h-4 w-4" />
-                              </motion.button>
-                              <motion.button
-                                whileTap={{ scale: 0.9 }}
-                                whileHover={{ scale: 1.2 }}
-                                onClick={() => handleWhatsApp(lead.client_phone || '')}
-                                disabled={!lead.client_phone}
-                                className="text-green-600 hover:text-green-800 p-1.5 md:p-1 rounded-full active:bg-green-100 md:hover:bg-green-100 transition-colors touch-manipulation disabled:opacity-50"
-                                title="WhatsApp"
-                              >
-                                <MessageCircle className="h-4 w-4" />
-                              </motion.button>
-                            </div>
-                          </td>
+                                );
+                                break;
+                              case 'contact':
+                                cellContent = (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {lead.client_phone && (
+                                      <div className="flex items-center gap-1 text-sm text-gray-700">
+                                        <Phone className="h-3.5 w-3.5 text-gray-400" />
+                                        <MaskedPhone 
+                                          phone={lead.client_phone} 
+                                          leadId={lead.id}
+                                          isRevealed={revealedPhoneId === lead.id}
+                                          onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      {lead.client_phone && (
+                                        <motion.button
+                                          whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={() => handleCall(lead.client_phone!)}
+                                          className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors touch-manipulation"
+                                          title="Call"
+                                        >
+                                          <Phone className="h-4 w-4" />
+                                        </motion.button>
+                                      )}
+                                      {lead.client_phone && (
+                                        <motion.button
+                                          whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={() => handleWhatsApp(lead.client_phone!)}
+                                          className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors touch-manipulation"
+                                          title="WhatsApp"
+                                        >
+                                          <MessageCircle className="h-4 w-4" />
+                                        </motion.button>
+                                      )}
+                                      {lead.client_email && (
+                                        <motion.button
+                                          whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={() => handleEmail(lead.client_email!)}
+                                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors touch-manipulation"
+                                          title="Email"
+                                        >
+                                          <Mail className="h-4 w-4" />
+                                        </motion.button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                                break;
+                              case 'project':
+                                cellContent = (
+                                  <div className="flex items-center gap-1.5">
+                                    <Building2 className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0 hidden sm:inline" />
+                                    <p className={`text-xs md:text-sm truncate max-w-[120px] lg:max-w-none ${lead.project ? 'text-gray-900 font-medium' : 'text-gray-400 italic'}`}>
+                                      {lead.project?.name || 'No Project'}
+                                    </p>
+                                  </div>
+                                );
+                                break;
+                              case 'stage':
+                                cellContent = (
+                                  <div 
+                                    className="relative inline-block" 
+                                    onClick={(e) => e.stopPropagation()} 
+                                    data-stage-dropdown
+                                    ref={(el) => {
+                                      if (el) {
+                                        badgeRefs.current.set(lead.id, el);
+                                      } else {
+                                        badgeRefs.current.delete(lead.id);
+                                      }
+                                    }}
+                                  >
+                                    <Badge 
+                                      className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 cursor-pointer hover:opacity-80 transition-opacity border whitespace-nowrap`}
+                                      onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
+                                    >
+                                      {lead.stage}
+                                    </Badge>
+                                  </div>
+                                );
+                                break;
+                              case 'budget':
+                                cellContent = editingBudgetId === lead.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      value={budgetValue}
+                                      onChange={(e) => setBudgetValue(e.target.value)}
+                                      onBlur={async () => {
+                                        const numValue = budgetValue.trim() === '' ? undefined : parseFloat(budgetValue);
+                                        if (numValue !== undefined && !isNaN(numValue)) {
+                                          await updateLead(lead.id, { budget: numValue });
+                                        } else if (budgetValue.trim() === '') {
+                                          await updateLead(lead.id, { budget: undefined });
+                                        }
+                                        setEditingBudgetId(null);
+                                        setBudgetValue('');
+                                      }}
+                                      onKeyDown={async (e) => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        } else if (e.key === 'Escape') {
+                                          setEditingBudgetId(null);
+                                          setBudgetValue('');
+                                        }
+                                      }}
+                                      className="h-7 md:h-8 text-xs md:text-sm w-24 md:w-32"
+                                      autoFocus
+                                      placeholder="Budget"
+                                    />
+                                  </div>
+                                ) : (
+                                  <p 
+                                    className="text-xs md:text-sm font-medium text-gray-900 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 -mx-1 px-1 py-0.5 rounded transition-colors"
+                                    onClick={() => {
+                                      setEditingBudgetId(lead.id);
+                                      setBudgetValue(lead.budget?.toString() || '');
+                                    }}
+                                    title="Click to edit budget"
+                                  >
+                                    {lead.budget ? `EGP ${lead.budget.toLocaleString()}` : '-'}
+                                  </p>
+                                );
+                                break;
+                              case 'feedback':
+                                cellContent = editingFeedbackId === lead.id ? (
+                                  <div className="space-y-2 min-w-[200px]">
+                                    <div className="relative">
+                                      <Textarea
+                                        value={feedbackValue}
+                                        onChange={(e) => setFeedbackValue(e.target.value)}
+                                        placeholder="Enter your feedback here..."
+                                        className="w-full min-h-[80px] text-xs md:text-sm resize-none border-2 border-indigo-500 focus:border-indigo-600 shadow-md"
+                                        autoFocus
+                                      />
+                                      <div className="absolute top-2 right-2 text-xs text-gray-400">
+                                        {feedbackValue.length} chars
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={async () => {
+                                          await updateLead(lead.id, { feedback: feedbackValue });
+                                          setEditingFeedbackId(null);
+                                          setFeedbackValue('');
+                                        }}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-7"
+                                      >
+                                        <Save className="h-3 w-3 mr-1" />
+                                        Save
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setEditingFeedbackId(null);
+                                          setFeedbackValue('');
+                                        }}
+                                        className="text-xs h-7"
+                                      >
+                                        <X className="h-3 w-3 mr-1" />
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2 min-w-[200px]">
+                                    <div
+                                      onClick={() => {
+                                        setEditingFeedbackId(lead.id);
+                                        setFeedbackValue(lead.feedback || '');
+                                      }}
+                                      className="group relative cursor-pointer"
+                                    >
+                                      <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-gray-300 group-hover:border-indigo-500 rounded-lg p-2 md:p-3 min-h-[60px] transition-all duration-200 group-hover:shadow-md">
+                                        <div className="flex items-start gap-2">
+                                          <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+                                          <div className="flex-1">
+                                            {lead.feedback ? (
+                                              <p className="text-xs md:text-sm text-gray-700 whitespace-pre-wrap line-clamp-2">
+                                                {lead.feedback}
+                                              </p>
+                                            ) : (
+                                              <p className="text-xs md:text-sm text-gray-400 italic">
+                                                Click to add feedback...
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1 flex items-center justify-between">
+                                          <span>Click to {lead.feedback ? 'edit' : 'add'} feedback</span>
+                                          {lead.feedback_history && lead.feedback_history.length > 0 ? (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setExpandedFeedbackId(
+                                                  expandedFeedbackId === lead.id ? null : lead.id
+                                                );
+                                              }}
+                                              className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium px-2 py-0.5 rounded hover:bg-indigo-50 transition-colors"
+                                              title={`View ${lead.feedback_history.length} previous feedback ${lead.feedback_history.length === 1 ? 'entry' : 'entries'}`}
+                                            >
+                                              <Clock className="h-3 w-3 mr-1" />
+                                              <span className="mr-1">History ({lead.feedback_history.length})</span>
+                                              {expandedFeedbackId === lead.id ? (
+                                                <ChevronUp className="h-3 w-3" />
+                                              ) : (
+                                                <ChevronDown className="h-3 w-3" />
+                                              )}
+                                            </button>
+                                          ) : (
+                                            <span className="text-gray-400 text-[10px]">No history</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {expandedFeedbackId === lead.id && lead.feedback_history && (
+                                      <FeedbackHistory history={lead.feedback_history} />
+                                    )}
+                                  </div>
+                                );
+                                break;
+                              case 'actions':
+                                cellContent = (
+                                  <div className="flex items-center gap-1 md:gap-2">
+                                    <motion.button
+                                      whileTap={{ scale: 0.9 }}
+                                      whileHover={{ scale: 1.2 }}
+                                      onClick={() => navigate(`/app/crm/case/${lead.id}`)}
+                                      className="text-purple-600 hover:text-purple-800 p-1.5 md:p-1 rounded-full active:bg-purple-100 md:hover:bg-purple-100 transition-colors touch-manipulation"
+                                      title="Manage Case"
+                                    >
+                                      <Briefcase className="h-4 w-4" />
+                                    </motion.button>
+                                    <motion.button
+                                      whileTap={{ scale: 0.9 }}
+                                      whileHover={{ scale: 1.2 }}
+                                      onClick={() => handleCall(lead.client_phone || '')}
+                                      disabled={!lead.client_phone}
+                                      className="text-indigo-600 hover:text-indigo-800 p-1.5 md:p-1 rounded-full active:bg-indigo-100 md:hover:bg-indigo-100 transition-colors touch-manipulation disabled:opacity-50"
+                                      title="Call"
+                                    >
+                                      <Phone className="h-4 w-4" />
+                                    </motion.button>
+                                    <motion.button
+                                      whileTap={{ scale: 0.9 }}
+                                      whileHover={{ scale: 1.2 }}
+                                      onClick={() => handleWhatsApp(lead.client_phone || '')}
+                                      disabled={!lead.client_phone}
+                                      className="text-green-600 hover:text-green-800 p-1.5 md:p-1 rounded-full active:bg-green-100 md:hover:bg-green-100 transition-colors touch-manipulation disabled:opacity-50"
+                                      title="WhatsApp"
+                                    >
+                                      <MessageCircle className="h-4 w-4" />
+                                    </motion.button>
+                                  </div>
+                                );
+                                break;
+                              default:
+                                cellContent = null;
+                            }
+
+                            return (
+                              <td key={column.id} className={cellClassName}>
+                                {cellContent}
+                              </td>
+                            );
+                          })}
                         </motion.tr>
                       ))}
                       </AnimatePresence>
@@ -1716,12 +1825,26 @@ export default function ModernCRM() {
                 </div>
           </motion.div>
         )}
+            {viewMode === 'calendar' && (
+              <motion.div
+                key="calendar"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+              >
+                <CalendarView
+                  leads={searchFilteredLeads}
+                  onLeadClick={(lead) => navigate(`/app/crm/case/${lead.id}`)}
+                />
+              </motion.div>
+            )}
       </AnimatePresence>
           </div>
 
           {/* Empty State */}
-          {/* Pagination Controls */}
-          {searchFilteredLeads.length > 0 && (
+          {/* Pagination Controls - Hide for calendar view */}
+          {viewMode !== 'calendar' && searchFilteredLeads.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2075,5 +2198,13 @@ export default function ModernCRM() {
         />
       )}
     </div>
+  );
+}
+
+export default function ModernCRM() {
+  return (
+    <CustomColumnsProvider>
+      <ModernCRMContent />
+    </CustomColumnsProvider>
   );
 }
