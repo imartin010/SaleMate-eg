@@ -86,19 +86,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'Dashboard',
       href: '/app',
       icon: LayoutDashboard,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'Shop',
       href: '/app/shop',
       icon: ShoppingCart,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'Partners',
       href: '/app/partners',
       icon: Handshake,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'Inventory',
@@ -120,13 +120,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'Dashboard',
       href: '/app',
       icon: LayoutDashboard,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'Shop',
       href: '/app/shop',
       icon: ShoppingCart,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'My Leads',
@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'Partners',
       href: '/app/partners',
       icon: Handshake,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'Inventory',
@@ -150,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'My Deals',
       href: '/app/deals',
       icon: FileText,
-      show: true,
+      show: false, // Hidden for now, will use later
     },
     {
       name: 'My Team',
