@@ -47,6 +47,7 @@ import { PaymentCallback } from '../pages/Payment/PaymentCallback';
 const AppHome = React.lazy(() => import('../pages/Home'));
 const Dashboard = React.lazy(() => import('../pages/FastDashboard')); // Legacy, will be removed
 const MyLeads = React.lazy(() => import('../pages/CRM/ModernCRM'));
+const CRMDashboard = React.lazy(() => import('../pages/CRM/CRMDashboard'));
 const CaseManager = React.lazy(() => import('../pages/Case/CaseManager'));
 const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
@@ -394,12 +395,16 @@ export const router = createBrowserRouter([
             element: <SafePage><AppHome /></SafePage>, // Redirect dashboard to home
           },
           {
-            path: 'crm',
-            element: <SafePage><MyLeads /></SafePage>,
+            path: 'crm/dashboard',
+            element: <SafePage><CRMDashboard /></SafePage>,
           },
           {
             path: 'crm/case/:leadId',
             element: <SafePage><CaseManager /></SafePage>,
+          },
+          {
+            path: 'crm',
+            element: <SafePage><MyLeads /></SafePage>,
           },
           {
             path: 'shop',
