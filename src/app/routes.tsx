@@ -396,6 +396,10 @@ export const router = createBrowserRouter([
           },
           {
             path: 'crm/dashboard',
+            element: <Navigate to="/app/crm/analysis" replace />,
+          },
+          {
+            path: 'crm/analysis',
             element: <SafePage><CRMDashboard /></SafePage>,
           },
           {

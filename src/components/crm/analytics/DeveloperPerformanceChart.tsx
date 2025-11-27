@@ -38,17 +38,22 @@ export function DeveloperPerformanceChart({ data, loading }: DeveloperPerformanc
 
   // Prepare chart data
   const chartData = data.map((developer) => {
-    // Extract name from string representation if needed
+    // The database view now extracts the name properly, but handle edge cases
     let name = developer.developer_name || 'Unknown';
-    // Try to extract name from JSON-like string format: {'id': X, 'name': 'Name'}
-    const nameMatch = name.match(/'name':\s*'([^']+)'/);
-    if (nameMatch) {
-      name = nameMatch[1];
+    
+    // If it's still in JSON format (fallback), try to extract it
+    if (name.includes("'name':")) {
+      const nameMatch = name.match(/'name':\s*'([^']+)'/);
+      if (nameMatch) {
+        name = nameMatch[1];
+      }
     }
     
     return {
-      name,
-      conversionRate: developer.conversion_rate,
+      name: name.trim() || 'Unknown',
+      conversionRate: typeof developer.conversion_rate === 'string' 
+        ? parseFloat(developer.conversion_rate) 
+        : Number(developer.conversion_rate) || 0,
     };
   });
 
