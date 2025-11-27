@@ -1,17 +1,30 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  BarChart3, RefreshCw, Calendar, Users, TrendingUp, DollarSign,
-  ArrowUp, ArrowDown, Loader2
+  BarChart3, RefreshCw, Calendar, Users, TrendingUp,
+  ArrowUp, ArrowDown
 } from 'lucide-react';
-import { useAgentPerformance, useSourcePerformance, useTimeBasedAnalytics, DateRange } from '../../hooks/crm/useCRMAnalytics';
+import { 
+  useAgentPerformance, 
+  useSourcePerformance, 
+  useTimeBasedAnalytics,
+  useProjectPerformance,
+  useAreaPerformance,
+  useDeveloperPerformance,
+  useAgentRevenue,
+  DateRange 
+} from '../../hooks/crm/useCRMAnalytics';
 import { AgentPerformanceChart } from '../../components/crm/analytics/AgentPerformanceChart';
 import { SourcePerformanceChart } from '../../components/crm/analytics/SourcePerformanceChart';
 import { TimeSeriesChart } from '../../components/crm/analytics/TimeSeriesChart';
+import { ProjectPerformanceChart } from '../../components/crm/analytics/ProjectPerformanceChart';
+import { AreaPerformanceChart } from '../../components/crm/analytics/AreaPerformanceChart';
+import { DeveloperPerformanceChart } from '../../components/crm/analytics/DeveloperPerformanceChart';
+import { AgentRevenueChart } from '../../components/crm/analytics/AgentRevenueChart';
 import { ScheduledReportsManager } from '../../components/crm/analytics/ScheduledReportsManager';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { format, subDays, subWeeks, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 type Granularity = 'day' | 'week' | 'month';
 type DatePreset = '7d' | '30d' | '90d' | 'custom';
@@ -56,6 +69,10 @@ export default function CRMDashboard() {
   const agentPerf = useAgentPerformance(dateRange);
   const sourcePerf = useSourcePerformance(dateRange);
   const timeAnalytics = useTimeBasedAnalytics(dateRange, granularity);
+  const projectPerf = useProjectPerformance(dateRange);
+  const areaPerf = useAreaPerformance(dateRange);
+  const developerPerf = useDeveloperPerformance(dateRange);
+  const agentRevenue = useAgentRevenue(dateRange);
 
   // Log errors for debugging
   if (agentPerf.error) {
@@ -77,9 +94,6 @@ export default function CRMDashboard() {
       ? agentPerf.data.reduce((sum, agent) => sum + agent.conversion_rate, 0) / totalAgents
       : 0;
 
-    const totalCost = sourcePerf.data.reduce((sum, source) => sum + source.total_cost, 0);
-    const totalRevenue = sourcePerf.data.reduce((sum, source) => sum + source.total_revenue, 0);
-    const overallROI = totalCost > 0 ? ((totalRevenue - totalCost) / totalCost) * 100 : 0;
 
     // Time-based trends
     const timeData = timeAnalytics.data;
@@ -97,9 +111,6 @@ export default function CRMDashboard() {
       totalLeads,
       totalClosed,
       avgConversionRate,
-      totalCost,
-      totalRevenue,
-      overallROI,
       leadsTrend,
       closedTrend,
     };
@@ -109,6 +120,10 @@ export default function CRMDashboard() {
     agentPerf.refetch();
     sourcePerf.refetch();
     timeAnalytics.refetch();
+    projectPerf.refetch();
+    areaPerf.refetch();
+    developerPerf.refetch();
+    agentRevenue.refetch();
   };
 
   return (
@@ -180,7 +195,7 @@ export default function CRMDashboard() {
         </motion.div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -240,24 +255,6 @@ export default function CRMDashboard() {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Overall ROI</p>
-                <p className={`text-2xl font-bold mt-1 ${
-                  summaryStats.overallROI >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {summaryStats.overallROI.toFixed(1)}%
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
-            </div>
-          </motion.div>
         </div>
 
         {/* Agent Performance Section */}
@@ -287,6 +284,11 @@ export default function CRMDashboard() {
           className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
         >
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Source Performance</h2>
+          {sourcePerf.error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              Error: {sourcePerf.error}
+            </div>
+          )}
           <SourcePerformanceChart
             data={sourcePerf.data}
             loading={sourcePerf.loading}
@@ -301,9 +303,90 @@ export default function CRMDashboard() {
           className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
         >
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Time-Based Analytics</h2>
+          {timeAnalytics.error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              Error: {timeAnalytics.error}
+            </div>
+          )}
           <TimeSeriesChart
             data={timeAnalytics.data}
             loading={timeAnalytics.loading}
+          />
+        </motion.div>
+
+        {/* Project Performance Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Project Performance</h2>
+          {projectPerf.error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              Error: {projectPerf.error}
+            </div>
+          )}
+          <ProjectPerformanceChart
+            data={projectPerf.data}
+            loading={projectPerf.loading}
+          />
+        </motion.div>
+
+        {/* Area Performance Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Area Performance</h2>
+          {areaPerf.error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              Error: {areaPerf.error}
+            </div>
+          )}
+          <AreaPerformanceChart
+            data={areaPerf.data}
+            loading={areaPerf.loading}
+          />
+        </motion.div>
+
+        {/* Developer Performance Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0 }}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Developer Performance</h2>
+          {developerPerf.error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              Error: {developerPerf.error}
+            </div>
+          )}
+          <DeveloperPerformanceChart
+            data={developerPerf.data}
+            loading={developerPerf.loading}
+          />
+        </motion.div>
+
+        {/* Agent Revenue Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1 }}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue per Agent</h2>
+          {agentRevenue.error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              Error: {agentRevenue.error}
+            </div>
+          )}
+          <AgentRevenueChart
+            data={agentRevenue.data}
+            loading={agentRevenue.loading}
           />
         </motion.div>
 

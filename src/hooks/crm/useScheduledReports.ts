@@ -58,7 +58,7 @@ export function useScheduledReports() {
       // Calculate next_send_at
       const { data: nextSendAt, error: calcError } = await supabase.rpc('calculate_next_send_at', {
         report_type: input.report_type,
-        current_time: new Date().toISOString(),
+        current_timestamp_param: new Date().toISOString(),
       });
 
       if (calcError) throw calcError;
@@ -98,7 +98,7 @@ export function useScheduledReports() {
       if (updates.report_type) {
         const { data: nextSendAt, error: calcError } = await supabase.rpc('calculate_next_send_at', {
           report_type: updates.report_type,
-          current_time: new Date().toISOString(),
+          current_timestamp_param: new Date().toISOString(),
         });
 
         if (calcError) throw calcError;

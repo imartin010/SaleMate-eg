@@ -301,7 +301,7 @@ async function generateAndSendReport(supabase: any, report: any) {
     // Update report record
     const { data: nextSendAt, error: calcError } = await supabase.rpc('calculate_next_send_at', {
       report_type: report.report_type,
-      current_time: now.toISOString(),
+      current_timestamp_param: now.toISOString(),
     });
 
     if (calcError) {

@@ -34,6 +34,53 @@ export interface TimeAnalytics {
   conversion_rate: number;
 }
 
+export interface ProjectPerformance {
+  project_id: string;
+  project_name: string;
+  project_area: string;
+  total_leads: number;
+  closed_deals: number;
+  conversion_rate: number;
+  total_cost: number;
+  total_revenue: number;
+  closed_deals_revenue: number;
+  roi_percentage: number;
+}
+
+export interface AreaPerformance {
+  area: string;
+  total_leads: number;
+  closed_deals: number;
+  conversion_rate: number;
+  total_cost: number;
+  total_revenue: number;
+  closed_deals_revenue: number;
+  roi_percentage: number;
+}
+
+export interface DeveloperPerformance {
+  developer_id: string | null;
+  developer_name: string;
+  total_leads: number;
+  closed_deals: number;
+  conversion_rate: number;
+  total_cost: number;
+  total_revenue: number;
+  closed_deals_revenue: number;
+  roi_percentage: number;
+}
+
+export interface AgentRevenue {
+  agent_id: string;
+  agent_name: string;
+  agent_email: string;
+  total_leads: number;
+  total_revenue: number;
+  closed_deals_revenue: number;
+  avg_revenue_per_lead: number | null;
+  avg_revenue_per_closed_deal: number | null;
+}
+
 export interface DateRange {
   startDate: Date;
   endDate: Date;
@@ -111,6 +158,46 @@ async function fetchAnalyticsDirect(type: string, params: Record<string, unknown
         end_date: end.toISOString(),
         granularity: granularity as string,
       });
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    case 'project_performance': {
+      const { data, error } = await supabase
+        .from('crm_project_performance')
+        .select('*')
+        .order('total_leads', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    case 'area_performance': {
+      const { data, error } = await supabase
+        .from('crm_area_performance')
+        .select('*')
+        .order('total_leads', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    case 'developer_performance': {
+      const { data, error } = await supabase
+        .from('crm_developer_performance')
+        .select('*')
+        .order('total_leads', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    case 'agent_revenue': {
+      const { data, error } = await supabase
+        .from('crm_agent_revenue')
+        .select('*')
+        .order('total_revenue', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -226,3 +313,134 @@ export function useTimeBasedAnalytics(
   return { data, loading, error, refetch: fetchData };
 }
 
+export function useProjectPerformance(dateRange?: DateRange) {
+  const [data, setData] = useState<ProjectPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: Record<string, unknown> = {};
+      if (dateRange) {
+        params.startDate = dateRange.startDate.toISOString();
+        params.endDate = dateRange.endDate.toISOString();
+      }
+
+      const result = await fetchAnalytics('project_performance', params);
+      setData(result || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch project performance');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}
+
+export function useAreaPerformance(dateRange?: DateRange) {
+  const [data, setData] = useState<AreaPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: Record<string, unknown> = {};
+      if (dateRange) {
+        params.startDate = dateRange.startDate.toISOString();
+        params.endDate = dateRange.endDate.toISOString();
+      }
+
+      const result = await fetchAnalytics('area_performance', params);
+      setData(result || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch area performance');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}
+
+export function useDeveloperPerformance(dateRange?: DateRange) {
+  const [data, setData] = useState<DeveloperPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: Record<string, unknown> = {};
+      if (dateRange) {
+        params.startDate = dateRange.startDate.toISOString();
+        params.endDate = dateRange.endDate.toISOString();
+      }
+
+      const result = await fetchAnalytics('developer_performance', params);
+      setData(result || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch developer performance');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}
+
+export function useAgentRevenue(dateRange?: DateRange) {
+  const [data, setData] = useState<AgentRevenue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: Record<string, unknown> = {};
+      if (dateRange) {
+        params.startDate = dateRange.startDate.toISOString();
+        params.endDate = dateRange.endDate.toISOString();
+      }
+
+      const result = await fetchAnalytics('agent_revenue', params);
+      setData(result || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch agent revenue');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}

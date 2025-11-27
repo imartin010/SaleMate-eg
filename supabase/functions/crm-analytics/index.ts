@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface AnalyticsRequest {
-  type: 'agent_performance' | 'source_performance' | 'time_analytics';
+  type: 'agent_performance' | 'source_performance' | 'time_analytics' | 'project_performance' | 'area_performance' | 'developer_performance' | 'agent_revenue';
   startDate?: string;
   endDate?: string;
   granularity?: 'day' | 'week' | 'month';
@@ -112,9 +112,81 @@ serve(async (req) => {
         break;
       }
 
+      case 'project_performance': {
+        const { data, error } = await supabase
+          .from('crm_project_performance')
+          .select('*')
+          .order('total_leads', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching project performance:', error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        result = data;
+        break;
+      }
+
+      case 'area_performance': {
+        const { data, error } = await supabase
+          .from('crm_area_performance')
+          .select('*')
+          .order('total_leads', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching area performance:', error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        result = data;
+        break;
+      }
+
+      case 'developer_performance': {
+        const { data, error } = await supabase
+          .from('crm_developer_performance')
+          .select('*')
+          .order('total_leads', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching developer performance:', error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        result = data;
+        break;
+      }
+
+      case 'agent_revenue': {
+        const { data, error } = await supabase
+          .from('crm_agent_revenue')
+          .select('*')
+          .order('total_revenue', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching agent revenue:', error);
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        result = data;
+        break;
+      }
+
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid type. Must be: agent_performance, source_performance, or time_analytics' }),
+          JSON.stringify({ error: 'Invalid type. Must be: agent_performance, source_performance, time_analytics, project_performance, area_performance, developer_performance, or agent_revenue' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
