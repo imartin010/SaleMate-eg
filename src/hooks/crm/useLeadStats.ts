@@ -9,6 +9,7 @@ export interface LeadStats {
   newLeads: number;
   potential: number;
   callBacks: number;
+  pipeline: number;
 }
 
 export function useLeadStats(leads: Lead[]) {
@@ -29,6 +30,11 @@ export function useLeadStats(leads: Lead[]) {
     const qualityDenominator = totalLeads - (newLeads + noAnswer + wrongNumber + switchedOff);
     const qualityRate = qualityDenominator > 0 ? (qualityNumerator / qualityDenominator) * 100 : 0;
 
+    // Pipeline: Total budget of all leads except "Closed Deal" stage
+    const pipeline = leads
+      .filter((lead) => lead.stage !== 'Closed Deal')
+      .reduce((sum, lead) => sum + (lead.budget || 0), 0);
+
     return {
       totalLeads,
       hotCases,
@@ -37,6 +43,7 @@ export function useLeadStats(leads: Lead[]) {
       newLeads,
       potential,
       callBacks,
+      pipeline,
     };
   }, [leads]);
 

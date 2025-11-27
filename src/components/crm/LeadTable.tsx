@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, MapPin, Building, Calendar, MessageSquare, Save, X, ChevronDown, ChevronUp, Sparkles, Target, Flame, CalendarCheck, TrendingUp, PhoneOff, PhoneMissed, MessageCircle, XCircle, Ban, PowerOff, Wallet } from 'lucide-react';
 import { Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -9,6 +10,7 @@ import { Textarea } from '../ui/textarea';
 import { LeadActions } from './LeadActions';
 import { FeedbackHistory } from './FeedbackHistory';
 import { LeadDetailModal } from './LeadDetailModal';
+import { MaskedPhone } from './MaskedPhone';
 import { format } from 'date-fns';
 import { extractName } from '../../lib/formatters';
 
@@ -33,8 +35,8 @@ const STAGES: LeadStage[] = [
   'Low Budget',
 ];
 
-const getStageIcon = (stage: LeadStage): JSX.Element => {
-  const icons: Record<LeadStage, JSX.Element> = {
+const getStageIcon = (stage: LeadStage): React.ReactElement => {
+  const icons: Record<LeadStage, React.ReactElement> = {
     'New Lead': <Sparkles className="h-4 w-4" />,
     'Potential': <Target className="h-4 w-4" />,
     'Hot Case': <Flame className="h-4 w-4" />,
@@ -84,11 +86,13 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onUpdateStage,
   onUpdateFeedback,
 }) => {
+  const navigate = useNavigate();
   const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
   const [feedbackValue, setFeedbackValue] = useState('');
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [revealedPhoneId, setRevealedPhoneId] = useState<string | null>(null);
 
   const handleFeedbackEdit = (leadId: string, currentFeedback: string) => {
     setEditingFeedbackId(leadId);
@@ -107,8 +111,8 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   };
 
   const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead);
-    setShowDetailModal(true);
+    // Navigate to case manager instead of opening detail modal
+    navigate(`/app/crm/case/${lead.id}`);
   };
 
   const handleCloseModal = () => {
@@ -174,8 +178,20 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                 {/* Lead Name */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div 
-                    className="flex items-center cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
-                    onClick={() => handleLeadClick(lead)}
+                    className="flex items-center cursor-pointer hover:bg-blue-50 -mx-2 px-2 py-1 rounded-lg transition-colors group"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLeadClick(lead);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleLeadClick(lead);
+                      }
+                    }}
                   >
                     <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <span className="text-white font-semibold text-sm">
@@ -183,7 +199,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                       </span>
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                      <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                         {lead.client_name}
                       </div>
                       {lead.client_job_title && (
@@ -198,9 +214,12 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   <div className="space-y-1">
                     <div className="flex items-center text-sm text-gray-900">
                       <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                      <a href={`tel:${lead.client_phone}`} className="hover:text-blue-600">
-                        {lead.client_phone}
-                      </a>
+                      <MaskedPhone 
+                        phone={lead.client_phone} 
+                        leadId={lead.id}
+                        isRevealed={revealedPhoneId === lead.id}
+                        onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
+                      />
                     </div>
                     {lead.client_email && (
                       <div className="flex items-center text-sm text-gray-600">
