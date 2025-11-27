@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, RefreshCw, Calendar, Users, TrendingUp,
-  ArrowUp, ArrowDown
+  ArrowUp, ArrowDown, Download
 } from 'lucide-react';
 import { 
   useAgentPerformance, 
@@ -126,6 +126,165 @@ export default function CRMDashboard() {
     agentRevenue.refetch();
   };
 
+  const handleExportReport = () => {
+    const sections: string[] = [];
+    const dateRangeStr = `${format(dateRange.startDate, 'yyyy-MM-dd')}_to_${format(dateRange.endDate, 'yyyy-MM-dd')}`;
+
+    // Helper function to escape CSV values
+    const escapeCSV = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Helper function to create CSV section
+    const createSection = (title: string, headers: string[], rows: any[][]): string => {
+      const section = [
+        `\n=== ${title} ===`,
+        headers.map(escapeCSV).join(','),
+        ...rows.map(row => row.map(escapeCSV).join(','))
+      ].join('\n');
+      return section;
+    };
+
+    // 1. Summary Statistics
+    sections.push(createSection(
+      'Summary Statistics',
+      ['Metric', 'Value'],
+      [
+        ['Total Agents', summaryStats.totalAgents],
+        ['Total Leads', summaryStats.totalLeads],
+        ['Total Closed Deals', summaryStats.totalClosed],
+        ['Average Conversion Rate', `${summaryStats.avgConversionRate.toFixed(2)}%`],
+        ['Date Range', `${format(dateRange.startDate, 'PP')} to ${format(dateRange.endDate, 'PP')}`],
+      ]
+    ));
+
+    // 2. Agent Performance
+    if (agentPerf.data.length > 0) {
+      sections.push(createSection(
+        'Agent Performance',
+        ['Agent Name', 'Total Leads', 'Closed Deals', 'Conversion Rate %', 'Avg Response Time (hours)', 'Avg Time to Close (days)'],
+        agentPerf.data.map(agent => [
+          agent.agent_name || 'Unknown',
+          agent.total_leads,
+          agent.closed_deals,
+          agent.conversion_rate.toFixed(2),
+          agent.avg_response_time ? agent.avg_response_time.toFixed(2) : 'N/A',
+          agent.avg_time_to_close ? agent.avg_time_to_close.toFixed(2) : 'N/A',
+        ])
+      ));
+    }
+
+    // 3. Source Performance
+    if (sourcePerf.data.length > 0) {
+      sections.push(createSection(
+        'Source Performance',
+        ['Source', 'Total Leads', 'Closed Deals', 'Conversion Rate %', 'Total Cost', 'Total Revenue', 'Closed Deals Revenue', 'ROI %'],
+        sourcePerf.data.map(source => [
+          source.source ? source.source.charAt(0).toUpperCase() + source.source.slice(1) : 'Unknown',
+          source.total_leads,
+          source.closed_deals,
+          typeof source.conversion_rate === 'string' ? parseFloat(source.conversion_rate).toFixed(2) : source.conversion_rate.toFixed(2),
+          source.total_cost,
+          source.total_revenue,
+          source.closed_deals_revenue,
+          typeof source.roi_percentage === 'string' ? parseFloat(source.roi_percentage).toFixed(2) : source.roi_percentage.toFixed(2),
+        ])
+      ));
+    }
+
+    // 4. Time-Based Analytics
+    if (timeAnalytics.data.length > 0) {
+      sections.push(createSection(
+        'Time-Based Analytics',
+        ['Period', 'Leads Created', 'Leads Closed', 'Conversion Rate %'],
+        timeAnalytics.data.map(period => [
+          period.period_start,
+          period.leads_created,
+          period.leads_closed,
+          period.conversion_rate ? period.conversion_rate.toFixed(2) : '0.00',
+        ])
+      ));
+    }
+
+    // 5. Project Performance
+    if (projectPerf.data.length > 0) {
+      sections.push(createSection(
+        'Project Performance',
+        ['Project Name', 'Total Leads', 'Closed Deals', 'Conversion Rate %'],
+        projectPerf.data.map(project => [
+          project.project_name || 'Unknown',
+          project.total_leads,
+          project.closed_deals,
+          project.conversion_rate.toFixed(2),
+        ])
+      ));
+    }
+
+    // 6. Area Performance
+    if (areaPerf.data.length > 0) {
+      sections.push(createSection(
+        'Area Performance',
+        ['Area', 'Total Leads', 'Closed Deals', 'Conversion Rate %'],
+        areaPerf.data.map(area => [
+          area.area || 'Unknown',
+          area.total_leads,
+          area.closed_deals,
+          area.conversion_rate.toFixed(2),
+        ])
+      ));
+    }
+
+    // 7. Developer Performance
+    if (developerPerf.data.length > 0) {
+      sections.push(createSection(
+        'Developer Performance',
+        ['Developer', 'Total Leads', 'Closed Deals', 'Conversion Rate %'],
+        developerPerf.data.map(dev => [
+          dev.developer || 'Unknown',
+          dev.total_leads,
+          dev.closed_deals,
+          dev.conversion_rate.toFixed(2),
+        ])
+      ));
+    }
+
+    // 8. Agent Revenue
+    if (agentRevenue.data.length > 0) {
+      sections.push(createSection(
+        'Agent Revenue',
+        ['Agent Name', 'Total Revenue', 'Closed Deals Revenue', 'Avg Revenue per Lead', 'Avg Revenue per Closed Deal'],
+        agentRevenue.data.map(agent => [
+          agent.agent_name || 'Unknown',
+          agent.total_revenue,
+          agent.closed_deals_revenue,
+          agent.avg_revenue_per_lead ? agent.avg_revenue_per_lead.toFixed(2) : '0.00',
+          agent.avg_revenue_per_closed_deal ? agent.avg_revenue_per_closed_deal.toFixed(2) : '0.00',
+        ])
+      ));
+    }
+
+    // Combine all sections
+    const csvContent = [
+      `Analysis Report - ${dateRangeStr}`,
+      `Generated on ${format(new Date(), 'PPpp')}`,
+      ...sections
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `analysis-report-${dateRangeStr}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -138,7 +297,7 @@ export default function CRMDashboard() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <BarChart3 className="h-8 w-8 text-indigo-600" />
-              CRM Dashboard
+              Analysis
             </h1>
             <p className="text-gray-600 mt-1">Analytics and performance insights</p>
           </div>
@@ -190,6 +349,10 @@ export default function CRMDashboard() {
             <Button onClick={handleRefresh} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
+            </Button>
+            <Button onClick={handleExportReport} variant="default" size="sm" className="bg-indigo-600 hover:bg-indigo-700">
+              <Download className="h-4 w-4 mr-2" />
+              Export Report
             </Button>
           </div>
         </motion.div>

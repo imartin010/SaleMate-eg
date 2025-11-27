@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuthStore } from '../../store/auth';
 
@@ -97,6 +97,7 @@ export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const updatingLeadsRef = useRef<Set<string>>(new Set()); // Track leads we're currently updating
 
   const fetchLeads = useCallback(async () => {
     if (!user?.id) return;
@@ -119,7 +120,8 @@ export function useLeads() {
           )
         `)
         .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false }); // Secondary sort for stability
 
       const { data, error: fetchError } = await query;
 
@@ -130,7 +132,8 @@ export function useLeads() {
           .from('leads')
           .select('*')
           .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false }); // Secondary sort for stability
 
         if (simpleError) throw simpleError;
         
@@ -170,11 +173,18 @@ export function useLeads() {
         }));
 
         // Sort leads to show most recently added leads first
-        // Priority: created_at (descending)
-        const sortedLeads = transformedData.sort((a: any, b: any) => {
+        // Priority: created_at (descending), then id (descending) for stability
+        const sortedLeads = [...transformedData].sort((a: any, b: any) => {
           const aCreatedAt = new Date(a.created_at).getTime();
           const bCreatedAt = new Date(b.created_at).getTime();
-          return bCreatedAt - aCreatedAt; // Descending - newest first
+          if (aCreatedAt !== bCreatedAt) {
+            return bCreatedAt - aCreatedAt; // Descending - newest first
+          }
+          // If created_at is the same, sort by id (descending) for stable ordering
+          // Compare UUIDs as strings for consistent ordering
+          if (a.id < b.id) return 1;
+          if (a.id > b.id) return -1;
+          return 0;
         });
 
         setLeads(sortedLeads as Lead[]);
@@ -397,11 +407,25 @@ export function useLeads() {
       }));
 
       // Sort leads to show most recently added leads first
-      // Priority: created_at (descending)
-      const sortedLeads = leadsWithFeedback.sort((a, b) => {
+      // Priority: created_at (descending), then id (descending) for stability
+      // This ensures that leads with the same created_at always appear in the same order
+      const sortedLeads = [...leadsWithFeedback].sort((a, b) => {
         const aCreatedAt = new Date(a.created_at).getTime();
         const bCreatedAt = new Date(b.created_at).getTime();
-        return bCreatedAt - aCreatedAt; // Descending - newest first
+        if (aCreatedAt !== bCreatedAt) {
+          return bCreatedAt - aCreatedAt; // Descending - newest first
+        }
+        // If created_at is the same, sort by id (descending) for stable ordering
+        // Compare UUIDs as strings for consistent ordering
+        if (a.id < b.id) return 1;
+        if (a.id > b.id) return -1;
+        return 0;
+      });
+
+      // Store the sorted order in a Map for quick lookup by id
+      const orderMap = new Map<string, number>();
+      sortedLeads.forEach((lead, index) => {
+        orderMap.set(lead.id, index);
       });
 
       setLeads(sortedLeads as Lead[]);
@@ -457,12 +481,28 @@ export function useLeads() {
   const updateLead = useCallback(
     async (id: string, updates: UpdateLeadInput) => {
       try {
-        // Optimistic update
-        setLeads((prev) =>
-          prev.map((lead) =>
-            lead.id === id ? { ...lead, ...updates } : lead
-          )
-        );
+        // Mark this lead as being updated to prevent real-time subscription from interfering
+        updatingLeadsRef.current.add(id);
+        
+        // Store the current position and original lead before updating
+        let leadIndex = -1;
+        let originalLead: Lead | null = null;
+        let originalCreatedAt: string = '';
+        
+        setLeads((prev) => {
+          leadIndex = prev.findIndex(lead => lead.id === id);
+          if (leadIndex >= 0) {
+            originalLead = prev[leadIndex];
+            originalCreatedAt = originalLead.created_at;
+          }
+          // Optimistic update - update in place without changing position
+          // Create a new array but maintain exact order
+          const newLeads = [...prev];
+          if (leadIndex >= 0) {
+            newLeads[leadIndex] = { ...newLeads[leadIndex], ...updates };
+          }
+          return newLeads;
+        });
 
         const { data, error: updateError } = await supabase
           .from('leads')
@@ -616,24 +656,54 @@ export function useLeads() {
                 index === self.findIndex((t) => t.id === item.id)
               );
 
-            // Update the lead with new feedback history
-            setLeads((prev) =>
-              prev.map((lead) =>
-                lead.id === id 
-                  ? { ...lead, ...updates, feedback_history: uniqueFeedback } 
-                  : lead
-              )
-            );
+            // Update the lead with new feedback history - preserve position
+            setLeads((prev) => {
+              const currentIndex = prev.findIndex(lead => lead.id === id);
+              if (currentIndex < 0) {
+                return prev;
+              }
+              
+              // Create a new array with the updated lead at the exact same position
+              const newLeads = [...prev];
+              newLeads[currentIndex] = {
+                ...newLeads[currentIndex],
+                ...updates,
+                feedback_history: uniqueFeedback,
+              };
+              
+              return newLeads;
+            });
           } catch (historyError) {
             console.warn('Error refreshing feedback history:', historyError);
             // Continue even if history refresh fails
           }
         }
 
-        // Update with server response
-        setLeads((prev) =>
-          prev.map((lead) => (lead.id === id ? (data as Lead) : lead))
-        );
+        // Update with server response - preserve position by updating in place
+        // Don't re-sort, just update the lead at its current position
+        setLeads((prev) => {
+          // Find the index again (in case array changed)
+          const currentIndex = prev.findIndex(lead => lead.id === id);
+          if (currentIndex < 0) {
+            // Lead not found, return as-is (shouldn't happen)
+            return prev;
+          }
+          
+          // Create a new array with the updated lead at the exact same position
+          const newLeads = [...prev];
+          const updatedLead = data as Lead;
+          newLeads[currentIndex] = {
+            ...updatedLead,
+            created_at: originalCreatedAt || updatedLead.created_at, // Preserve original created_at
+          };
+          
+          return newLeads;
+        });
+
+        // Remove from updating set after a short delay to allow real-time updates to be ignored
+        setTimeout(() => {
+          updatingLeadsRef.current.delete(id);
+        }, 2000);
 
         return data as Lead;
       } catch (err) {
@@ -682,8 +752,46 @@ export function useLeads() {
           table: 'leads',
           filter: `buyer_user_id=eq.${user?.id}`,
         },
-        () => {
-          fetchLeads();
+        (payload) => {
+          // For updates, update the lead in place without re-sorting
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const leadId = payload.new.id;
+            
+            // Ignore if we're currently updating this lead (to prevent double updates)
+            if (updatingLeadsRef.current.has(leadId)) {
+              return;
+            }
+            
+            setLeads((prev) => {
+              const existingIndex = prev.findIndex(l => l.id === leadId);
+              if (existingIndex >= 0) {
+                // Update in place, preserving position and created_at
+                const newLeads = [...prev];
+                const existingLead = newLeads[existingIndex];
+                newLeads[existingIndex] = {
+                  ...existingLead,
+                  ...payload.new,
+                  created_at: existingLead.created_at, // Preserve original created_at
+                };
+                return newLeads;
+              }
+              // If lead not found, ignore (might be filtered out)
+              return prev;
+            });
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            // For new leads, add to the beginning (most recent first)
+            setLeads((prev) => {
+              // Check if lead already exists (might have been optimistically added)
+              const exists = prev.some(l => l.id === payload.new.id);
+              if (exists) {
+                return prev;
+              }
+              return [payload.new as Lead, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            // For deleted leads, remove from the list
+            setLeads((prev) => prev.filter(l => l.id !== payload.old.id));
+          }
         }
       )
       .subscribe();

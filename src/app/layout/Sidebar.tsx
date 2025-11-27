@@ -158,8 +158,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       show: true,
     },
     {
-      name: 'CRM Dashboard',
-      href: '/app/crm/dashboard',
+      name: 'Analysis',
+      href: '/app/crm/analysis',
       icon: BarChart3,
       show: true,
     },

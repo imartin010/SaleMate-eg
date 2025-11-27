@@ -12,6 +12,8 @@ import {
 import { useLeads, Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { useLeadFilters } from '../../hooks/crm/useLeadFilters';
 import { useLeadStats } from '../../hooks/crm/useLeadStats';
+import { useDuplicateDetection } from '../../hooks/crm/useDuplicateDetection';
+import { DuplicateLeadsModal } from '../../components/crm/DuplicateLeadsModal';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
@@ -52,7 +54,7 @@ const STAGES: LeadStage[] = [
   'Low Budget',
 ];
 
-const getStageColor = (stage: LeadStage): string => {
+export const getStageColor = (stage: LeadStage): string => {
   const colors: Record<LeadStage, string> = {
     'New Lead': 'bg-blue-100 text-blue-800 border-blue-200',
     'Potential': 'bg-purple-100 text-purple-800 border-purple-200',
@@ -104,7 +106,12 @@ export default function ModernCRM() {
   const [openStageDropdown, setOpenStageDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [selectedDuplicateLead, setSelectedDuplicateLead] = useState<Lead | null>(null);
   const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Duplicate detection
+  const { isDuplicate, getAllDuplicates } = useDuplicateDetection(leads);
 
   // Enhanced search - search across all fields
   const searchFilteredLeads = useMemo(() => {
@@ -1004,9 +1011,23 @@ export default function ModernCRM() {
                       {/* Header with Stage Badge */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 text-base md:text-lg mb-1 truncate">
-                            {lead.client_name}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 text-base md:text-lg truncate">
+                              {lead.client_name}
+                            </h3>
+                            {isDuplicate(lead.id) && (
+                              <Badge
+                                className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-2 py-0.5 cursor-pointer hover:bg-orange-200 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDuplicateLead(lead);
+                                  setShowDuplicateModal(true);
+                                }}
+                              >
+                                Duplicated
+                              </Badge>
+                            )}
+                          </div>
                           {lead.company_name && (
                             <p className="text-xs md:text-sm text-gray-600 truncate mb-2">
                               {lead.company_name}
@@ -1183,24 +1204,38 @@ export default function ModernCRM() {
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3">
                             <div>
-                              <p 
-                                className="font-medium text-gray-900 text-sm md:text-base cursor-pointer hover:text-indigo-600 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/app/crm/case/${lead.id}`);
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p 
+                                  className="font-medium text-gray-900 text-sm md:text-base cursor-pointer hover:text-indigo-600 transition-colors"
+                                  onClick={(e) => {
                                     e.stopPropagation();
                                     navigate(`/app/crm/case/${lead.id}`);
-                                  }
-                                }}
-                              >
-                                {lead.client_name}
-                              </p>
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      navigate(`/app/crm/case/${lead.id}`);
+                                    }
+                                  }}
+                                >
+                                  {lead.client_name}
+                                </p>
+                                {isDuplicate(lead.id) && (
+                                  <Badge
+                                    className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-2 py-0.5 cursor-pointer hover:bg-orange-200 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedDuplicateLead(lead);
+                                      setShowDuplicateModal(true);
+                                    }}
+                                  >
+                                    Duplicated
+                                  </Badge>
+                                )}
+                              </div>
                               {lead.company_name && (
                                 <p className="text-xs md:text-sm text-gray-500">{lead.company_name}</p>
                               )}
@@ -1577,7 +1612,21 @@ export default function ModernCRM() {
                                 <motion.div
                                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
                                 />
-                                <p className="font-medium text-gray-900 mb-1 relative z-10 text-sm md:text-base">{lead.client_name}</p>
+                                <div className="flex items-center gap-2 mb-1 relative z-10 flex-wrap">
+                                  <p className="font-medium text-gray-900 text-sm md:text-base">{lead.client_name}</p>
+                                  {isDuplicate(lead.id) && (
+                                    <Badge
+                                      className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5 cursor-pointer hover:bg-orange-200 transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDuplicateLead(lead);
+                                        setShowDuplicateModal(true);
+                                      }}
+                                    >
+                                      Duplicated
+                                    </Badge>
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-1.5 mb-2 relative z-10">
                                   <Building2 className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0" />
                                   <p className={`text-xs truncate ${lead.project ? 'text-gray-700 font-medium' : 'text-gray-400 italic'}`}>
@@ -1976,6 +2025,19 @@ export default function ModernCRM() {
           </motion.div>
         </AnimatePresence>,
         document.body
+      )}
+
+      {/* Duplicate Leads Modal */}
+      {selectedDuplicateLead && (
+        <DuplicateLeadsModal
+          isOpen={showDuplicateModal}
+          onClose={() => {
+            setShowDuplicateModal(false);
+            setSelectedDuplicateLead(null);
+          }}
+          duplicates={getAllDuplicates(selectedDuplicateLead.id).filter(l => l.id !== selectedDuplicateLead.id)}
+          currentLead={selectedDuplicateLead}
+        />
       )}
     </div>
   );
