@@ -208,18 +208,49 @@ export function useLeads() {
             : (projectData.region || ''),
         } : null;
 
+        // Parse feedback_history from JSONB column if it exists
+        let parsedHistory: FeedbackHistoryEntry[] = [];
+        if (lead.feedback_history && Array.isArray(lead.feedback_history)) {
+          parsedHistory = lead.feedback_history.map((entry: any) => ({
+            id: entry.id || `temp-${Date.now()}-${Math.random()}`,
+            lead_id: lead.id,
+            user_id: entry.user_id || '',
+            feedback_text: entry.feedback_text || entry.feedback || '',
+            created_at: entry.created_at || new Date().toISOString(),
+            updated_at: entry.updated_at || null,
+            user: null, // Will be populated later
+          }));
+        }
+
         return {
           ...lead,
           project: transformedProject,
           owner: null, // Will be fetched separately if needed
           assigned_to: null, // Will be fetched separately if needed
-          feedback_history: [] as FeedbackHistoryEntry[],
+          feedback_history: parsedHistory,
         };
       });
 
       const leadIds = transformedData.map((lead) => lead.id).filter(Boolean);
 
+      // Collect all user IDs from feedback_history in leads table
+      const userIdsFromLeads = new Set<string>();
+      transformedData.forEach((lead: any) => {
+        if (lead.feedback_history && Array.isArray(lead.feedback_history)) {
+          lead.feedback_history.forEach((entry: FeedbackHistoryEntry) => {
+            if (entry.user_id) userIdsFromLeads.add(entry.user_id);
+          });
+        }
+      });
+
       let feedbackHistoryMap: Record<string, FeedbackHistoryEntry[]> = {};
+      
+      // Initialize map with history from leads table
+      transformedData.forEach((lead: any) => {
+        if (lead.feedback_history && Array.isArray(lead.feedback_history) && lead.feedback_history.length > 0) {
+          feedbackHistoryMap[lead.id] = [...lead.feedback_history];
+        }
+      });
 
       // Only fetch feedback history if we have a reasonable number of leads
       // Large arrays in .in() filters can cause 400 errors
@@ -233,18 +264,19 @@ export function useLeads() {
             batches.push(leadIds.slice(i, i + batchSize));
           }
 
-          // Fetch feedback in batches
+          // Fetch feedback in batches from both events and feedback_history tables
           const allFeedbackData: any[] = [];
           const profileIdsSet = new Set<string>();
 
           for (const batch of batches) {
+            // Fetch from events table
             const { data: batchFeedbackData, error: batchError } = await supabase
-          .from('events')
+              .from('events')
               .select('id, lead_id, actor_profile_id, body, payload, created_at, updated_at')
               .in('lead_id', batch)
-          .eq('event_type', 'activity')
-          .eq('activity_type', 'feedback')
-          .order('created_at', { ascending: false });
+              .eq('event_type', 'activity')
+              .eq('activity_type', 'feedback')
+              .order('created_at', { ascending: false });
 
             if (!batchError && batchFeedbackData) {
               allFeedbackData.push(...batchFeedbackData);
@@ -252,7 +284,34 @@ export function useLeads() {
                 if (f.actor_profile_id) profileIdsSet.add(f.actor_profile_id);
               });
             }
+
+            // Also fetch from feedback_history table
+            const { data: batchHistoryData, error: historyError } = await supabase
+              .from('feedback_history')
+              .select('id, lead_id, user_id, feedback_text, created_at, updated_at')
+              .in('lead_id', batch)
+              .order('created_at', { ascending: false });
+
+            if (!historyError && batchHistoryData) {
+              // Transform feedback_history to match the events format
+              const transformedHistory = batchHistoryData.map((f: any) => ({
+                id: f.id,
+                lead_id: f.lead_id,
+                actor_profile_id: f.user_id,
+                body: f.feedback_text,
+                payload: null,
+                created_at: f.created_at,
+                updated_at: f.updated_at,
+              }));
+              allFeedbackData.push(...transformedHistory);
+              batchHistoryData.forEach((f: any) => {
+                if (f.user_id) profileIdsSet.add(f.user_id);
+              });
+            }
           }
+
+          // Add user IDs from leads table feedback_history
+          Array.from(userIdsFromLeads).forEach(id => profileIdsSet.add(id));
 
           // Fetch profiles separately
           let profilesMap: Record<string, { id: string; name: string; email: string }> = {};
@@ -275,9 +334,22 @@ export function useLeads() {
               }
             }
           }
+          
+          // Update feedback history from leads table with user info
+          Object.keys(feedbackHistoryMap).forEach(leadId => {
+            feedbackHistoryMap[leadId] = feedbackHistoryMap[leadId].map(entry => ({
+              ...entry,
+              user: entry.user_id && profilesMap[entry.user_id]
+                ? {
+                    name: profilesMap[entry.user_id].name,
+                    email: profilesMap[entry.user_id].email,
+                  }
+                : null,
+            }));
+          });
 
-          // Build feedback history map
-          feedbackHistoryMap = allFeedbackData.reduce<Record<string, FeedbackHistoryEntry[]>>((acc, activity: any) => {
+          // Merge feedback from events/feedback_history tables with what's already in leads table
+          allFeedbackData.forEach((activity: any) => {
             const feedbackEntry: FeedbackHistoryEntry = {
               id: activity.id,
               lead_id: activity.lead_id,
@@ -293,12 +365,23 @@ export function useLeads() {
                 : null,
             };
 
-            if (!acc[activity.lead_id]) {
-              acc[activity.lead_id] = [];
+            if (!feedbackHistoryMap[activity.lead_id]) {
+              feedbackHistoryMap[activity.lead_id] = [];
             }
-            acc[activity.lead_id].push(feedbackEntry);
-            return acc;
-          }, {});
+            
+            // Check if this entry already exists (avoid duplicates)
+            const exists = feedbackHistoryMap[activity.lead_id].some(entry => entry.id === feedbackEntry.id);
+            if (!exists) {
+              feedbackHistoryMap[activity.lead_id].push(feedbackEntry);
+            }
+          });
+
+          // Sort each lead's feedback history by created_at descending
+          Object.keys(feedbackHistoryMap).forEach(leadId => {
+            feedbackHistoryMap[leadId].sort((a, b) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+          });
         } catch (error) {
           console.warn('Error loading feedback history:', error);
           // Continue without feedback history - it's not critical
@@ -389,6 +472,163 @@ export function useLeads() {
           .single();
 
         if (updateError) throw updateError;
+
+        // If feedback was updated, refresh feedback history for this lead
+        if (updates.feedback !== undefined) {
+          try {
+            // Fetch the updated lead with feedback_history from JSONB column
+            const { data: updatedLeadData } = await supabase
+              .from('leads')
+              .select('feedback_history')
+              .eq('id', id)
+              .single();
+
+            // Fetch updated feedback history for this specific lead from separate tables
+            const [eventsData, historyData] = await Promise.all([
+              supabase
+                .from('events')
+                .select('id, lead_id, actor_profile_id, body, payload, created_at, updated_at')
+                .eq('lead_id', id)
+                .eq('event_type', 'activity')
+                .eq('activity_type', 'feedback')
+                .order('created_at', { ascending: false }),
+              supabase
+                .from('feedback_history')
+                .select('id, lead_id, user_id, feedback_text, created_at, updated_at')
+                .eq('lead_id', id)
+                .order('created_at', { ascending: false })
+            ]);
+
+            // Get profile IDs from all sources
+            const profileIds = new Set<string>();
+            
+            // From leads table feedback_history JSONB column
+            if (updatedLeadData?.feedback_history && Array.isArray(updatedLeadData.feedback_history)) {
+              updatedLeadData.feedback_history.forEach((entry: any) => {
+                if (entry.user_id) profileIds.add(entry.user_id);
+              });
+            }
+            
+            // From events table
+            if (eventsData.data) {
+              eventsData.data.forEach((f: any) => {
+                if (f.actor_profile_id) profileIds.add(f.actor_profile_id);
+              });
+            }
+            
+            // From feedback_history table
+            if (historyData.data) {
+              historyData.data.forEach((f: any) => {
+                if (f.user_id) profileIds.add(f.user_id);
+              });
+            }
+
+            // Fetch profiles
+            let profilesMap: Record<string, { id: string; name: string; email: string }> = {};
+            if (profileIds.size > 0) {
+              const { data: profilesData } = await supabase
+                .from('profiles')
+                .select('id, name, email')
+                .in('id', Array.from(profileIds));
+              
+              if (profilesData) {
+                profilesData.forEach((p: any) => {
+                  profilesMap[p.id] = { id: p.id, name: p.name || 'Unknown User', email: p.email || '' };
+                });
+              }
+            }
+
+            // Combine and transform feedback history from all sources
+            const combinedFeedback: FeedbackHistoryEntry[] = [];
+            
+            // First, add from leads table feedback_history JSONB column (most up-to-date)
+            if (updatedLeadData?.feedback_history && Array.isArray(updatedLeadData.feedback_history)) {
+              updatedLeadData.feedback_history.forEach((entry: any) => {
+                combinedFeedback.push({
+                  id: entry.id || `temp-${Date.now()}-${Math.random()}`,
+                  lead_id: id,
+                  user_id: entry.user_id || '',
+                  feedback_text: entry.feedback_text || entry.feedback || '',
+                  created_at: entry.created_at || new Date().toISOString(),
+                  updated_at: entry.updated_at || null,
+                  user: entry.user_id && profilesMap[entry.user_id]
+                    ? {
+                        name: profilesMap[entry.user_id].name,
+                        email: profilesMap[entry.user_id].email,
+                      }
+                    : null,
+                });
+              });
+            }
+            
+            // Add from events table
+            if (eventsData.data) {
+              eventsData.data.forEach((activity: any) => {
+                // Check if already exists (avoid duplicates)
+                const exists = combinedFeedback.some(entry => entry.id === activity.id);
+                if (!exists) {
+                  combinedFeedback.push({
+                    id: activity.id,
+                    lead_id: activity.lead_id,
+                    user_id: activity.actor_profile_id ?? '',
+                    feedback_text: activity.body ?? '',
+                    created_at: activity.created_at,
+                    updated_at: activity.updated_at ?? null,
+                    user: activity.actor_profile_id && profilesMap[activity.actor_profile_id]
+                      ? {
+                          name: profilesMap[activity.actor_profile_id].name,
+                          email: profilesMap[activity.actor_profile_id].email,
+                        }
+                      : null,
+                  });
+                }
+              });
+            }
+
+            // Add from feedback_history table
+            if (historyData.data) {
+              historyData.data.forEach((f: any) => {
+                // Check if already exists (avoid duplicates)
+                const exists = combinedFeedback.some(entry => entry.id === f.id);
+                if (!exists) {
+                  combinedFeedback.push({
+                    id: f.id,
+                    lead_id: f.lead_id,
+                    user_id: f.user_id,
+                    feedback_text: f.feedback_text,
+                    created_at: f.created_at,
+                    updated_at: f.updated_at ?? null,
+                    user: f.user_id && profilesMap[f.user_id]
+                      ? {
+                          name: profilesMap[f.user_id].name,
+                          email: profilesMap[f.user_id].email,
+                        }
+                      : null,
+                  });
+                }
+              });
+            }
+
+            // Sort by created_at descending and remove duplicates
+            const uniqueFeedback = combinedFeedback
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .filter((item, index, self) => 
+                index === self.findIndex((t) => t.id === item.id)
+              );
+
+            // Update the lead with new feedback history
+            setLeads((prev) =>
+              prev.map((lead) =>
+                lead.id === id 
+                  ? { ...lead, ...updates, feedback_history: uniqueFeedback } 
+                  : lead
+              )
+            );
+          } catch (historyError) {
+            console.warn('Error refreshing feedback history:', historyError);
+            // Continue even if history refresh fails
+          }
+        }
 
         // Update with server response
         setLeads((prev) =>

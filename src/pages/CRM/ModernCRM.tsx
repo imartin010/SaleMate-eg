@@ -7,7 +7,7 @@ import {
   LayoutGrid, List, Phone, Mail, MessageCircle,
   X, Check, Eye, Edit, Briefcase,
   RefreshCw, BarChart3, Users, TrendingUp,
-  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload
+  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload, Clock, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useLeads, Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { useLeadFilters } from '../../hooks/crm/useLeadFilters';
@@ -24,6 +24,7 @@ import { BulkUploadModal } from '../../components/crm/BulkUploadModal';
 import { EditLeadDialog } from '../../components/crm/EditLeadDialog';
 import { LeadDetailModal } from '../../components/crm/LeadDetailModal';
 import { MaskedPhone } from '../../components/crm/MaskedPhone';
+import { FeedbackHistory } from '../../components/crm/FeedbackHistory';
 import { EmptyState } from '../../components/common/EmptyState';
 import { BottomSheet } from '../../components/common/BottomSheet';
 import { FloatingActionButton } from '../../components/common/FloatingActionButton';
@@ -72,15 +73,24 @@ const getStageColor = (stage: LeadStage): string => {
 export default function ModernCRM() {
   const navigate = useNavigate();
   const { leads, loading, error, fetchLeads, createLead, updateLead } = useLeads();
-  const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters } = useLeadFilters(leads);
+  const { filters, filteredLeads, updateFilter, clearFilters, hasActiveFilters, updateMultipleFilters } = useLeadFilters(leads);
   const stats = useLeadStats(leads);
 
-  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  // Load view mode from localStorage or default to 'cards'
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedViewMode = localStorage.getItem('crm_view_mode') as ViewMode;
+    return savedViewMode && ['table', 'kanban', 'cards'].includes(savedViewMode) 
+      ? savedViewMode 
+      : 'cards';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const leadsPerPage = 30;
+  const [leadsPerPage, setLeadsPerPage] = useState<number>(() => {
+    const saved = localStorage.getItem('crm_leads_per_page');
+    return saved ? parseInt(saved, 10) : 30;
+  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -93,6 +103,7 @@ export default function ModernCRM() {
   const [revealedPhoneId, setRevealedPhoneId] = useState<string | null>(null);
   const [openStageDropdown, setOpenStageDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
   const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Enhanced search - search across all fields
@@ -129,6 +140,21 @@ export default function ModernCRM() {
     setSelectedLeads(new Set());
     setCurrentPage(1); // Reset to first page when filters change
   }, [searchQuery, filters]);
+
+  // Reset to first page when leads per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [leadsPerPage]);
+
+  // Save leads per page to localStorage
+  useEffect(() => {
+    localStorage.setItem('crm_leads_per_page', leadsPerPage.toString());
+  }, [leadsPerPage]);
+
+  // Save view mode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('crm_view_mode', viewMode);
+  }, [viewMode]);
 
   // Calculate dropdown position when it opens
   useEffect(() => {
@@ -196,30 +222,41 @@ export default function ModernCRM() {
   };
 
 
-  // Export to CSV
+  // Export to CSV - exports selected leads if any are selected, otherwise exports all filtered leads
   const handleExport = () => {
-    const headers = ['Name', 'Phone', 'Email', 'Company', 'Project', 'Stage', 'Source', 'Budget', 'Created At'];
-    const rows = searchFilteredLeads.map(lead => [
+    const headers = ['Name', 'Phone', 'Phone 2', 'Phone 3', 'Email', 'Job Title', 'Company', 'Project', 'Stage', 'Source', 'Budget', 'Feedback', 'Created At'];
+    
+    // If there are selected leads, export only those. Otherwise, export all filtered leads.
+    const leadsToExport = selectedLeads.size > 0
+      ? searchFilteredLeads.filter(lead => selectedLeads.has(lead.id))
+      : searchFilteredLeads;
+    
+    const rows = leadsToExport.map(lead => [
       lead.client_name || '',
       lead.client_phone || '',
+      lead.client_phone2 || '',
+      lead.client_phone3 || '',
       lead.client_email || '',
+      lead.client_job_title || '',
       lead.company_name || '',
       lead.project?.name || '',
       lead.stage || '',
       lead.source || '',
       lead.budget?.toString() || '',
-      lead.created_at ? format(new Date(lead.created_at), 'yyyy-MM-dd') : ''
+      lead.feedback || '',
+      lead.created_at ? format(new Date(lead.created_at), 'yyyy-MM-dd HH:mm:ss') : ''
     ]);
 
     const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+    const exportType = selectedLeads.size > 0 ? 'selected' : 'all';
+    link.download = `leads-export-${exportType}-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -236,11 +273,21 @@ export default function ModernCRM() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedLeads.size === searchFilteredLeads.length) {
-      setSelectedLeads(new Set());
+    // Get IDs of currently visible (paginated) leads only
+    const visibleLeadIds = paginatedLeads.map(l => l.id);
+    const allVisibleSelected = visibleLeadIds.every(id => selectedLeads.has(id));
+    
+    const newSelected = new Set(selectedLeads);
+    
+    if (allVisibleSelected) {
+      // Deselect all visible leads
+      visibleLeadIds.forEach(id => newSelected.delete(id));
     } else {
-      setSelectedLeads(new Set(searchFilteredLeads.map(l => l.id)));
+      // Select all visible leads
+      visibleLeadIds.forEach(id => newSelected.add(id));
     }
+    
+    setSelectedLeads(newSelected);
   };
 
   // Loading state
@@ -446,9 +493,14 @@ export default function ModernCRM() {
                   variant="outline"
                   onClick={handleExport}
                   className="rounded-xl border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 h-11 w-11 md:h-auto md:w-auto md:px-4"
+                  disabled={searchFilteredLeads.length === 0}
                 >
                   <Download className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Export</span>
+                  <span className="hidden md:inline">
+                    {selectedLeads.size > 0 
+                      ? `Export Selected (${selectedLeads.size})` 
+                      : 'Export All'}
+                  </span>
                 </Button>
               </motion.div>
             </motion.div>
@@ -462,18 +514,101 @@ export default function ModernCRM() {
             className="grid grid-cols-2 gap-2 md:gap-4 md:grid-cols-5"
           >
             {[
-              { label: 'Total Leads', value: stats.totalLeads, icon: Users, color: 'indigo', gradient: 'from-indigo-500 to-indigo-600' },
-              { label: 'Hot Cases', value: stats.hotCases, icon: TrendingUp, color: 'orange', gradient: 'from-orange-500 to-orange-600' },
-              { label: 'Meetings', value: stats.meetings, icon: Check, color: 'emerald', gradient: 'from-emerald-500 to-emerald-600' },
-              { label: 'Quality', value: Math.round(stats.qualityRate), icon: BarChart3, color: 'indigo', gradient: 'from-indigo-500 to-indigo-600', suffix: '%' },
-              { label: 'Pipeline', value: stats.pipeline, icon: DollarSign, color: 'blue', gradient: 'from-blue-500 to-blue-600', format: 'currency' },
-            ].map((stat, index) => (
+              { 
+                label: 'Total Leads', 
+                value: stats.totalLeads, 
+                icon: Users, 
+                color: 'indigo', 
+                gradient: 'from-indigo-500 to-indigo-600',
+                isActive: !hasActiveFilters,
+                onClick: () => {
+                  clearFilters();
+                  setSearchQuery('');
+                }
+              },
+              { 
+                label: 'Hot Cases', 
+                value: stats.hotCases, 
+                icon: TrendingUp, 
+                color: 'orange', 
+                gradient: 'from-orange-500 to-orange-600',
+                isActive: filters.stage === 'Hot Case' && !filters.stages && filters.hasBudget === undefined && filters.search === '' && filters.project === 'all' && filters.platform === 'all' && filters.dateRange === 'all',
+                onClick: () => {
+                  updateMultipleFilters({
+                    stage: 'Hot Case',
+                    stages: undefined,
+                    hasBudget: undefined,
+                  });
+                }
+              },
+              { 
+                label: 'Meetings', 
+                value: stats.meetings, 
+                icon: Check, 
+                color: 'emerald', 
+                gradient: 'from-emerald-500 to-emerald-600',
+                isActive: filters.stage === 'Meeting Done' && !filters.stages && filters.hasBudget === undefined && filters.search === '' && filters.project === 'all' && filters.platform === 'all' && filters.dateRange === 'all',
+                onClick: () => {
+                  updateMultipleFilters({
+                    stage: 'Meeting Done',
+                    stages: undefined,
+                    hasBudget: undefined,
+                  });
+                }
+              },
+              { 
+                label: 'Quality', 
+                value: Math.round(stats.qualityRate), 
+                icon: BarChart3, 
+                color: 'indigo', 
+                gradient: 'from-indigo-500 to-indigo-600', 
+                suffix: '%',
+                isActive: filters.stages?.length === 5 && 
+                  filters.stages.includes('Potential') && 
+                  filters.stages.includes('Hot Case') && 
+                  filters.stages.includes('Meeting Done') && 
+                  filters.stages.includes('Closed Deal') && 
+                  filters.stages.includes('Call Back') &&
+                  filters.hasBudget === undefined && filters.search === '' && filters.project === 'all' && filters.platform === 'all' && filters.dateRange === 'all',
+                onClick: () => {
+                  updateMultipleFilters({
+                    stage: 'all',
+                    stages: ['Potential', 'Hot Case', 'Meeting Done', 'Closed Deal', 'Call Back'],
+                    hasBudget: undefined,
+                  });
+                }
+              },
+              { 
+                label: 'Pipeline', 
+                value: stats.pipeline, 
+                icon: DollarSign, 
+                color: 'blue', 
+                gradient: 'from-blue-500 to-blue-600', 
+                format: 'currency',
+                isActive: filters.hasBudget === true && !filters.stages && !filters.stage && filters.search === '' && filters.project === 'all' && filters.platform === 'all' && filters.dateRange === 'all',
+                onClick: () => {
+                  updateMultipleFilters({
+                    stage: 'all',
+                    stages: undefined,
+                    hasBudget: true,
+                  });
+                }
+              },
+            ].map((stat, index) => {
+              const isActive = stat.isActive || false;
+              return (
               <motion.div
                 key={stat.label}
                 custom={index}
                 variants={statCardVariants}
                 whileHover="hover"
-                className="bg-white rounded-xl p-3 md:rounded-2xl md:p-4 lg:p-6 border border-indigo-100 shadow-sm relative overflow-hidden group cursor-pointer"
+                whileTap={{ scale: 0.98 }}
+                onClick={stat.onClick}
+                className={`bg-white rounded-xl p-3 md:rounded-2xl md:p-4 lg:p-6 border shadow-sm relative overflow-hidden group cursor-pointer transition-all hover:shadow-md active:shadow-sm ${
+                  isActive 
+                    ? 'border-indigo-400 shadow-md ring-2 ring-indigo-200' 
+                    : 'border-indigo-100'
+                }`}
               >
                 {/* Animated gradient overlay */}
                 <motion.div
@@ -513,7 +648,8 @@ export default function ModernCRM() {
                   />
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </motion.div>
 
           {/* Search and Filters Bar - Mobile First */}
@@ -621,6 +757,30 @@ export default function ModernCRM() {
               </div>
             </div>
 
+            {/* Clear Filters Button - Appears when filters are active */}
+            {hasActiveFilters && (
+              <div className="mt-3 md:mt-4 relative z-50">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Clear Filters button clicked - handler fired');
+                    clearFilters();
+                    setSearchQuery('');
+                    console.log('Filters should be cleared now');
+                  }}
+                  variant="outline"
+                  size="default"
+                  className="w-full md:w-auto rounded-xl border-indigo-300 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 font-medium transition-all duration-200 cursor-pointer active:scale-95 shadow-sm hover:shadow-md relative z-50"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Filters
+                </Button>
+              </div>
+            )}
+
             {/* Advanced Filters Panel - Desktop */}
             <AnimatePresence>
               {showFilters && (
@@ -692,7 +852,10 @@ export default function ModernCRM() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={clearFilters}
+                      onClick={() => {
+                        clearFilters();
+                        setSearchQuery('');
+                      }}
                       className="text-gray-600 hover:text-gray-900"
                     >
                       Clear All Filters
@@ -863,7 +1026,7 @@ export default function ModernCRM() {
                           }}
                         >
                           <Badge 
-                            className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 ml-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity`}
+                            className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 ml-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap`}
                             onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
                           >
                             {lead.stage}
@@ -975,7 +1138,7 @@ export default function ModernCRM() {
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left">
                           <input
                             type="checkbox"
-                            checked={selectedLeads.size === searchFilteredLeads.length && searchFilteredLeads.length > 0}
+                            checked={paginatedLeads.length > 0 && paginatedLeads.every(lead => selectedLeads.has(lead.id))}
                             onChange={toggleSelectAll}
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 md:w-auto md:h-auto"
                           />
@@ -1125,22 +1288,25 @@ export default function ModernCRM() {
                             </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3">
-                            <Select
-                              value={lead.stage}
-                              onValueChange={async (value) => {
-                                await updateLead(lead.id, { stage: value as LeadStage });
-                                // Update the badge immediately without refetching
+                            <div 
+                              className="relative inline-block" 
+                              onClick={(e) => e.stopPropagation()} 
+                              data-stage-dropdown
+                              ref={(el) => {
+                                if (el) {
+                                  badgeRefs.current.set(lead.id, el);
+                                } else {
+                                  badgeRefs.current.delete(lead.id);
+                                }
                               }}
                             >
-                              <SelectTrigger className="h-8 md:h-9 rounded-lg border-gray-200 text-xs md:text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {STAGES.map(stage => (
-                                  <SelectItem key={stage} value={stage}>{stage}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              <Badge 
+                                className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 cursor-pointer hover:opacity-80 transition-opacity border whitespace-nowrap`}
+                                onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
+                              >
+                                {lead.stage}
+                              </Badge>
+                            </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3 hidden lg:table-cell">
                             {editingBudgetId === lead.id ? (
@@ -1228,32 +1394,59 @@ export default function ModernCRM() {
                                 </div>
                               </div>
                             ) : (
-                              <div
-                                onClick={() => {
-                                  setEditingFeedbackId(lead.id);
-                                  setFeedbackValue(lead.feedback || '');
-                                }}
-                                className="group relative cursor-pointer min-w-[200px]"
-                              >
-                                <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-gray-300 group-hover:border-indigo-500 rounded-lg p-2 md:p-3 min-h-[60px] transition-all duration-200 group-hover:shadow-md">
-                                  <div className="flex items-start gap-2">
-                                    <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                      {lead.feedback ? (
-                                        <p className="text-xs md:text-sm text-gray-700 whitespace-pre-wrap line-clamp-2">
-                                          {lead.feedback}
-                                        </p>
+                              <div className="space-y-2 min-w-[200px]">
+                                <div
+                                  onClick={() => {
+                                    setEditingFeedbackId(lead.id);
+                                    setFeedbackValue(lead.feedback || '');
+                                  }}
+                                  className="group relative cursor-pointer"
+                                >
+                                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-gray-300 group-hover:border-indigo-500 rounded-lg p-2 md:p-3 min-h-[60px] transition-all duration-200 group-hover:shadow-md">
+                                    <div className="flex items-start gap-2">
+                                      <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1">
+                                        {lead.feedback ? (
+                                          <p className="text-xs md:text-sm text-gray-700 whitespace-pre-wrap line-clamp-2">
+                                            {lead.feedback}
+                                          </p>
+                                        ) : (
+                                          <p className="text-xs md:text-sm text-gray-400 italic">
+                                            Click to add feedback...
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1 flex items-center justify-between">
+                                      <span>Click to {lead.feedback ? 'edit' : 'add'} feedback</span>
+                                      {lead.feedback_history && lead.feedback_history.length > 0 ? (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedFeedbackId(
+                                              expandedFeedbackId === lead.id ? null : lead.id
+                                            );
+                                          }}
+                                          className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium px-2 py-0.5 rounded hover:bg-indigo-50 transition-colors"
+                                          title={`View ${lead.feedback_history.length} previous feedback ${lead.feedback_history.length === 1 ? 'entry' : 'entries'}`}
+                                        >
+                                          <Clock className="h-3 w-3 mr-1" />
+                                          <span className="mr-1">History ({lead.feedback_history.length})</span>
+                                          {expandedFeedbackId === lead.id ? (
+                                            <ChevronUp className="h-3 w-3" />
+                                          ) : (
+                                            <ChevronDown className="h-3 w-3" />
+                                          )}
+                                        </button>
                                       ) : (
-                                        <p className="text-xs md:text-sm text-gray-400 italic">
-                                          Click to add feedback...
-                                        </p>
+                                        <span className="text-gray-400 text-[10px]">No history</span>
                                       )}
                                     </div>
                                   </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Click to {lead.feedback ? 'edit' : 'add'} feedback
-                                  </div>
                                 </div>
+                                {expandedFeedbackId === lead.id && lead.feedback_history && (
+                                  <FeedbackHistory history={lead.feedback_history} />
+                                )}
                               </div>
                             )}
                           </td>
@@ -1450,8 +1643,28 @@ export default function ModernCRM() {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 border border-indigo-100 shadow-lg"
             >
-              <div className="text-xs md:text-sm text-gray-600">
-                Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="text-xs md:text-sm text-gray-600">
+                  Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs md:text-sm text-gray-600">Show:</span>
+                  <Select
+                    value={leadsPerPage.toString()}
+                    onValueChange={(value) => setLeadsPerPage(parseInt(value, 10))}
+                  >
+                    <SelectTrigger className="h-8 w-20 text-xs md:text-sm rounded-lg border-indigo-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30</SelectItem>
+                      <SelectItem value="60">60</SelectItem>
+                      <SelectItem value="120">120</SelectItem>
+                      <SelectItem value="240">240</SelectItem>
+                      <SelectItem value="480">480</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <motion.div whileTap={{ scale: 0.95 }}>
