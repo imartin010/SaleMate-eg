@@ -109,6 +109,7 @@ export default function ModernCRM() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [selectedDuplicateLead, setSelectedDuplicateLead] = useState<Lead | null>(null);
   const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const leadsSectionRef = useRef<HTMLDivElement>(null);
 
   // Duplicate detection
   const { isDuplicate, getAllDuplicates } = useDuplicateDetection(leads);
@@ -546,6 +547,14 @@ export default function ModernCRM() {
                     stages: undefined,
                     hasBudget: undefined,
                   });
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                  // Scroll to top of leads section
+                  setTimeout(() => {
+                    if (leadsSectionRef.current) {
+                      leadsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 0);
                 }
               },
               { 
@@ -561,6 +570,14 @@ export default function ModernCRM() {
                     stages: undefined,
                     hasBudget: undefined,
                   });
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                  // Scroll to top of leads section
+                  setTimeout(() => {
+                    if (leadsSectionRef.current) {
+                      leadsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 0);
                 }
               },
               { 
@@ -583,6 +600,14 @@ export default function ModernCRM() {
                     stages: ['Potential', 'Hot Case', 'Meeting Done', 'Closed Deal', 'Call Back'],
                     hasBudget: undefined,
                   });
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                  // Scroll to top of leads section
+                  setTimeout(() => {
+                    if (leadsSectionRef.current) {
+                      leadsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 0);
                 }
               },
               { 
@@ -599,6 +624,14 @@ export default function ModernCRM() {
                     stages: undefined,
                     hasBudget: true,
                   });
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                  // Scroll to top of leads section
+                  setTimeout(() => {
+                    if (leadsSectionRef.current) {
+                      leadsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 0);
                 }
               },
             ].map((stat, index) => {
@@ -967,6 +1000,7 @@ export default function ModernCRM() {
           </div>
 
           {/* Leads Display */}
+          <div ref={leadsSectionRef} data-leads-section>
           <AnimatePresence mode="wait">
             {viewMode === 'cards' && (
               <motion.div
@@ -1683,6 +1717,7 @@ export default function ModernCRM() {
           </motion.div>
         )}
       </AnimatePresence>
+          </div>
 
           {/* Empty State */}
           {/* Pagination Controls */}
