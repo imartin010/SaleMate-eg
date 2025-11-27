@@ -107,7 +107,7 @@ export function useLeads() {
 
       // Try to fetch leads with project join (only FK that exists)
       // Note: owner_id and assigned_to_id don't have foreign keys, so we can't join profiles
-      // Order by sold_at (purchase date) first to show latest purchased leads, then by created_at
+      // Order by created_at first to show most recently added leads first
       let query = supabase
         .from('leads')
         .select(`
@@ -119,8 +119,6 @@ export function useLeads() {
           )
         `)
         .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
-        .order('sold_at', { ascending: false, nullsFirst: false })
-        .order('assigned_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       const { data, error: fetchError } = await query;
@@ -132,8 +130,6 @@ export function useLeads() {
           .from('leads')
           .select('*')
           .or(`buyer_user_id.eq.${user.id},assigned_to_id.eq.${user.id},owner_id.eq.${user.id}`)
-          .order('sold_at', { ascending: false, nullsFirst: false })
-          .order('assigned_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false });
 
         if (simpleError) throw simpleError;
@@ -173,27 +169,12 @@ export function useLeads() {
           feedback_history: [],
         }));
 
-        // Sort leads to show latest purchased leads first
-        // Priority: sold_at > assigned_at > created_at (all descending)
+        // Sort leads to show most recently added leads first
+        // Priority: created_at (descending)
         const sortedLeads = transformedData.sort((a: any, b: any) => {
-          // First, sort by sold_at (purchase date) - most recent purchases first
-          const aSoldAt = a.sold_at ? new Date(a.sold_at).getTime() : 0;
-          const bSoldAt = b.sold_at ? new Date(b.sold_at).getTime() : 0;
-          if (aSoldAt !== bSoldAt) {
-            return bSoldAt - aSoldAt; // Descending
-          }
-
-          // If sold_at is the same or both null, sort by assigned_at
-          const aAssignedAt = a.assigned_at ? new Date(a.assigned_at).getTime() : 0;
-          const bAssignedAt = b.assigned_at ? new Date(b.assigned_at).getTime() : 0;
-          if (aAssignedAt !== bAssignedAt) {
-            return bAssignedAt - aAssignedAt; // Descending
-          }
-
-          // Finally, sort by created_at
           const aCreatedAt = new Date(a.created_at).getTime();
           const bCreatedAt = new Date(b.created_at).getTime();
-          return bCreatedAt - aCreatedAt; // Descending
+          return bCreatedAt - aCreatedAt; // Descending - newest first
         });
 
         setLeads(sortedLeads as Lead[]);
@@ -332,27 +313,12 @@ export function useLeads() {
         feedback_history: feedbackHistoryMap[lead.id] ?? [],
       }));
 
-      // Sort leads to show latest purchased leads first
-      // Priority: sold_at > assigned_at > created_at (all descending)
+      // Sort leads to show most recently added leads first
+      // Priority: created_at (descending)
       const sortedLeads = leadsWithFeedback.sort((a, b) => {
-        // First, sort by sold_at (purchase date) - most recent purchases first
-        const aSoldAt = a.sold_at ? new Date(a.sold_at).getTime() : 0;
-        const bSoldAt = b.sold_at ? new Date(b.sold_at).getTime() : 0;
-        if (aSoldAt !== bSoldAt) {
-          return bSoldAt - aSoldAt; // Descending
-        }
-
-        // If sold_at is the same or both null, sort by assigned_at
-        const aAssignedAt = a.assigned_at ? new Date(a.assigned_at).getTime() : 0;
-        const bAssignedAt = b.assigned_at ? new Date(b.assigned_at).getTime() : 0;
-        if (aAssignedAt !== bAssignedAt) {
-          return bAssignedAt - aAssignedAt; // Descending
-        }
-
-        // Finally, sort by created_at
         const aCreatedAt = new Date(a.created_at).getTime();
         const bCreatedAt = new Date(b.created_at).getTime();
-        return bCreatedAt - aCreatedAt; // Descending
+        return bCreatedAt - aCreatedAt; // Descending - newest first
       });
 
       setLeads(sortedLeads as Lead[]);

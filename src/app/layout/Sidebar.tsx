@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import { useAuthStore } from '../../store/auth';
@@ -32,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const { user, profile, signOut, refreshProfile } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   
   // Debug logging
   console.log('🔍 Sidebar - User:', user?.email);
@@ -74,6 +75,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   const handleMouseEnter = () => setIsCollapsed(false);
   const handleMouseLeave = () => setIsCollapsed(true);
+
+  // Handle click outside to collapse sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        // Only collapse if sidebar is expanded
+        if (!isCollapsed) {
+          setIsCollapsed(true);
+        }
+      }
+    };
+
+    // Add event listener when sidebar is expanded
+    if (!isCollapsed) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCollapsed]);
 
   // Public navigation items (visible when logged out)
   const publicNavigation: Array<{
@@ -191,6 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   return (
     <div 
+      ref={sidebarRef}
       className={cn(
         'flex h-screen flex-col sidebar-glass transition-all duration-300 ease-in-out',
         isCollapsed ? 'w-16' : 'w-64',

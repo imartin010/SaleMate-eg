@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -6,7 +7,7 @@ import {
   LayoutGrid, List, Phone, Mail, MessageCircle,
   X, Check, Eye, Edit, Briefcase,
   RefreshCw, BarChart3, Users, TrendingUp,
-  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign
+  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload
 } from 'lucide-react';
 import { useLeads, Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { useLeadFilters } from '../../hooks/crm/useLeadFilters';
@@ -14,12 +15,15 @@ import { useLeadStats } from '../../hooks/crm/useLeadStats';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
+import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { supabase } from '../../lib/supabaseClient';
 import { format } from 'date-fns';
 import { AddLeadModal } from '../../components/crm/AddLeadModal';
+import { BulkUploadModal } from '../../components/crm/BulkUploadModal';
 import { EditLeadDialog } from '../../components/crm/EditLeadDialog';
 import { LeadDetailModal } from '../../components/crm/LeadDetailModal';
+import { MaskedPhone } from '../../components/crm/MaskedPhone';
 import { EmptyState } from '../../components/common/EmptyState';
 import { BottomSheet } from '../../components/common/BottomSheet';
 import { FloatingActionButton } from '../../components/common/FloatingActionButton';
@@ -78,9 +82,18 @@ export default function ModernCRM() {
   const [currentPage, setCurrentPage] = useState(1);
   const leadsPerPage = 30;
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  const [budgetValue, setBudgetValue] = useState<string>('');
+  const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
+  const [feedbackValue, setFeedbackValue] = useState<string>('');
+  const [revealedPhoneId, setRevealedPhoneId] = useState<string | null>(null);
+  const [openStageDropdown, setOpenStageDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
+  const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Enhanced search - search across all fields
   const searchFilteredLeads = useMemo(() => {
@@ -116,6 +129,39 @@ export default function ModernCRM() {
     setSelectedLeads(new Set());
     setCurrentPage(1); // Reset to first page when filters change
   }, [searchQuery, filters]);
+
+  // Calculate dropdown position when it opens
+  useEffect(() => {
+    if (openStageDropdown) {
+      const badgeElement = badgeRefs.current.get(openStageDropdown);
+      if (badgeElement) {
+        const rect = badgeElement.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right
+        });
+      }
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [openStageDropdown]);
+
+  // Close stage dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openStageDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('[data-stage-dropdown]') && !target.closest('[data-stage-dropdown-menu]')) {
+          setOpenStageDropdown(null);
+        }
+      }
+    };
+
+    if (openStageDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openStageDropdown]);
 
   // Fetch projects
   useEffect(() => {
@@ -384,6 +430,20 @@ export default function ModernCRM() {
               >
                 <Button
                   variant="outline"
+                  onClick={() => setShowBulkUploadModal(true)}
+                  className="rounded-xl border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 h-11 w-11 md:h-auto md:w-auto md:px-4"
+                >
+                  <Upload className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Bulk Upload</span>
+                </Button>
+              </motion.div>
+              <motion.div 
+                className="md:flex-none"
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="outline"
                   onClick={handleExport}
                   className="rounded-xl border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 h-11 w-11 md:h-auto md:w-auto md:px-4"
                 >
@@ -399,13 +459,14 @@ export default function ModernCRM() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 gap-2 md:gap-4 md:grid-cols-4"
+            className="grid grid-cols-2 gap-2 md:gap-4 md:grid-cols-5"
           >
             {[
               { label: 'Total Leads', value: stats.totalLeads, icon: Users, color: 'indigo', gradient: 'from-indigo-500 to-indigo-600' },
               { label: 'Hot Cases', value: stats.hotCases, icon: TrendingUp, color: 'orange', gradient: 'from-orange-500 to-orange-600' },
               { label: 'Meetings', value: stats.meetings, icon: Check, color: 'emerald', gradient: 'from-emerald-500 to-emerald-600' },
               { label: 'Quality', value: Math.round(stats.qualityRate), icon: BarChart3, color: 'indigo', gradient: 'from-indigo-500 to-indigo-600', suffix: '%' },
+              { label: 'Pipeline', value: stats.pipeline, icon: DollarSign, color: 'blue', gradient: 'from-blue-500 to-blue-600', format: 'currency' },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}
@@ -439,7 +500,10 @@ export default function ModernCRM() {
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 200 }}
                   >
-                    {stat.value}{stat.suffix || ''}
+                    {stat.format === 'currency' 
+                      ? `EGP ${stat.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                      : `${stat.value}${stat.suffix || ''}`
+                    }
                   </motion.p>
                   {/* Animated pulse dot - hidden on mobile */}
                   <motion.div
@@ -786,9 +850,25 @@ export default function ModernCRM() {
                             </p>
                           )}
                         </div>
-                        <Badge className={getStageColor(lead.stage) + " text-xs px-2 py-0.5 ml-2 flex-shrink-0"}>
-                          {lead.stage}
-                        </Badge>
+                        <div 
+                          className="relative" 
+                          onClick={(e) => e.stopPropagation()} 
+                          data-stage-dropdown
+                          ref={(el) => {
+                            if (el) {
+                              badgeRefs.current.set(lead.id, el);
+                            } else {
+                              badgeRefs.current.delete(lead.id);
+                            }
+                          }}
+                        >
+                          <Badge 
+                            className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 ml-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity`}
+                            onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
+                          >
+                            {lead.stage}
+                          </Badge>
+                        </div>
                       </div>
 
                       {/* Project Info */}
@@ -804,7 +884,12 @@ export default function ModernCRM() {
                         {lead.client_phone && (
                           <div className="flex items-center gap-2 text-sm text-gray-700">
                             <Phone className="h-4 w-4 text-indigo-600 flex-shrink-0" />
-                            <span className="truncate">{lead.client_phone}</span>
+                            <MaskedPhone 
+                              phone={lead.client_phone} 
+                              leadId={lead.id}
+                              isRevealed={revealedPhoneId === lead.id}
+                              onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
+                            />
                           </div>
                         )}
                         {lead.client_email && (
@@ -900,6 +985,7 @@ export default function ModernCRM() {
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Project</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Stage</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Budget</th>
+                        <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider min-w-[200px]">Feedback</th>
                         <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
@@ -934,7 +1020,24 @@ export default function ModernCRM() {
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3">
                             <div>
-                              <p className="font-medium text-gray-900 text-sm md:text-base">{lead.client_name}</p>
+                              <p 
+                                className="font-medium text-gray-900 text-sm md:text-base cursor-pointer hover:text-indigo-600 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/app/crm/case/${lead.id}`);
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigate(`/app/crm/case/${lead.id}`);
+                                  }
+                                }}
+                              >
+                                {lead.client_name}
+                              </p>
                               {lead.company_name && (
                                 <p className="text-xs md:text-sm text-gray-500">{lead.company_name}</p>
                               )}
@@ -964,40 +1067,53 @@ export default function ModernCRM() {
                             </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3 hidden sm:table-cell">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {lead.client_phone && (
-                                <motion.button
-                                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={() => handleCall(lead.client_phone!)}
-                                  className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors touch-manipulation"
-                                  title="Call"
-                                >
-                                  <Phone className="h-4 w-4" />
-                                </motion.button>
+                                <div className="flex items-center gap-1 text-sm text-gray-700">
+                                  <Phone className="h-3.5 w-3.5 text-gray-400" />
+                                  <MaskedPhone 
+                                    phone={lead.client_phone} 
+                                    leadId={lead.id}
+                                    isRevealed={revealedPhoneId === lead.id}
+                                    onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
+                                  />
+                                </div>
                               )}
-                              {lead.client_phone && (
-                                <motion.button
-                                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={() => handleWhatsApp(lead.client_phone!)}
-                                  className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors touch-manipulation"
-                                  title="WhatsApp"
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </motion.button>
-                              )}
-                              {lead.client_email && (
-                                <motion.button
-                                  whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={() => handleEmail(lead.client_email!)}
-                                  className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors touch-manipulation"
-                                  title="Email"
-                                >
-                                  <Mail className="h-4 w-4" />
-                                </motion.button>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {lead.client_phone && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleCall(lead.client_phone!)}
+                                    className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100 transition-colors touch-manipulation"
+                                    title="Call"
+                                  >
+                                    <Phone className="h-4 w-4" />
+                                  </motion.button>
+                                )}
+                                {lead.client_phone && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleWhatsApp(lead.client_phone!)}
+                                    className="text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100 transition-colors touch-manipulation"
+                                    title="WhatsApp"
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </motion.button>
+                                )}
+                                {lead.client_email && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleEmail(lead.client_email!)}
+                                    className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100 transition-colors touch-manipulation"
+                                    title="Email"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </motion.button>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3">
@@ -1027,9 +1143,119 @@ export default function ModernCRM() {
                             </Select>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3 hidden lg:table-cell">
-                            <p className="text-xs md:text-sm font-medium text-gray-900">
-                              {lead.budget ? `EGP ${lead.budget.toLocaleString()}` : '-'}
-                            </p>
+                            {editingBudgetId === lead.id ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={budgetValue}
+                                  onChange={(e) => setBudgetValue(e.target.value)}
+                                  onBlur={async () => {
+                                    const numValue = budgetValue.trim() === '' ? undefined : parseFloat(budgetValue);
+                                    if (numValue !== undefined && !isNaN(numValue)) {
+                                      await updateLead(lead.id, { budget: numValue });
+                                    } else if (budgetValue.trim() === '') {
+                                      await updateLead(lead.id, { budget: undefined });
+                                    }
+                                    setEditingBudgetId(null);
+                                    setBudgetValue('');
+                                  }}
+                                  onKeyDown={async (e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    } else if (e.key === 'Escape') {
+                                      setEditingBudgetId(null);
+                                      setBudgetValue('');
+                                    }
+                                  }}
+                                  className="h-7 md:h-8 text-xs md:text-sm w-24 md:w-32"
+                                  autoFocus
+                                  placeholder="Budget"
+                                />
+                              </div>
+                            ) : (
+                              <p 
+                                className="text-xs md:text-sm font-medium text-gray-900 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 -mx-1 px-1 py-0.5 rounded transition-colors"
+                                onClick={() => {
+                                  setEditingBudgetId(lead.id);
+                                  setBudgetValue(lead.budget?.toString() || '');
+                                }}
+                                title="Click to edit budget"
+                              >
+                                {lead.budget ? `EGP ${lead.budget.toLocaleString()}` : '-'}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3">
+                            {editingFeedbackId === lead.id ? (
+                              <div className="space-y-2 min-w-[200px]">
+                                <div className="relative">
+                                  <Textarea
+                                    value={feedbackValue}
+                                    onChange={(e) => setFeedbackValue(e.target.value)}
+                                    placeholder="Enter your feedback here..."
+                                    className="w-full min-h-[80px] text-xs md:text-sm resize-none border-2 border-indigo-500 focus:border-indigo-600 shadow-md"
+                                    autoFocus
+                                  />
+                                  <div className="absolute top-2 right-2 text-xs text-gray-400">
+                                    {feedbackValue.length} chars
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      await updateLead(lead.id, { feedback: feedbackValue });
+                                      setEditingFeedbackId(null);
+                                      setFeedbackValue('');
+                                    }}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-7"
+                                  >
+                                    <Save className="h-3 w-3 mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingFeedbackId(null);
+                                      setFeedbackValue('');
+                                    }}
+                                    className="text-xs h-7"
+                                  >
+                                    <X className="h-3 w-3 mr-1" />
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                onClick={() => {
+                                  setEditingFeedbackId(lead.id);
+                                  setFeedbackValue(lead.feedback || '');
+                                }}
+                                className="group relative cursor-pointer min-w-[200px]"
+                              >
+                                <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-gray-300 group-hover:border-indigo-500 rounded-lg p-2 md:p-3 min-h-[60px] transition-all duration-200 group-hover:shadow-md">
+                                  <div className="flex items-start gap-2">
+                                    <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                      {lead.feedback ? (
+                                        <p className="text-xs md:text-sm text-gray-700 whitespace-pre-wrap line-clamp-2">
+                                          {lead.feedback}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs md:text-sm text-gray-400 italic">
+                                          Click to add feedback...
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Click to {lead.feedback ? 'edit' : 'add'} feedback
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3">
                             <div className="flex items-center gap-1 md:gap-2">
@@ -1145,7 +1371,14 @@ export default function ModernCRM() {
                                   boxShadow: "0px 10px 25px rgba(99, 102, 241, 0.2)"
                                 }}
                                 className="bg-indigo-50 rounded-lg md:rounded-xl p-2.5 md:p-3 border border-indigo-100 active:border-indigo-300 md:hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden group touch-manipulation"
-                                onClick={() => setDetailLead(lead)}
+                                onClick={(e) => {
+                                  // Click on card goes to Case Manager (not detail modal)
+                                  const target = e.target as HTMLElement;
+                                  if (target.closest('button') || target.closest('a') || target.closest('select')) {
+                                    return;
+                                  }
+                                  navigate(`/app/crm/case/${lead.id}`);
+                                }}
                               >
                                 {/* Shimmer effect on hover */}
                                 <motion.div
@@ -1158,6 +1391,17 @@ export default function ModernCRM() {
                                     {lead.project?.name || 'No Project'}
                                   </p>
                                 </div>
+                                {lead.client_phone && (
+                                  <div className="flex items-center gap-1 mb-2 relative z-10 text-xs text-gray-600">
+                                    <Phone className="h-3 w-3 text-gray-400" />
+                                    <MaskedPhone 
+                                      phone={lead.client_phone} 
+                                      leadId={lead.id}
+                                      isRevealed={revealedPhoneId === lead.id}
+                                      onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
+                                    />
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-2 relative z-10">
                                   {lead.client_phone && (
                                     <motion.button
@@ -1445,6 +1689,13 @@ export default function ModernCRM() {
           await fetchLeads();
         }}
       />
+      <BulkUploadModal
+        open={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        onUploadComplete={async () => {
+          await fetchLeads();
+        }}
+      />
 
       {editingLead && (
         <EditLeadDialog
@@ -1473,6 +1724,46 @@ export default function ModernCRM() {
           await updateLead(leadId, { stage });
         }}
       />
+
+      {/* Stage Dropdown Portal - Renders outside card container */}
+      {openStageDropdown && dropdownPosition && createPortal(
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="fixed z-[9999] bg-white rounded-lg shadow-2xl border border-gray-200 w-[180px] max-h-[240px] overflow-hidden flex flex-col"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              right: `${dropdownPosition.right}px`
+            }}
+            data-stage-dropdown-menu
+          >
+            <div className="overflow-y-auto py-1 flex-1">
+              {STAGES.map((stage) => {
+                const lead = leads.find(l => l.id === openStageDropdown);
+                if (!lead) return null;
+                return (
+                  <button
+                    key={stage}
+                    onClick={async () => {
+                      await updateLead(lead.id, { stage: stage as LeadStage });
+                      setOpenStageDropdown(null);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition-colors whitespace-nowrap ${
+                      lead.stage === stage ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    {stage}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
