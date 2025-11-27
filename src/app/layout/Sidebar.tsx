@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Package,
   Mail,
+  BarChart3,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -154,6 +155,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'My Leads',
       href: '/app/crm',
       icon: Users,
+      show: true,
+    },
+    {
+      name: 'CRM Dashboard',
+      href: '/app/crm/dashboard',
+      icon: BarChart3,
       show: true,
     },
     {
