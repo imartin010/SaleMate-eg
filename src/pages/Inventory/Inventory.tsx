@@ -685,8 +685,16 @@ const Inventory: React.FC = () => {
           let unitCount = 0;
           const projectName = project.name.toLowerCase().trim();
 
-          // Normalize function for name comparison
-          const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
+          // Normalize function for name comparison - handles similar characters and Roman numerals
+          const normalizeName = (name: string) => {
+            let normalized = name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
+            // Normalize similar-looking characters (I/l, O/0, etc.)
+            normalized = normalized.replace(/[il1|]/g, 'i'); // I, l, 1, | -> i
+            normalized = normalized.replace(/[o0]/g, 'o'); // O, 0 -> o
+            normalized = normalized.replace(/[s5]/g, 's'); // S, 5 -> s
+            normalized = normalized.replace(/[z2]/g, 'z'); // Z, 2 -> z
+            return normalized;
+          };
           const normalizedProject = normalizeName(projectName);
 
           // Debug: Log project name
@@ -698,6 +706,9 @@ const Inventory: React.FC = () => {
           const projectWords = normalizedProject.split(/[\s-]+/)
             .filter(w => w.length >= 3)
             .filter(w => !stopWords.includes(w.toLowerCase()));
+          
+          // Get first significant word for fallback matching
+          const firstProjectWord = projectWords.length > 0 ? projectWords[0] : normalizedProject.split(/[\s-]+/).find(w => w.length >= 2);
           
           Object.keys(compoundCountMap).forEach((compoundName) => {
             const normalizedCompound = normalizeName(compoundName);
@@ -716,7 +727,11 @@ const Inventory: React.FC = () => {
             else if (projectWords.length > 0) {
               matches = projectWords.some(word => normalizedCompound.includes(word));
             }
-            // 4. Fallback: Check if any word from compound appears in project (reverse check)
+            // 4. Fallback: If first significant word matches, count it (handles "Bamboo" matching "Bamboo III")
+            else if (firstProjectWord && normalizedCompound.includes(firstProjectWord)) {
+              matches = true;
+            }
+            // 5. Reverse check: Check if any word from compound appears in project
             else if (normalizedCompound.length >= 3) {
               const compoundWords = normalizedCompound.split(/[\s-]+/)
                 .filter(w => w.length >= 3)
