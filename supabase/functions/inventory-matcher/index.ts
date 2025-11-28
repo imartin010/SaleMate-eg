@@ -58,13 +58,16 @@ serve(async (req) => {
     }
 
     // Build query for salemate-inventory
+    // Find units where price_in_egp is within budget (less than or equal to maxPrice)
+    // Query more units to ensure we get 10 unique developers after filtering
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from('salemate-inventory')
       .select('id, unit_id, unit_number, compound, area, developer, property_type, number_of_bedrooms, unit_area, price_in_egp, currency')
-      .lte('price_in_egp', maxPrice)
-      .order('price_in_egp', { ascending: true })
-      .limit(10);
+      .lte('price_in_egp', maxPrice) // Units with price_in_egp <= maxPrice (within budget)
+      .gte('price_in_egp', 500000) // Exclude units with price less than 500,000 EGP
+      .order('price_in_egp', { ascending: true }) // Order by price_in_egp ascending (cheapest first)
+      .limit(100); // Query more units to ensure we get 10 unique developers
 
     // Apply additional filters if provided
     if (area) {
@@ -79,7 +82,178 @@ serve(async (req) => {
 
     if (queryError) throw queryError;
 
-    const resultCount = units?.length || 0;
+    // Prepare top units data - filter out units with price < 500,000 and ensure price_in_egp is used correctly
+    const validUnits = (units || [])
+      .filter((unit: Record<string, unknown>) => {
+        // Ensure we're using price_in_egp column and it's >= 500,000
+        const price = typeof unit.price_in_egp === 'number' 
+          ? unit.price_in_egp 
+          : parseFloat(String(unit.price_in_egp || '0'));
+        return price >= 500000;
+      })
+      .map((unit: Record<string, unknown>) => {
+        // Ensure price is a number
+        const price = typeof unit.price_in_egp === 'number' 
+          ? unit.price_in_egp 
+          : parseFloat(String(unit.price_in_egp || '0'));
+        
+        return {
+          id: unit.id,
+          unit_id: unit.unit_id,
+          unit_number: unit.unit_number,
+          compound: typeof unit.compound === 'string' ? unit.compound : JSON.stringify(unit.compound),
+          area: typeof unit.area === 'string' ? unit.area : JSON.stringify(unit.area),
+          developer: typeof unit.developer === 'string' ? unit.developer : JSON.stringify(unit.developer),
+          property_type: typeof unit.property_type === 'string' ? unit.property_type : JSON.stringify(unit.property_type),
+          bedrooms: unit.number_of_bedrooms,
+          unit_area: unit.unit_area,
+          price: price, // Use the parsed price_in_egp value
+          currency: unit.currency || 'EGP',
+        };
+      });
+
+    // Sort units by price (descending) to prioritize higher prices first
+    validUnits.sort((a, b) => b.price - a.price);
+
+    // Calculate budget threshold for "very near budget" 
+    // Use 70%+ as threshold to ensure we get units closer to budget
+    const veryNearBudgetThreshold = maxPrice * 0.7; // Units priced at 70%+ of budget
+
+    // Filter to show only one unit per developer, but create three groups:
+    // 1. Very near budget units (at least 25% - 3 units, prioritized by highest price)
+    // 2. Other higher-priced units (remaining slots, still prioritizing higher prices)
+    // 3. Lower price units (only if needed to fill slots)
+    const developerMapVeryNear = new Map<string, any>();
+    const developerMapHigh = new Map<string, any>();
+    const developerMapLow = new Map<string, any>();
+    const veryNearBudgetUnits: any[] = [];
+    const highPriceUnits: any[] = [];
+    const lowPriceUnits: any[] = [];
+    
+    // Target: At least 25% (3 units) very near budget
+    const veryNearTarget = 3; // At least 25% of 10 units
+    
+    // First pass: Collect units VERY near budget (70%+ of max budget)
+    // Since units are sorted by price descending, we iterate from start (highest prices)
+    for (const unit of validUnits) {
+      if (veryNearBudgetUnits.length >= veryNearTarget) break;
+      
+      // Only include units that are close to budget (70%+ of maxPrice)
+      if (unit.price < veryNearBudgetThreshold) continue;
+      
+      let developerName = '';
+      if (typeof unit.developer === 'string') {
+        try {
+          const parsed = JSON.parse(unit.developer);
+          developerName = parsed.name || parsed.id || unit.developer;
+        } catch {
+          developerName = unit.developer;
+        }
+      } else if (unit.developer && typeof unit.developer === 'object') {
+        developerName = unit.developer.name || unit.developer.id || '';
+      }
+      
+      if (developerName && !developerMapVeryNear.has(developerName)) {
+        developerMapVeryNear.set(developerName, true);
+        veryNearBudgetUnits.push(unit);
+      }
+    }
+    
+    // If we don't have enough units at 70%+, get the highest available prices
+    // (prioritize highest prices regardless of threshold)
+    if (veryNearBudgetUnits.length < veryNearTarget) {
+      for (const unit of validUnits) {
+        if (veryNearBudgetUnits.length >= veryNearTarget) break;
+        
+        // Skip if already selected
+        if (veryNearBudgetUnits.some(u => u.id === unit.id)) continue;
+        
+        let developerName = '';
+        if (typeof unit.developer === 'string') {
+          try {
+            const parsed = JSON.parse(unit.developer);
+            developerName = parsed.name || parsed.id || unit.developer;
+          } catch {
+            developerName = unit.developer;
+          }
+        } else if (unit.developer && typeof unit.developer === 'object') {
+          developerName = unit.developer.name || unit.developer.id || '';
+        }
+        
+        if (developerName && !developerMapVeryNear.has(developerName)) {
+          developerMapVeryNear.set(developerName, true);
+          veryNearBudgetUnits.push(unit);
+        }
+      }
+    }
+    
+    // Second pass: Fill remaining slots with other high-priced units (prioritizing higher prices)
+    const remainingSlots = 10 - veryNearBudgetUnits.length;
+    for (const unit of validUnits) {
+      if (highPriceUnits.length >= remainingSlots) break;
+      
+      // Skip if already selected
+      if (veryNearBudgetUnits.some(u => u.id === unit.id)) continue;
+      
+      let developerName = '';
+      if (typeof unit.developer === 'string') {
+        try {
+          const parsed = JSON.parse(unit.developer);
+          developerName = parsed.name || parsed.id || unit.developer;
+        } catch {
+          developerName = unit.developer;
+        }
+      } else if (unit.developer && typeof unit.developer === 'object') {
+        developerName = unit.developer.name || unit.developer.id || '';
+      }
+      
+      if (developerName && !developerMapHigh.has(developerName)) {
+        developerMapHigh.set(developerName, true);
+        highPriceUnits.push(unit);
+      }
+    }
+    
+    // Third pass: If we still need more units, fill with lower-priced units
+    const finalRemainingSlots = 10 - veryNearBudgetUnits.length - highPriceUnits.length;
+    if (finalRemainingSlots > 0) {
+      // Sort remaining units by price ascending to get lowest prices
+      const remainingUnits = validUnits.filter(u => 
+        !veryNearBudgetUnits.some(v => v.id === u.id) && 
+        !highPriceUnits.some(v => v.id === u.id)
+      );
+      remainingUnits.sort((a, b) => a.price - b.price);
+      
+      for (const unit of remainingUnits) {
+        if (lowPriceUnits.length >= finalRemainingSlots) break;
+        
+        // Skip if already selected
+        if (veryNearBudgetUnits.some(u => u.id === unit.id) || 
+            highPriceUnits.some(u => u.id === unit.id)) continue;
+        
+        let developerName = '';
+        if (typeof unit.developer === 'string') {
+          try {
+            const parsed = JSON.parse(unit.developer);
+            developerName = parsed.name || parsed.id || unit.developer;
+          } catch {
+            developerName = unit.developer;
+          }
+        } else if (unit.developer && typeof unit.developer === 'object') {
+          developerName = unit.developer.name || unit.developer.id || '';
+        }
+        
+        if (developerName && !developerMapLow.has(developerName)) {
+          developerMapLow.set(developerName, true);
+          lowPriceUnits.push(unit);
+        }
+      }
+    }
+    
+    // Combine: Very near budget first, then high prices, then low prices
+    // All units are already sorted by price descending (highest first)
+    const topUnits = [...veryNearBudgetUnits, ...highPriceUnits, ...lowPriceUnits].slice(0, 10);
+
+    const resultCount = topUnits.length;
 
     // Generate recommendation based on results
     let recommendation: string;
@@ -91,26 +265,12 @@ serve(async (req) => {
       recommendation = `Good matches found! ${resultCount} properties within budget. Present options to client and schedule viewings.`;
     }
 
-    // Prepare top units data
-    const topUnits = units?.map((unit: Record<string, unknown>) => ({
-      id: unit.id,
-      unit_id: unit.unit_id,
-      unit_number: unit.unit_number,
-      compound: typeof unit.compound === 'string' ? unit.compound : JSON.stringify(unit.compound),
-      area: typeof unit.area === 'string' ? unit.area : JSON.stringify(unit.area),
-      developer: typeof unit.developer === 'string' ? unit.developer : JSON.stringify(unit.developer),
-      property_type: typeof unit.property_type === 'string' ? unit.property_type : JSON.stringify(unit.property_type),
-      bedrooms: unit.number_of_bedrooms,
-      unit_area: unit.unit_area,
-      price: unit.price_in_egp,
-      currency: unit.currency || 'EGP',
-    }));
-
     // Store match result in events table
     const { data: matchResult, error: matchError } = await supabase
       .from('events')
       .insert({
         lead_id: leadId,
+        event_type: 'activity',
         activity_type: 'recommendation',
         actor_profile_id: userId,
         filters: {

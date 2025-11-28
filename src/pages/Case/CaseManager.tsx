@@ -194,6 +194,13 @@ export default function CaseManager() {
                 faces={faces}
               />
             </ErrorBoundary>
+
+            {/* Inventory Matches - shows budget matching results */}
+            {leadId && (
+              <ErrorBoundary>
+                <InventoryMatchesCard leadId={leadId} />
+              </ErrorBoundary>
+            )}
           </motion.div>
 
           {/* Right Rail - Actions, Meeting, Inventory */}
@@ -220,12 +227,6 @@ export default function CaseManager() {
                 onScheduled={refetch}
               />
             </ErrorBoundary>
-            
-            {matches.length > 0 && (
-              <ErrorBoundary>
-                <InventoryMatchesCard matches={matches} />
-              </ErrorBoundary>
-            )}
           </motion.div>
         </div>
       </div>

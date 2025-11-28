@@ -60,6 +60,13 @@ export function StageChangeModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (changing) {
+      console.warn('⚠️ Already changing, preventing double submission');
+      return;
+    }
+    
     console.log('🔵 Form submitted!', { budget, downPayment, monthlyInstallment, newStage });
 
     const data: Record<string, unknown> = {};
@@ -97,55 +104,63 @@ export function StageChangeModal({
 
     try {
       const result = await changeLeadStage({
-      leadId,
-      newStage,
-      currentStage,
-      feedback: feedback || undefined,
-      budget: budget ? parseFloat(budget) : undefined,
-      downPayment: downPayment ? parseFloat(downPayment) : undefined,
-      monthlyInstallment: monthlyInstallment ? parseFloat(monthlyInstallment) : undefined,
-      meetingDate: meetingDate || undefined,
-    });
+        leadId,
+        newStage,
+        currentStage,
+        feedback: feedback || undefined,
+        budget: budget ? parseFloat(budget) : undefined,
+        downPayment: downPayment ? parseFloat(downPayment) : undefined,
+        monthlyInstallment: monthlyInstallment ? parseFloat(monthlyInstallment) : undefined,
+        meetingDate: meetingDate || undefined,
+      });
 
-      console.log('Stage change result:', result);
+      console.log('🔵 Stage change result:', result);
       console.log('🔵 result.inventoryMatch:', result.inventoryMatch);
       console.log('🔵 result keys:', Object.keys(result));
+      console.log('🔵 requiresBudget:', requiresBudget);
+      console.log('🔵 result.success:', result.success);
 
-      if (result.success) {
+      if (result && result.success) {
         // If Low Budget stage, show results (even if no matches)
         if (requiresBudget) {
-          // Always show results for Low Budget, even if inventoryMatch is null
-          if (result.inventoryMatch) {
-            console.log('🔵 Setting inventory match:', result.inventoryMatch);
-            setInventoryMatch(result.inventoryMatch);
-            setShowResults(true);
-          } else {
-            // No inventory match returned - show error or default message
-            console.warn('No inventory match returned for Low Budget stage');
-            // Still show results with empty match
-            setInventoryMatch({
-              resultCount: 0,
-              topUnits: [],
-              recommendation: 'Unable to match inventory. Please try again or check inventory data.',
-              matchId: '',
-            });
-            setShowResults(true);
-          }
+          console.log('🔵 Low Budget stage - preparing to show results');
+          // Always show results for Low Budget
+          const matchData = result.inventoryMatch || {
+            resultCount: 0,
+            topUnits: [],
+            recommendation: 'Unable to match inventory. Please try again or check inventory data.',
+            matchId: '',
+          };
+          
+          console.log('🔵 Setting inventory match data:', matchData);
+          // Set both states together to prevent race conditions
+          setInventoryMatch(matchData);
+          setShowResults(true);
+          console.log('🔵 Results state set, dialog should stay open');
+          // DO NOT call onSuccess() here - wait for user to click Continue
+          // DO NOT call onClose() here - keep dialog open to show results
+          return; // Exit early to prevent any other code from running
         } else {
           // For other stages, close immediately
-      onSuccess();
+          console.log('🔵 Not Low Budget, calling onSuccess()');
+          onSuccess();
         }
       } else {
-        console.error('Stage change failed:', result);
+        console.error('❌ Stage change failed:', result);
         alert('Failed to change stage. Please try again.');
       }
     } catch (err) {
-      console.error('Error in handleSubmit:', err);
+      console.error('❌ Error in handleSubmit:', err);
       alert(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     }
   };
 
   const handleClose = () => {
+    // Don't close if we're showing results - user must click Continue
+    if (showResults) {
+      console.log('⚠️ Attempted to close while showing results - preventing');
+      return;
+    }
     setShowResults(false);
     setInventoryMatch(null);
     setFeedback('');
@@ -157,6 +172,10 @@ export function StageChangeModal({
   };
 
   const handleContinue = () => {
+    console.log('🔵 Continue clicked, calling onSuccess()');
+    // Reset state before calling onSuccess
+    setShowResults(false);
+    setInventoryMatch(null);
     onSuccess();
     handleClose();
   };
@@ -166,7 +185,16 @@ export function StageChangeModal({
     const hasMatches = inventoryMatch.resultCount > 0;
     
     return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
+      <Dialog 
+        open={isOpen} 
+        onOpenChange={(open) => {
+          // Prevent closing while showing results - user must click Continue
+          if (!open) {
+            console.log('⚠️ Attempted to close results dialog - preventing');
+            return; // Prevent closing
+          }
+        }}
+      >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
@@ -290,7 +318,20 @@ export function StageChangeModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        // Prevent closing if showing results - user must click Continue
+        if (!open && showResults) {
+          console.log('⚠️ Attempted to close dialog while showing results - preventing');
+          return;
+        }
+        // Only close if explicitly closing and not showing results
+        if (!open) {
+          handleClose();
+        }
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
@@ -298,7 +339,13 @@ export function StageChangeModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form 
+          onSubmit={handleSubmit} 
+          className="space-y-6"
+          action="#"
+          method="post"
+          noValidate
+        >
           {/* Feedback (Required for Potential/Non Potential) */}
           {requiresFeedback && (
             <div>
@@ -334,6 +381,11 @@ export function StageChangeModal({
                   type="number"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
                   placeholder="e.g. 5000000"
                   min="0"
                   step="10000"
@@ -349,6 +401,11 @@ export function StageChangeModal({
                     type="number"
                     value={downPayment}
                     onChange={(e) => setDownPayment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder="e.g. 500000"
                     min="0"
                     step="10000"
@@ -363,6 +420,11 @@ export function StageChangeModal({
                     type="number"
                     value={monthlyInstallment}
                     onChange={(e) => setMonthlyInstallment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder="e.g. 50000"
                     min="0"
                     step="1000"
@@ -416,7 +478,10 @@ export function StageChangeModal({
             <Button type="button" variant="outline" onClick={handleClose} disabled={changing}>
               Cancel
             </Button>
-            <Button type="submit" disabled={changing}>
+            <Button 
+              type="submit" 
+              disabled={changing}
+            >
               {changing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
