@@ -62,9 +62,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           createdAt: project.created_at || undefined
         })) || [];
 
-      console.log(`✅ Fetched ${transformedProjects.length} projects from Supabase`);
+      // Filter out default project
+      const filteredProjects = transformedProjects.filter((project) => {
+        const projectName = project.name?.toLowerCase().trim() || '';
+        return projectName !== 'default project' && 
+               projectName !== 'default' &&
+               projectName.length > 0;
+      });
+
+      console.log(`✅ Fetched ${filteredProjects.length} projects from Supabase (filtered)`);
       set({ 
-        projects: transformedProjects, 
+        projects: filteredProjects, 
         loading: false, 
         lastFetched: now 
       });

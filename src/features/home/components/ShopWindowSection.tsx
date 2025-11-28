@@ -57,7 +57,15 @@ const ShopWindowSection: React.FC = React.memo(() => {
         price_per_lead: Number(p.price_per_lead || 0),
       }));
 
-      setProjects(transformedProjects);
+      // Filter out default project
+      const filteredProjects = transformedProjects.filter((project) => {
+        const projectName = project.name?.toLowerCase().trim() || '';
+        return projectName !== 'default project' && 
+               projectName !== 'default' &&
+               projectName.length > 0;
+      });
+
+      setProjects(filteredProjects);
     } catch (err: unknown) {
       console.error('Error loading top projects:', err);
       setError((err instanceof Error ? err.message : String(err)) || 'Failed to load projects');

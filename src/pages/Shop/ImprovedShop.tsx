@@ -149,7 +149,15 @@ export const ImprovedShop: React.FC = () => {
           } as Project;
         });
 
-        setProjects(base);
+        // Filter out default project
+        const filteredProjects = base.filter((project) => {
+          const projectName = project.name?.toLowerCase().trim() || '';
+          return projectName !== 'default project' && 
+                 projectName !== 'default' &&
+                 projectName.length > 0;
+        });
+
+        setProjects(filteredProjects);
       } else {
         // No projects available
         console.log('📝 No projects available');

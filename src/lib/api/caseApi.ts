@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from '@/core/api/client';
 
 export interface ChatMessage {
   id: string;
