@@ -137,14 +137,21 @@ const DeveloperProjects: React.FC = () => {
           
           let matches = false;
           
-          // 1. Exact match (after normalization)
-          if (normalizedCompound === normalizedProject) {
-            matches = true;
-          }
-          // 2. Contains match (either direction) - more lenient
-          else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
-            matches = true;
-          }
+            // 1. Exact match (after normalization)
+            if (normalizedCompound === normalizedProject) {
+              matches = true;
+            }
+            // 2. Contains match (either direction) - more lenient
+            else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
+              matches = true;
+            }
+            // 2b. Very lenient: Check if any significant word from project appears in compound
+            else if (normalizedProject.length >= 3) {
+              const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 3);
+              if (projectWords.length > 0) {
+                matches = projectWords.some(word => normalizedCompound.includes(word));
+              }
+            }
             // 3. Word-based matching (more flexible)
             else {
               const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
