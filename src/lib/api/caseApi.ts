@@ -20,7 +20,7 @@ export async function initializeChat(
   try {
     const { data, error } = await supabase.functions.invoke('case-chat', {
       body: {
-        action: 'initialize',
+        method: 'INITIALIZE',
         leadId,
         ...params,
       },
@@ -31,7 +31,7 @@ export async function initializeChat(
       throw new Error(error.message || 'Failed to initialize chat');
     }
 
-    return data?.message || null;
+    return data?.data?.message || data?.message || null;
   } catch (error) {
     console.error('Error initializing chat:', error);
     throw error;
@@ -52,7 +52,7 @@ export async function sendChatMessage(
   try {
     const { data, error } = await supabase.functions.invoke('case-chat', {
       body: {
-        action: 'send',
+        method: 'SEND',
         leadId,
         ...params,
       },
@@ -63,7 +63,7 @@ export async function sendChatMessage(
       throw new Error(error.message || 'Failed to send message');
     }
 
-    return data?.message || null;
+    return data?.data?.message || data?.message || null;
   } catch (error) {
     console.error('Error sending chat message:', error);
     throw error;
