@@ -351,6 +351,7 @@ const Inventory: React.FC = () => {
   useEffect(() => {
     // Add a small delay to ensure filters are properly set
     const timer = setTimeout(() => {
+      console.log('🏠 Inventory Card View v2.0 - Loading data...');
       loadProperties();
       loadFilterOptions();
       loadCardCounts();
@@ -1269,6 +1270,10 @@ const Inventory: React.FC = () => {
       <div className="container mx-auto px-4 py-4 md:px-6 md:py-8 space-y-4 md:space-y-6 max-w-7xl">
       {/* Header Section */}
       <div className="space-y-4">
+      {/* Version indicator - remove after confirming cache is cleared */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-400">Card View v2.0</div>
+      )}
         <div>
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 bg-clip-text text-transparent mb-2">
             Property Inventory
