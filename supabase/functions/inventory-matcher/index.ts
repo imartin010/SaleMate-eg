@@ -106,9 +106,9 @@ serve(async (req) => {
       currency: unit.currency || 'EGP',
     }));
 
-    // Store match result in activities table
+    // Store match result in events table
     const { data: matchResult, error: matchError } = await supabase
-      .from('activities')
+      .from('events')
       .insert({
         lead_id: leadId,
         activity_type: 'recommendation',

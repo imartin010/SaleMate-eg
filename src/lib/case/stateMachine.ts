@@ -141,22 +141,39 @@ export function validateStageChange(
   // Check required fields
   if (config.requires.length > 0) {
     const requirements = config.requires[0].split('|'); // Handle OR requirements
-    const hasRequired = requirements.some(req => {
-      if (req === 'feedback') return data?.feedback;
-      if (req === 'budget') return data?.budget || data?.totalBudget;
-      if (req === 'dp') return data?.downPayment;
-      if (req === 'installment') return data?.monthlyInstallment;
-      return false;
-    });
+    
+    // Special handling for Low Budget: budget OR (dp AND installment)
+    if (newStage === 'Low Budget') {
+      const hasBudget = !!(data?.budget || data?.totalBudget);
+      const hasDP = !!data?.downPayment;
+      const hasInstallment = !!data?.monthlyInstallment;
+      const hasDPAndInstallment = hasDP && hasInstallment;
+      
+      if (!hasBudget && !hasDPAndInstallment) {
+        return { 
+          valid: false, 
+          error: 'Low Budget stage requires either total budget OR both down payment and monthly installment' 
+        };
+      }
+    } else {
+      // For other stages, check if any requirement is met
+      const hasRequired = requirements.some(req => {
+        if (req === 'feedback') return data?.feedback;
+        if (req === 'budget') return data?.budget || data?.totalBudget;
+        if (req === 'dp') return data?.downPayment;
+        if (req === 'installment') return data?.monthlyInstallment;
+        return false;
+      });
 
-    if (!hasRequired) {
-      const reqText = requirements.length > 1 
-        ? `one of: ${requirements.join(', ')}` 
-        : requirements[0];
-      return { 
-        valid: false, 
-        error: `Stage "${newStage}" requires ${reqText}` 
-      };
+      if (!hasRequired) {
+        const reqText = requirements.length > 1 
+          ? `one of: ${requirements.join(', ')}` 
+          : requirements[0];
+        return { 
+          valid: false, 
+          error: `Stage "${newStage}" requires ${reqText}` 
+        };
+      }
     }
   }
 

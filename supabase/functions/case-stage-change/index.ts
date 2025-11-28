@@ -30,6 +30,9 @@ serve(async (req) => {
     const payload: StageChangePayload = await req.json();
     const { leadId, newStage, userId, feedback, budget, downPayment, monthlyInstallment, meetingDate } = payload;
 
+    // Store inventory match result for Low Budget stage
+    let inventoryMatchResult = null;
+
     // Update lead stage
     const { error: updateError } = await supabase
       .from('leads')
@@ -184,17 +187,51 @@ serve(async (req) => {
       case 'Low Budget': {
         // Trigger inventory matching if budget info provided
         if (budget || downPayment || monthlyInstallment) {
-          await fetch(`${supabaseUrl}/functions/v1/inventory-matcher`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
-            body: JSON.stringify({
-              leadId,
-              userId,
-              totalBudget: budget,
-              downPayment,
-              monthlyInstallment,
-            }),
-          });
+          try {
+            const matchResponse = await fetch(`${supabaseUrl}/functions/v1/inventory-matcher`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
+              body: JSON.stringify({
+                leadId,
+                userId,
+                totalBudget: budget,
+                downPayment,
+                monthlyInstallment,
+              }),
+            });
+
+            if (matchResponse.ok) {
+              const matchData = await matchResponse.json();
+              inventoryMatchResult = matchData.data || matchData;
+            } else {
+              const errorData = await matchResponse.json().catch(() => ({}));
+              console.error('Inventory matcher error:', errorData);
+              // Return error result so frontend can display it
+              inventoryMatchResult = {
+                resultCount: 0,
+                topUnits: [],
+                recommendation: errorData.error || 'Unable to match inventory. Please try again.',
+                matchId: '',
+              };
+            }
+          } catch (err) {
+            console.error('Inventory matcher exception:', err);
+            // Return error result so frontend can display it
+            inventoryMatchResult = {
+              resultCount: 0,
+              topUnits: [],
+              recommendation: 'Error matching inventory. Please try again later.',
+              matchId: '',
+            };
+          }
+        } else {
+          // No budget info provided - return empty result
+          inventoryMatchResult = {
+            resultCount: 0,
+            topUnits: [],
+            recommendation: 'No budget information provided for matching.',
+            matchId: '',
+          };
         }
         break;
       }
@@ -257,7 +294,11 @@ serve(async (req) => {
     console.log(`✅ Stage changed to "${newStage}" for lead ${leadId}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: `Stage changed to ${newStage}` }),
+      JSON.stringify({ 
+        success: true, 
+        message: `Stage changed to ${newStage}`,
+        inventoryMatch: inventoryMatchResult
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

@@ -16,7 +16,28 @@ const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1';
 /**
  * Change lead stage and trigger associated actions
  */
-export async function changeStage(payload: StageChangePayload): Promise<{ success: boolean; message: string }> {
+export async function changeStage(payload: StageChangePayload): Promise<{ 
+  success: boolean; 
+  message: string;
+  inventoryMatch?: {
+    resultCount: number;
+    topUnits: Array<{
+      id: number;
+      unit_id?: string;
+      unit_number?: string;
+      compound: string;
+      area: string;
+      developer: string;
+      property_type: string;
+      bedrooms?: number;
+      unit_area?: number;
+      price: number;
+      currency: string;
+    }>;
+    recommendation: string;
+    matchId: string;
+  } | null;
+}> {
   const { data, error } = await supabase.functions.invoke('case-stage-change', {
     body: payload,
   });

@@ -334,7 +334,28 @@ export async function changeStage(payload: {
   downPayment?: number;
   monthlyInstallment?: number;
   meetingDate?: string;
-}): Promise<{ success: boolean; message: string }> {
+}): Promise<{ 
+  success: boolean; 
+  message: string;
+  inventoryMatch?: {
+    resultCount: number;
+    topUnits: Array<{
+      id: number;
+      unit_id?: string;
+      unit_number?: string;
+      compound: string;
+      area: string;
+      developer: string;
+      property_type: string;
+      bedrooms?: number;
+      unit_area?: number;
+      price: number;
+      currency: string;
+    }>;
+    recommendation: string;
+    matchId: string;
+  } | null;
+}> {
   try {
     const { data, error } = await supabase.functions.invoke('case-stage-change', {
       body: payload,
@@ -345,6 +366,9 @@ export async function changeStage(payload: {
       throw new Error(error.message || 'Failed to change stage');
     }
 
+    console.log('🔵 API response data:', data);
+    console.log('🔵 API response inventoryMatch:', data?.inventoryMatch);
+    
     return data || { success: true, message: 'Stage changed successfully' };
   } catch (error) {
     console.error('Error changing stage:', error);

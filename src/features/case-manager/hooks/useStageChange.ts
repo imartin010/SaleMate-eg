@@ -4,6 +4,25 @@ import { changeStage } from '../../lib/api/caseApi';
 import { validateStageChange } from '../../lib/case/stateMachine';
 import type { CaseStage, StageChangePayload } from '../../types/case';
 
+interface InventoryMatchResult {
+  resultCount: number;
+  topUnits: Array<{
+    id: number;
+    unit_id?: string;
+    unit_number?: string;
+    compound: string;
+    area: string;
+    developer: string;
+    property_type: string;
+    bedrooms?: number;
+    unit_area?: number;
+    price: number;
+    currency: string;
+  }>;
+  recommendation: string;
+  matchId: string;
+}
+
 interface UseStageChangeReturn {
   changing: boolean;
   error: string | null;
@@ -16,7 +35,7 @@ interface UseStageChangeReturn {
     downPayment?: number;
     monthlyInstallment?: number;
     meetingDate?: string;
-  }) => Promise<boolean>;
+  }) => Promise<{ success: boolean; inventoryMatch?: InventoryMatchResult | null }>;
   validateChange: (
     currentStage: CaseStage,
     newStage: CaseStage,
@@ -41,10 +60,10 @@ export function useStageChange(): UseStageChangeReturn {
     downPayment?: number;
     monthlyInstallment?: number;
     meetingDate?: string;
-  }): Promise<boolean> => {
+  }): Promise<{ success: boolean; inventoryMatch?: InventoryMatchResult | null }> => {
     if (!user?.id) {
       setError('User not authenticated');
-      return false;
+      return { success: false };
     }
 
     const { leadId, newStage, currentStage, feedback, budget, downPayment, monthlyInstallment, meetingDate } = params;
@@ -64,7 +83,7 @@ export function useStageChange(): UseStageChangeReturn {
 
       if (!validation.valid) {
         setError(validation.error || 'Invalid stage change');
-        return false;
+        return { success: false };
       }
 
       // Prepare payload
@@ -80,14 +99,17 @@ export function useStageChange(): UseStageChangeReturn {
       };
 
       // Call API to change stage
-      await changeStage(payload);
+      const result = await changeStage(payload);
 
       console.log(`✅ Stage changed from "${currentStage}" to "${newStage}" for lead ${leadId}`);
-      return true;
+      return { 
+        success: true, 
+        inventoryMatch: result.inventoryMatch || null 
+      };
     } catch (err) {
       console.error('Error changing stage:', err);
       setError(err instanceof Error ? err.message : 'Failed to change stage');
-      return false;
+      return { success: false };
     } finally {
       setChanging(false);
     }
