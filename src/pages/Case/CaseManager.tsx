@@ -24,7 +24,10 @@ export default function CaseManager() {
 
   // Scroll to top when component mounts or leadId changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
   }, [leadId]);
 
   if (loading) {
