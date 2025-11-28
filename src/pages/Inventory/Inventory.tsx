@@ -33,6 +33,8 @@ import {
   Palette,
   Waves,
   Armchair,
+  ArrowRight,
+  Building2,
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 20;
@@ -56,6 +58,21 @@ const Inventory: React.FC = () => {
   // Modal state
   const [selectedProperty, setSelectedProperty] = useState<BRDataProperty | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // New card-based view data
+  const [developers, setDevelopers] = useState<Array<{ id: string; name: string; logo?: string }>>([]);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string; region: string; cover_image?: string; available_leads: number; price_per_lead: number }>>([]);
+  const [units, setUnits] = useState<BRDataProperty[]>([]);
+  
+  // Loading states for each section
+  const [loadingDevelopers, setLoadingDevelopers] = useState(true);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingUnits, setLoadingUnits] = useState(true);
+  
+  // Pagination indices for each section (showing 4 items at a time)
+  const [developerIndex, setDeveloperIndex] = useState(0);
+  const [projectIndex, setProjectIndex] = useState(0);
+  const [unitIndex, setUnitIndex] = useState(0);
   
   // Filters and sorting
   const [filters, setFilters] = useState<BRDataPropertyFilters>({});
@@ -334,6 +351,9 @@ const Inventory: React.FC = () => {
       loadProperties();
       loadFilterOptions();
       loadCardCounts();
+      loadDevelopers();
+      loadProjects();
+      loadUnits();
     }, 50);
     
     return () => clearTimeout(timer);
@@ -534,6 +554,97 @@ const Inventory: React.FC = () => {
     }
   };
 
+  const loadDevelopers = async () => {
+    try {
+      setLoadingDevelopers(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('salemate-inventory')
+        .select('developer')
+        .limit(1000);
+
+      if (error) throw error;
+
+      const developerMap = new Map<string, { id: string; name: string }>();
+      
+      data?.forEach((item: Record<string, unknown>) => {
+        const developer = item.developer;
+        if (developer) {
+          let developerName = '';
+          let developerId = '';
+          
+          if (typeof developer === 'string') {
+            try {
+              // Try to parse Python dict string
+              const nameMatch = developer.match(/'name':\s*'([^']+)'/);
+              const idMatch = developer.match(/'id':\s*(\d+)/);
+              if (nameMatch && nameMatch[1]) {
+                developerName = nameMatch[1].trim();
+                developerId = idMatch ? idMatch[1] : developerName;
+              }
+            } catch {
+              // If parsing fails, use the string as-is
+              developerName = developer;
+              developerId = developer;
+            }
+          } else if (typeof developer === 'object' && developer !== null && 'name' in developer) {
+            developerName = (developer as { name: string }).name;
+            developerId = (developer as { id?: string | number }).id?.toString() || developerName;
+          }
+          
+          if (developerName && !developerMap.has(developerName)) {
+            developerMap.set(developerName, { id: developerId, name: developerName });
+          }
+        }
+      });
+
+      setDevelopers(Array.from(developerMap.values()));
+    } catch (error) {
+      console.error('Failed to load developers:', error);
+      setDevelopers([]);
+    } finally {
+      setLoadingDevelopers(false);
+    }
+  };
+
+  const loadProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, region, cover_image, available_leads, price_per_lead')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const loadUnits = async () => {
+    try {
+      setLoadingUnits(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('salemate-inventory')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setUnits((data as BRDataProperty[]) || []);
+    } catch (error) {
+      console.error('Failed to load units:', error);
+      setUnits([]);
+    } finally {
+      setLoadingUnits(false);
+    }
+  };
+
   const clearFilters = () => {
     setFilters({});
     setCurrentPage(1);
@@ -580,228 +691,225 @@ const Inventory: React.FC = () => {
     return '-';
   };
 
-  // Table View
-  const renderPropertyTable = () => (
-    <div className="card-modern overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Compound
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Developer
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Area
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Unit
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bed/Bath
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Size (m²)
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Floor
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price/m²
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ready By
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Full Details
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {properties.map((property) => (
-              <tr key={property.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {extractName(property.compound)}
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {extractName(property.developer)}
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {extractName(property.area)}
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      {property.image ? (
-                        <img 
-                          className="h-10 w-10 rounded object-cover" 
-                          src={property.image} 
-                          alt={`Unit ${property.unit_number || property.unit_id}`} 
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center">
-                          <Home className="h-5 w-5 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <div className="text-sm font-medium text-gray-900">
-                        {property.unit_number || property.unit_id || 'N/A'}
-                      </div>
-                      {property.building_number && (
-                        <div className="text-sm text-gray-500">
-                          Bldg {property.building_number}
-                        </div>
-                      )}
-                    </div>
+  // Card-based view components
+  const renderDeveloperCards = () => {
+    const visibleDevelopers = developers.slice(developerIndex, developerIndex + 4);
+    const hasMore = developers.length > developerIndex + 4;
+    const canGoBack = developerIndex > 0;
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-gray-900">Developers</h2>
+        <div className="flex items-center gap-4 overflow-x-auto pb-4">
+          {canGoBack && (
+            <Card 
+              className="min-w-[80px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300"
+              onClick={() => setDeveloperIndex(prev => Math.max(0, prev - 4))}
+            >
+              <div className="p-4 flex flex-col items-center gap-2">
+                <ChevronLeft className="h-6 w-6 text-blue-600" />
+              </div>
+            </Card>
+          )}
+          {visibleDevelopers.map((developer) => (
+            <Card key={developer.id} className="min-w-[280px] flex-shrink-0 hover:shadow-lg transition-shadow">
+              <div className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                    {developer.name.charAt(0).toUpperCase()}
                   </div>
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex flex-col gap-1">
-                    {extractName(property.property_type) !== '-' && (
-                      <Badge variant="secondary" className="text-xs w-fit">
-                        {extractName(property.property_type)}
-                      </Badge>
-                    )}
-                    {property.finishing && (
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs w-fit flex items-center gap-1 ${
-                          property.finishing.toLowerCase() === 'finished' 
-                            ? 'border-green-500 text-green-700 bg-green-50' 
-                            : property.finishing.toLowerCase() === 'furnished'
-                            ? 'border-purple-500 text-purple-700 bg-purple-50'
-                            : property.finishing.toLowerCase() === 'semi finished' || property.finishing.toLowerCase() === 'semi-finished' || property.finishing.toLowerCase() === 'semi_finished'
-                            ? 'border-orange-500 text-orange-700 bg-orange-50'
-                            : property.finishing.toLowerCase() === 'flexi finished' || property.finishing.toLowerCase() === 'flexi_finished'
-                            ? 'border-blue-500 text-blue-700 bg-blue-50'
-                            : property.finishing.toLowerCase() === 'not finished' || property.finishing.toLowerCase() === 'not_finished'
-                            ? 'border-red-500 text-red-700 bg-red-50'
-                            : ''
-                        }`}
-                      >
-                        {property.finishing.toLowerCase() === 'finished' && (
-                          <Palette className="h-3 w-3" />
-                        )}
-                        {property.finishing.toLowerCase() === 'furnished' && (
-                          <Armchair className="h-3 w-3" />
-                        )}
-                        {(property.finishing.toLowerCase() === 'semi finished' || property.finishing.toLowerCase() === 'semi-finished' || property.finishing.toLowerCase() === 'semi_finished') && (
-                          <PieChart className="h-3 w-3" />
-                        )}
-                        {(property.finishing.toLowerCase() === 'flexi finished' || property.finishing.toLowerCase() === 'flexi_finished') && (
-                          <Waves className="h-3 w-3" />
-                        )}
-                        {(property.finishing.toLowerCase() === 'not finished' || property.finishing.toLowerCase() === 'not_finished') && (
-                          <Construction className="h-3 w-3" />
-                        )}
-                        {property.finishing}
-                      </Badge>
-                    )}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 text-lg">{developer.name}</h3>
+                    <p className="text-sm text-gray-500">Developer</p>
                   </div>
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <div className="flex items-center gap-3">
-                    {property.number_of_bedrooms !== undefined && (
-                      <div className="flex items-center gap-1">
-                        <Bed className="h-3 w-3 text-blue-500" />
-                        <span>{property.number_of_bedrooms}</span>
-                      </div>
-                    )}
-                    {property.number_of_bathrooms !== undefined && (
-                      <div className="flex items-center gap-1">
-                        <Bath className="h-3 w-3 text-cyan-500" />
-                        <span>{property.number_of_bathrooms}</span>
-                      </div>
-                    )}
-                  </div>
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {property.unit_area ? formatNumber(property.unit_area) : '-'}
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {property.floor_number !== undefined ? property.floor_number : '-'}
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {property.price_in_egp ? 
-                      formatCurrency(property.price_in_egp, property.currency || 'EGP') : 
-                      'On Request'
-                    }
-                  </div>
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {property.price_per_meter ? 
-                    formatCurrency(property.price_per_meter, property.currency || 'EGP') : 
-                    '-'
-                  }
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {property.ready_by ? 
-                    new Date(property.ready_by).toLocaleDateString() : 
-                    '-'
-                  }
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex flex-col gap-1">
-                    {property.is_launch && (
-                      <Badge className="bg-orange-500 text-white text-xs w-fit">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        Launch
-                      </Badge>
-                    )}
-                    {property.offers && (
-                      <Badge className="bg-green-500 text-white text-xs w-fit">
-                        Offer
-                      </Badge>
-                    )}
-                    {property.sale_type && (
-                      <Badge variant="outline" className="text-xs w-fit">
-                        {property.sale_type}
-                      </Badge>
-                    )}
-                  </div>
-                </td>
-                
-                <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleViewProperty(property)}
-                    className="hover:bg-primary/10 hover:text-primary"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </Card>
+          ))}
+          {hasMore && (
+            <Card 
+              className="min-w-[120px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300"
+              onClick={() => setDeveloperIndex(prev => Math.min(prev + 4, developers.length - 4))}
+            >
+              <div className="p-6 flex flex-col items-center gap-2">
+                <ArrowRight className="h-8 w-8 text-blue-600" />
+                <span className="text-sm font-medium text-blue-600">View More</span>
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderProjectCards = () => {
+    const visibleProjects = projects.slice(projectIndex, projectIndex + 4);
+    const hasMore = projects.length > projectIndex + 4;
+    const canGoBack = projectIndex > 0;
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+        <div className="flex items-center gap-4 overflow-x-auto pb-4">
+          {canGoBack && (
+            <Card 
+              className="min-w-[80px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-dashed border-teal-300"
+              onClick={() => setProjectIndex(prev => Math.max(0, prev - 4))}
+            >
+              <div className="p-4 flex flex-col items-center gap-2">
+                <ChevronLeft className="h-6 w-6 text-teal-600" />
+              </div>
+            </Card>
+          )}
+          {visibleProjects.map((project) => (
+            <Card key={project.id} className="min-w-[280px] flex-shrink-0 hover:shadow-lg transition-shadow overflow-hidden">
+              <div className="relative h-48 bg-gradient-to-br from-teal-500 to-blue-600">
+                {project.cover_image ? (
+                  <img 
+                    src={project.cover_image} 
+                    alt={project.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Building2 className="h-16 w-16 text-white opacity-50" />
+                  </div>
+                )}
+              </div>
+              <div className="p-6">
+                <h3 className="font-semibold text-gray-900 text-lg mb-1">{project.name}</h3>
+                <p className="text-sm text-gray-500 mb-3">{project.region}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Available Leads: <strong>{project.available_leads}</strong></span>
+                  {project.price_per_lead > 0 && (
+                    <span className="text-purple-600 font-semibold">
+                      {formatCurrency(Number(project.price_per_lead), 'EGP')}/lead
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+          {hasMore && (
+            <Card 
+              className="min-w-[120px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-dashed border-teal-300"
+              onClick={() => setProjectIndex(prev => Math.min(prev + 4, projects.length - 4))}
+            >
+              <div className="p-6 flex flex-col items-center gap-2">
+                <ArrowRight className="h-8 w-8 text-teal-600" />
+                <span className="text-sm font-medium text-teal-600">View More</span>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderUnitCards = () => {
+    const visibleUnits = units.slice(unitIndex, unitIndex + 4);
+    const hasMore = units.length > unitIndex + 4;
+    const canGoBack = unitIndex > 0;
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-gray-900">Available Units</h2>
+        <div className="flex items-center gap-4 overflow-x-auto pb-4">
+          {canGoBack && (
+            <Card 
+              className="min-w-[80px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50 border-2 border-dashed border-green-300"
+              onClick={() => setUnitIndex(prev => Math.max(0, prev - 4))}
+            >
+              <div className="p-4 flex flex-col items-center gap-2">
+                <ChevronLeft className="h-6 w-6 text-green-600" />
+              </div>
+            </Card>
+          )}
+          {visibleUnits.map((unit) => (
+            <Card 
+              key={unit.id} 
+              className="min-w-[320px] flex-shrink-0 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleViewProperty(unit)}
+            >
+              <div className="relative h-48 bg-gray-100">
+                {unit.image ? (
+                  <img 
+                    src={unit.image} 
+                    alt={unit.unit_number || unit.unit_id || 'Unit'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Home className="h-16 w-16 text-gray-400" />
+                  </div>
+                )}
+                {unit.is_launch && (
+                  <Badge className="absolute top-2 right-2 bg-orange-500 text-white">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Launch
+                  </Badge>
+                )}
+              </div>
+              <div className="p-6">
+                <h3 className="font-semibold text-gray-900 text-lg mb-2">
+                  {extractName(unit.compound)}
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-4">
+                    <span className="text-gray-600">Unit: <strong>{unit.unit_number || unit.unit_id || 'N/A'}</strong></span>
+                    {unit.building_number && (
+                      <span className="text-gray-500">Bldg {unit.building_number}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {unit.number_of_bedrooms !== undefined && (
+                      <div className="flex items-center gap-1">
+                        <Bed className="h-4 w-4 text-blue-500" />
+                        <span>{unit.number_of_bedrooms}</span>
+                      </div>
+                    )}
+                    {unit.number_of_bathrooms !== undefined && (
+                      <div className="flex items-center gap-1">
+                        <Bath className="h-4 w-4 text-cyan-500" />
+                        <span>{unit.number_of_bathrooms}</span>
+                      </div>
+                    )}
+                    {unit.unit_area && (
+                      <span className="text-gray-600">{formatNumber(unit.unit_area)} m²</span>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t">
+                    <div className="font-semibold text-lg text-gray-900">
+                      {unit.price_in_egp ? 
+                        formatCurrency(unit.price_in_egp, unit.currency || 'EGP') : 
+                        'On Request'
+                      }
+                    </div>
+                    {unit.price_per_meter && (
+                      <div className="text-sm text-gray-500">
+                        {formatCurrency(unit.price_per_meter, unit.currency || 'EGP')}/m²
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+          {hasMore && (
+            <Card 
+              className="min-w-[120px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50 border-2 border-dashed border-green-300"
+              onClick={() => setUnitIndex(prev => Math.min(prev + 4, units.length - 4))}
+            >
+              <div className="p-6 flex flex-col items-center gap-2">
+                <ArrowRight className="h-8 w-8 text-green-600" />
+                <span className="text-sm font-medium text-green-600">View More</span>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   if (loading && properties.length === 0) {
     return (
@@ -1405,8 +1513,98 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* Properties Table */}
-      {properties.length > 0 && renderPropertyTable()}
+      {/* Card-based View */}
+      <div className="space-y-8">
+        {/* Developers Section */}
+        {loadingDevelopers ? (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Developers</h2>
+            <div className="flex items-center gap-4 overflow-x-auto pb-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="min-w-[280px] flex-shrink-0">
+                  <div className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-full bg-gray-200 animate-pulse"></div>
+                      <div className="flex-1">
+                        <div className="h-5 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : developers.length > 0 ? (
+          renderDeveloperCards()
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Developers</h2>
+            <Card className="p-8 text-center">
+              <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No developers found</p>
+            </Card>
+          </div>
+        )}
+
+        {/* Projects Section */}
+        {loadingProjects ? (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+            <div className="flex items-center gap-4 overflow-x-auto pb-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="min-w-[280px] flex-shrink-0 overflow-hidden">
+                  <div className="h-48 bg-gray-200 animate-pulse"></div>
+                  <div className="p-6">
+                    <div className="h-5 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3 mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : projects.length > 0 ? (
+          renderProjectCards()
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+            <Card className="p-8 text-center">
+              <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No projects found</p>
+            </Card>
+          </div>
+        )}
+
+        {/* Units Section */}
+        {loadingUnits ? (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Available Units</h2>
+            <div className="flex items-center gap-4 overflow-x-auto pb-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="min-w-[320px] flex-shrink-0">
+                  <div className="h-48 bg-gray-200 animate-pulse"></div>
+                  <div className="p-6">
+                    <div className="h-5 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3 mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : units.length > 0 ? (
+          renderUnitCards()
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Available Units</h2>
+            <Card className="p-8 text-center">
+              <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No units found</p>
+            </Card>
+          </div>
+        )}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
