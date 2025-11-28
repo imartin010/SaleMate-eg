@@ -671,6 +671,11 @@ const Inventory: React.FC = () => {
         });
       }
 
+      // Debug: Log sample compounds for troubleshooting
+      console.log(`📊 Total unique compounds: ${Object.keys(compoundCountMap).length}`);
+      console.log(`📊 Sample compounds:`, Object.keys(compoundCountMap).slice(0, 20));
+      console.log(`📊 Compounds containing 'badya':`, Object.keys(compoundCountMap).filter(c => c.includes('badya')));
+
         // Match projects to unit counts by compound name only
         const projectsWithUnits = filteredProjects.map((project) => {
           let unitCount = 0;
@@ -732,6 +737,14 @@ const Inventory: React.FC = () => {
           if (unitCount === 0) {
             console.warn(`⚠️ Project "${project.name}": 0 units - No matching compounds found`);
             console.warn(`   Project name (normalized): "${normalizedProject}"`);
+            console.warn(`   Project name (original): "${project.name}"`);
+            // Check for similar compound names
+            const similarCompounds = Object.keys(compoundCountMap).filter(c => 
+              c.includes(normalizedProject) || normalizedProject.includes(c) ||
+              c.split(/\s+/).some(word => normalizedProject.includes(word)) ||
+              normalizedProject.split(/\s+/).some(word => c.includes(word))
+            );
+            console.warn(`   Similar compounds found:`, similarCompounds.slice(0, 10));
             console.warn(`   Sample compounds:`, Object.keys(compoundCountMap).slice(0, 10));
           } else {
             console.log(`✅ Project "${project.name}": ${unitCount} units`);
