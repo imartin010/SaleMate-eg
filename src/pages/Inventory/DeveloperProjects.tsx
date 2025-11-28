@@ -131,6 +131,7 @@ const DeveloperProjects: React.FC = () => {
         const normalizedProject = normalizeName(projectName);
 
         // Match project name to compound names
+        const matchedCompounds: string[] = [];
         Object.keys(compoundCountMap).forEach((compoundName) => {
           const normalizedCompound = normalizeName(compoundName);
           
@@ -140,35 +141,50 @@ const DeveloperProjects: React.FC = () => {
           if (normalizedCompound === normalizedProject) {
             matches = true;
           }
-          // 2. Contains match (either direction)
+          // 2. Contains match (either direction) - more lenient
           else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
             matches = true;
           }
-          // 3. Word-based matching (more flexible)
-          else {
-            const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
-            const compoundWords = normalizedCompound.split(/[\s-]+/).filter(w => w.length >= 2);
-            
-            const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
-            
-            const projectSignificant = projectWords.filter(w => !stopWords.includes(w.toLowerCase()));
-            const compoundSignificant = compoundWords.filter(w => !stopWords.includes(w.toLowerCase()));
-            
-            if (projectSignificant.length > 0 && compoundSignificant.length > 0) {
-              const matchingWords = projectSignificant.filter(word => 
-                compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
-              );
-              matches = matchingWords.length >= Math.min(2, projectSignificant.length) || 
-                       matchingWords.length === projectSignificant.length;
+            // 3. Word-based matching (more flexible)
+            else {
+              const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
+              const compoundWords = normalizedCompound.split(/[\s-]+/).filter(w => w.length >= 2);
+              
+              const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
+              
+              const projectSignificant = projectWords.filter(w => !stopWords.includes(w.toLowerCase()));
+              const compoundSignificant = compoundWords.filter(w => !stopWords.includes(w.toLowerCase()));
+              
+              if (projectSignificant.length > 0 && compoundSignificant.length > 0) {
+                const matchingWords = projectSignificant.filter(word => 
+                  compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
+                );
+                // Very lenient: if at least 1 significant word matches, consider it a match
+                // For short names (1-2 words), require all words to match
+                if (projectSignificant.length <= 2) {
+                  matches = matchingWords.length === projectSignificant.length;
+                } else {
+                  // For longer names, require at least 1 word match
+                  matches = matchingWords.length >= 1;
+                }
+              }
             }
-          }
           
           if (matches) {
             unitCount += compoundCountMap[compoundName];
+            matchedCompounds.push(compoundName);
           }
         });
 
-        console.log(`📊 Project "${project.name}": ${unitCount} units (matched by compound name)`);
+        // Debug logging
+        if (unitCount === 0) {
+          console.warn(`⚠️ Project "${project.name}": 0 units - No matching compounds found`);
+          console.warn(`   Project name (normalized): "${normalizedProject}"`);
+          console.warn(`   Sample compounds:`, Object.keys(compoundCountMap).slice(0, 10));
+        } else {
+          console.log(`✅ Project "${project.name}": ${unitCount} units`);
+          console.log(`   Matched compounds:`, matchedCompounds);
+        }
 
         return {
           id: project.id,

@@ -680,6 +680,9 @@ const Inventory: React.FC = () => {
           const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
           const normalizedProject = normalizeName(projectName);
 
+          // Debug: Log project name
+          const matchedCompounds: string[] = [];
+
           // Match project name to compound names
           Object.keys(compoundCountMap).forEach((compoundName) => {
             const normalizedCompound = normalizeName(compoundName);
@@ -690,7 +693,7 @@ const Inventory: React.FC = () => {
             if (normalizedCompound === normalizedProject) {
               matches = true;
             }
-            // 2. Contains match (either direction)
+            // 2. Contains match (either direction) - more lenient
             else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
               matches = true;
             }
@@ -708,15 +711,32 @@ const Inventory: React.FC = () => {
                 const matchingWords = projectSignificant.filter(word => 
                   compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
                 );
-                matches = matchingWords.length >= Math.min(2, projectSignificant.length) || 
-                         matchingWords.length === projectSignificant.length;
+                // Very lenient: if at least 1 significant word matches, consider it a match
+                // For short names (1-2 words), require all words to match
+                if (projectSignificant.length <= 2) {
+                  matches = matchingWords.length === projectSignificant.length;
+                } else {
+                  // For longer names, require at least 1 word match
+                  matches = matchingWords.length >= 1;
+                }
               }
             }
             
             if (matches) {
               unitCount += compoundCountMap[compoundName];
+              matchedCompounds.push(compoundName);
             }
           });
+
+          // Debug logging
+          if (unitCount === 0) {
+            console.warn(`⚠️ Project "${project.name}": 0 units - No matching compounds found`);
+            console.warn(`   Project name (normalized): "${normalizedProject}"`);
+            console.warn(`   Sample compounds:`, Object.keys(compoundCountMap).slice(0, 10));
+          } else {
+            console.log(`✅ Project "${project.name}": ${unitCount} units`);
+            console.log(`   Matched compounds:`, matchedCompounds);
+          }
 
           return {
             id: project.id,
