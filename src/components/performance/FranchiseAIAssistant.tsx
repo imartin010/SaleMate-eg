@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Loader2, Minimize2 } from 'lucide-react';
+import { Send, User, Loader2, Minimize2, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '../../core/api/client';
 import { useAuthStore } from '../../features/auth/store/auth.store';
 import { playMessageSentSound, playMessageReceivedSound } from '../../utils/soundEffects';
@@ -30,6 +30,21 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Mute state - load from localStorage (shared with other chat components)
+  const [isMuted, setIsMuted] = useState(() => {
+    const saved = localStorage.getItem('chat-sounds-muted');
+    return saved === 'true';
+  });
+  
+  // Save mute state to localStorage
+  useEffect(() => {
+    localStorage.setItem('chat-sounds-muted', String(isMuted));
+  }, [isMuted]);
+  
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -131,8 +146,10 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
     setInput('');
     setIsLoading(true);
     
-    // Play sound effect for message sent
-    playMessageSentSound();
+    // Play sound effect for message sent (if not muted)
+    if (!isMuted) {
+      playMessageSentSound();
+    }
 
     // Save user message to database
     const userMessageId = await saveMessage(userMessage);
@@ -170,8 +187,10 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Play sound effect for message received
-      playMessageReceivedSound();
+      // Play sound effect for message received (if not muted)
+      if (!isMuted) {
+        playMessageReceivedSound();
+      }
 
       // Save assistant message to database
       const assistantMessageId = await saveMessage(assistantMessage);
@@ -265,9 +284,22 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
                 <p className="text-xs text-purple-100">Ask about franchises</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleMute}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+                aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white/80" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
+                )}
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
               aria-label="Minimize"
             >
               <Minimize2 className="w-5 h-5 text-white" />

@@ -229,8 +229,10 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
         console.log('All messages after send:', allMessages);
         setMessages(allMessages);
         
-        // Play sound effect for message received
-        playMessageReceivedSound();
+        // Play sound effect for message received (if not muted)
+        if (!isMuted) {
+          playMessageReceivedSound();
+        }
       } else {
         console.warn('No AI message returned, but keeping user message');
         // Don't remove the user message - keep it visible

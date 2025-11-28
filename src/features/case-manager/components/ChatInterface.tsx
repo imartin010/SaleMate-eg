@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Loader2, Bot, User, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
@@ -32,6 +32,21 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
   const [isInitializing, setIsInitializing] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Mute state - load from localStorage
+  const [isMuted, setIsMuted] = useState(() => {
+    const saved = localStorage.getItem('chat-sounds-muted');
+    return saved === 'true';
+  });
+  
+  // Save mute state to localStorage
+  useEffect(() => {
+    localStorage.setItem('chat-sounds-muted', String(isMuted));
+  }, [isMuted]);
+  
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -121,8 +136,10 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
     setInput('');
     setIsLoading(true);
     
-    // Play sound effect for message sent
-    playMessageSentSound();
+    // Play sound effect for message sent (if not muted)
+    if (!isMuted) {
+      playMessageSentSound();
+    }
 
     try {
       // Send message and get AI response
@@ -159,8 +176,10 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
           ];
         });
         
-        // Play sound effect for message received
-        playMessageReceivedSound();
+        // Play sound effect for message received (if not muted)
+        if (!isMuted) {
+          playMessageReceivedSound();
+        }
       } else {
         console.warn('No response received from AI');
         // Keep the user message but show an error indicator
@@ -217,14 +236,28 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
     <Card className="p-0 bg-white/80 backdrop-blur-sm border-indigo-100 overflow-hidden flex flex-col h-[600px]">
       {/* Header */}
       <div className="p-4 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">AI Sales Coach</h3>
+              <p className="text-xs text-gray-600">Helping you close the deal</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">AI Sales Coach</h3>
-            <p className="text-xs text-gray-600">Helping you close the deal</p>
-          </div>
+          <button
+            onClick={toggleMute}
+            className="p-2 rounded-md hover:bg-white/50 transition-colors"
+            title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+            aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+          >
+            {isMuted ? (
+              <VolumeX className="w-5 h-5 text-gray-500" />
+            ) : (
+              <Volume2 className="w-5 h-5 text-indigo-600" />
+            )}
+          </button>
         </div>
       </div>
 
