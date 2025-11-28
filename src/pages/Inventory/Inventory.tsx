@@ -674,7 +674,11 @@ const Inventory: React.FC = () => {
       // Debug: Log sample compounds for troubleshooting
       console.log(`📊 Total unique compounds: ${Object.keys(compoundCountMap).length}`);
       console.log(`📊 Sample compounds:`, Object.keys(compoundCountMap).slice(0, 20));
-      console.log(`📊 Compounds containing 'badya':`, Object.keys(compoundCountMap).filter(c => c.includes('badya')));
+      const badyaCompounds = Object.keys(compoundCountMap).filter(c => c.includes('badya'));
+      console.log(`📊 Compounds containing 'badya':`, badyaCompounds);
+      if (badyaCompounds.length > 0) {
+        console.log(`📊 Badya compound counts:`, badyaCompounds.map(c => ({ name: c, count: compoundCountMap[c] })));
+      }
 
         // Match projects to unit counts by compound name only
         const projectsWithUnits = filteredProjects.map((project) => {
