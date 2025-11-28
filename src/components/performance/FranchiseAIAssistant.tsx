@@ -306,10 +306,11 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              aria-label="Minimize"
-            >
-              <Minimize2 className="w-5 h-5 text-white" />
-            </button>
+                aria-label="Minimize"
+              >
+                <Minimize2 className="w-5 h-5 text-white" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}

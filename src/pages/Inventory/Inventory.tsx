@@ -1049,8 +1049,6 @@ const Inventory: React.FC = () => {
       </div>
     );
   }
-  
-=======
 
   // Card-based view components
   const renderDeveloperCards = () => {
@@ -1386,7 +1384,6 @@ const Inventory: React.FC = () => {
     );
   };
 
->>>>>>> 2d93754d469e78cf5aa65184092c692d1a7ad5d2
   // Legacy loading skeleton - keep for reference but hidden
   if (false && loading) {
     return (
@@ -2233,4 +2230,5 @@ const Inventory: React.FC = () => {
 };
 
 export default Inventory;
+
 
