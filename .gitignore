@@ -26,3 +26,8 @@ dist-ssr
 # Large CSV files
 *.csv
 .vercel
+.env
+.env.local
+.env.production
+.env.local.backup
+.env.local.bak
