@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -12,6 +12,8 @@ import { PropertyDetailsModal } from '../../components/inventory/PropertyDetails
 import { EmptyState } from '../../components/common/EmptyState';
 import { BottomSheet } from '../../components/common/BottomSheet';
 import { SkeletonList } from '../../components/common/SkeletonCard';
+import { SafeImage } from '../../components/common/SafeImage';
+import { CardContent, CardFooter } from '../../components/ui/card';
 import {
   Search,
   Filter,
@@ -41,6 +43,7 @@ const ITEMS_PER_PAGE = 20;
 
 const Inventory: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<BRDataProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +64,7 @@ const Inventory: React.FC = () => {
 
   // New card-based view data
   const [developers, setDevelopers] = useState<Array<{ id: string; name: string; logo?: string }>>([]);
-  const [projects, setProjects] = useState<Array<{ id: string; name: string; region: string; cover_image?: string; available_leads: number; price_per_lead: number }>>([]);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string; region: string; cover_image?: string; available_units: number }>>([]);
   const [units, setUnits] = useState<BRDataProperty[]>([]);
   
   // Loading states for each section
@@ -557,17 +560,39 @@ const Inventory: React.FC = () => {
   const loadDevelopers = async () => {
     try {
       setLoadingDevelopers(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from('salemate-inventory')
-        .select('developer')
-        .limit(1000);
+      
+      // Fetch all developers in batches to get accurate count
+      let allDeveloperData: Record<string, unknown>[] = [];
+      let hasMore = true;
+      let currentStart = 0;
+      const batchSize = 1000;
 
-      if (error) throw error;
+      while (hasMore) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: batchData, error: batchError } = await (supabase as any)
+          .from('salemate-inventory')
+          .select('developer')
+          .range(currentStart, currentStart + batchSize - 1);
+
+        if (batchError) {
+          console.error('Error loading developers batch:', batchError);
+          throw batchError;
+        }
+
+        if (batchData && batchData.length > 0) {
+          allDeveloperData = allDeveloperData.concat(batchData);
+        }
+
+        if (!batchData || batchData.length < batchSize) {
+          hasMore = false;
+        } else {
+          currentStart += batchSize;
+        }
+      }
 
       const developerMap = new Map<string, { id: string; name: string }>();
       
-      data?.forEach((item: Record<string, unknown>) => {
+      allDeveloperData?.forEach((item: Record<string, unknown>) => {
         const developer = item.developer;
         if (developer) {
           let developerName = '';
@@ -598,7 +623,9 @@ const Inventory: React.FC = () => {
         }
       });
 
-      setDevelopers(Array.from(developerMap.values()));
+      const uniqueDevelopers = Array.from(developerMap.values());
+      console.log(`📊 Loaded ${uniqueDevelopers.length} unique developers`);
+      setDevelopers(uniqueDevelopers);
     } catch (error) {
       console.error('Failed to load developers:', error);
       setDevelopers([]);
@@ -610,13 +637,114 @@ const Inventory: React.FC = () => {
   const loadProjects = async () => {
     try {
       setLoadingProjects(true);
-      const { data, error } = await supabase
+      const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
-        .select('id, name, region, cover_image, available_leads, price_per_lead')
+        .select('id, name, region, cover_image')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProjects(data || []);
+      if (projectsError) throw projectsError;
+
+      // Filter out default project
+      const filteredProjects = (projectsData || []).filter((project) => {
+        const projectName = project.name?.toLowerCase().trim() || '';
+        return projectName !== 'default project' && 
+               projectName !== 'default' &&
+               projectName.length > 0;
+      });
+
+      // Efficient approach: Fetch a sample of unique compound/developer pairs
+      // This is much faster than fetching all 23k+ units
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: sampleData, error: sampleError } = await (supabase as any)
+        .from('salemate-inventory')
+        .select('compound, developer')
+        .limit(10000); // Sample size for faster loading - gets unique combinations
+
+      // Group and count units by compound/developer combination
+      const unitCountMap: Record<string, number> = {};
+      if (!sampleError && sampleData) {
+        sampleData.forEach((unit: Record<string, unknown>) => {
+          const compound = extractName(unit.compound).toLowerCase().trim();
+          const developer = extractName(unit.developer).toLowerCase().trim();
+          const key = `${compound}|||${developer}`;
+          unitCountMap[key] = (unitCountMap[key] || 0) + 1;
+        });
+      }
+
+        // Match projects to unit counts
+        const projectsWithUnits = filteredProjects.map((project) => {
+          let unitCount = 0;
+          const projectName = project.name.toLowerCase().trim();
+          const projectRegion = project.region?.toLowerCase().trim() || '';
+
+          // Try to match projects to compounds
+          Object.keys(unitCountMap).forEach((key) => {
+            const [compoundName, developerName] = key.split('|||');
+            
+            // Check if developer matches
+            const developerMatches = projectRegion && (
+              developerName === projectRegion ||
+              developerName.includes(projectRegion) ||
+              projectRegion.includes(developerName)
+            );
+            
+            if (!developerMatches) return;
+            
+            // Check if project name matches compound (improved matching)
+            let matches = false;
+            
+            // Normalize both names for comparison (remove extra spaces, dashes, etc.)
+            const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
+            const normalizedProject = normalizeName(projectName);
+            const normalizedCompound = normalizeName(compoundName);
+            
+            // 1. Exact match (after normalization)
+            if (normalizedCompound === normalizedProject) {
+              matches = true;
+            }
+            // 2. Contains match (either direction) - check normalized versions
+            else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
+              matches = true;
+            }
+            // 3. Word-based matching (more flexible)
+            else {
+              // Split by spaces, dashes, and other separators
+              const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
+              const compoundWords = normalizedCompound.split(/[\s-]+/).filter(w => w.length >= 2);
+              
+              // Remove only very common words (not location-specific words like "park", "beach", etc.)
+              const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
+              
+              const projectSignificant = projectWords.filter(w => !stopWords.includes(w.toLowerCase()));
+              const compoundSignificant = compoundWords.filter(w => !stopWords.includes(w.toLowerCase()));
+              
+              // Check if at least 2 significant words match (to avoid false positives)
+              if (projectSignificant.length > 0 && compoundSignificant.length > 0) {
+                const matchingWords = projectSignificant.filter(word => 
+                  compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
+                );
+                // If at least 2 words match, or if all significant words match, consider it a match
+                matches = matchingWords.length >= Math.min(2, projectSignificant.length) || 
+                         matchingWords.length === projectSignificant.length;
+              }
+            }
+            
+            if (matches) {
+              unitCount += unitCountMap[key];
+            }
+            // Removed fallback to developer-only counting as it was inaccurate
+          });
+
+          return {
+            id: project.id,
+            name: project.name,
+            region: project.region,
+            cover_image: project.cover_image,
+            available_units: unitCount,
+          };
+        });
+
+      setProjects(projectsWithUnits);
     } catch (error) {
       console.error('Failed to load projects:', error);
       setProjects([]);
@@ -712,31 +840,62 @@ const Inventory: React.FC = () => {
             </Card>
           )}
           {visibleDevelopers.map((developer) => (
-            <Card key={developer.id} className="min-w-[280px] flex-shrink-0 hover:shadow-lg transition-shadow">
-              <div className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+            <Card key={developer.id} className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0" style={{ padding: 0 }}>
+              {/* Hero Photo Section */}
+              <div className="relative h-52 w-full overflow-hidden">
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:scale-[1.02] transition-transform duration-300">
+                  <div className="h-24 w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-bold">
                     {developer.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 text-lg">{developer.name}</h3>
-                    <p className="text-sm text-gray-500">Developer</p>
+                </div>
+                {/* Subtle Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                {/* Developer Badge */}
+                <div className="absolute top-2 left-2">
+                  <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
+                    <Building className="h-2.5 w-2.5 inline mr-1 align-middle" />
+                    <span className="align-middle">Developer</span>
                   </div>
                 </div>
               </div>
+              {/* Developer Details */}
+              <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
+                <div>
+                  <div className="text-base font-semibold text-gray-900 line-clamp-1">{developer.name}</div>
+                  <p className="text-xs text-gray-500 line-clamp-1">Real Estate Developer</p>
+                </div>
+              </CardContent>
             </Card>
           ))}
-          {hasMore && (
-            <Card 
-              className="min-w-[120px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-blue-300"
-              onClick={() => setDeveloperIndex(prev => Math.min(prev + 4, developers.length - 4))}
-            >
-              <div className="p-6 flex flex-col items-center gap-2">
-                <ArrowRight className="h-8 w-8 text-blue-600" />
-                <span className="text-sm font-medium text-blue-600">View More</span>
+          {/* Always show "View All" card */}
+          <Card 
+            className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0 cursor-pointer"
+            style={{ padding: 0 }}
+            onClick={() => navigate('/app/inventory/developers')}
+          >
+            {/* Hero Photo Section */}
+            <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
+              <div className="w-full h-full flex items-center justify-center">
+                <ArrowRight className="h-16 w-16 text-white group-hover:scale-110 transition-transform duration-300" />
               </div>
-            </Card>
-          )}
+              {/* Subtle Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              {/* View More Badge */}
+              <div className="absolute top-2 left-2">
+                <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
+                  <Building className="h-2.5 w-2.5 inline mr-1 align-middle" />
+                  <span className="align-middle">View All</span>
+                </div>
+              </div>
+            </div>
+            {/* Card Details */}
+            <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
+              <div>
+                <div className="text-base font-semibold text-gray-900 line-clamp-1">View All Developers</div>
+                <p className="text-xs text-gray-500 line-clamp-1">Browse all developers</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -746,6 +905,17 @@ const Inventory: React.FC = () => {
     const visibleProjects = projects.slice(projectIndex, projectIndex + 4);
     const hasMore = projects.length > projectIndex + 4;
     const canGoBack = projectIndex > 0;
+
+    const getHeroImage = (projectName: string) => {
+      const images = [
+        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=250&fit=crop',
+        'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=250&fit=crop',
+        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop',
+      ];
+      const index = projectName.charCodeAt(0) % images.length;
+      return images[index];
+    };
 
     return (
       <div className="space-y-4">
@@ -762,45 +932,87 @@ const Inventory: React.FC = () => {
             </Card>
           )}
           {visibleProjects.map((project) => (
-            <Card key={project.id} className="min-w-[280px] flex-shrink-0 hover:shadow-lg transition-shadow overflow-hidden">
-              <div className="relative h-48 bg-gradient-to-br from-teal-500 to-blue-600">
-                {project.cover_image ? (
-                  <img 
-                    src={project.cover_image} 
-                    alt={project.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Building2 className="h-16 w-16 text-white opacity-50" />
+            <Card key={project.id} className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0" style={{ padding: 0 }}>
+              {/* Hero Photo Section */}
+              <div className="relative h-52 w-full overflow-hidden">
+                <SafeImage
+                  src={project.cover_image || undefined}
+                  alt={project.name}
+                  fallbackSrc={getHeroImage(project.name)}
+                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                  placeholder={
+                    <div className="w-full h-full bg-gradient-to-br from-teal-50 to-blue-100 flex items-center justify-center">
+                      <Building2 className="h-16 w-16 text-teal-300" />
+                    </div>
+                  }
+                />
+                {/* Subtle Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                {/* Developer Badge */}
+                <div className="absolute top-2 left-2">
+                  <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
+                    <Building2 className="h-2.5 w-2.5 inline mr-1 align-middle" />
+                    <span className="align-middle">{project.region}</span>
                   </div>
-                )}
-              </div>
-              <div className="p-6">
-                <h3 className="font-semibold text-gray-900 text-lg mb-1">{project.name}</h3>
-                <p className="text-sm text-gray-500 mb-3">{project.region}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Available Leads: <strong>{project.available_leads}</strong></span>
-                  {project.price_per_lead > 0 && (
-                    <span className="text-purple-600 font-semibold">
-                      {formatCurrency(Number(project.price_per_lead), 'EGP')}/lead
-                    </span>
-                  )}
                 </div>
               </div>
+              {/* Project Details */}
+              <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
+                <div>
+                  <div className="text-base font-semibold text-gray-900 line-clamp-1">{project.name}</div>
+                  <p className="text-xs text-gray-500 line-clamp-1">Premium Real Estate Project</p>
+                </div>
+                {/* Location */}
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <MapPin className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                  <span className="truncate">{project.region}</span>
+                </div>
+                {/* Stats */}
+                <div className="text-center p-3 bg-blue-50/50 rounded-lg">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">Available Units</div>
+                  <div className="text-2xl font-semibold text-blue-700">
+                    {project.available_units.toLocaleString()}
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           ))}
-          {hasMore && (
-            <Card 
-              className="min-w-[120px] flex-shrink-0 cursor-pointer hover:shadow-lg transition-shadow flex items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-dashed border-teal-300"
-              onClick={() => setProjectIndex(prev => Math.min(prev + 4, projects.length - 4))}
-            >
-              <div className="p-6 flex flex-col items-center gap-2">
-                <ArrowRight className="h-8 w-8 text-teal-600" />
-                <span className="text-sm font-medium text-teal-600">View More</span>
+          {/* Always show "View All" card */}
+          <Card 
+            className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0 cursor-pointer"
+            style={{ padding: 0 }}
+            onClick={() => navigate('/app/inventory/projects')}
+          >
+            {/* Hero Photo Section */}
+            <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-teal-50 to-blue-100">
+              <div className="w-full h-full flex items-center justify-center">
+                <ArrowRight className="h-16 w-16 text-teal-600 group-hover:scale-110 transition-transform duration-300" />
               </div>
-            </Card>
-          )}
+              {/* Subtle Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              {/* View More Badge */}
+              <div className="absolute top-2 left-2">
+                <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
+                  <Building2 className="h-2.5 w-2.5 inline mr-1 align-middle" />
+                  <span className="align-middle">View All</span>
+                </div>
+              </div>
+            </div>
+            {/* Card Details */}
+            <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
+              <div>
+                <div className="text-base font-semibold text-gray-900 line-clamp-1">View All Projects</div>
+                <p className="text-xs text-gray-500 line-clamp-1">Browse all projects from all developers</p>
+              </div>
+              {/* Stats */}
+              <div className="text-center p-3 bg-teal-50/50 rounded-lg">
+                <div className="text-xs text-gray-500 mb-1 font-medium">Total Projects</div>
+                <div className="text-2xl font-semibold text-teal-700">
+                  {projects.length}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -810,6 +1022,17 @@ const Inventory: React.FC = () => {
     const visibleUnits = units.slice(unitIndex, unitIndex + 4);
     const hasMore = units.length > unitIndex + 4;
     const canGoBack = unitIndex > 0;
+
+    const getHeroImage = (unitName: string) => {
+      const images = [
+        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=250&fit=crop',
+        'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=250&fit=crop',
+        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop',
+      ];
+      const index = (unitName || '').charCodeAt(0) % images.length;
+      return images[index];
+    };
 
     return (
       <div className="space-y-4">
@@ -828,71 +1051,90 @@ const Inventory: React.FC = () => {
           {visibleUnits.map((unit) => (
             <Card 
               key={unit.id} 
-              className="min-w-[320px] flex-shrink-0 hover:shadow-lg transition-shadow cursor-pointer"
+              className="shop-project-card min-w-[320px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0 cursor-pointer" 
+              style={{ padding: 0 }}
               onClick={() => handleViewProperty(unit)}
             >
-              <div className="relative h-48 bg-gray-100">
-                {unit.image ? (
-                  <img 
-                    src={unit.image} 
-                    alt={unit.unit_number || unit.unit_id || 'Unit'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Home className="h-16 w-16 text-gray-400" />
-                  </div>
-                )}
+              {/* Hero Photo Section */}
+              <div className="relative h-52 w-full overflow-hidden">
+                <SafeImage
+                  src={unit.image || undefined}
+                  alt={unit.unit_number || unit.unit_id || 'Unit'}
+                  fallbackSrc={getHeroImage(extractName(unit.compound))}
+                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                  placeholder={
+                    <div className="w-full h-full bg-gradient-to-br from-green-50 to-teal-100 flex items-center justify-center">
+                      <Home className="h-16 w-16 text-green-300" />
+                    </div>
+                  }
+                />
+                {/* Subtle Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                {/* Launch Badge */}
                 {unit.is_launch && (
-                  <Badge className="absolute top-2 right-2 bg-orange-500 text-white">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Launch
-                  </Badge>
-                )}
-              </div>
-              <div className="p-6">
-                <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                  {extractName(unit.compound)}
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-4">
-                    <span className="text-gray-600">Unit: <strong>{unit.unit_number || unit.unit_id || 'N/A'}</strong></span>
-                    {unit.building_number && (
-                      <span className="text-gray-500">Bldg {unit.building_number}</span>
-                    )}
+                  <div className="absolute top-2 right-2">
+                    <div className="bg-orange-500 text-white px-2 py-0.5 rounded text-[10px] font-semibold shadow-md border border-orange-600/50">
+                      <Sparkles className="h-2.5 w-2.5 inline mr-1 align-middle fill-white" />
+                      <span className="align-middle">Launch</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                )}
+                {/* Compound Badge */}
+                <div className="absolute top-2 left-2">
+                  <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
+                    <Home className="h-2.5 w-2.5 inline mr-1 align-middle" />
+                    <span className="align-middle">{extractName(unit.compound)}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Unit Details */}
+              <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
+                <div>
+                  <div className="text-base font-semibold text-gray-900 line-clamp-1">
+                    {unit.unit_number || unit.unit_id || 'Unit'} {unit.building_number && `• Bldg ${unit.building_number}`}
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-1">
+                    {extractName(unit.developer)} • {extractName(unit.area)}
+                  </p>
+                </div>
+                {/* Location */}
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <MapPin className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                  <span className="truncate">{extractName(unit.area)}</span>
+                </div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-left p-2 bg-blue-50/50 rounded-lg">
+                    <div className="text-xs text-gray-500 mb-0.5 font-medium">Price</div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      {unit.price_in_egp ? formatCurrency(unit.price_in_egp, unit.currency || 'EGP').replace(' EGP', '') : 'On Request'}
+                    </div>
+                  </div>
+                  <div className="text-left p-2 bg-green-50/50 rounded-lg">
+                    <div className="text-xs text-gray-500 mb-0.5 font-medium">Size</div>
+                    <div className="text-lg font-semibold text-green-700">
+                      {unit.unit_area ? `${formatNumber(unit.unit_area)} m²` : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+                {/* Bed/Bath */}
+                {(unit.number_of_bedrooms !== undefined || unit.number_of_bathrooms !== undefined) && (
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
                     {unit.number_of_bedrooms !== undefined && (
                       <div className="flex items-center gap-1">
-                        <Bed className="h-4 w-4 text-blue-500" />
+                        <Bed className="h-3.5 w-3.5 text-blue-500" />
                         <span>{unit.number_of_bedrooms}</span>
                       </div>
                     )}
                     {unit.number_of_bathrooms !== undefined && (
                       <div className="flex items-center gap-1">
-                        <Bath className="h-4 w-4 text-cyan-500" />
+                        <Bath className="h-3.5 w-3.5 text-cyan-500" />
                         <span>{unit.number_of_bathrooms}</span>
                       </div>
                     )}
-                    {unit.unit_area && (
-                      <span className="text-gray-600">{formatNumber(unit.unit_area)} m²</span>
-                    )}
                   </div>
-                  <div className="pt-2 border-t">
-                    <div className="font-semibold text-lg text-gray-900">
-                      {unit.price_in_egp ? 
-                        formatCurrency(unit.price_in_egp, unit.currency || 'EGP') : 
-                        'On Request'
-                      }
-                    </div>
-                    {unit.price_per_meter && (
-                      <div className="text-sm text-gray-500">
-                        {formatCurrency(unit.price_per_meter, unit.currency || 'EGP')}/m²
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                )}
+              </CardContent>
             </Card>
           ))}
           {hasMore && (
@@ -1754,3 +1996,4 @@ const Inventory: React.FC = () => {
 };
 
 export default Inventory;
+

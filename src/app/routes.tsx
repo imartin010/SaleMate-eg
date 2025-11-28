@@ -51,6 +51,10 @@ const CRMDashboard = React.lazy(() => import('../pages/CRM/CRMDashboard'));
 const CaseManager = React.lazy(() => import('../pages/Case/CaseManager'));
 const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
+const AllProjects = React.lazy(() => import('../pages/Inventory/AllProjects'));
+const AllDevelopers = React.lazy(() => import('../pages/Inventory/AllDevelopers'));
+const ProjectUnits = React.lazy(() => import('../pages/Inventory/ProjectUnits'));
+const DeveloperProjects = React.lazy(() => import('../pages/Inventory/DeveloperProjects'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
 const AcceptInvitation = React.lazy(() => import('../pages/Team/AcceptInvitation'));
@@ -417,6 +421,22 @@ export const router = createBrowserRouter([
           {
             path: 'inventory',
             element: <SafePage><Inventory /></SafePage>,
+          },
+          {
+            path: 'inventory/projects',
+            element: <SafePage><AllProjects /></SafePage>,
+          },
+          {
+            path: 'inventory/developers',
+            element: <SafePage><AllDevelopers /></SafePage>,
+          },
+          {
+            path: 'inventory/developers/:developerName',
+            element: <SafePage><DeveloperProjects /></SafePage>,
+          },
+          {
+            path: 'inventory/projects/:projectName/units',
+            element: <SafePage><ProjectUnits /></SafePage>,
           },
           {
             path: 'deals',

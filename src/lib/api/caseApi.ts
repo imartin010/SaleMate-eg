@@ -321,3 +321,163 @@ export async function getInventoryMatches(leadId: string) {
     created_at: activity.created_at,
   }));
 }
+
+/**
+ * Change lead stage and trigger associated actions
+ */
+export async function changeStage(payload: {
+  leadId: string;
+  newStage: string;
+  userId: string;
+  feedback?: string;
+  budget?: number;
+  downPayment?: number;
+  monthlyInstallment?: number;
+  meetingDate?: string;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-stage-change', {
+      body: payload,
+    });
+
+    if (error) {
+      console.error('Stage change error:', error);
+      throw new Error(error.message || 'Failed to change stage');
+    }
+
+    return data || { success: true, message: 'Stage changed successfully' };
+  } catch (error) {
+    console.error('Error changing stage:', error);
+    throw error;
+  }
+}
+
+/**
+ * Complete a case action
+ */
+export async function completeAction(actionId: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-actions', {
+      body: {
+        method: 'COMPLETE',
+        actionId,
+      },
+    });
+
+    if (error) {
+      console.error('Complete action error:', error);
+      throw new Error(error.message || 'Failed to complete action');
+    }
+
+    return data?.data || data;
+  } catch (error) {
+    console.error('Error completing action:', error);
+    throw error;
+  }
+}
+
+/**
+ * Skip a case action
+ */
+export async function skipAction(actionId: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-actions', {
+      body: {
+        method: 'SKIP',
+        actionId,
+      },
+    });
+
+    if (error) {
+      console.error('Skip action error:', error);
+      throw new Error(error.message || 'Failed to skip action');
+    }
+
+    return data?.data || data;
+  } catch (error) {
+    console.error('Error skipping action:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new case action
+ */
+export async function createAction(payload: {
+  leadId: string;
+  actionType: string;
+  dueAt?: string;
+  payload?: Record<string, unknown>;
+}) {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-actions', {
+      body: {
+        method: 'CREATE',
+        ...payload,
+      },
+    });
+
+    if (error) {
+      console.error('Create action error:', error);
+      throw new Error(error.message || 'Failed to create action');
+    }
+
+    return data?.data || data;
+  } catch (error) {
+    console.error('Error creating action:', error);
+    throw error;
+  }
+}
+
+/**
+ * Change face (reassign lead to different agent)
+ */
+export async function changeFace(payload: {
+  leadId: string;
+  toAgentId: string;
+  reason?: string;
+  userId: string;
+}) {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-face-change', {
+      body: payload,
+    });
+
+    if (error) {
+      console.error('Face change error:', error);
+      throw new Error(error.message || 'Failed to change face');
+    }
+
+    return data?.data || data;
+  } catch (error) {
+    console.error('Error changing face:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get AI coaching recommendations for a lead
+ */
+export async function getAICoaching(params: {
+  stage: string;
+  lead: { id: string; name: string; phone?: string; project_id?: string };
+  lastFeedback?: string;
+  inventoryContext?: { hasMatches: boolean; topUnits?: unknown[] };
+  history?: Array<{ stage: string; note: string; at: string }>;
+}) {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-coach', {
+      body: params,
+    });
+
+    if (error) {
+      console.error('AI coaching error:', error);
+      throw new Error(error.message || 'Failed to get AI coaching');
+    }
+
+    return data?.data || data;
+  } catch (error) {
+    console.error('Error getting AI coaching:', error);
+    throw error;
+  }
+}

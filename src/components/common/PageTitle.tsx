@@ -80,7 +80,7 @@ export const PageTitle: React.FC<PageTitleProps> = ({
   color,
   className
 }) => {
-  const colors = colorVariants[color];
+  const colors = colorVariants[color] || colorVariants.blue; // Fallback to blue if color is invalid
 
   return (
     <div className={cn('text-center space-y-4', className)}>
