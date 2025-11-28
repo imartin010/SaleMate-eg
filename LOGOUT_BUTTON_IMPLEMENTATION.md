@@ -170,3 +170,5 @@ Users can now easily and securely log out from any Performance dashboard with:
 - ✅ Automatic redirect to SaleMate Performance login
 - ✅ Consistent design across all dashboards
 - ✅ Error handling and safety measures
+
+
