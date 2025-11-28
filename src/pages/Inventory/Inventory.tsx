@@ -1275,8 +1275,6 @@ const Inventory: React.FC = () => {
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 bg-clip-text text-transparent mb-2">
             Property Inventory
           </h1>
-          {/* Version indicator - visible to confirm new version loaded */}
-          <div className="text-xs text-blue-600 font-medium mb-2">✨ Card View v2.0 - New Layout Active</div>
           <p className="text-gray-600 text-base md:text-lg">
             Browse and manage real estate properties from Our Data Science Department
           </p>
