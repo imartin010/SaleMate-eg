@@ -235,6 +235,8 @@ export async function getCaseFeedback(leadId: string) {
  * Get case actions for a lead
  */
 export async function getCaseActions(leadId: string) {
+  console.log('Fetching case actions for leadId:', leadId);
+  
   const { data, error } = await supabase
     .from('events')
     .select(`
@@ -255,8 +257,12 @@ export async function getCaseActions(leadId: string) {
 
   if (error) {
     console.error('Error fetching case actions:', error);
+    console.error('Error details:', { message: error.message, details: error.details, hint: error.hint });
     throw error;
   }
+  
+  console.log('Raw actions data from database:', data);
+  console.log('Actions count from database:', data?.length || 0);
 
   return (data ?? []).map((activity) => {
     const payload = (activity.payload ?? {}) as any;

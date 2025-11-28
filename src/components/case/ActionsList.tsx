@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Clock, AlertCircle } from 'lucide-react';
 import { Card } from '../ui/card';
@@ -23,8 +24,36 @@ const ACTION_ICONS: Record<string, string> = {
 };
 
 export function ActionsList({ actions, onRefetch }: ActionsListProps) {
-  const pendingActions = actions.filter(a => a.status === 'PENDING');
-  const completedActions = actions.filter(a => a.status === 'DONE').slice(0, 3);
+  // Debug logging
+  useEffect(() => {
+    console.log('ActionsList received actions:', actions);
+    console.log('Actions is array?', Array.isArray(actions));
+    console.log('Actions count:', actions?.length || 0);
+    if (actions && actions.length > 0) {
+      console.log('Actions statuses:', actions.map(a => ({ id: a.id, status: a.status, type: a.action_type })));
+    } else {
+      console.log('No actions received - this might be expected if no actions exist for this lead');
+    }
+  }, [actions]);
+
+  // Ensure actions is an array
+  const safeActions = Array.isArray(actions) ? actions : [];
+
+  // Filter actions - handle different status values
+  const pendingActions = safeActions.filter(a => {
+    if (!a) return false;
+    const status = (a.status || '').toUpperCase();
+    return status === 'PENDING' || status === 'IN_PROGRESS' || (!status && !a.completed_at);
+  });
+  
+  const completedActions = safeActions.filter(a => {
+    if (!a) return false;
+    const status = (a.status || '').toUpperCase();
+    return status === 'DONE' || status === 'COMPLETED' || !!a.completed_at;
+  }).slice(0, 3);
+  
+  console.log('Pending actions:', pendingActions.length);
+  console.log('Completed actions:', completedActions.length);
 
   const handleComplete = async (actionId: string) => {
     try {
@@ -48,6 +77,20 @@ export function ActionsList({ actions, onRefetch }: ActionsListProps) {
     if (!dueAt) return false;
     return new Date(dueAt) < new Date();
   };
+
+  // If no actions at all, show a more prominent empty state
+  if (safeActions.length === 0) {
+    return (
+      <Card className="p-6 bg-white/80 backdrop-blur-sm border-indigo-100 min-h-[200px]">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions & Reminders</h3>
+        <div className="text-center py-8 text-gray-500 min-h-[120px] flex flex-col items-center justify-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-3 text-gray-400" style={{ opacity: 0.6 }} />
+          <p className="text-sm font-medium text-gray-700 mb-1">No actions yet</p>
+          <p className="text-xs text-gray-500">Actions will appear here when created for this lead</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 bg-white/80 backdrop-blur-sm border-indigo-100">
@@ -111,9 +154,10 @@ export function ActionsList({ actions, onRefetch }: ActionsListProps) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No pending actions</p>
+          <div className="text-center py-6 text-gray-500 min-h-[100px] flex flex-col items-center justify-center">
+            <AlertCircle className="h-10 w-10 mx-auto mb-3 text-gray-400" style={{ opacity: 0.6 }} />
+            <p className="text-sm font-medium text-gray-700 mb-1">No pending actions</p>
+            <p className="text-xs text-gray-500">Actions will appear here when created</p>
           </div>
         )}
 

@@ -10,6 +10,12 @@ import { sendChatMessage, getChatMessages, initializeChat } from '../../lib/api/
 import { playMessageSentSound, playMessageReceivedSound } from '../../utils/soundEffects';
 import type { Lead } from '../../hooks/crm/useLeads';
 
+// Helper function to detect if text contains Arabic characters
+function containsArabic(text: string): boolean {
+  const arabicRegex = /[\u0600-\u06FF]/;
+  return arabicRegex.test(text);
+}
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -329,8 +335,21 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-900 border border-gray-200'
                   }`}
+                  dir={containsArabic(message.content) ? 'rtl' : 'ltr'}
+                  style={{
+                    direction: containsArabic(message.content) ? 'rtl' : 'ltr',
+                    textAlign: containsArabic(message.content) ? 'right' : 'left',
+                  }}
                 >
-                  <p className="whitespace-pre-wrap text-xs leading-relaxed">{message.content}</p>
+                  <p 
+                    className="whitespace-pre-wrap text-xs leading-relaxed"
+                    style={{
+                      direction: containsArabic(message.content) ? 'rtl' : 'ltr',
+                      textAlign: containsArabic(message.content) ? 'right' : 'left',
+                    }}
+                  >
+                    {message.content}
+                  </p>
                 </div>
                 {message.role === 'user' && (
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
