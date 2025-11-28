@@ -261,7 +261,7 @@ const PerformanceFranchiseDashboard: React.FC = () => {
                 src="https://wkxbhvckmgrmdkdkhnqo.supabase.co/storage/v1/object/public/partners-logos/sale_mate_performance_logo.png"
                 alt="SaleMate Performance Logo"
                 className="h-8 sm:h-12 object-contain"
-                style={{ width: 'auto', maxWidth: '100%', maxWidth: '300px' }}
+                style={{ width: 'auto', maxWidth: '300px' }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';

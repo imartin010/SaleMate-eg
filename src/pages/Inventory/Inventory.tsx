@@ -911,14 +911,6 @@ const Inventory: React.FC = () => {
     );
   };
 
-  if (loading && properties.length === 0) {
-    return (
-      <div className="space-y-8 px-4 py-6">
-        <SkeletonList count={8} />
-      </div>
-    );
-  }
-  
   // Legacy loading skeleton - keep for reference but hidden
   if (false && loading) {
     return (
