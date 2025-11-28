@@ -654,87 +654,68 @@ const Inventory: React.FC = () => {
                projectName.length > 0;
       });
 
-      // Efficient approach: Fetch a sample of unique compound/developer pairs
-      // This is much faster than fetching all 23k+ units
+      // Count units by compound name only - match project name to compound name
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: sampleData, error: sampleError } = await (supabase as any)
+      const { data: allUnitsData, error: unitsError } = await (supabase as any)
         .from('salemate-inventory')
-        .select('compound, developer')
-        .limit(10000); // Sample size for faster loading - gets unique combinations
+        .select('compound');
 
-      // Group and count units by compound/developer combination
-      const unitCountMap: Record<string, number> = {};
-      if (!sampleError && sampleData) {
-        sampleData.forEach((unit: Record<string, unknown>) => {
+      // Group and count units by compound name
+      const compoundCountMap: Record<string, number> = {};
+      if (!unitsError && allUnitsData) {
+        allUnitsData.forEach((unit: Record<string, unknown>) => {
           const compound = extractName(unit.compound).toLowerCase().trim();
-          const developer = extractName(unit.developer).toLowerCase().trim();
-          const key = `${compound}|||${developer}`;
-          unitCountMap[key] = (unitCountMap[key] || 0) + 1;
+          if (compound) {
+            compoundCountMap[compound] = (compoundCountMap[compound] || 0) + 1;
+          }
         });
       }
 
-        // Match projects to unit counts
+        // Match projects to unit counts by compound name only
         const projectsWithUnits = filteredProjects.map((project) => {
           let unitCount = 0;
           const projectName = project.name.toLowerCase().trim();
-          const projectRegion = project.region?.toLowerCase().trim() || '';
 
-          // Try to match projects to compounds
-          Object.keys(unitCountMap).forEach((key) => {
-            const [compoundName, developerName] = key.split('|||');
-            
-            // Check if developer matches
-            const developerMatches = projectRegion && (
-              developerName === projectRegion ||
-              developerName.includes(projectRegion) ||
-              projectRegion.includes(developerName)
-            );
-            
-            if (!developerMatches) return;
-            
-            // Check if project name matches compound (improved matching)
-            let matches = false;
-            
-            // Normalize both names for comparison (remove extra spaces, dashes, etc.)
-            const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
-            const normalizedProject = normalizeName(projectName);
+          // Normalize function for name comparison
+          const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
+          const normalizedProject = normalizeName(projectName);
+
+          // Match project name to compound names
+          Object.keys(compoundCountMap).forEach((compoundName) => {
             const normalizedCompound = normalizeName(compoundName);
+            
+            let matches = false;
             
             // 1. Exact match (after normalization)
             if (normalizedCompound === normalizedProject) {
               matches = true;
             }
-            // 2. Contains match (either direction) - check normalized versions
+            // 2. Contains match (either direction)
             else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
               matches = true;
             }
             // 3. Word-based matching (more flexible)
             else {
-              // Split by spaces, dashes, and other separators
               const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
               const compoundWords = normalizedCompound.split(/[\s-]+/).filter(w => w.length >= 2);
               
-              // Remove only very common words (not location-specific words like "park", "beach", etc.)
               const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
               
               const projectSignificant = projectWords.filter(w => !stopWords.includes(w.toLowerCase()));
               const compoundSignificant = compoundWords.filter(w => !stopWords.includes(w.toLowerCase()));
               
-              // Check if at least 2 significant words match (to avoid false positives)
               if (projectSignificant.length > 0 && compoundSignificant.length > 0) {
                 const matchingWords = projectSignificant.filter(word => 
                   compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
                 );
-                // If at least 2 words match, or if all significant words match, consider it a match
                 matches = matchingWords.length >= Math.min(2, projectSignificant.length) || 
                          matchingWords.length === projectSignificant.length;
               }
             }
             
             if (matches) {
-              unitCount += unitCountMap[key];
+              unitCount += compoundCountMap[compoundName];
             }
-            // Removed fallback to developer-only counting as it was inaccurate
           });
 
           return {
@@ -874,7 +855,7 @@ const Inventory: React.FC = () => {
             className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0 cursor-pointer"
             style={{ padding: 0 }}
             onClick={() => navigate('/app/inventory/developers')}
-          >
+                      >
             {/* Hero Photo Section */}
             <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
               <div className="w-full h-full flex items-center justify-center">
@@ -1080,7 +1061,7 @@ const Inventory: React.FC = () => {
                       <span className="align-middle">Launch</span>
                     </div>
                   </div>
-                )}
+                    )}
                 {/* Compound Badge */}
                 <div className="absolute top-2 left-2">
                   <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">

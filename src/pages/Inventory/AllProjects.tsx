@@ -115,26 +115,20 @@ const AllProjects: React.FC = () => {
                projectName.length > 0;
       });
 
-      // Load all units and group by compound/developer
+      // Count units by compound name only - match project name to compound name
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: allUnitsData, error: unitsError } = await (supabase as any)
         .from('salemate-inventory')
-        .select('compound, developer');
+        .select('compound');
 
-      // Create lookup maps for efficient matching
-      const compoundDeveloperMap: Record<string, number> = {}; // compound|||developer -> count
-      const developerMap: Record<string, number> = {}; // developer -> total count
-
+      // Group and count units by compound name
+      const compoundCountMap: Record<string, number> = {};
       if (!unitsError && allUnitsData) {
         allUnitsData.forEach((unit: Record<string, unknown>) => {
           try {
             const compound = extractName(unit.compound).toLowerCase().trim();
-            const developer = extractName(unit.developer).toLowerCase().trim();
-            
-            if (compound && developer) {
-              const key = `${compound}|||${developer}`;
-              compoundDeveloperMap[key] = (compoundDeveloperMap[key] || 0) + 1;
-              developerMap[developer] = (developerMap[developer] || 0) + 1;
+            if (compound) {
+              compoundCountMap[compound] = (compoundCountMap[compound] || 0) + 1;
             }
           } catch (e) {
             // Skip invalid units
@@ -143,109 +137,57 @@ const AllProjects: React.FC = () => {
         });
       }
 
-      console.log(`📊 Loaded ${Object.keys(compoundDeveloperMap).length} unique compound/developer combinations`);
+      console.log(`📊 Loaded ${Object.keys(compoundCountMap).length} unique compounds`);
       console.log(`📊 Total units: ${allUnitsData?.length || 0}`);
-      console.log(`📊 Sample compounds:`, Object.keys(compoundDeveloperMap).slice(0, 5));
-      console.log(`📊 Sample developers:`, Object.keys(developerMap).slice(0, 5));
 
-      // Match projects to unit counts with improved logic
+      // Match projects to unit counts by compound name only
       const projectsWithUnits = filteredProjects.map((project) => {
         let unitCount = 0;
         const projectName = project.name.toLowerCase().trim();
-        const projectRegion = project.region?.toLowerCase().trim() || '';
 
-        if (!projectRegion) {
-          console.warn(`Project "${project.name}" has no region`);
-          return {
-            id: project.id,
-            name: project.name,
-            region: project.region,
-            cover_image: project.cover_image,
-            available_units: 0,
-          };
-        }
+        // Normalize function for name comparison
+        const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
+        const normalizedProject = normalizeName(projectName);
 
-        // Strategy: Match by developer AND name (flexible matching)
-        const nameMatches: string[] = [];
-        Object.keys(compoundDeveloperMap).forEach((key) => {
-          const [compoundName, developerName] = key.split('|||');
-          
-          // First check if developer matches
-          const developerMatches = developerName === projectRegion ||
-                                  developerName.includes(projectRegion) ||
-                                  projectRegion.includes(developerName);
-          
-          if (!developerMatches) return;
-          
-          // Check if project name matches compound (multiple strategies)
-          let matches = false;
-          
-          // Normalize both names for comparison (remove extra spaces, dashes, etc.)
-          const normalizeName = (name: string) => name.replace(/[-\s]+/g, ' ').trim().toLowerCase();
-          const normalizedProject = normalizeName(projectName);
+        // Match project name to compound names
+        Object.keys(compoundCountMap).forEach((compoundName) => {
           const normalizedCompound = normalizeName(compoundName);
+          
+          let matches = false;
           
           // 1. Exact match (after normalization)
           if (normalizedCompound === normalizedProject) {
             matches = true;
           }
-          // 2. Contains match (either direction) - check normalized versions
+          // 2. Contains match (either direction)
           else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
             matches = true;
           }
           // 3. Word-based matching (more flexible)
           else {
-            // Split by spaces, dashes, and other separators
             const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
             const compoundWords = normalizedCompound.split(/[\s-]+/).filter(w => w.length >= 2);
             
-            // Remove only very common words (not location-specific words like "park", "beach", etc.)
             const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
             
             const projectSignificant = projectWords.filter(w => !stopWords.includes(w.toLowerCase()));
             const compoundSignificant = compoundWords.filter(w => !stopWords.includes(w.toLowerCase()));
             
-            // Check if at least 2 significant words match (to avoid false positives)
             if (projectSignificant.length > 0 && compoundSignificant.length > 0) {
               const matchingWords = projectSignificant.filter(word => 
                 compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
               );
-              // If at least 2 words match, or if all significant words match, consider it a match
               matches = matchingWords.length >= Math.min(2, projectSignificant.length) || 
                        matchingWords.length === projectSignificant.length;
             }
           }
           
           if (matches) {
-            nameMatches.push(key);
-            unitCount += compoundDeveloperMap[key];
+            unitCount += compoundCountMap[compoundName];
           }
         });
 
-        // Fallback: If no name matches but developer matches, 
-        // count units from that developer as a fallback
-        if (unitCount === 0 && projectRegion) {
-          // Use developer match as fallback - show all units from that developer
-          Object.keys(developerMap).forEach((devName) => {
-            if (devName === projectRegion || 
-                devName.includes(projectRegion) || 
-                projectRegion.includes(devName)) {
-              unitCount += developerMap[devName];
-            }
-          });
-        }
-
-        if (unitCount === 0) {
-          console.warn(`⚠️ Project "${project.name}" (${projectRegion}): 0 units - checking developer matches...`);
-          const matchingDevs = Object.keys(developerMap).filter(devName => 
-            devName === projectRegion || 
-            devName.includes(projectRegion) || 
-            projectRegion.includes(devName)
-          );
-          console.warn(`   Found ${matchingDevs.length} matching developers:`, matchingDevs);
-        } else {
-          console.log(`✅ Project "${project.name}" (${projectRegion}): ${unitCount} units (${nameMatches.length} name matches)`);
-        }
+        console.log(`✅ Project "${project.name}": ${unitCount} units (matched by compound name)`);
 
         return {
           id: project.id,
