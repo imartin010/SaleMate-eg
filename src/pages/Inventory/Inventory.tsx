@@ -1749,7 +1749,7 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* Card-based View - Updated to card layout */}
+      {/* Card-based View - Updated to card layout - Force rebuild */}
       <div className="space-y-8">
         {/* Developers Section */}
         {loadingDevelopers ? (
