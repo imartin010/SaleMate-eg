@@ -692,7 +692,13 @@ const Inventory: React.FC = () => {
           // Debug: Log project name
           const matchedCompounds: string[] = [];
 
-          // Match project name to compound names
+          // Match project name to compound names - VERY LENIENT matching
+          // Extract all significant words from project name (3+ characters, not stop words)
+          const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
+          const projectWords = normalizedProject.split(/[\s-]+/)
+            .filter(w => w.length >= 3)
+            .filter(w => !stopWords.includes(w.toLowerCase()));
+          
           Object.keys(compoundCountMap).forEach((compoundName) => {
             const normalizedCompound = normalizeName(compoundName);
             
@@ -702,40 +708,20 @@ const Inventory: React.FC = () => {
             if (normalizedCompound === normalizedProject) {
               matches = true;
             }
-            // 2. Contains match (either direction) - more lenient
+            // 2. Contains match (either direction)
             else if (normalizedCompound.includes(normalizedProject) || normalizedProject.includes(normalizedCompound)) {
               matches = true;
             }
-            // 2b. Very lenient: Check if any significant word from project appears in compound
-            else if (normalizedProject.length >= 3) {
-              const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 3);
-              if (projectWords.length > 0) {
-                matches = projectWords.some(word => normalizedCompound.includes(word));
-              }
+            // 3. VERY LENIENT: If ANY significant word from project appears in compound, match it
+            else if (projectWords.length > 0) {
+              matches = projectWords.some(word => normalizedCompound.includes(word));
             }
-            // 3. Word-based matching (more flexible)
-            else {
-              const projectWords = normalizedProject.split(/[\s-]+/).filter(w => w.length >= 2);
-              const compoundWords = normalizedCompound.split(/[\s-]+/).filter(w => w.length >= 2);
-              
-              const stopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use'];
-              
-              const projectSignificant = projectWords.filter(w => !stopWords.includes(w.toLowerCase()));
-              const compoundSignificant = compoundWords.filter(w => !stopWords.includes(w.toLowerCase()));
-              
-              if (projectSignificant.length > 0 && compoundSignificant.length > 0) {
-                const matchingWords = projectSignificant.filter(word => 
-                  compoundSignificant.some(cWord => cWord.includes(word) || word.includes(cWord))
-                );
-                // Very lenient: if at least 1 significant word matches, consider it a match
-                // For short names (1-2 words), require all words to match
-                if (projectSignificant.length <= 2) {
-                  matches = matchingWords.length === projectSignificant.length;
-                } else {
-                  // For longer names, require at least 1 word match
-                  matches = matchingWords.length >= 1;
-                }
-              }
+            // 4. Fallback: Check if any word from compound appears in project (reverse check)
+            else if (normalizedCompound.length >= 3) {
+              const compoundWords = normalizedCompound.split(/[\s-]+/)
+                .filter(w => w.length >= 3)
+                .filter(w => !stopWords.includes(w.toLowerCase()));
+              matches = compoundWords.some(word => normalizedProject.includes(word));
             }
             
             if (matches) {
