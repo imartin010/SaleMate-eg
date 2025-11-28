@@ -17,7 +17,8 @@ export function QuickActions({ lead }: QuickActionsProps) {
   const handleWhatsApp = () => {
     if (lead.client_phone) {
       const cleanPhone = lead.client_phone.replace(/[^0-9]/g, '');
-      const message = encodeURIComponent(`Hello ${lead.client_name}, this is regarding your property inquiry.`);
+      const clientName = lead.client_name || 'there';
+      const message = encodeURIComponent(`Hello ${clientName}, this is regarding your property inquiry.`);
       window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
     }
   };

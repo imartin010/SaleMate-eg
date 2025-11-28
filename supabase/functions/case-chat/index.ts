@@ -14,7 +14,7 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 interface ChatRequest {
-  action: 'send' | 'initialize';
+  method: 'SEND' | 'INITIALIZE';
   leadId: string;
   message?: string;
   lead: {
@@ -67,7 +67,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     const body: ChatRequest = await req.json();
-    const { action, leadId, message, lead, stage } = body;
+    const { method, leadId, message, lead, stage } = body;
 
     // Get project info if available
     let projectName = 'المشروع';
@@ -101,7 +101,7 @@ serve(async (req) => {
       })));
     }
 
-    if (action === 'initialize') {
+    if (method === 'INITIALIZE') {
       // Check if chat already exists
       if (conversationHistory.length > 0) {
         // Return existing first message
@@ -236,18 +236,20 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          message: {
-            id: savedMessage?.id || `temp-${Date.now()}`,
-            role: 'assistant',
-            content: initialMessage,
-            created_at: savedMessage?.created_at || new Date().toISOString(),
+          data: {
+            message: {
+              id: savedMessage?.id || `temp-${Date.now()}`,
+              role: 'assistant',
+              content: initialMessage,
+              created_at: savedMessage?.created_at || new Date().toISOString(),
+            },
           },
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (action === 'send') {
+    if (method === 'SEND') {
       if (!message) {
         return new Response(
           JSON.stringify({ error: 'Message is required' }),
@@ -256,15 +258,23 @@ serve(async (req) => {
       }
 
       // Save user message
-      await supabase.from('events').insert({
-        lead_id: leadId,
-        activity_type: 'chat',
-        event_type: 'activity',
-        actor_profile_id: userId,
-        stage: stage,
-        body: message,
-        payload: { role: 'user' },
-      });
+      const { data: userMessage, error: userMsgError } = await supabase
+        .from('events')
+        .insert({
+          lead_id: leadId,
+          activity_type: 'chat',
+          event_type: 'activity',
+          actor_profile_id: userId,
+          stage: stage,
+          body: message,
+          payload: { role: 'user' },
+        })
+        .select()
+        .single();
+      
+      if (userMsgError) {
+        console.error('Error saving user message:', userMsgError);
+      }
 
       // Build system prompt
       const systemPrompt = `أنت خبير مبيعات عقارية متخصص في السوق المصري. دورك هو مساعدة الوكلاء العقاريين على إتمام الصفقات.
@@ -373,11 +383,13 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          message: {
-            id: savedAiMessage?.id || `temp-${Date.now()}`,
-            role: 'assistant',
-            content: aiMessageContent,
-            created_at: savedAiMessage?.created_at || new Date().toISOString(),
+          data: {
+            message: {
+              id: savedAiMessage?.id || `temp-${Date.now()}`,
+              role: 'assistant',
+              content: aiMessageContent,
+              created_at: savedAiMessage?.created_at || new Date().toISOString(),
+            },
           },
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -385,7 +397,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
+      JSON.stringify({ error: 'Invalid method. Use INITIALIZE or SEND' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

@@ -7,6 +7,7 @@ import { Textarea } from '../ui/textarea';
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '@/core/api/client';
 import { sendChatMessage, getChatMessages, initializeChat } from '../../lib/api/caseApi';
+import { playMessageSentSound, playMessageReceivedSound } from '@/utils/soundEffects';
 import type { Lead } from '../../hooks/crm/useLeads';
 
 interface ChatMessage {
@@ -119,6 +120,9 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    
+    // Play sound effect for message sent
+    playMessageSentSound();
 
     try {
       // Send message and get AI response
@@ -154,6 +158,9 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
             response,
           ];
         });
+        
+        // Play sound effect for message received
+        playMessageReceivedSound();
       } else {
         console.warn('No response received from AI');
         // Keep the user message but show an error indicator

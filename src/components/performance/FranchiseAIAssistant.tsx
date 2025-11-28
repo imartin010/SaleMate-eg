@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Loader2, Minimize2 } from 'lucide-react';
 import { supabase } from '../../core/api/client';
 import { useAuthStore } from '../../features/auth/store/auth.store';
+import { playMessageSentSound, playMessageReceivedSound } from '../../utils/soundEffects';
 
 interface Message {
   id?: string;
@@ -129,6 +130,9 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
     const userInput = input.trim();
     setInput('');
     setIsLoading(true);
+    
+    // Play sound effect for message sent
+    playMessageSentSound();
 
     // Save user message to database
     const userMessageId = await saveMessage(userMessage);
@@ -165,6 +169,9 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Play sound effect for message received
+      playMessageReceivedSound();
 
       // Save assistant message to database
       const assistantMessageId = await saveMessage(assistantMessage);

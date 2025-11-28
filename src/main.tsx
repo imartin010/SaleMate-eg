@@ -105,4 +105,10 @@ ReactDOM.createRoot(rootElement).render(
 
 if (import.meta.env.DEV) {
   console.log('✅ SaleMate app rendered successfully');
+  console.log('🔍 Debug info:', {
+    rootElement: rootElement ? 'found' : 'missing',
+    router: activeRouter ? 'loaded' : 'missing',
+    isPerformance,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A'
+  });
 }

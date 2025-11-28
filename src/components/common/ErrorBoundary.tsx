@@ -23,6 +23,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🚨 Error caught by boundary:', error, errorInfo);
+    console.error('Error stack:', error.stack);
+    console.error('Component stack:', errorInfo.componentStack);
   }
 
   retry = () => {
@@ -61,11 +63,24 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 }
 
 // Fast fallback component
-export const FastFallback: React.FC<{ error?: Error; retry: () => void }> = ({ retry }) => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="text-center">
+export const FastFallback: React.FC<{ error?: Error; retry: () => void }> = ({ error, retry }) => (
+  <div className="flex items-center justify-center min-h-[200px] p-4">
+    <div className="text-center max-w-md">
       <AlertCircle className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-      <p className="text-gray-600 mb-3">Page failed to load</p>
+      <p className="text-gray-600 mb-3 font-semibold">Page failed to load</p>
+      {error && (
+        <div className="mb-3 p-2 bg-red-50 rounded text-left">
+          <p className="text-xs text-red-700 font-mono break-all">
+            {error.message || 'Unknown error'}
+          </p>
+          {error.stack && (
+            <details className="mt-2 text-xs text-red-600">
+              <summary className="cursor-pointer">Show stack trace</summary>
+              <pre className="mt-2 whitespace-pre-wrap break-all">{error.stack}</pre>
+            </details>
+          )}
+        </div>
+      )}
       <button
         onClick={retry}
         className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"

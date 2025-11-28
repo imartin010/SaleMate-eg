@@ -33,7 +33,7 @@ export function CaseStageTimeline({ lead, onRefetch }: CaseStageTimelineProps) {
   const [showStageModal, setShowStageModal] = useState(false);
   const [selectedStage, setSelectedStage] = useState<CaseStage | null>(null);
 
-  const currentStage = lead.stage as CaseStage;
+  const currentStage = (lead.stage || 'New Lead') as CaseStage;
   const currentIndex = STAGE_FLOW.indexOf(currentStage);
 
   const handleStageClick = (stage: CaseStage) => {

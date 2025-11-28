@@ -27,6 +27,7 @@ echo -e "${BLUE}📤 Deploying Edge Functions...${NC}\n"
 FUNCTIONS=(
     "notify-user"
     "case-coach"
+    "case-chat"
     "case-stage-change"
     "case-actions"
     "case-face-change"

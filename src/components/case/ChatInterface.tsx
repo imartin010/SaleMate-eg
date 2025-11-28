@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Bot, User } from 'lucide-react';
+import { Send, Loader2, Bot, User, Volume2, VolumeX } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { useAuthStore } from '../../store/auth';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/core/api/client';
 import { sendChatMessage, getChatMessages, initializeChat } from '../../lib/api/caseApi';
+import { playMessageSentSound, playMessageReceivedSound } from '../../utils/soundEffects';
 import type { Lead } from '../../hooks/crm/useLeads';
 
 interface ChatMessage {
@@ -32,9 +33,31 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previousMessageCountRef = useRef<number>(0);
+  
+  // Mute state - load from localStorage
+  const [isMuted, setIsMuted] = useState(() => {
+    const saved = localStorage.getItem('chat-sounds-muted');
+    return saved === 'true';
+  });
+  
+  // Save mute state to localStorage
+  useEffect(() => {
+    localStorage.setItem('chat-sounds-muted', String(isMuted));
+  }, [isMuted]);
+  
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
 
   // Load chat messages on mount
   useEffect(() => {
+    // Don't load if lead or leadId is missing
+    if (!leadId || !lead?.id) {
+      setIsInitializing(false);
+      return;
+    }
+
     const loadChat = async () => {
       try {
         setIsInitializing(true);
@@ -49,21 +72,45 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
         } else {
           // No chat - initialize
           try {
+            console.log('Initializing chat for lead:', leadId);
             const aiMessage = await initializeChat(leadId, {
               lead: {
-                id: lead.id,
-                name: lead.client_name,
-                phone: lead.client_phone,
-                project_id: lead.project_id,
+                id: lead.id || '',
+                name: lead.client_name || 'Unknown',
+                phone: lead.client_phone || '',
+                project_id: lead.project_id || undefined,
               },
-              stage: currentStage,
+              stage: currentStage || 'new',
             });
             
+            console.log('Chat initialization response:', aiMessage);
             if (aiMessage) {
               setMessages([aiMessage]);
+            } else {
+              console.warn('Chat initialized but no message returned');
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error initializing chat:', error);
+            // Show detailed error to user
+            const errorMessage = error?.message || error?.toString() || 'Unknown error';
+            const isNetworkError = errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError');
+            const isFunctionError = errorMessage.includes('Function not found') || errorMessage.includes('404');
+            
+            let userMessage = 'عذراً، حدث خطأ في تهيئة المحادثة.';
+            if (isFunctionError) {
+              userMessage += '\n\n⚠️ يبدو أن دالة المحادثة غير موجودة. يرجى التحقق من نشر Edge Function.';
+            } else if (isNetworkError) {
+              userMessage += '\n\n⚠️ خطأ في الاتصال. يرجى التحقق من الاتصال بالإنترنت.';
+            } else if (errorMessage.includes('OpenAI')) {
+              userMessage += '\n\n⚠️ خطأ في إعدادات OpenAI. يرجى التحقق من المفاتيح.';
+            }
+            
+            setMessages([{
+              id: 'error-init',
+              role: 'assistant',
+              content: userMessage,
+              created_at: new Date().toISOString(),
+            }]);
           } finally {
             setIsInitializing(false);
           }
@@ -75,10 +122,13 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
     };
 
     loadChat();
-  }, [leadId, lead.id, lead.client_name, lead.client_phone, lead.project_id, currentStage]);
+  }, [leadId, lead?.id, lead?.client_name, lead?.client_phone, lead?.project_id, currentStage]);
 
   // Real-time subscription for new messages
   useEffect(() => {
+    if (!leadId) return;
+    
+    // Real-time subscription for new chat messages
     const channel = supabase
       .channel(`chat-${leadId}`)
       .on(
@@ -89,10 +139,32 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
           table: 'events',
           filter: `lead_id=eq.${leadId}`,
         },
-        async () => {
-          // Reload messages when new ones are added
-          const updatedMessages = await getChatMessages(leadId);
-          setMessages(updatedMessages);
+        async (payload) => {
+          try {
+            // Only reload if it's a chat message
+            if (payload.new.activity_type === 'chat' && payload.new.event_type === 'activity') {
+              console.log('New chat message received:', payload.new);
+              const previousCount = previousMessageCountRef.current;
+              const updatedMessages = await getChatMessages(leadId);
+              setMessages(updatedMessages);
+              previousMessageCountRef.current = updatedMessages.length;
+              
+              // Play sound if a new assistant message was received
+              if (updatedMessages.length > previousCount) {
+                const newMessages = updatedMessages.slice(previousCount);
+                const hasNewAssistantMessage = newMessages.some(msg => msg.role === 'assistant');
+                if (hasNewAssistantMessage && !isMuted) {
+                  try {
+                    playMessageReceivedSound();
+                  } catch (error) {
+                    console.debug('Sound effect error:', error);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error in realtime subscription:', error);
+          }
         }
       )
       .subscribe();
@@ -101,6 +173,11 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
       supabase.removeChannel(channel);
     };
   }, [leadId]);
+  
+  // Update message count ref when messages change
+  useEffect(() => {
+    previousMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -124,31 +201,60 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMessage]);
+    
+    // Play sound effect for message sent (if not muted)
+    if (!isMuted) {
+      playMessageSentSound();
+    }
 
     try {
+      console.log('Sending message to AI coach...');
       const aiMessage = await sendChatMessage(leadId, {
         message: userMessageContent,
         lead: {
-          id: lead.id,
-          name: lead.client_name,
-          phone: lead.client_phone,
-          project_id: lead.project_id,
+          id: lead.id || '',
+          name: lead.client_name || 'Unknown',
+          phone: lead.client_phone || '',
+          project_id: lead.project_id || undefined,
         },
-        stage: currentStage,
+        stage: currentStage || 'new',
       });
+
+      console.log('AI response received:', aiMessage);
 
       if (aiMessage) {
         // Reload all messages to get the complete history with correct IDs
+        // This ensures both user and AI messages are properly displayed
         const allMessages = await getChatMessages(leadId);
+        console.log('All messages after send:', allMessages);
         setMessages(allMessages);
+        
+        // Play sound effect for message received
+        playMessageReceivedSound();
       } else {
-        // Remove optimistic message if send failed
-        setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
+        console.warn('No AI message returned, but keeping user message');
+        // Don't remove the user message - keep it visible
+        // The realtime subscription will update when AI responds
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
+      // Show error message to user but keep their message
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: `عذراً، حدث خطأ في إرسال الرسالة: ${error?.message || 'خطأ غير معروف'}. يرجى المحاولة مرة أخرى.`,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => {
+        // Keep user message and add error message
+        const filtered = prev.filter((m) => m.id !== tempUserMessage.id);
+        // Add user message back with proper ID if we have it
+        const userMsg = prev.find(m => m.id === tempUserMessage.id);
+        if (userMsg) {
+          return [...filtered, userMsg, errorMessage];
+        }
+        return [...filtered, errorMessage];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -162,13 +268,27 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
   };
 
   return (
-    <Card className="flex flex-col h-full bg-white">
-      <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-blue-600" />
-          <h3 className="font-semibold text-gray-900">AI Sales Coach</h3>
+    <Card className="flex flex-col bg-white" style={{ maxHeight: '600px', height: '600px' }}>
+      <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-blue-600" />
+            <h3 className="font-semibold text-gray-900 text-sm">AI Sales Coach</h3>
+          </div>
+          <button
+            onClick={toggleMute}
+            className="p-1.5 rounded-md hover:bg-gray-200 transition-colors"
+            title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+            aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-gray-500" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-blue-600" />
+            )}
+          </button>
         </div>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-xs text-gray-600 mt-0.5">
           Get personalized coaching to close the deal with {lead.client_name}
         </p>
       </div>
@@ -176,14 +296,14 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
       {/* Messages Container */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+        className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 min-h-0"
       >
         {isInitializing ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 text-sm">
             No messages yet
           </div>
         ) : (
@@ -197,22 +317,22 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
                 className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-blue-600" />
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Bot className="w-3 h-3 text-blue-600" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  className={`max-w-[75%] rounded-lg px-3 py-1.5 ${
                     message.role === 'user'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-900 border border-gray-200'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed">{message.content}</p>
                 </div>
                 {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-600" />
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User className="w-3 h-3 text-gray-600" />
                   </div>
                 )}
               </motion.div>
@@ -223,7 +343,7 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t bg-white">
+      <div className="p-3 border-t bg-white flex-shrink-0">
         <div className="flex gap-2">
           <Textarea
             ref={textareaRef}
@@ -231,13 +351,14 @@ export function ChatInterface({ leadId, lead, currentStage, onRefetch }: ChatInt
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask the AI coach for advice..."
-            className="min-h-[60px] resize-none"
+            className="min-h-[50px] max-h-[100px] resize-none text-sm"
             disabled={isLoading || isInitializing}
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || isLoading || isInitializing}
             className="self-end"
+            size="sm"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

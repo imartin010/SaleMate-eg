@@ -20,7 +20,7 @@ export function ActivityLog({ feedback, actions, faces }: ActivityLogProps) {
   // Combine all activities and sort by date
   const activities: Activity[] = [
     ...feedback.map(f => ({ type: 'feedback' as const, timestamp: f.created_at, data: f })),
-    ...actions.filter(a => a.status === 'DONE').map(a => ({ type: 'action' as const, timestamp: a.completed_at!, data: a })),
+    ...actions.filter(a => a.status === 'DONE' && a.completed_at).map(a => ({ type: 'action' as const, timestamp: a.completed_at!, data: a })),
     ...faces.map(f => ({ type: 'face' as const, timestamp: f.created_at, data: f })),
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 

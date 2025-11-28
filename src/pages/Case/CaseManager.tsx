@@ -14,13 +14,44 @@ import { InventoryMatchesCard } from '../../components/case/InventoryMatchesCard
 import { QuickActions } from '../../components/case/QuickActions';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 
 export default function CaseManager() {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
-  const { lead, feedback, actions, faces, matches, loading, error, refetch } = useCase(leadId!);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('CaseManager mounted with leadId:', leadId);
+  }, [leadId]);
+  
+  // Safety check for leadId
+  if (!leadId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 via-blue-50/20 to-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md bg-white rounded-2xl p-8 shadow-lg">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="h-8 w-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Invalid Case ID</h3>
+          <p className="text-gray-600 mb-4">No case ID provided in the URL.</p>
+          <Button onClick={() => navigate('/app/crm')} variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to CRM
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  const { lead, feedback, actions, faces, matches, loading, error, refetch } = useCase(leadId);
   
   const [showChangeFaceModal, setShowChangeFaceModal] = useState(false);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('CaseManager state:', { loading, error, hasLead: !!lead, leadId });
+  }, [loading, error, lead, leadId]);
 
   // Scroll to top when component mounts or leadId changes
   useEffect(() => {
@@ -64,9 +95,15 @@ export default function CaseManager() {
 
   // Note: AI coach is now handled through ChatInterface
   // Keeping this for backward compatibility if needed elsewhere
-  const latestCoach = feedback[0]?.ai_coach 
-    ? JSON.parse(feedback[0].ai_coach) 
-    : null;
+  let latestCoach = null;
+  try {
+    if (feedback[0]?.ai_coach) {
+      latestCoach = JSON.parse(feedback[0].ai_coach);
+    }
+  } catch (error) {
+    console.warn('Failed to parse AI coach data:', error);
+    latestCoach = null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 via-blue-50/20 to-white pb-20">
@@ -79,7 +116,7 @@ export default function CaseManager() {
         >
           <Button
             variant="ghost"
-            onClick={() => navigate('/crm')}
+            onClick={() => navigate('/app/crm')}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -89,17 +126,21 @@ export default function CaseManager() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 bg-clip-text text-transparent">
-                Case: {lead.client_name}
+                Case: {lead.client_name || 'Unknown'}
               </h1>
               <p className="text-gray-600 mt-1">
-                {lead.client_phone} {lead.client_email && `• ${lead.client_email}`}
+                {lead.client_phone || 'No phone'} {lead.client_email && `• ${lead.client_email}`}
               </p>
               {lead.project && (
                 <div className="flex items-center gap-2 mt-2 text-sm">
                   <Building2 className="h-4 w-4 text-indigo-600 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">{lead.project.name}</span>
+                  <span className="text-gray-700 font-medium">
+                    {typeof lead.project.name === 'string' ? lead.project.name : (lead.project.name?.name || 'Unknown Project')}
+                  </span>
                   {lead.project.region && (
-                    <span className="text-gray-500">• {lead.project.region}</span>
+                    <span className="text-gray-500">
+                      • {typeof lead.project.region === 'string' ? lead.project.region : (lead.project.region?.name || '')}
+                    </span>
                   )}
                 </div>
               )}
@@ -123,7 +164,9 @@ export default function CaseManager() {
             transition={{ delay: 0.1 }}
             className="lg:col-span-3 space-y-6"
           >
-            <CaseStageTimeline lead={lead} onRefetch={refetch} />
+            <ErrorBoundary>
+              <CaseStageTimeline lead={lead} onRefetch={refetch} />
+            </ErrorBoundary>
           </motion.div>
 
           {/* Center - AI Coach, Feedback, Activity Log */}
@@ -133,18 +176,24 @@ export default function CaseManager() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-6 space-y-6"
           >
-            <ChatInterface
-              leadId={leadId!}
-              lead={lead}
-              currentStage={lead.stage}
-              onRefetch={refetch}
-            />
+            {lead && leadId && (
+              <ErrorBoundary>
+                <ChatInterface
+                  leadId={leadId}
+                  lead={lead}
+                  currentStage={lead.stage || 'new'}
+                  onRefetch={refetch}
+                />
+              </ErrorBoundary>
+            )}
             
-            <ActivityLog
-              feedback={feedback}
-              actions={actions}
-              faces={faces}
-            />
+            <ErrorBoundary>
+              <ActivityLog
+                feedback={feedback}
+                actions={actions}
+                faces={faces}
+              />
+            </ErrorBoundary>
           </motion.div>
 
           {/* Right Rail - Actions, Meeting, Inventory */}
@@ -154,20 +203,28 @@ export default function CaseManager() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-3 space-y-6"
           >
-            <QuickActions lead={lead} />
+            <ErrorBoundary>
+              <QuickActions lead={lead} />
+            </ErrorBoundary>
             
-            <ActionsList
-              actions={actions}
-              onRefetch={refetch}
-            />
+            <ErrorBoundary>
+              <ActionsList
+                actions={actions}
+                onRefetch={refetch}
+              />
+            </ErrorBoundary>
             
-            <MeetingScheduler
-              leadId={leadId!}
-              onScheduled={refetch}
-            />
+            <ErrorBoundary>
+              <MeetingScheduler
+                leadId={leadId}
+                onScheduled={refetch}
+              />
+            </ErrorBoundary>
             
             {matches.length > 0 && (
-              <InventoryMatchesCard matches={matches} />
+              <ErrorBoundary>
+                <InventoryMatchesCard matches={matches} />
+              </ErrorBoundary>
             )}
           </motion.div>
         </div>
@@ -177,7 +234,7 @@ export default function CaseManager() {
       <ChangeFaceModal
         isOpen={showChangeFaceModal}
         onClose={() => setShowChangeFaceModal(false)}
-        leadId={leadId!}
+        leadId={leadId}
         currentAgentId={lead.assigned_to_id || undefined}
         onSuccess={() => {
           setShowChangeFaceModal(false);

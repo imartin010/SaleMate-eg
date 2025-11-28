@@ -18,20 +18,36 @@ export async function initializeChat(
   }
 ): Promise<ChatMessage | null> {
   try {
+    console.log('Calling case-chat function with:', { method: 'INITIALIZE', leadId, ...params });
+    
     const { data, error } = await supabase.functions.invoke('case-chat', {
       body: {
-        action: 'initialize',
+        method: 'INITIALIZE',
         leadId,
-        ...params,
+        lead: params.lead,
+        stage: params.stage,
       },
     });
+
+    console.log('case-chat response:', { data, error });
 
     if (error) {
       console.error('Chat initialize error:', error);
       throw new Error(error.message || 'Failed to initialize chat');
     }
 
-    return data?.message || null;
+    // Handle response structure: { data: { message: {...} } }
+    if (data?.data?.message) {
+      return data.data.message;
+    } else if (data?.message) {
+      return data.message;
+    } else if (data && typeof data === 'object' && 'id' in data) {
+      // Direct message object
+      return data as ChatMessage;
+    } else {
+      console.warn('Unexpected response structure:', data);
+      return null;
+    }
   } catch (error) {
     console.error('Error initializing chat:', error);
     throw error;
@@ -50,20 +66,37 @@ export async function sendChatMessage(
   }
 ): Promise<ChatMessage | null> {
   try {
+    console.log('Sending chat message:', { method: 'SEND', leadId, message: params.message });
+    
     const { data, error } = await supabase.functions.invoke('case-chat', {
       body: {
-        action: 'send',
+        method: 'SEND',
         leadId,
-        ...params,
+        lead: params.lead,
+        stage: params.stage,
+        message: params.message,
       },
     });
+
+    console.log('case-chat send response:', { data, error });
 
     if (error) {
       console.error('Chat send error:', error);
       throw new Error(error.message || 'Failed to send message');
     }
 
-    return data?.message || null;
+    // Handle response structure: { data: { message: {...} } }
+    if (data?.data?.message) {
+      return data.data.message;
+    } else if (data?.message) {
+      return data.message;
+    } else if (data && typeof data === 'object' && 'id' in data) {
+      // Direct message object
+      return data as ChatMessage;
+    } else {
+      console.warn('Unexpected response structure:', data);
+      return null;
+    }
   } catch (error) {
     console.error('Error sending chat message:', error);
     throw error;
@@ -74,11 +107,13 @@ export async function sendChatMessage(
  * Get all chat messages for a lead
  */
 export async function getChatMessages(leadId: string): Promise<ChatMessage[]> {
+  // Get chat messages from events table (where case-chat saves messages)
   const { data: eventsData, error: eventsError } = await supabase
     .from('events')
     .select('id, body, created_at, payload')
     .eq('lead_id', leadId)
     .eq('activity_type', 'chat')
+    .eq('event_type', 'activity')
     .order('created_at', { ascending: true });
 
   if (eventsError) {
@@ -320,4 +355,184 @@ export async function getInventoryMatches(leadId: string) {
     created_by: activity.actor_profile_id ?? '',
     created_at: activity.created_at,
   }));
+}
+
+/**
+ * Change lead stage and trigger associated actions
+ */
+export async function changeStage(payload: {
+  leadId: string;
+  newStage: string;
+  userId: string;
+  feedback?: string;
+  budget?: number;
+  downPayment?: number;
+  monthlyInstallment?: number;
+  meetingDate?: string;
+}): Promise<{ success: boolean; message: string }> {
+  const { data, error } = await supabase.functions.invoke('case-stage-change', {
+    body: payload,
+  });
+
+  if (error) {
+    console.error('Stage change error:', error);
+    throw new Error(error.message || 'Failed to change stage');
+  }
+
+  return data || { success: false, message: 'Unknown error' };
+}
+
+/**
+ * Complete a case action
+ */
+export async function completeAction(actionId: string): Promise<{
+  id: string;
+  lead_id: string;
+  action_type: string;
+  payload?: Record<string, unknown>;
+  due_at?: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  completed_at?: string;
+  notified_at?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke('case-actions', {
+    body: {
+      method: 'COMPLETE',
+      actionId,
+    },
+  });
+
+  if (error) {
+    console.error('Complete action error:', error);
+    throw new Error(error.message || 'Failed to complete action');
+  }
+
+  return data?.data;
+}
+
+/**
+ * Skip a case action
+ */
+export async function skipAction(actionId: string): Promise<{
+  id: string;
+  lead_id: string;
+  action_type: string;
+  payload?: Record<string, unknown>;
+  due_at?: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  completed_at?: string;
+  notified_at?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke('case-actions', {
+    body: {
+      method: 'SKIP',
+      actionId,
+    },
+  });
+
+  if (error) {
+    console.error('Skip action error:', error);
+    throw new Error(error.message || 'Failed to skip action');
+  }
+
+  return data?.data;
+}
+
+/**
+ * Change face (reassign lead to different agent)
+ */
+export async function changeFace(payload: {
+  leadId: string;
+  toAgentId: string;
+  reason?: string;
+  userId: string;
+}): Promise<{
+  id: string;
+  lead_id: string;
+  activity_type: string;
+  from_profile_id?: string;
+  to_profile_id?: string;
+  reason?: string;
+  actor_profile_id: string;
+  created_at: string;
+}> {
+  const { data, error } = await supabase.functions.invoke('case-face-change', {
+    body: payload,
+  });
+
+  if (error) {
+    console.error('Face change error:', error);
+    throw new Error(error.message || 'Failed to change face');
+  }
+
+  return data?.data;
+}
+
+/**
+ * Get AI coaching recommendations for a lead
+ */
+export async function getAICoaching(params: {
+  stage: string;
+  lead: { id: string; name: string; phone?: string; project_id?: string };
+  lastFeedback?: string;
+  inventoryContext?: { hasMatches: boolean; topUnits?: unknown[] };
+  history?: Array<{ stage: string; note: string; at: string }>;
+}): Promise<{
+  recommendations: Array<{
+    cta: string;
+    suggestedActionType?: string;
+    dueInMinutes?: number;
+  }>;
+  riskFlags?: string[];
+}> {
+  const { data, error } = await supabase.functions.invoke('case-coach', {
+    body: params,
+  });
+
+  if (error) {
+    console.error('AI coaching error:', error);
+    throw new Error(error.message || 'Failed to get AI coaching');
+  }
+
+  return data?.data || { recommendations: [] };
+}
+
+/**
+ * Create a new case action
+ */
+export async function createAction(payload: {
+  leadId: string;
+  actionType: string;
+  payload?: Record<string, unknown>;
+  dueInMinutes?: number;
+  userId: string;
+}): Promise<{
+  id: string;
+  lead_id: string;
+  action_type: string;
+  payload?: Record<string, unknown>;
+  due_at?: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  completed_at?: string;
+  notified_at?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke('case-actions', {
+    body: {
+      method: 'CREATE',
+      ...payload,
+    },
+  });
+
+  if (error) {
+    console.error('Create action error:', error);
+    throw new Error(error.message || 'Failed to create action');
+  }
+
+  return data?.data;
 }
