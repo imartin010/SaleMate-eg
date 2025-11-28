@@ -352,6 +352,7 @@ const Inventory: React.FC = () => {
     // Add a small delay to ensure filters are properly set
     const timer = setTimeout(() => {
       console.log('🏠 Inventory Card View v2.0 - Loading data...');
+      console.log('✅ Card view is ACTIVE - Table view is DISABLED');
       loadProperties();
       loadFilterOptions();
       loadCardCounts();
@@ -837,7 +838,7 @@ const Inventory: React.FC = () => {
             >
               <div className="p-4 flex flex-col items-center gap-2">
                 <ChevronLeft className="h-6 w-6 text-blue-600" />
-              </div>
+                        </div>
             </Card>
           )}
           {visibleDevelopers.map((developer) => (
@@ -847,8 +848,8 @@ const Inventory: React.FC = () => {
                 <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:scale-[1.02] transition-transform duration-300">
                   <div className="h-24 w-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-bold">
                     {developer.name.charAt(0).toUpperCase()}
-                  </div>
-                </div>
+                    </div>
+                      </div>
                 {/* Subtle Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 {/* Developer Badge */}
@@ -856,9 +857,9 @@ const Inventory: React.FC = () => {
                   <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
                     <Building className="h-2.5 w-2.5 inline mr-1 align-middle" />
                     <span className="align-middle">Developer</span>
+                        </div>
+                    </div>
                   </div>
-                </div>
-              </div>
               {/* Developer Details */}
               <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
                 <div>
@@ -878,7 +879,7 @@ const Inventory: React.FC = () => {
             <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
               <div className="w-full h-full flex items-center justify-center">
                 <ArrowRight className="h-16 w-16 text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
+                  </div>
               {/* Subtle Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               {/* View More Badge */}
@@ -886,9 +887,9 @@ const Inventory: React.FC = () => {
                 <div className="bg-white/90 backdrop-blur-sm text-gray-700 px-1.5 py-0.5 rounded text-[10px] font-medium shadow-sm border border-gray-200/50">
                   <Building className="h-2.5 w-2.5 inline mr-1 align-middle" />
                   <span className="align-middle">View All</span>
-                </div>
-              </div>
-            </div>
+                      </div>
+                      </div>
+                  </div>
             {/* Card Details */}
             <CardContent className="px-3 pt-2 pb-1.5 space-y-1.5">
               <div>
@@ -1131,7 +1132,7 @@ const Inventory: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <Bath className="h-3.5 w-3.5 text-cyan-500" />
                         <span>{unit.number_of_bathrooms}</span>
-                      </div>
+                  </div>
                     )}
                   </div>
                 )}
@@ -1146,14 +1147,14 @@ const Inventory: React.FC = () => {
               <div className="p-6 flex flex-col items-center gap-2">
                 <ArrowRight className="h-8 w-8 text-green-600" />
                 <span className="text-sm font-medium text-green-600">View More</span>
-              </div>
+      </div>
             </Card>
           )}
-        </div>
+    </div>
       </div>
     );
   };
-
+  
   // Legacy loading skeleton - keep for reference but hidden
   if (false && loading) {
     return (
@@ -1270,14 +1271,12 @@ const Inventory: React.FC = () => {
       <div className="container mx-auto px-4 py-4 md:px-6 md:py-8 space-y-4 md:space-y-6 max-w-7xl">
       {/* Header Section */}
       <div className="space-y-4">
-      {/* Version indicator - remove after confirming cache is cleared */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="text-xs text-gray-400">Card View v2.0</div>
-      )}
         <div>
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 bg-clip-text text-transparent mb-2">
             Property Inventory
           </h1>
+          {/* Version indicator - visible to confirm new version loaded */}
+          <div className="text-xs text-blue-600 font-medium mb-2">✨ Card View v2.0 - New Layout Active</div>
           <p className="text-gray-600 text-base md:text-lg">
             Browse and manage real estate properties from Our Data Science Department
           </p>
