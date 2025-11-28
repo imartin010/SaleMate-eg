@@ -329,9 +329,8 @@ const DeveloperProjects: React.FC = () => {
           {projects.map((project) => (
             <Card
               key={project.id}
-              className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0 cursor-pointer"
+              className="shop-project-card overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0"
               style={{ padding: 0 }}
-              onClick={() => navigate(`/app/inventory/projects/${encodeURIComponent(project.name)}/units?developer=${encodeURIComponent(decodedDeveloperName)}`)}
             >
               {/* Hero Photo Section */}
               <div className="relative h-52 w-full overflow-hidden">

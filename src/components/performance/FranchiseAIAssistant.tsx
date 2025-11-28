@@ -4,12 +4,6 @@ import { supabase } from '../../core/api/client';
 import { useAuthStore } from '../../features/auth/store/auth.store';
 import { playMessageSentSound, playMessageReceivedSound } from '../../utils/soundEffects';
 
-// Helper function to detect if text contains Arabic characters
-function containsArabic(text: string): boolean {
-  const arabicRegex = /[\u0600-\u06FF]/;
-  return arabicRegex.test(text);
-}
-
 interface Message {
   id?: string;
   role: 'user' | 'assistant';
@@ -306,10 +300,10 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                aria-label="Minimize"
-              >
-                <Minimize2 className="w-5 h-5 text-white" />
-              </button>
+              aria-label="Minimize"
+            >
+              <Minimize2 className="w-5 h-5 text-white" />
+            </button>
             </div>
           </div>
 
@@ -342,20 +336,8 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                 }`}
-                dir={containsArabic(message.content) ? 'rtl' : 'ltr'}
-                style={{
-                  direction: containsArabic(message.content) ? 'rtl' : 'ltr',
-                  textAlign: containsArabic(message.content) ? 'right' : 'left',
-                }}
               >
-                <p 
-                  className={`text-sm whitespace-pre-wrap ${message.role === 'assistant' ? '' : 'text-white'}`}
-                  dir={containsArabic(message.content) ? 'rtl' : 'ltr'}
-                  style={{
-                    direction: containsArabic(message.content) ? 'rtl' : 'ltr',
-                    textAlign: containsArabic(message.content) ? 'right' : 'left',
-                  }}
-                >
+                <p className={`text-sm whitespace-pre-wrap ${message.role === 'assistant' ? '' : 'text-white'}`}>
                   {message.role === 'assistant' ? renderMessage(message.content) : message.content}
                 </p>
                 <p className={`text-xs mt-1 ${
@@ -386,7 +368,7 @@ export const FranchiseAIAssistant: React.FC<FranchiseAIAssistantProps> = () => {
               </div>
             </div>
           )}
-            <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
