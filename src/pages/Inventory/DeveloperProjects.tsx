@@ -100,14 +100,39 @@ const DeveloperProjects: React.FC = () => {
       });
 
       // Count units by compound name only - match project name to compound name
+      // Load ALL units using pagination to ensure accurate counts
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: allUnitsData, error: unitsError } = await (supabase as any)
-        .from('salemate-inventory')
-        .select('compound');
+      let allUnitsData: Record<string, unknown>[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 10000;
+      
+      while (hasMore) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: pageData, error: unitsError } = await (supabase as any)
+          .from('salemate-inventory')
+          .select('compound')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (unitsError) {
+          console.error('Error loading units:', unitsError);
+          break;
+        }
+        
+        if (pageData && pageData.length > 0) {
+          allUnitsData = allUnitsData.concat(pageData);
+          hasMore = pageData.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`📊 Loaded ${allUnitsData.length} total units for counting`);
 
       // Group and count units by compound name
       const compoundCountMap: Record<string, number> = {};
-      if (!unitsError && allUnitsData) {
+      if (allUnitsData && allUnitsData.length > 0) {
         allUnitsData.forEach((unit: Record<string, unknown>) => {
           try {
             const compound = extractName(unit.compound).toLowerCase().trim();

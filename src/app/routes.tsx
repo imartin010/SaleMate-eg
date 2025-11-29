@@ -54,6 +54,7 @@ const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const AllProjects = React.lazy(() => import('../pages/Inventory/AllProjects'));
 const AllDevelopers = React.lazy(() => import('../pages/Inventory/AllDevelopers'));
 const DeveloperProjects = React.lazy(() => import('../pages/Inventory/DeveloperProjects'));
+const ProjectUnits = React.lazy(() => import('../pages/Inventory/ProjectUnits'));
 const MyDeals = React.lazy(() => import('../pages/Deals/FastMyDeals'));
 const TeamPage = React.lazy(() => import('../pages/Team/TeamPage'));
 const AcceptInvitation = React.lazy(() => import('../pages/Team/AcceptInvitation'));
@@ -424,6 +425,10 @@ export const router = createBrowserRouter([
           {
             path: 'inventory/projects',
             element: <SafePage><AllProjects /></SafePage>,
+          },
+          {
+            path: 'inventory/projects/:projectName',
+            element: <SafePage><ProjectUnits /></SafePage>,
           },
           {
             path: 'inventory/developers',
