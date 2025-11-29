@@ -70,11 +70,11 @@ serve(async (req) => {
       console.error('Error fetching feedback:', feedbackError);
     }
 
-    // If no feedback, return a simple message
+    // If no feedback, return a simple message in Egyptian Arabic
     if (!feedbackEvents || feedbackEvents.length === 0) {
       return new Response(
         JSON.stringify({
-          summary: 'No feedback or AI analysis available yet. Start by adding feedback to get AI insights.',
+          summary: 'مفيش فيدباك أو تحليل AI دلوقتي. ابدأ بإضافة فيدباك عشان تحصل على تحليلات AI.',
           hasData: false,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -129,31 +129,35 @@ serve(async (req) => {
       ...aiInsights,
     ].filter(Boolean).join('\n');
 
-    // Generate concise summary using OpenAI
+    // Generate concise summary using OpenAI in Egyptian Arabic slang
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: `You are a sales AI assistant. Generate a concise, actionable summary (2-4 short sentences) about the current situation with this lead based on feedback and AI coaching conversations. Focus on:
-- Current status and situation
-- Key insights from conversations
-- Important next steps or concerns
-- Any risks or opportunities
+          content: `You are a sales AI assistant. Generate a concise, actionable summary (2-4 short sentences) about the current situation with this lead based on feedback and AI coaching conversations. 
 
-Keep it brief, clear, and actionable. Use simple language.`,
+IMPORTANT: Write the entire response in Egyptian Arabic slang (العربية المصرية العامية). Use natural, conversational Egyptian dialect, not formal Arabic. Be friendly and use common Egyptian expressions.
+
+Focus on:
+- Current status and situation (الوضع الحالي)
+- Key insights from conversations (نقاط مهمة من المحادثات)
+- Important next steps or concerns (الخطوات التالية أو المخاوف)
+- Any risks or opportunities (المخاطر أو الفرص)
+
+Keep it brief, clear, and actionable. Use simple, natural Egyptian Arabic slang.`,
         },
         {
           role: 'user',
-          content: `Based on this lead's feedback and AI coaching history, provide a concise summary:\n\n${allContext}`,
+          content: `Based on this lead's feedback and AI coaching history, provide a concise summary in Egyptian Arabic slang:\n\n${allContext}`,
         },
       ],
-      max_tokens: 150,
+      max_tokens: 200,
       temperature: 0.7,
     });
 
     const summary = completion.choices[0]?.message?.content || 
-      'Unable to generate AI summary at this time.';
+      'مش قادرين نعمل تحليل AI دلوقتي.';
 
     return new Response(
       JSON.stringify({
@@ -167,7 +171,7 @@ Keep it brief, clear, and actionable. Use simple language.`,
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Internal server error',
-        summary: 'Unable to generate AI summary at this time.',
+        summary: 'مش قادرين نعمل تحليل AI دلوقتي.',
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

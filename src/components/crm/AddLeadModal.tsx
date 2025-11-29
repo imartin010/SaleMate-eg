@@ -131,135 +131,137 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ open, onClose, onAdd
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl w-[95vw] md:w-[90vw] h-[95vh] md:h-[90vh] max-h-[95vh] md:max-h-[90vh] overflow-hidden flex flex-col p-4 md:p-6">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Plus className="h-5 w-5 text-[#257CFF]" />
             Add New Lead
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Client Name <span className="text-red-500">*</span>
-            </label>
-            <Input
-              value={formData.client_name}
-              onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-              placeholder="Enter client name"
-              className={errors.client_name ? 'border-red-500' : ''}
-            />
-            {errors.client_name && (
-              <p className="text-xs text-red-500 mt-1">{errors.client_name}</p>
-            )}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2 min-h-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={formData.client_name}
+                onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                placeholder="Enter client name"
+                className={errors.client_name ? 'border-red-500' : ''}
+              />
+              {errors.client_name && (
+                <p className="text-xs text-red-500 mt-1">{errors.client_name}</p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={formData.client_phone}
+                onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
+                placeholder="+20 123 456 7890"
+                className={errors.client_phone ? 'border-red-500' : ''}
+              />
+              {errors.client_phone && (
+                <p className="text-xs text-red-500 mt-1">{errors.client_phone}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <Input
+                type="email"
+                value={formData.client_email}
+                onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+                placeholder="client@example.com"
+                className={errors.client_email ? 'border-red-500' : ''}
+              />
+              {errors.client_email && (
+                <p className="text-xs text-red-500 mt-1">{errors.client_email}</p>
+              )}
+            </div>
+
+            {/* Project */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Project <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.project_id}
+                onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+              >
+                <SelectTrigger className={errors.project_id ? 'border-red-500' : ''}>
+                  <SelectValue placeholder={loadingProjects ? 'Loading projects...' : 'Select a project'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name} ({project.region})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.project_id && (
+                <p className="text-xs text-red-500 mt-1">{errors.project_id}</p>
+              )}
+            </div>
+
+            {/* Platform */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Platform
+              </label>
+              <Select
+                value={formData.source}
+                onValueChange={(value) => setFormData({ ...formData, source: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORMS.map((platform) => (
+                    <SelectItem key={platform} value={platform}>
+                      {platform}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Stage */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stage
+              </label>
+              <Select
+                value={formData.stage}
+                onValueChange={(value) => setFormData({ ...formData, stage: value as LeadStage })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAGES.map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {stage}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <Input
-              value={formData.client_phone}
-              onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
-              placeholder="+20 123 456 7890"
-              className={errors.client_phone ? 'border-red-500' : ''}
-            />
-            {errors.client_phone && (
-              <p className="text-xs text-red-500 mt-1">{errors.client_phone}</p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <Input
-              type="email"
-              value={formData.client_email}
-              onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
-              placeholder="client@example.com"
-              className={errors.client_email ? 'border-red-500' : ''}
-            />
-            {errors.client_email && (
-              <p className="text-xs text-red-500 mt-1">{errors.client_email}</p>
-            )}
-          </div>
-
-          {/* Project */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Project <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={formData.project_id}
-              onValueChange={(value) => setFormData({ ...formData, project_id: value })}
-            >
-              <SelectTrigger className={errors.project_id ? 'border-red-500' : ''}>
-                <SelectValue placeholder={loadingProjects ? 'Loading projects...' : 'Select a project'} />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name} ({project.region})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.project_id && (
-              <p className="text-xs text-red-500 mt-1">{errors.project_id}</p>
-            )}
-          </div>
-
-          {/* Platform */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Platform
-            </label>
-            <Select
-              value={formData.source}
-              onValueChange={(value) => setFormData({ ...formData, source: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PLATFORMS.map((platform) => (
-                  <SelectItem key={platform} value={platform}>
-                    {platform}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Stage */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Stage
-            </label>
-            <Select
-              value={formData.stage}
-              onValueChange={(value) => setFormData({ ...formData, stage: value as LeadStage })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STAGES.map((stage) => (
-                  <SelectItem key={stage} value={stage}>
-                    {stage}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Notes */}
-          <div>
+          {/* Notes - Full Width */}
+          <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Notes
             </label>
@@ -272,7 +274,7 @@ export const AddLeadModal: React.FC<AddLeadModalProps> = ({ open, onClose, onAdd
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4 mt-4">
             <Button
               type="button"
               variant="outline"

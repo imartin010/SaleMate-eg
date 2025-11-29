@@ -577,7 +577,7 @@ export async function getLeadAISummary(leadId: string): Promise<{
     // Return a helpful error message instead of throwing
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return { 
-      summary: `Unable to load AI analysis: ${errorMessage}. Please ensure the edge function is deployed and OpenAI API key is configured.`, 
+      summary: `مش قادرين نحمل التحليل: ${errorMessage}. تأكد إن الـ edge function متعمل deploy وإن OpenAI API key متكون فيج.`, 
       hasData: false 
     };
   }
