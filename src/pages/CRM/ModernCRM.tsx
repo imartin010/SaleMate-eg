@@ -182,6 +182,29 @@ function ModernCRMContent() {
     localStorage.setItem('crm_view_mode', viewMode);
   }, [viewMode]);
 
+  // Flip cards back when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      // Only handle if there are flipped cards
+      if (flippedLeads.size === 0) return;
+
+      const target = e.target as HTMLElement;
+      
+      // Check if click is inside any lead card
+      const clickedCard = target.closest('[data-testid="lead-card"]');
+      
+      // If click is outside all cards, flip all cards back
+      if (!clickedCard) {
+        setFlippedLeads(new Set());
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [flippedLeads]);
+
   // Calculate dropdown position when it opens
   useEffect(() => {
     if (openStageDropdown) {
