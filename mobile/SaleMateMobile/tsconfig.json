@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "jsx": "react-native",
+    "allowJs": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": [
+      "jest",
+      "react-native",
+      "react"
+    ],
+    "baseUrl": "./src",
+    "paths": {
+      "@screens/*": ["screens/*"],
+      "@navigation/*": ["navigation/*"],
+      "@components/*": ["components/*"],
+      "@store/*": ["store/*"],
+      "@services/*": ["services/*"],
+      "@theme/*": ["theme/*"],
+      "@types/*": ["types/*"]
+    }
+  },
+  "include": [
+    "src",
+    "index.js",
+    "jest.config.js"
+  ]
+}
+
+
