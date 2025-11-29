@@ -1134,7 +1134,8 @@ function ModernCRMContent() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 auto-rows-min"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
+                style={{ gridAutoRows: 'auto' }}
               >
                 {paginatedLeads.map((lead, index) => {
                   return (
@@ -1149,7 +1150,7 @@ function ModernCRMContent() {
                       stiffness: 200,
                       damping: 20
                     }}
-                    className={`relative h-full min-h-[280px] ${
+                    className={`relative h-full ${
                       selectedLeads.has(lead.id) 
                         ? 'border-indigo-500' 
                         : ''
@@ -1172,15 +1173,16 @@ function ModernCRMContent() {
                       style={{ transformStyle: 'preserve-3d' }}
                     >
                       {/* Front Face */}
-                      <div className={`absolute inset-0 bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 ${
+                      <div className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 h-full flex flex-col ${
                         selectedLeads.has(lead.id) 
                           ? 'border-indigo-500 bg-indigo-50' 
                           : 'border-indigo-100'
-                      } ${flippedLeads.has(lead.id) ? 'pointer-events-none' : ''}`}
+                      } ${flippedLeads.has(lead.id) ? 'pointer-events-none absolute inset-0 opacity-0' : 'relative'}`}
                       style={{ 
                         backfaceVisibility: 'hidden', 
                         WebkitBackfaceVisibility: 'hidden',
-                        pointerEvents: flippedLeads.has(lead.id) ? 'none' : 'auto'
+                        pointerEvents: flippedLeads.has(lead.id) ? 'none' : 'auto',
+                        transform: flippedLeads.has(lead.id) ? 'rotateY(180deg)' : 'rotateY(0deg)'
                       }}
                       >
                     {/* Shimmer effect */}
@@ -1314,7 +1316,7 @@ function ModernCRMContent() {
 
                       {/* Budget */}
                       {lead.budget && (
-                        <div className="flex items-center gap-2 mb-3 text-sm">
+                        <div className="flex items-center gap-2 mb-2 text-sm">
                           <DollarSign className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                           <span className="font-semibold text-gray-900">
                             EGP {lead.budget.toLocaleString()}
@@ -1323,8 +1325,8 @@ function ModernCRMContent() {
                       )}
 
                       {/* Quick Actions */}
-                      <div className="pt-3 border-t border-gray-100">
-                        <div className="flex items-center gap-2 mb-2">
+                      <div className="pt-2 border-t border-gray-100 mt-auto">
+                        <div className="flex items-center gap-2 mb-1">
                           {/* Mobile Only: Flip Button - Completely hidden on desktop */}
                           {!flippedLeads.has(lead.id) && (
                             <div className="block md:hidden">
@@ -1383,7 +1385,7 @@ function ModernCRMContent() {
                         </div>
                         {/* Assigned To */}
                         {lead.assigned_to && (
-                          <div className="flex items-center gap-2 text-xs text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                          <div className="flex items-center gap-2 text-xs text-gray-600 mt-1.5 pt-1.5">
                             <Users className="h-3.5 w-3.5 text-purple-600 flex-shrink-0" />
                             <span className="truncate">
                               Assigned to: <span className="font-medium text-gray-900">{lead.assigned_to.name}</span>
@@ -1395,13 +1397,13 @@ function ModernCRMContent() {
                       </div>
 
                       {/* Back Face - AI Analysis */}
-                      <div className={`absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden ${
+                      <div className={`bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden h-full flex flex-col ${
                         selectedLeads.has(lead.id) 
                           ? 'border-indigo-500' 
                           : 'border-indigo-100'
-                      }`} 
+                      } ${flippedLeads.has(lead.id) ? 'relative' : 'absolute inset-0 opacity-0 pointer-events-none'}`} 
                       style={{ 
-                        transform: 'rotateY(180deg)', 
+                        transform: flippedLeads.has(lead.id) ? 'rotateY(0deg)' : 'rotateY(180deg)', 
                         backfaceVisibility: 'hidden', 
                         WebkitBackfaceVisibility: 'hidden',
                         pointerEvents: flippedLeads.has(lead.id) ? 'auto' : 'none'
