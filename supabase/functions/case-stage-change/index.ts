@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 interface StageChangePayload {
-  leadId: string;
+  leadId?: string;
+  leadIds?: string[];
   newStage: string;
   userId: string;
   feedback?: string;
@@ -16,24 +17,24 @@ interface StageChangePayload {
   monthlyInstallment?: number;
   meetingDate?: string;
   propertyType?: string;
+  bulk?: boolean;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+async function processStageChange(
+  leadId: string,
+  newStage: string,
+  userId: string,
+  supabase: any,
+  supabaseUrl: string,
+  supabaseKey: string,
+  feedback?: string,
+  budget?: number,
+  downPayment?: number,
+  monthlyInstallment?: number,
+  meetingDate?: string,
+  propertyType?: string
+): Promise<{ success: boolean; error?: string; inventoryMatch?: any }> {
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const payload: StageChangePayload = await req.json();
-    const { leadId, newStage, userId, feedback, budget, downPayment, monthlyInstallment, meetingDate, propertyType } = payload;
-
-    // Store inventory match result for Low Budget stage
-    let inventoryMatchResult = null;
-
     // Update lead stage
     const { error: updateError } = await supabase
       .from('leads')
@@ -41,7 +42,7 @@ serve(async (req) => {
       .eq('id', leadId);
 
     if (updateError) {
-      throw new Error(`Failed to update lead stage: ${updateError.message}`);
+      return { success: false, error: `Failed to update lead stage: ${updateError.message}` };
     }
 
     // Get lead details for notifications
@@ -53,6 +54,7 @@ serve(async (req) => {
 
     // Handle stage-specific actions
     const targetUserId = lead?.buyer_user_id || lead?.assigned_to_id || lead?.owner_id || userId;
+    let inventoryMatchResult = null;
 
     switch (newStage) {
       case 'New Lead': {
@@ -208,7 +210,6 @@ serve(async (req) => {
             } else {
               const errorData = await matchResponse.json().catch(() => ({}));
               console.error('Inventory matcher error:', errorData);
-              // Return error result so frontend can display it
               inventoryMatchResult = {
                 resultCount: 0,
                 topUnits: [],
@@ -218,7 +219,6 @@ serve(async (req) => {
             }
           } catch (err) {
             console.error('Inventory matcher exception:', err);
-            // Return error result so frontend can display it
             inventoryMatchResult = {
               resultCount: 0,
               topUnits: [],
@@ -227,7 +227,6 @@ serve(async (req) => {
             };
           }
         } else {
-          // No budget info provided - return empty result
           inventoryMatchResult = {
             resultCount: 0,
             topUnits: [],
@@ -294,12 +293,95 @@ serve(async (req) => {
     }
 
     console.log(`✅ Stage changed to "${newStage}" for lead ${leadId}`);
+    return { success: true, inventoryMatch: inventoryMatchResult };
+  } catch (error) {
+    console.error(`Error processing stage change for lead ${leadId}:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const payload: StageChangePayload = await req.json();
+    const { leadId, leadIds, newStage, userId, feedback, budget, downPayment, monthlyInstallment, meetingDate, propertyType, bulk } = payload;
+
+    // Handle bulk operations
+    if (bulk && leadIds && leadIds.length > 0) {
+      const results: Array<{ leadId: string; success: boolean; error?: string }> = [];
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (const id of leadIds) {
+        const result = await processStageChange(
+          id,
+          newStage,
+          userId,
+          supabase,
+          supabaseUrl,
+          supabaseKey,
+          feedback,
+          budget,
+          downPayment,
+          monthlyInstallment,
+          meetingDate,
+          propertyType
+        );
+
+        if (result.success) {
+          successCount++;
+        } else {
+          failedCount++;
+          results.push({ leadId: id, success: false, error: result.error });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: successCount,
+          failed: failedCount,
+          errors: results.filter(r => !r.success).map(r => ({ leadId: r.leadId, error: r.error || 'Unknown error' })),
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle single lead operation
+    if (!leadId) {
+      throw new Error('leadId is required for single stage change');
+    }
+
+    const result = await processStageChange(
+      leadId,
+      newStage,
+      userId,
+      supabase,
+      supabaseUrl,
+      supabaseKey,
+      feedback,
+      budget,
+      downPayment,
+      monthlyInstallment,
+      meetingDate,
+      propertyType
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to change stage');
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Stage changed to ${newStage}`,
-        inventoryMatch: inventoryMatchResult
+        inventoryMatch: result.inventoryMatch
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

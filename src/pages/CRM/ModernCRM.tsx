@@ -36,6 +36,9 @@ import { BottomSheet } from '../../components/common/BottomSheet';
 import { FloatingActionButton } from '../../components/common/FloatingActionButton';
 import { SkeletonList } from '../../components/common/SkeletonCard';
 import { AssignLeadDialog } from '../../components/crm/AssignLeadDialog';
+import { BulkStageChangeModal } from '../../components/crm/BulkStageChangeModal';
+import { getLeadAISummary } from '../../lib/api/caseApi';
+import { Brain } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -114,7 +117,11 @@ function ModernCRMContent() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [selectedDuplicateLead, setSelectedDuplicateLead] = useState<Lead | null>(null);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [showBulkStageChangeDialog, setShowBulkStageChangeDialog] = useState(false);
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
+  const [flippedLeads, setFlippedLeads] = useState<Set<string>>(new Set());
+  const [aiSummaries, setAiSummaries] = useState<Map<string, string>>(new Map());
+  const [loadingSummaries, setLoadingSummaries] = useState<Set<string>>(new Set());
   const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const leadsSectionRef = useRef<HTMLDivElement>(null);
 
@@ -288,6 +295,43 @@ function ModernCRMContent() {
       newSelected.add(leadId);
     }
     setSelectedLeads(newSelected);
+  };
+
+  // Handle card/row flip and fetch AI summary
+  const handleFlip = async (leadId: string, e?: React.MouseEvent) => {
+    // Prevent flip if clicking on interactive elements
+    if (e) {
+      const target = e.target as HTMLElement;
+      if (target.closest('button') || target.closest('a') || target.closest('select') || target.closest('[data-stage-dropdown]')) {
+        return;
+      }
+    }
+
+    const newFlipped = new Set(flippedLeads);
+    if (newFlipped.has(leadId)) {
+      newFlipped.delete(leadId);
+    } else {
+      newFlipped.add(leadId);
+      // Fetch AI summary when flipping to back
+      if (!aiSummaries.has(leadId) && !loadingSummaries.has(leadId)) {
+        setLoadingSummaries(prev => new Set(prev).add(leadId));
+        try {
+          const result = await getLeadAISummary(leadId);
+          setAiSummaries(prev => new Map(prev).set(leadId, result.summary));
+        } catch (error) {
+          console.error('Error fetching AI summary:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          setAiSummaries(prev => new Map(prev).set(leadId, `Unable to load AI analysis: ${errorMessage}. Please try again or check if the lead has feedback data.`));
+        } finally {
+          setLoadingSummaries(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(leadId);
+            return newSet;
+          });
+        }
+      }
+    }
+    setFlippedLeads(newFlipped);
   };
 
   const toggleSelectAll = () => {
@@ -982,6 +1026,15 @@ function ModernCRMContent() {
                     <span className="hidden sm:inline">Assign to:</span>
                   </Button>
                   <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowBulkStageChangeDialog(true)}
+                    className="rounded-xl h-8 px-3 bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-1.5" />
+                    <span className="hidden sm:inline">Change Stage</span>
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setSelectedLeads(new Set())}
@@ -1087,22 +1140,37 @@ function ModernCRMContent() {
                       stiffness: 200,
                       damping: 20
                     }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all relative overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300 ${
+                    className={`relative h-full min-h-[280px] ${
                       selectedLeads.has(lead.id) 
-                        ? 'border-indigo-500 bg-indigo-50' 
-                        : 'border-indigo-100'
+                        ? 'border-indigo-500' 
+                        : ''
                     }`}
-                    onDoubleClick={(e) => {
-                      // Double-click selects/deselects lead for assignment
-                      const target = e.target as HTMLElement;
-                      if (target.closest('button') || target.closest('a') || target.closest('select')) {
-                        return;
-                      }
-                      toggleLeadSelection(lead.id);
-                    }}
+                    style={{ perspective: '1000px' }}
                     data-testid="lead-card"
                   >
+                    <motion.div
+                      className="relative w-full h-full"
+                      animate={{ rotateY: flippedLeads.has(lead.id) ? 180 : 0 }}
+                      transition={{ duration: 0.6, type: "spring", stiffness: 300, damping: 30 }}
+                      onClick={(e) => handleFlip(lead.id, e)}
+                      onDoubleClick={(e) => {
+                        // Double-click selects/deselects lead for assignment
+                        const target = e.target as HTMLElement;
+                        if (target.closest('button') || target.closest('a') || target.closest('select')) {
+                          return;
+                        }
+                        toggleLeadSelection(lead.id);
+                      }}
+                      style={{ transformStyle: 'preserve-3d' }}
+                    >
+                      {/* Front Face */}
+                      <div className={`absolute inset-0 bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300 ${
+                        selectedLeads.has(lead.id) 
+                          ? 'border-indigo-500 bg-indigo-50' 
+                          : 'border-indigo-100'
+                      }`}
+                      style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                      >
                     {/* Shimmer effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-50/50 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
@@ -1202,35 +1270,93 @@ function ModernCRMContent() {
                       )}
 
                       {/* Quick Actions */}
-                      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                        {lead.client_phone && (
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCall(lead.client_phone!);
-                            }}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
-                          >
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>Call</span>
-                          </motion.button>
-                        )}
-                        {lead.client_phone && (
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleWhatsApp(lead.client_phone!);
-                            }}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
-                          >
-                            <MessageCircle className="h-3.5 w-3.5" />
-                            <span>WhatsApp</span>
-                          </motion.button>
+                      <div className="pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          {lead.client_phone && (
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCall(lead.client_phone!);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              <span>Call</span>
+                            </motion.button>
+                          )}
+                          {lead.client_phone && (
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleWhatsApp(lead.client_phone!);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                              <span>WhatsApp</span>
+                            </motion.button>
+                          )}
+                        </div>
+                        {/* Assigned To */}
+                        {lead.assigned_to && (
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <Users className="h-3.5 w-3.5 text-purple-600 flex-shrink-0" />
+                            <span className="truncate">
+                              Assigned to: <span className="font-medium text-gray-900">{lead.assigned_to.name}</span>
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
+                      </div>
+
+                      {/* Back Face - AI Analysis */}
+                      <div className={`absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden ${
+                        selectedLeads.has(lead.id) 
+                          ? 'border-indigo-500' 
+                          : 'border-indigo-100'
+                      }`} 
+                      style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                      >
+                        <div className="p-4 md:p-5 h-full flex flex-col">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Brain className="h-5 w-5 text-indigo-600" />
+                            <h3 className="font-semibold text-gray-900 text-base md:text-lg">
+                              AI Analysis
+                            </h3>
+                          </div>
+                          
+                          <div className="flex-1 overflow-y-auto">
+                            {loadingSummaries.has(lead.id) ? (
+                              <div className="flex items-center justify-center py-8">
+                                <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                                <span className="ml-2 text-sm text-gray-600">Analyzing...</span>
+                              </div>
+                            ) : (
+                              <div className="space-y-2 text-sm text-gray-700">
+                                {aiSummaries.get(lead.id) ? (
+                                  <p className="leading-relaxed whitespace-pre-wrap">
+                                    {aiSummaries.get(lead.id)}
+                                  </p>
+                                ) : (
+                                  <p className="text-gray-500 italic">
+                                    Click to load AI analysis based on feedback and coach conversations.
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-indigo-200">
+                            <p className="text-xs text-gray-500 text-center">
+                              Click anywhere to flip back
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 );
                 })}
@@ -1293,8 +1419,8 @@ function ModernCRMContent() {
                     <tbody className="divide-y divide-gray-100">
                       <AnimatePresence>
                         {paginatedLeads.map((lead, index) => (
+                          <React.Fragment key={lead.id}>
                           <motion.tr
-                            key={lead.id}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 20, scale: 0.95 }}
@@ -1309,6 +1435,14 @@ function ModernCRMContent() {
                               backgroundColor: "rgba(99, 102, 241, 0.05)",
                               transition: { duration: 0.2 }
                             }}
+                            onClick={(e) => {
+                              // Single click flips to show AI analysis
+                              const target = e.target as HTMLElement;
+                              if (target.closest('button') || target.closest('a') || target.closest('select') || target.closest('input') || target.closest('[data-stage-dropdown]')) {
+                                return;
+                              }
+                              handleFlip(lead.id, e);
+                            }}
                             onDoubleClick={(e) => {
                               // Double-click selects/deselects lead for assignment
                               const target = e.target as HTMLElement;
@@ -1321,7 +1455,7 @@ function ModernCRMContent() {
                               selectedLeads.has(lead.id) 
                                 ? 'bg-indigo-50 border-l-4 border-indigo-500' 
                                 : ''
-                            }`}
+                            } ${flippedLeads.has(lead.id) ? 'bg-indigo-100' : ''}`}
                           >
                           {/* Empty cell for spacing (checkbox column removed) */}
                           <td className="px-2 py-2 md:px-4 md:py-3 w-0"></td>
@@ -1682,6 +1816,53 @@ function ModernCRMContent() {
                             );
                           })}
                         </motion.tr>
+                        {/* AI Analysis Expanded Row */}
+                        {flippedLeads.has(lead.id) && (
+                          <motion.tr
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="bg-gradient-to-br from-indigo-50 to-purple-50"
+                          >
+                            <td colSpan={visibleColumns.length + 1} className="px-4 py-6">
+                              <div className="flex items-start gap-3">
+                                <Brain className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 text-sm mb-2">AI Analysis</h4>
+                                  {loadingSummaries.has(lead.id) ? (
+                                    <div className="flex items-center gap-2 py-4">
+                                      <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                                      <span className="text-sm text-gray-600">Analyzing...</span>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {aiSummaries.get(lead.id) ? (
+                                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                          {aiSummaries.get(lead.id)}
+                                        </p>
+                                      ) : (
+                                        <p className="text-sm text-gray-500 italic">
+                                          Click to load AI analysis based on feedback and coach conversations.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFlip(lead.id);
+                                    }}
+                                    className="mt-3 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                  >
+                                    Click to close
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        )}
+                        </React.Fragment>
                       ))}
                       </AnimatePresence>
                     </tbody>
@@ -2255,6 +2436,21 @@ function ModernCRMContent() {
           leadIds={Array.from(selectedLeads)}
           onClose={() => {
             setShowAssignDialog(false);
+            setSelectedLeads(new Set());
+          }}
+          onSuccess={async () => {
+            await fetchLeads();
+          }}
+        />
+      )}
+
+      {/* Bulk Stage Change Dialog */}
+      {showBulkStageChangeDialog && (
+        <BulkStageChangeModal
+          isOpen={showBulkStageChangeDialog}
+          leadIds={Array.from(selectedLeads)}
+          onClose={() => {
+            setShowBulkStageChangeDialog(false);
             setSelectedLeads(new Set());
           }}
           onSuccess={async () => {

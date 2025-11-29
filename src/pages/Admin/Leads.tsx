@@ -3,6 +3,7 @@ import { Database, Search, Filter, Download, Eye, Plus, X, Check, ChevronDown, E
 import { DataTable, Column } from '../../components/admin/DataTable';
 import { supabase } from '../../lib/supabaseClient';
 import { AssignLeadDialog } from '../../components/crm/AssignLeadDialog';
+import { BulkStageChangeModal } from '../../components/crm/BulkStageChangeModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -86,7 +87,6 @@ export default function Leads() {
   const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showBulkStageDialog, setShowBulkStageDialog] = useState(false);
-  const [bulkStage, setBulkStage] = useState<string>('New Lead');
   const [processing, setProcessing] = useState(false);
   const { profile } = useAuthStore();
 
@@ -512,35 +512,6 @@ export default function Leads() {
   };
 
 
-  const handleBulkChangeStage = async () => {
-    if (selectedLeadIds.size === 0 || !bulkStage) return;
-    
-    setProcessing(true);
-    try {
-      const leadIdsArray = Array.from(selectedLeadIds);
-      
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          stage: bulkStage,
-          updated_at: new Date().toISOString(),
-        })
-        .in('id', leadIdsArray);
-
-      if (error) throw error;
-      
-      setSelectedLeadIds(new Set());
-      setShowBulkStageDialog(false);
-      setBulkStage('New Lead');
-      loadLeads();
-      alert(`Successfully updated ${leadIdsArray.length} lead(s)!`);
-    } catch (err: any) {
-      console.error('Error updating leads:', err);
-      alert('Failed to update leads: ' + (err.message || 'Unknown error'));
-    } finally {
-      setProcessing(false);
-    }
-  };
 
   const columns: Column<Lead>[] = [
     {
@@ -1436,59 +1407,19 @@ export default function Leads() {
       )}
 
       {/* Bulk Change Stage Dialog */}
-      <Dialog open={showBulkStageDialog} onOpenChange={setShowBulkStageDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Change Stage</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Change stage for {selectedLeadIds.size} lead{selectedLeadIds.size !== 1 ? 's' : ''}
-            </p>
-            <div>
-              <Label htmlFor="bulk_stage">New Stage</Label>
-              <Select value={bulkStage} onValueChange={setBulkStage}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New Lead">New Lead</SelectItem>
-                  <SelectItem value="Potential">Potential</SelectItem>
-                  <SelectItem value="Hot Case">Hot Case</SelectItem>
-                  <SelectItem value="Meeting Done">Meeting Done</SelectItem>
-                  <SelectItem value="Closed Deal">Closed Deal</SelectItem>
-                  <SelectItem value="No Answer">No Answer</SelectItem>
-                  <SelectItem value="Call Back">Call Back</SelectItem>
-                  <SelectItem value="Whatsapp">Whatsapp</SelectItem>
-                  <SelectItem value="Non Potential">Non Potential</SelectItem>
-                  <SelectItem value="Wrong Number">Wrong Number</SelectItem>
-                  <SelectItem value="Switched Off">Switched Off</SelectItem>
-                  <SelectItem value="Low Budget">Low Budget</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowBulkStageDialog(false);
-                  setBulkStage('New Lead');
-                }}
-                disabled={processing}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleBulkChangeStage}
-                disabled={!bulkStage || processing}
-              >
-                {processing ? 'Updating...' : 'Update Stage'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showBulkStageDialog && (
+        <BulkStageChangeModal
+          isOpen={showBulkStageDialog}
+          leadIds={Array.from(selectedLeadIds)}
+          onClose={() => {
+            setShowBulkStageDialog(false);
+            setSelectedLeadIds(new Set());
+          }}
+          onSuccess={async () => {
+            await loadLeads();
+          }}
+        />
+      )}
     </div>
   );
 }

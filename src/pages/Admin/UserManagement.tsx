@@ -608,26 +608,26 @@ export default function UserManagement() {
         <div className="flex gap-2">
           {activeTab === 'users' && (
             <>
-              <button
-                onClick={() => setShowCreateDialog(true)}
-                className="btn-admin-primary flex items-center gap-2"
-                style={{ padding: '0.625rem 1.5rem', borderRadius: '0.75rem', fontWeight: 600, color: 'white', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s ease', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.35)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.25)';
-                }}
-              >
-                <UserPlus className="h-4 w-4" />
-                Add User
-              </button>
-              <button onClick={exportCSV} className="admin-btn admin-btn-secondary flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Export CSV
-              </button>
+          <button
+            onClick={() => setShowCreateDialog(true)}
+            className="btn-admin-primary flex items-center gap-2"
+            style={{ padding: '0.625rem 1.5rem', borderRadius: '0.75rem', fontWeight: 600, color: 'white', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s ease', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.25)';
+            }}
+          >
+            <UserPlus className="h-4 w-4" />
+            Add User
+          </button>
+          <button onClick={exportCSV} className="admin-btn admin-btn-secondary flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
             </>
           )}
         </div>
@@ -703,50 +703,50 @@ export default function UserManagement() {
       {/* Tab Content */}
       {activeTab === 'users' ? (
         <>
-          {/* Filters */}
-          <div className="admin-card p-4 flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" />
-              <input
-                type="text"
-                placeholder="Search by name, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="admin-input w-full pl-10"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-600" />
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="admin-input"
-              >
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="support">Support</option>
-                <option value="user">User</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="admin-card p-4 bg-red-50 border border-red-200 text-red-800">
-              {error}
-            </div>
-          )}
-
-          {/* Table */}
-          <DataTable
-            columns={columns}
-            data={filteredUsers}
-            loading={loading}
-            emptyMessage="No users found"
-            pagination
-            pageSize={20}
+      {/* Filters */}
+      <div className="admin-card p-4 flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" />
+          <input
+            type="text"
+            placeholder="Search by name, email, or phone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="admin-input w-full pl-10"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-5 w-5 text-gray-600" />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="admin-input"
+          >
+            <option value="all">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="support">Support</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="admin-card p-4 bg-red-50 border border-red-200 text-red-800">
+          {error}
+        </div>
+      )}
+
+      {/* Table */}
+      <DataTable
+        columns={columns}
+        data={filteredUsers}
+        loading={loading}
+        emptyMessage="No users found"
+        pagination
+        pageSize={20}
+      />
         </>
       ) : (
         <div className="admin-card p-6">

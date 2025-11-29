@@ -378,6 +378,44 @@ export async function changeStage(payload: {
 }
 
 /**
+ * Change stage for multiple leads in bulk
+ */
+export async function bulkChangeStage(payload: {
+  leadIds: string[];
+  newStage: string;
+  userId: string;
+  feedback?: string;
+  budget?: number;
+  downPayment?: number;
+  monthlyInstallment?: number;
+  meetingDate?: string;
+  propertyType?: string;
+}): Promise<{
+  success: number;
+  failed: number;
+  errors: Array<{ leadId: string; error: string }>;
+}> {
+  try {
+    const { data, error } = await supabase.functions.invoke('case-stage-change', {
+      body: {
+        ...payload,
+        bulk: true,
+      },
+    });
+
+    if (error) {
+      console.error('Bulk stage change error:', error);
+      throw new Error(error.message || 'Failed to change stages');
+    }
+
+    return data || { success: 0, failed: payload.leadIds.length, errors: [] };
+  } catch (error) {
+    console.error('Error in bulk stage change:', error);
+    throw error;
+  }
+}
+
+/**
  * Complete a case action
  */
 export async function completeAction(actionId: string) {
@@ -504,5 +542,43 @@ export async function getAICoaching(params: {
   } catch (error) {
     console.error('Error getting AI coaching:', error);
     throw error;
+  }
+}
+
+/**
+ * Get AI-generated summary for a lead based on feedback and AI coach conversations
+ */
+export async function getLeadAISummary(leadId: string): Promise<{
+  summary: string;
+  hasData: boolean;
+}> {
+  try {
+    const { data, error } = await supabase.functions.invoke('lead-ai-summary', {
+      body: { leadId },
+    });
+
+    if (error) {
+      console.error('AI summary error:', error);
+      // If the error contains a summary in the response, use it
+      if (data && data.summary) {
+        return { summary: data.summary, hasData: data.hasData || false };
+      }
+      throw new Error(error.message || 'Failed to get AI summary');
+    }
+
+    // Handle case where data might have error but also summary
+    if (data && data.error && data.summary) {
+      return { summary: data.summary, hasData: data.hasData || false };
+    }
+
+    return data || { summary: 'Unable to generate AI summary.', hasData: false };
+  } catch (error) {
+    console.error('Error getting AI summary:', error);
+    // Return a helpful error message instead of throwing
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { 
+      summary: `Unable to load AI analysis: ${errorMessage}. Please ensure the edge function is deployed and OpenAI API key is configured.`, 
+      hasData: false 
+    };
   }
 }
