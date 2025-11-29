@@ -655,14 +655,39 @@ const Inventory: React.FC = () => {
       });
 
       // Count units by compound name only - match project name to compound name
+      // Load ALL units using pagination to ensure accurate counts
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: allUnitsData, error: unitsError } = await (supabase as any)
-        .from('salemate-inventory')
-        .select('compound');
+      let allUnitsData: Record<string, unknown>[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 10000;
+      
+      while (hasMore) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: pageData, error: unitsError } = await (supabase as any)
+          .from('salemate-inventory')
+          .select('compound')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (unitsError) {
+          console.error('Error loading units:', unitsError);
+          break;
+        }
+        
+        if (pageData && pageData.length > 0) {
+          allUnitsData = allUnitsData.concat(pageData);
+          hasMore = pageData.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`📊 Loaded ${allUnitsData.length} total units for counting`);
 
       // Group and count units by compound name
       const compoundCountMap: Record<string, number> = {};
-      if (!unitsError && allUnitsData) {
+      if (allUnitsData && allUnitsData.length > 0) {
         allUnitsData.forEach((unit: Record<string, unknown>) => {
           const compound = extractName(unit.compound).toLowerCase().trim();
           if (compound) {
@@ -767,7 +792,7 @@ const Inventory: React.FC = () => {
             id: project.id,
             name: project.name,
             region: project.region,
-            cover_image: project.cover_image,
+            cover_image: project.cover_image || undefined,
             available_units: unitCount,
           };
         });
@@ -960,7 +985,12 @@ const Inventory: React.FC = () => {
             </Card>
           )}
           {visibleProjects.map((project) => (
-            <Card key={project.id} className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0" style={{ padding: 0 }}>
+            <Card 
+              key={project.id} 
+              className="shop-project-card min-w-[280px] flex-shrink-0 overflow-hidden group hover:shadow-lg transition-all duration-200 bg-white rounded-lg border-0 cursor-pointer" 
+              style={{ padding: 0 }}
+              onClick={() => navigate(`/app/inventory/projects/${encodeURIComponent(project.name)}`)}
+            >
               {/* Hero Photo Section */}
               <div className="relative h-52 w-full overflow-hidden">
                 <SafeImage
