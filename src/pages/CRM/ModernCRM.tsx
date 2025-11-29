@@ -1164,7 +1164,7 @@ function ModernCRMContent() {
                       style={{ transformStyle: 'preserve-3d' }}
                     >
                       {/* Front Face */}
-                      <div className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 h-full flex flex-col relative ${
+                      <div className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 h-full flex flex-col absolute inset-0 w-full ${
                         selectedLeads.has(lead.id)
                           ? 'border-indigo-500 bg-indigo-50'
                           : 'border-indigo-100'
