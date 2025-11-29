@@ -1207,7 +1207,7 @@ function ModernCRMContent() {
                     </button>
                     
                     <div 
-                      className="p-4 md:p-5 relative z-10"
+                      className="p-4 md:p-5 relative z-10 flex flex-col flex-1"
                       onClick={(e) => {
                         // Prevent all clicks on front face when flipped
                         if (flippedLeads.has(lead.id)) {
@@ -1291,7 +1291,7 @@ function ModernCRMContent() {
                       </div>
 
                       {/* Contact Info */}
-                      <div className="space-y-2 mb-3">
+                      <div className="space-y-2 mb-3 flex-1">
                         {lead.client_phone && (
                           <div className="flex items-center gap-2 text-sm text-gray-700">
                             <Phone className="h-4 w-4 text-indigo-600 flex-shrink-0" />
