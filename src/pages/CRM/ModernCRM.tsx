@@ -1364,17 +1364,25 @@ function ModernCRMContent() {
                       </div>
 
                       {/* Back Face - AI Analysis */}
-                      <div className={`bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden h-full flex flex-col absolute inset-0 w-full ${
-                        selectedLeads.has(lead.id)
-                          ? 'border-indigo-500'
-                          : 'border-indigo-100'
-                      }`}
-                      style={{
-                        transform: 'rotateY(180deg)',
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        pointerEvents: flippedLeads.has(lead.id) ? 'auto' : 'none'
-                      }}
+                      <div 
+                        className={`bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden h-full flex flex-col absolute inset-0 w-full ${
+                          selectedLeads.has(lead.id)
+                            ? 'border-indigo-500'
+                            : 'border-indigo-100'
+                        }`}
+                        style={{
+                          transform: 'rotateY(180deg)',
+                          backfaceVisibility: 'hidden',
+                          WebkitBackfaceVisibility: 'hidden',
+                          pointerEvents: flippedLeads.has(lead.id) ? 'auto' : 'none'
+                        }}
+                        onClick={(e) => {
+                          // Only flip if clicking on non-interactive elements
+                          const target = e.target as HTMLElement;
+                          if (!target.closest('button') && !target.closest('a')) {
+                            handleFlip(lead.id);
+                          }
+                        }}
                       >
                         {/* Flip Back Button - Desktop: shows on hover in corner */}
                         <button
