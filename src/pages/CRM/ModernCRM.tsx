@@ -2029,15 +2029,15 @@ function ModernCRMContent() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: colIndex * 0.1 }}
                         className="flex-shrink-0 w-64 md:w-72 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl border border-indigo-100 shadow-lg p-3 md:p-4 relative overflow-hidden"
-                        onDragOver={(e) => {
+                        onDragOver={(e: React.DragEvent<HTMLDivElement>) => {
                           e.preventDefault();
                           e.stopPropagation();
                           e.currentTarget.classList.add('ring-2', 'ring-indigo-400', 'ring-offset-2');
                         }}
-                        onDragLeave={(e) => {
+                        onDragLeave={(e: React.DragEvent<HTMLDivElement>) => {
                           e.currentTarget.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2');
                         }}
-                        onDrop={async (e) => {
+                        onDrop={async (e: React.DragEvent<HTMLDivElement>) => {
                           e.preventDefault();
                           e.stopPropagation();
                           e.currentTarget.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2');
@@ -2105,25 +2105,30 @@ function ModernCRMContent() {
                                   y: -4,
                                   boxShadow: "0px 10px 25px rgba(99, 102, 241, 0.2)"
                                 }}
+                                className={`bg-indigo-50 rounded-lg md:rounded-xl p-2.5 md:p-3 border border-indigo-100 active:border-indigo-300 md:hover:border-indigo-300 transition-all cursor-grab active:cursor-grabbing relative overflow-hidden group touch-manipulation ${
+                                  draggedLeadId === lead.id ? 'opacity-50' : ''
+                                }`}
                                 draggable
                                 onDragStart={(e) => {
-                                  setDraggedLeadId(lead.id);
-                                  e.dataTransfer.effectAllowed = 'move';
-                                  e.dataTransfer.setData('text/plain', lead.id);
+                                  const dragEvent = e as unknown as DragEvent;
+                                  if (dragEvent.dataTransfer) {
+                                    setDraggedLeadId(lead.id);
+                                    dragEvent.dataTransfer.effectAllowed = 'move';
+                                    dragEvent.dataTransfer.setData('text/plain', lead.id);
+                                  }
                                   // Add visual feedback
-                                  if (e.currentTarget) {
-                                    e.currentTarget.style.opacity = '0.5';
+                                  const target = e.currentTarget as HTMLElement;
+                                  if (target) {
+                                    target.style.opacity = '0.5';
                                   }
                                 }}
                                 onDragEnd={(e) => {
                                   setDraggedLeadId(null);
-                                  if (e.currentTarget) {
-                                    e.currentTarget.style.opacity = '1';
+                                  const target = e.currentTarget as HTMLElement;
+                                  if (target) {
+                                    target.style.opacity = '1';
                                   }
                                 }}
-                                className={`bg-indigo-50 rounded-lg md:rounded-xl p-2.5 md:p-3 border border-indigo-100 active:border-indigo-300 md:hover:border-indigo-300 transition-all cursor-grab active:cursor-grabbing relative overflow-hidden group touch-manipulation ${
-                                  draggedLeadId === lead.id ? 'opacity-50' : ''
-                                }`}
                                 onClick={(e) => {
                                   // Click on card goes to Case Manager (not detail modal)
                                   const target = e.target as HTMLElement;
