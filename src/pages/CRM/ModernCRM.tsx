@@ -1138,18 +1138,50 @@ function ModernCRMContent() {
                         }
                         toggleLeadSelection(lead.id);
                       }}
-                      style={{ transformStyle: 'preserve-3d', minHeight: '200px' }}
+                      style={{ transformStyle: 'preserve-3d' }}
                     >
-                      {/* Front Face */}
-                      <div className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 h-full flex flex-col ${
+                      {/* Height Maintainer - Always in flow to maintain container height */}
+                      <div 
+                        className={`h-full flex flex-col ${
+                          flippedLeads.has(lead.id) ? 'invisible' : 'visible'
+                        }`}
+                        aria-hidden="true"
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        <div className="p-4 md:p-5 flex flex-col flex-1 min-h-[200px]">
+                          <div className="h-6 mb-3"></div>
+                          <div className="h-4 mb-3"></div>
+                          <div className="h-16 mb-3 flex-1"></div>
+                          <div className="h-12"></div>
+                        </div>
+                      </div>
+                      
+                      {/* Back Face Height Maintainer - Visible when flipped */}
+                      <div 
+                        className={`h-full flex flex-col ${
+                          flippedLeads.has(lead.id) ? 'visible' : 'invisible'
+                        }`}
+                        aria-hidden="true"
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        <div className="p-4 md:p-5 flex flex-col flex-1 min-h-[200px]">
+                          <div className="h-8 mb-3"></div>
+                          <div className="h-32 mb-3 flex-1"></div>
+                          <div className="h-12"></div>
+                        </div>
+                      </div>
+                      
+                      {/* Front Face - Visible Layer */}
+                      <div className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 h-full flex flex-col absolute inset-0 z-10 ${
                         selectedLeads.has(lead.id) 
                           ? 'border-indigo-500 bg-indigo-50' 
                           : 'border-indigo-100'
-                      } ${flippedLeads.has(lead.id) ? 'pointer-events-none absolute inset-0 opacity-0' : 'relative'}`}
+                      } ${flippedLeads.has(lead.id) ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'}`}
                       style={{ 
                         backfaceVisibility: 'hidden', 
                         WebkitBackfaceVisibility: 'hidden',
-                        transform: flippedLeads.has(lead.id) ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                        transform: flippedLeads.has(lead.id) ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                        willChange: 'transform'
                       }}
                       >
                     {/* Shimmer effect */}
@@ -1364,15 +1396,16 @@ function ModernCRMContent() {
                       </div>
 
                       {/* Back Face - AI Analysis */}
-                      <div className={`bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden h-full flex flex-col ${
+                      <div className={`bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl md:rounded-2xl border shadow-sm overflow-hidden h-full flex flex-col absolute inset-0 z-10 ${
                         selectedLeads.has(lead.id) 
                           ? 'border-indigo-500' 
                           : 'border-indigo-100'
-                      } ${flippedLeads.has(lead.id) ? 'relative pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}`} 
+                      } ${flippedLeads.has(lead.id) ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} 
                       style={{ 
                         transform: flippedLeads.has(lead.id) ? 'rotateY(0deg)' : 'rotateY(180deg)', 
                         backfaceVisibility: 'hidden', 
-                        WebkitBackfaceVisibility: 'hidden'
+                        WebkitBackfaceVisibility: 'hidden',
+                        willChange: 'transform'
                       }}
                       >
                         {/* Flip Back Button - Desktop: shows on hover in corner */}
