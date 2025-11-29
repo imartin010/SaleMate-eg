@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/auth';
 import { canAccessSupport, canAccessAdmin } from '../../lib/rbac';
 import { Logo } from '../../components/common/Logo';
 import { supabase } from '../../lib/supabaseClient';
+import { useFeatureFlags } from '../../core/config/features';
 
 import {
   LayoutDashboard,
@@ -131,6 +132,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     },
   ];
 
+  // Get feature flags
+  const { leadsShopEnabled, partnerDealsEnabled } = useFeatureFlags();
+
   // Authenticated navigation items (visible when logged in)
   const authenticatedNavigation: Array<{
     name: string;
@@ -141,15 +145,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   }> = [
     {
       name: 'Dashboard',
-      href: '/app',
+      href: '/app/crm/dashboard',
       icon: LayoutDashboard,
-      show: false, // Hidden for now, will use later
+      show: true, // Make visible for CRM launch
     },
     {
       name: 'Shop',
       href: '/app/shop',
       icon: ShoppingCart,
-      show: false, // Hidden for now, will use later
+      show: leadsShopEnabled, // Use feature flag
     },
     {
       name: 'My Leads',
@@ -167,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'Partners',
       href: '/app/partners',
       icon: Handshake,
-      show: false, // Hidden for now, will use later
+      show: partnerDealsEnabled, // Use feature flag
     },
     {
       name: 'Inventory',
@@ -179,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       name: 'My Deals',
       href: '/app/deals',
       icon: FileText,
-      show: false, // Hidden for now, will use later
+      show: partnerDealsEnabled, // Use feature flag
     },
     {
       name: 'My Team',

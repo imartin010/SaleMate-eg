@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { BackgroundDecor, GradientOrb } from './Decor';
 import { 
@@ -14,8 +15,11 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { Logo } from '../../../components/common/Logo';
+import ContactFormModal from './ContactFormModal';
 
 const Hero = () => {
+  const [showContactForm, setShowContactForm] = useState(false);
+
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -110,16 +114,16 @@ const Hero = () => {
                 variants={fadeInUp}
               >
                 <Badge variant="secondary" className="bg-white/80 text-blue-600 border-blue-200">
-                  <Shield className="w-3 h-3 mr-1" />
-                  Lead Marketplace
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  AI-Enabled CRM
                 </Badge>
                 <Badge variant="secondary" className="bg-white/80 text-green-600 border-green-200">
                   <Users className="w-3 h-3 mr-1" />
-                  CRM Platform
+                  Lead Management
                 </Badge>
                 <Badge variant="secondary" className="bg-white/80 text-purple-600 border-purple-200">
-                  <Handshake className="w-3 h-3 mr-1" />
-                  Partnerships
+                  <FileText className="w-3 h-3 mr-1" />
+                  Performance Tracking
                 </Badge>
               </motion.div>
 
@@ -128,10 +132,9 @@ const Hero = () => {
                 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6"
                 variants={fadeInUp}
               >
-                <span className="text-slate-900">Where </span>
-                <span className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-700 bg-clip-text text-transparent">Brokers</span>
-                <span className="text-slate-900"> Meet </span>
-                <span className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-700 bg-clip-text text-transparent">Daily Opportunities</span>
+                <span className="text-slate-900">AI-Enabled CRM for </span>
+                <span className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-700 bg-clip-text text-transparent">Real Estate</span>
+                <span className="text-slate-900"> Professionals</span>
               </motion.h1>
 
               {/* Subtitle */}
@@ -139,7 +142,7 @@ const Hero = () => {
                 className="text-lg md:text-xl text-slate-600 max-w-2xl mb-8 leading-relaxed"
                 variants={fadeInUp}
               >
-                SaleMate connects brokers with daily fresh leads and empowers top brokerages to close more deals through trusted, data-driven partnerships.
+                Manage leads, track performance, and close more deals with SaleMate's intelligent CRM platform built specifically for real estate professionals.
               </motion.p>
 
               {/* Creative CTA Section */}
@@ -151,7 +154,7 @@ const Hero = () => {
                 <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 shadow-2xl">
                   <div className="text-center mb-4">
                     <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Transform Your Business?</h3>
-                    <p className="text-sm text-slate-600">Join hundreds of brokers already using SaleMate</p>
+                    <p className="text-sm text-slate-600">Request access to our AI-enabled CRM platform</p>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -161,23 +164,29 @@ const Hero = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Link to="/auth/signup" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group w-full">
+                      <button 
+                        onClick={() => setShowContactForm(true)}
+                        className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group w-full"
+                      >
                         <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
-                        <span className="font-semibold">Start Free Today</span>
+                        <span className="font-semibold">Request Access</span>
                         <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Link>
+                      </button>
                     </motion.div>
 
-                    {/* Login Button - Secondary */}
+                    {/* Contact Button - Secondary */}
                     <motion.div 
                       className="flex-1"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Link to="/auth/login" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-slate-700 bg-white/80 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group w-full">
-                        <Users className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                        <span className="font-semibold">Login</span>
-                      </Link>
+                      <a 
+                        href="mailto:support@salemate-eg.com" 
+                        className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-slate-700 bg-white/80 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group w-full"
+                      >
+                        <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Contact Us</span>
+                      </a>
                     </motion.div>
                   </div>
 
@@ -185,11 +194,11 @@ const Hero = () => {
                   <div className="flex items-center justify-center gap-4 mt-4 text-xs text-slate-500">
                     <div className="flex items-center gap-1">
                       <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                      <span>No credit card required</span>
+                      <span>Contract-based SaaS</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                      <span>Free forever</span>
+                      <span>24/7 Support</span>
                     </div>
                   </div>
                 </div>
@@ -330,6 +339,12 @@ const Hero = () => {
           />
         </motion.div>
       </motion.div>
+
+      {/* Contact Form Modal */}
+      <ContactFormModal 
+        isOpen={showContactForm} 
+        onClose={() => setShowContactForm(false)} 
+      />
     </section>
   );
 };

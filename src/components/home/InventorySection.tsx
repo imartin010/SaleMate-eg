@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Loader2 } from 'lucide-react';
+import { Package, Loader2, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 /**
@@ -50,7 +50,7 @@ const InventorySection: React.FC = React.memo(() => {
         <div className="space-y-2 md:space-y-3 flex-1">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2 md:gap-3">
             <Package className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-            Inventory
+            Real-Time Inventory
           </h2>
           <p className="text-sm md:text-base text-gray-600">
             {loading ? (
@@ -59,7 +59,13 @@ const InventorySection: React.FC = React.memo(() => {
                 Loading inventory...
               </span>
             ) : (
-              <>Explore more than <span className="font-bold text-blue-600">{displayCount}</span> primary updated units in Egypt</>
+              <>
+                <span className="flex items-center gap-2 mb-1">
+                  <RefreshCw className="h-3 w-3 text-green-500" />
+                  <span className="text-xs font-semibold text-green-600">Live</span>
+                </span>
+                Explore more than <span className="font-bold text-blue-600">{displayCount}</span> primary updated units in Egypt
+              </>
             )}
           </p>
         </div>

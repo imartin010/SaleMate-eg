@@ -8,6 +8,7 @@ import { OptionalAuthGuard } from '../components/auth/OptionalAuthGuard';
 import { CheckoutGuard } from '../components/auth/CheckoutGuard';
 import { RoleGuard } from '../components/auth/RoleGuard';
 import { HomePageGuard } from '../components/auth/HomePageGuard';
+import { FeatureGuard } from '../components/auth/FeatureGuard';
 import { ErrorBoundary, FastFallback } from '../components/common/ErrorBoundary';
 import { PageErrorBoundary } from '../components/common/PageErrorBoundary';
 import { ScrollToTop } from '../components/common/ScrollToTop';
@@ -48,6 +49,7 @@ const AppHome = React.lazy(() => import('../pages/Home'));
 const Dashboard = React.lazy(() => import('../pages/FastDashboard')); // Legacy, will be removed
 const MyLeads = React.lazy(() => import('../pages/CRM/ModernCRM'));
 const CRMDashboard = React.lazy(() => import('../pages/CRM/CRMDashboard'));
+const CRMLaunchDashboard = React.lazy(() => import('../pages/CRM/CRMLaunchDashboard'));
 const CaseManager = React.lazy(() => import('../pages/Case/CaseManager'));
 const Shop = React.lazy(() => import('../pages/Shop/ImprovedShop'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
@@ -400,7 +402,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'crm/dashboard',
-            element: <Navigate to="/app/crm/analysis" replace />,
+            element: <SafePage><CRMLaunchDashboard /></SafePage>,
           },
           {
             path: 'crm/analysis',
@@ -416,7 +418,13 @@ export const router = createBrowserRouter([
           },
           {
             path: 'shop',
-            element: <SafePage><Shop /></SafePage>,
+            element: (
+              <SafePage>
+                <FeatureGuard feature="LEADS_SHOP_ENABLED">
+                  <Shop />
+                </FeatureGuard>
+              </SafePage>
+            ),
           },
           {
             path: 'inventory',
@@ -440,7 +448,13 @@ export const router = createBrowserRouter([
           },
           {
             path: 'deals',
-            element: <SafePage><MyDeals /></SafePage>,
+            element: (
+              <SafePage>
+                <FeatureGuard feature="PARTNER_DEALS_ENABLED">
+                  <MyDeals />
+                </FeatureGuard>
+              </SafePage>
+            ),
           },
           {
             path: 'team',
@@ -452,7 +466,13 @@ export const router = createBrowserRouter([
           },
           {
             path: 'partners',
-            element: <SafePage><PartnersPage /></SafePage>,
+            element: (
+              <SafePage>
+                <FeatureGuard feature="PARTNER_DEALS_ENABLED">
+                  <PartnersPage />
+                </FeatureGuard>
+              </SafePage>
+            ),
           },
           {
             path: 'support',

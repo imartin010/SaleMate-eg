@@ -5,7 +5,8 @@ import {
   TrendingUp, 
   DollarSign, 
   Clock, 
-  Users 
+  Users,
+  Package
 } from 'lucide-react';
 
 const LiveMetrics = () => {
@@ -14,48 +15,48 @@ const LiveMetrics = () => {
 
   const metrics = [
     {
-      icon: TrendingUp,
-      label: 'Leads delivered',
-      sublabel: '(last 30 days)',
-      value: 18240,
+      icon: Users,
+      label: 'Active CRM Users',
+      sublabel: '(growing daily)',
+      value: 2500,
       prefix: '',
-      suffix: '',
-      color: 'from-green-500 to-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      animationDuration: 2000
-    },
-    {
-      icon: DollarSign,
-      label: 'Average CPL by project',
-      sublabel: '',
-      value: 125,
-      prefix: 'EGP ',
-      suffix: '–180',
+      suffix: '+',
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
+      animationDuration: 2000
+    },
+    {
+      icon: TrendingUp,
+      label: 'Avg. Conversion Rate',
+      sublabel: '(across all users)',
+      value: 12.5,
+      prefix: '',
+      suffix: '%',
+      color: 'from-green-500 to-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
       animationDuration: 1500
     },
     {
-      icon: Clock,
-      label: 'Median time to first contact',
-      sublabel: '',
-      value: 8,
+      icon: Package,
+      label: 'Real-Time Inventory',
+      sublabel: '(primary market units)',
+      value: 30000,
       prefix: '',
-      suffix: 'm 12s',
+      suffix: '+',
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-200',
       animationDuration: 1000
     },
     {
-      icon: Users,
-      label: 'Active partners',
+      icon: DollarSign,
+      label: 'Platform Uptime',
       sublabel: '',
-      value: 4,
+      value: 99.9,
       prefix: '',
-      suffix: '',
+      suffix: '%',
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200',
@@ -81,7 +82,7 @@ const LiveMetrics = () => {
             </span>
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Real-time metrics from our platform showing quality and performance
+            Real-time metrics from our AI-enabled CRM platform showing user growth and performance
           </p>
           
           {/* Live indicator */}
@@ -117,12 +118,12 @@ const LiveMetrics = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-800 mb-1">98.5%</div>
-              <div className="text-sm text-slate-600">Lead quality score</div>
+              <div className="text-2xl font-bold text-slate-800 mb-1">AI-Powered</div>
+              <div className="text-sm text-slate-600">CRM with intelligent insights</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-800 mb-1">2.3x</div>
-              <div className="text-sm text-slate-600">Avg. conversion rate increase</div>
+              <div className="text-2xl font-bold text-slate-800 mb-1">Real-Time</div>
+              <div className="text-sm text-slate-600">Inventory updates</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-slate-800 mb-1">24/7</div>
@@ -176,7 +177,7 @@ const MetricCard = ({
   };
 
   const formatValue = (value: number) => {
-    if (metric.label.includes('Leads delivered')) {
+    if (metric.label.includes('Active CRM Users') || metric.label.includes('Real-Time Inventory')) {
       return value.toLocaleString();
     }
     return value;

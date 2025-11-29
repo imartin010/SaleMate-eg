@@ -1,45 +1,64 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/cn';
+import { useFeatureFlags } from '../../core/config/features';
 import {
   Home,
   ShoppingCart,
   Users,
   Handshake,
   Package,
+  BarChart3,
 } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
+  const { leadsShopEnabled, partnerDealsEnabled } = useFeatureFlags();
 
-  // Fixed 5-tab navigation as per requirements: Home, Shop, Leads, Deals, Inventory
-  const navigation = [
+  // Navigation items with feature flags
+  const allNavigationItems = [
     {
       name: 'Home',
       href: '/app',
       icon: Home,
+      show: true,
     },
     {
       name: 'Shop',
       href: '/app/shop',
       icon: ShoppingCart,
+      show: leadsShopEnabled,
     },
     {
       name: 'Leads',
       href: '/app/crm',
       icon: Users,
+      show: true,
     },
     {
       name: 'Deals',
       href: '/app/partners',
       icon: Handshake,
+      show: partnerDealsEnabled,
     },
     {
       name: 'Inventory',
       href: '/app/inventory',
       icon: Package,
+      show: true,
+    },
+    {
+      name: 'Dashboard',
+      href: '/app/crm/dashboard',
+      icon: BarChart3,
+      show: true,
     },
   ];
+
+  // Filter navigation to only show enabled items, prioritize key items
+  const navigation = allNavigationItems
+    .filter(item => item.show)
+    .slice(0, 5); // Limit to 5 items for bottom nav
 
   const isActive = (href: string) => {
     if (href === '/app') {

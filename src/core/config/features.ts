@@ -39,6 +39,12 @@ export const FEATURES = {
   // Performance tracking
   PERFORMANCE_SUBDOMAIN_ENABLED: true,
   
+  // GTM Launch Features
+  LEADS_SHOP_ENABLED: false, // Enable at Month 2
+  PARTNER_DEALS_ENABLED: false, // Enable at Month 6
+  WALLET_ENABLED: false, // Enable when shop launches
+  CRM_LAUNCH_MODE: true, // Master flag for CRM-first mode
+  
   // Development/Debug
   DEBUG_MODE: import.meta.env.DEV,
   SHOW_DEV_TOOLS: import.meta.env.DEV,
@@ -83,6 +89,10 @@ export function useFeatureFlags() {
     facebookLeadAdsEnabled: FEATURES.FACEBOOK_LEAD_ADS_ENABLED,
     bulkLeadUploadEnabled: FEATURES.BULK_LEAD_UPLOAD_ENABLED,
     performanceSubdomainEnabled: FEATURES.PERFORMANCE_SUBDOMAIN_ENABLED,
+    leadsShopEnabled: FEATURES.LEADS_SHOP_ENABLED,
+    partnerDealsEnabled: FEATURES.PARTNER_DEALS_ENABLED,
+    walletEnabled: FEATURES.WALLET_ENABLED,
+    crmLaunchMode: FEATURES.CRM_LAUNCH_MODE,
     debugMode: FEATURES.DEBUG_MODE,
     showDevTools: FEATURES.SHOW_DEV_TOOLS,
   };

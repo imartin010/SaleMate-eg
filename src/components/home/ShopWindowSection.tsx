@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, TrendingUp, Users } from 'lucide-react';
+import { ArrowRight, MapPin, TrendingUp, Users, ShoppingCart } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ShopWindowSkeleton } from './LoadingSkeletons';
+import { useFeatureFlags } from '../../core/config/features';
+import { ComingSoonCard } from './ComingSoonSection';
 
 interface Project {
   id: string;
@@ -19,13 +21,18 @@ interface Project {
  */
 const ShopWindowSection: React.FC = React.memo(() => {
   const navigate = useNavigate();
+  const { leadsShopEnabled } = useFeatureFlags();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTopProjects();
-  }, []);
+    if (leadsShopEnabled) {
+      loadTopProjects();
+    } else {
+      setLoading(false);
+    }
+  }, [leadsShopEnabled]);
 
   const loadTopProjects = async () => {
     try {
@@ -73,6 +80,21 @@ const ShopWindowSection: React.FC = React.memo(() => {
       setLoading(false);
     }
   };
+
+  // Show Coming Soon if shop is disabled
+  if (!leadsShopEnabled) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900">Shop</h2>
+        <ComingSoonCard
+          title="Lead Marketplace"
+          description="Browse and purchase verified real estate leads from top projects. Coming soon!"
+          launchDate="Month 2"
+          icon={<ShoppingCart className="h-6 w-6 text-gray-600" />}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return <ShopWindowSkeleton />;

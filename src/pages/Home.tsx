@@ -6,13 +6,15 @@ import { WalletCreditSkeleton } from '../components/home/LoadingSkeletons';
 const WalletCreditSection = React.lazy(() => import('../components/home/WalletCreditSection'));
 const QuickActionsSection = React.lazy(() => import('../components/home/QuickActionsSection'));
 const BannerSection = React.lazy(() => import('../components/home/BannerSection'));
+const CRMMetricsSection = React.lazy(() => import('../components/home/CRMMetricsSection'));
+const PerformanceTrackingSection = React.lazy(() => import('../components/home/PerformanceTrackingSection'));
 const ShopWindowSection = React.lazy(() => import('../components/home/ShopWindowSection'));
 const PartnersSection = React.lazy(() => import('../components/home/PartnersSection'));
 const InventorySection = React.lazy(() => import('../components/home/InventorySection'));
 
 /**
- * Home Page - Modern Fintech Style
- * Wallet-first design with soft neumorphic aesthetics
+ * Home Page - AI-Enabled CRM Focus
+ * Emphasizes CRM, real-time inventory, and performance tracking
  */
 const Home: React.FC = () => {
   return (
@@ -37,22 +39,22 @@ const Home: React.FC = () => {
             </div>
           </div>
 
+          {/* CRM Metrics Section - Full Width */}
+          <Suspense fallback={<div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />}>
+            <CRMMetricsSection />
+          </Suspense>
+
           {/* Banner Section - Full Width */}
           <Suspense fallback={null}>
             <BannerSection />
           </Suspense>
 
-          {/* Shop Window Section */}
-          <Suspense fallback={<div className="h-48" />}>
-            <ShopWindowSection />
-          </Suspense>
-
-          {/* Partners + Inventory Row (Desktop: Side by Side) */}
+          {/* Performance Tracking + Inventory Row (Desktop: Side by Side) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* Partners Section */}
+            {/* Performance Tracking Section */}
             <div>
-              <Suspense fallback={<div className="h-32" />}>
-                <PartnersSection />
+              <Suspense fallback={<div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />}>
+                <PerformanceTrackingSection />
               </Suspense>
             </div>
 
@@ -63,6 +65,16 @@ const Home: React.FC = () => {
               </Suspense>
             </div>
           </div>
+
+          {/* Shop Window Section - Full Width (shows Coming Soon if disabled) */}
+          <Suspense fallback={<div className="h-48" />}>
+            <ShopWindowSection />
+          </Suspense>
+
+          {/* Partners Section - Full Width (shows Coming Soon if disabled) */}
+          <Suspense fallback={<div className="h-32" />}>
+            <PartnersSection />
+          </Suspense>
         </main>
       </div>
     </ErrorBoundary>

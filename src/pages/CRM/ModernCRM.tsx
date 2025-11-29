@@ -1126,7 +1126,7 @@ function ModernCRMContent() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
-                style={{ gridAutoRows: 'auto' }}
+                style={{ gridAutoRows: 'minmax(300px, auto)' }}
               >
                 {paginatedLeads.map((lead, index) => {
                   return (
@@ -1141,7 +1141,7 @@ function ModernCRMContent() {
                       stiffness: 200,
                       damping: 20
                     }}
-                    className={`relative h-full ${
+                    className={`relative h-full min-h-[300px] ${
                       selectedLeads.has(lead.id) 
                         ? 'border-indigo-500' 
                         : ''
@@ -1150,7 +1150,7 @@ function ModernCRMContent() {
                     data-testid="lead-card"
                   >
                     <motion.div
-                      className="relative w-full h-full"
+                      className="relative w-full h-full min-h-[300px]"
                       animate={{ rotateY: flippedLeads.has(lead.id) ? 180 : 0 }}
                       transition={{ duration: 0.6, type: "spring", stiffness: 300, damping: 30 }}
                       onDoubleClick={(e) => {

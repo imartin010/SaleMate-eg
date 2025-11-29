@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -10,8 +11,11 @@ import {
   ArrowRight,
   FileText
 } from 'lucide-react';
+import ContactFormModal from './ContactFormModal';
 
 const CRMPreview = () => {
+  const [showContactForm, setShowContactForm] = useState(false);
+
   // Mock lead data for demonstration - matching the realistic design
   const mockLeads = [
     {
@@ -229,8 +233,8 @@ const CRMPreview = () => {
                 Ready to transform your real estate business?
               </h3>
               <p className="text-sm md:text-base text-slate-600 mb-6 max-w-2xl mx-auto px-4">
-                Join our next-generation platform and connect with daily fresh leads through trusted, data-driven partnerships. 
-                No credit card required, no setup fees.
+                Join our AI-enabled CRM platform and transform your real estate business with intelligent lead management, 
+                real-time inventory, and performance tracking. Contract-based SaaS with dedicated support.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
@@ -241,16 +245,25 @@ const CRMPreview = () => {
                     <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Link to="/auth/signup">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Join Partnership
-                  </Button>
-                </Link>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                  onClick={() => setShowContactForm(true)}
+                >
+                  Request Access
+                </Button>
               </div>
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Contact Form Modal */}
+      <ContactFormModal 
+        isOpen={showContactForm} 
+        onClose={() => setShowContactForm(false)} 
+      />
     </section>
   );
 };

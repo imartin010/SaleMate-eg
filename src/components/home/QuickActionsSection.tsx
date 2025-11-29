@@ -1,6 +1,7 @@
 import React from 'react';
-import { ShoppingCart, Users, Handshake, Settings, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Users, Handshake, Settings, ChevronRight, Plus, BarChart3, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useFeatureFlags } from '../../core/config/features';
 
 /**
  * Quick Actions Section
@@ -8,13 +9,21 @@ import { useNavigate } from 'react-router-dom';
  */
 const QuickActionsSection: React.FC = React.memo(() => {
   const navigate = useNavigate();
+  const { leadsShopEnabled, partnerDealsEnabled, teamCollaborationEnabled } = useFeatureFlags();
 
-  const actions = [
-    { label: 'Leads Shop', icon: ShoppingCart, path: '/app/shop' },
-    { label: 'View Leads', icon: Users, path: '/app/crm' },
-    { label: 'Close Deal', icon: Handshake, path: '/app/partners' },
-    { label: 'Settings', icon: Settings, path: '/app/settings' },
+  // CRM-focused actions
+  const allActions = [
+    { label: 'View Leads', icon: Users, path: '/app/crm', show: true },
+    { label: 'Add Lead', icon: Plus, path: '/app/crm', show: true },
+    { label: 'Analytics', icon: BarChart3, path: '/app/crm/dashboard', show: true },
+    { label: 'My Team', icon: UserCheck, path: '/app/team', show: teamCollaborationEnabled },
+    { label: 'Leads Shop', icon: ShoppingCart, path: '/app/shop', show: leadsShopEnabled },
+    { label: 'Close Deal', icon: Handshake, path: '/app/partners', show: partnerDealsEnabled },
+    { label: 'Settings', icon: Settings, path: '/app/settings', show: true },
   ];
+
+  // Filter actions based on feature flags and limit to 4 for display
+  const actions = allActions.filter(action => action.show).slice(0, 4);
 
   return (
     <div className="space-y-3 md:space-y-4 h-full flex flex-col">
@@ -22,7 +31,7 @@ const QuickActionsSection: React.FC = React.memo(() => {
       <div className="flex items-center justify-between">
         <h2 className="text-base md:text-lg font-bold text-gray-900">Quick Actions</h2>
         <button
-          onClick={() => navigate('/app/shop')}
+          onClick={() => navigate('/app/crm')}
           className="flex items-center gap-1 text-blue-600 font-medium text-xs md:text-sm hover:text-blue-700 transition-colors"
         >
           View All

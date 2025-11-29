@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -9,12 +9,15 @@ import {
   Shield
 } from 'lucide-react';
 import { BackgroundDecor } from './Decor';
+import ContactFormModal from './ContactFormModal';
 
 const FinalCTA = () => {
+  const [showContactForm, setShowContactForm] = useState(false);
+
   const features = [
-    { icon: Users, text: 'Free CRM forever' },
-    { icon: Zap, text: 'Start in minutes' },
-    { icon: Shield, text: 'No setup fees' }
+    { icon: Users, text: 'Contract-based SaaS' },
+    { icon: Zap, text: 'Quick onboarding' },
+    { icon: Shield, text: 'Dedicated support' }
   ];
 
   const floatingAnimation = {
@@ -102,8 +105,8 @@ const FinalCTA = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Join our next-generation platform and transform your real estate business through trusted partnerships and data-driven insights. 
-              No contracts, no setup fees, start your journey today.
+              Join our AI-enabled CRM platform and transform your real estate business with intelligent lead management, 
+              real-time inventory, and performance tracking. No contracts, no setup fees, start managing your leads today.
             </motion.p>
 
             {/* Feature highlights */}
@@ -144,11 +147,14 @@ const FinalCTA = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Link to="/auth/signup" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white hover:bg-gray-100 rounded-lg shadow-xl transition-all duration-300 group">
+                <button 
+                  onClick={() => setShowContactForm(true)}
+                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white hover:bg-gray-100 rounded-lg shadow-xl transition-all duration-300 group"
+                >
                   <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
-                  Create Free Account
+                  Request CRM Access
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                </button>
               </motion.div>
               
               <motion.div
@@ -177,16 +183,16 @@ const FinalCTA = () => {
               {/* Social proof numbers */}
               <div className="flex flex-wrap items-center justify-center gap-8 text-white/80">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">18,240+</div>
-                  <div className="text-xs text-blue-200">Leads delivered</div>
+                  <div className="text-2xl font-bold text-white">2,500+</div>
+                  <div className="text-xs text-blue-200">Active users</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">4.8/5</div>
-                  <div className="text-xs text-blue-200">Agent rating</div>
+                  <div className="text-2xl font-bold text-white">30,000+</div>
+                  <div className="text-xs text-blue-200">Inventory units</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">98%</div>
-                  <div className="text-xs text-blue-200">Would recommend</div>
+                  <div className="text-2xl font-bold text-white">99.9%</div>
+                  <div className="text-xs text-blue-200">Uptime</div>
                 </div>
               </div>
             </motion.div>
@@ -225,6 +231,12 @@ const FinalCTA = () => {
           />
         </svg>
       </div>
+
+      {/* Contact Form Modal */}
+      <ContactFormModal 
+        isOpen={showContactForm} 
+        onClose={() => setShowContactForm(false)} 
+      />
     </section>
   );
 };

@@ -12,36 +12,36 @@ import {
 const ValueGrid = () => {
   const values = [
     {
-      icon: ShoppingCart,
-      title: 'Fresh Lead Marketplace',
-      description: 'Connect with daily fresh, verified leads through our trusted marketplace platform.',
+      icon: Users,
+      title: 'Lead Management',
+      description: 'Organize and track all your leads in one place with our intuitive CRM system. Manage your pipeline from first contact to closed deal.',
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
       delay: 0
     },
     {
-      icon: Smartphone,
-      title: 'Integrated CRM Platform',
-      description: 'Complete pipeline management with data-driven insights and seamless communication tools.',
+      icon: TrendingUp,
+      title: 'Performance Tracking',
+      description: 'See how you and your team are performing with real-time analytics, conversion rates, and revenue tracking.',
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
       delay: 0.1
     },
     {
-      icon: TrendingUp,
-      title: 'Trusted Partnerships',
-      description: 'Join our network of top brokerages and unlock higher earning potential through partnerships.',
+      icon: Zap,
+      title: 'AI-Powered Insights',
+      description: 'Get intelligent recommendations and insights to help you close more deals and improve your sales process.',
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-200',
       delay: 0.2
     },
     {
-      icon: Users,
-      title: 'Agent Community',
-      description: 'Connect with posts and network with top agents across Egypt.',
+      icon: Smartphone,
+      title: 'Financial Tracking',
+      description: 'Track revenue, commissions, ROI, and financial performance across all your leads and deals.',
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200',
@@ -50,16 +50,16 @@ const ValueGrid = () => {
     {
       icon: Shield,
       title: 'Secure & Compliant',
-      description: 'RLS security, role-based access controls, and complete audit trail.',
+      description: 'RLS security, role-based access controls, and complete audit trail for your peace of mind.',
       color: 'from-indigo-500 to-indigo-600',
       bgColor: 'bg-indigo-50',
       borderColor: 'border-indigo-200',
       delay: 0.4
     },
     {
-      icon: Zap,
-      title: 'Instant Start',
-      description: 'Sign up today and start receiving qualified leads within hours.',
+      icon: ShoppingCart,
+      title: 'Lead Marketplace',
+      description: 'Coming soon: Browse and purchase verified leads from top projects. Launching in Month 2.',
       color: 'from-yellow-500 to-yellow-600',
       bgColor: 'bg-yellow-50',
       borderColor: 'border-yellow-200',
@@ -120,11 +120,11 @@ const ValueGrid = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
             Why Choose{' '}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              SaleMate
+              SaleMate CRM
             </span>
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            A comprehensive platform that connects brokers with fresh leads and empowers partnerships through data-driven insights
+            The AI-enabled CRM platform built specifically for real estate professionals. Manage leads, track performance, and close more deals.
           </p>
         </motion.div>
 
@@ -199,8 +199,8 @@ const ValueGrid = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            Start with our free CRM and buy your first leads today. 
-            No setup fees, no monthly subscriptions, pay only for what you need.
+            Request access to our AI-enabled CRM platform. 
+            Track performance, analyze data, and close more deals. Contract-based SaaS with dedicated support.
           </motion.p>
         </motion.div>
       </div>

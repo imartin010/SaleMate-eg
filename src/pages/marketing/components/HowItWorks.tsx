@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { 
   UserPlus, 
-  Building, 
-  Receipt, 
-  Target,
+  Users, 
+  BarChart3, 
+  Package,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Sparkles
 } from 'lucide-react';
 
 const HowItWorks = () => {
@@ -13,36 +14,36 @@ const HowItWorks = () => {
     {
       number: 1,
       icon: UserPlus,
-      title: 'Sign Up & Verify',
-      description: 'Create your free account and verify your email. Access to CRM is instant.',
-      details: ['Free account creation', 'Email verification', 'Instant CRM access'],
+      title: 'Sign Up & Get Started',
+      description: 'Create your free account and get instant access to the AI-enabled CRM platform.',
+      details: ['Free account creation', 'Instant CRM access', 'No credit card required'],
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
       number: 2,
-      icon: Building,
-      title: 'Pick a Project',
-      description: 'Browse available projects and choose leads. Minimum order of 30 leads per project.',
-      details: ['Browse live projects', 'View lead quality metrics', 'Minimum 30 leads'],
+      icon: Users,
+      title: 'Manage Your Leads',
+      description: 'Add, organize, and track leads through your sales pipeline with AI-powered insights.',
+      details: ['Lead management', 'Pipeline tracking', 'AI coaching recommendations'],
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50'
     },
     {
       number: 3,
-      icon: Receipt,
-      title: 'Upload Payment Receipt',
-      description: 'Pay via Instapay, Vodafone Cash, or Bank Transfer. Upload receipt for quick validation.',
-      details: ['Multiple payment methods', 'Quick admin validation', 'Secure transactions'],
+      icon: BarChart3,
+      title: 'Track Performance',
+      description: 'Monitor your sales performance, conversion rates, and financial metrics in real-time.',
+      details: ['Performance analytics', 'Financial tracking', 'ROI insights'],
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50'
     },
     {
       number: 4,
-      icon: Target,
-      title: 'Leads Drop in CRM',
-      description: 'Validated leads appear in your CRM. Assign to team, start calling, and close deals.',
-      details: ['Auto-import to CRM', 'Team assignment', 'Start closing deals'],
+      icon: Package,
+      title: 'Browse Real-Time Inventory',
+      description: 'Access 30,000+ primary market units with real-time updates and detailed property information.',
+      details: ['Real-time inventory', '30,000+ units', 'Detailed property data'],
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50'
     }
@@ -93,7 +94,7 @@ const HowItWorks = () => {
             </span>
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Get started in minutes and receive your first qualified leads today
+            Get started in minutes with our AI-enabled CRM and start managing your leads today
           </p>
         </motion.div>
 
@@ -240,12 +241,12 @@ const HowItWorks = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full border border-green-200/50 mb-4">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             <span className="text-sm font-medium text-slate-700">
-              Average setup time: 5 minutes
+              Average setup time: 2 minutes
             </span>
           </div>
           
           <p className="text-slate-600 max-w-xl mx-auto">
-            Ready to get started? Create your free account and buy your first leads today.
+            Ready to get started? Request access to our AI-enabled CRM platform and we'll contact you to set up your account.
           </p>
         </motion.div>
       </div>
