@@ -292,7 +292,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({ open, onClose,
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-[90vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col p-6">
+      <DialogContent className="max-w-6xl w-[95vw] md:w-[90vw] h-[95vh] md:h-[90vh] max-h-[95vh] md:max-h-[90vh] overflow-hidden flex flex-col p-4 md:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-indigo-600" />

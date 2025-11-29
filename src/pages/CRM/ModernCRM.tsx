@@ -103,6 +103,7 @@ function ModernCRMContent() {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [showAddLeadMenu, setShowAddLeadMenu] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -522,39 +523,6 @@ function ModernCRMContent() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <motion.div 
-                className="flex-1 md:flex-none"
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  onClick={() => setShowAddModal(true)}
-                  className="w-full md:w-auto rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg shadow-indigo-500/30 relative overflow-hidden group h-11 md:h-auto"
-                >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
-                    initial={{ x: "-100%" }}
-                    whileHover={{ x: "100%" }}
-                    transition={{ duration: 0.6 }}
-                  />
-                  <Plus className="h-4 w-4 mr-2 relative z-10" />
-                  <span className="relative z-10 text-sm md:text-base">Add Lead</span>
-                </Button>
-              </motion.div>
-              <motion.div 
-                className="md:flex-none"
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  variant="outline"
-                  onClick={() => setShowBulkUploadModal(true)}
-                  className="rounded-xl border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 h-11 w-11 md:h-auto md:w-auto md:px-4"
-                >
-                  <Upload className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Bulk Upload</span>
-                </Button>
-              </motion.div>
               <motion.div 
                 className="md:flex-none"
                 whileHover={{ scale: 1.05 }} 
@@ -2499,11 +2467,89 @@ function ModernCRMContent() {
         />
       )}
 
-      {/* Floating Action Button for Add Lead - Mobile Only */}
-      <FloatingActionButton
-        onClick={() => setShowAddModal(true)}
-        aria-label="Add Lead"
-      />
+      {/* Floating Action Button for Add Lead - All Screen Sizes */}
+      <div className="fixed bottom-20 right-6 md:bottom-6 md:right-6 z-50">
+        <motion.button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAddLeadMenu(!showAddLeadMenu);
+          }}
+          className="w-14 h-14 md:w-12 md:h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center transition-all"
+          aria-label="Add Lead"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Plus className="w-6 h-6 md:w-5 md:h-5" />
+        </motion.button>
+
+        {/* Add Lead Menu - Similar to profile menu */}
+        <AnimatePresence>
+          {showAddLeadMenu && (
+            <>
+              {/* Backdrop Blur */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[90]"
+                onClick={() => setShowAddLeadMenu(false)}
+              />
+
+              {/* Menu Items - Animate from button */}
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25,
+                  duration: 0.3
+                }}
+                className="absolute right-0 bottom-full mb-2 z-[100] min-w-[200px]"
+              >
+                <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+                  <motion.button
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ 
+                      delay: 0.05,
+                      duration: 0.2
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAddLeadMenu(false);
+                      setShowAddModal(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-indigo-50 transition-colors duration-200 focus:outline-none focus:bg-indigo-50"
+                  >
+                    <Plus className="h-5 w-5 text-indigo-600" />
+                    <span className="font-medium">Add 1 Lead</span>
+                  </motion.button>
+                  <motion.button
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ 
+                      delay: 0.1,
+                      duration: 0.2
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAddLeadMenu(false);
+                      setShowBulkUploadModal(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-indigo-50 transition-colors duration-200 focus:outline-none focus:bg-indigo-50 border-t border-gray-100"
+                  >
+                    <Upload className="h-5 w-5 text-indigo-600" />
+                    <span className="font-medium">Add Bulk Leads</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Detail Modal for Table/Kanban views */}
       <LeadDetailModal
