@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Database, Search, Filter, Download, Eye, Plus, X, Check, ChevronDown, Edit, Trash2, UserPlus, MoreVertical, AlertTriangle } from 'lucide-react';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import { supabase } from '../../lib/supabaseClient';
+import { AssignLeadDialog } from '../../components/crm/AssignLeadDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -85,16 +86,13 @@ export default function Leads() {
   const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showBulkStageDialog, setShowBulkStageDialog] = useState(false);
-  const [assignUserId, setAssignUserId] = useState<string>('');
   const [bulkStage, setBulkStage] = useState<string>('New Lead');
-  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [processing, setProcessing] = useState(false);
   const { profile } = useAuthStore();
 
   useEffect(() => {
     loadLeads();
     loadProjects();
-    loadUsers();
     
     const channel = supabase
       .channel('leads_changes')
@@ -106,18 +104,6 @@ export default function Leads() {
     return () => channel.unsubscribe();
   }, []);
 
-  const loadUsers = async () => {
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .in('role', ['user', 'manager'])
-        .order('name');
-      if (data) setUsers(data);
-    } catch (err) {
-      console.error('Error loading users:', err);
-    }
-  };
 
   const loadProjects = async () => {
     const { data } = await supabase.from('projects').select('id, name, region, project_code').order('name', { ascending: true });
@@ -525,36 +511,6 @@ export default function Leads() {
     }
   };
 
-  const handleBulkAssign = async () => {
-    if (selectedLeadIds.size === 0 || !assignUserId) return;
-    
-    setProcessing(true);
-    try {
-      const leadIdsArray = Array.from(selectedLeadIds);
-      
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          assigned_to_id: assignUserId,
-          assigned_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .in('id', leadIdsArray);
-
-      if (error) throw error;
-      
-      setSelectedLeadIds(new Set());
-      setShowAssignDialog(false);
-      setAssignUserId('');
-      loadLeads();
-      alert(`Successfully assigned ${leadIdsArray.length} lead(s)!`);
-    } catch (err: any) {
-      console.error('Error assigning leads:', err);
-      alert('Failed to assign leads: ' + (err.message || 'Unknown error'));
-    } finally {
-      setProcessing(false);
-    }
-  };
 
   const handleBulkChangeStage = async () => {
     if (selectedLeadIds.size === 0 || !bulkStage) return;
@@ -1466,52 +1422,18 @@ export default function Leads() {
       </Dialog>
 
       {/* Bulk Assign Dialog */}
-      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Assign Leads</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Assign {selectedLeadIds.size} lead{selectedLeadIds.size !== 1 ? 's' : ''} to a user
-            </p>
-            <div>
-              <Label htmlFor="assign_user">Select User</Label>
-              <Select value={assignUserId} onValueChange={setAssignUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a user..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAssignDialog(false);
-                  setAssignUserId('');
-                }}
-                disabled={processing}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleBulkAssign}
-                disabled={!assignUserId || processing}
-              >
-                {processing ? 'Assigning...' : 'Assign'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showAssignDialog && (
+        <AssignLeadDialog
+          leadIds={Array.from(selectedLeadIds)}
+          onClose={() => {
+            setShowAssignDialog(false);
+            setSelectedLeadIds(new Set());
+          }}
+          onSuccess={() => {
+            loadLeads();
+          }}
+        />
+      )}
 
       {/* Bulk Change Stage Dialog */}
       <Dialog open={showBulkStageDialog} onOpenChange={setShowBulkStageDialog}>

@@ -15,7 +15,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'stage', label: 'Stage', visible: true, order: 4 },
   { id: 'budget', label: 'Budget', visible: true, order: 5 },
   { id: 'feedback', label: 'Feedback', visible: true, order: 6 },
-  { id: 'actions', label: 'Actions', visible: true, order: 7 },
+  { id: 'assigned_to', label: 'Assigned To', visible: true, order: 7 },
+  { id: 'actions', label: 'Actions', visible: true, order: 8 },
 ];
 
 const STORAGE_KEY = 'crm_custom_columns';

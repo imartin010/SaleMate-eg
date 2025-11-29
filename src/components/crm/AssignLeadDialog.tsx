@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { X, Users, Check } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuthStore } from '../../store/auth';
+import { getAgentTree } from '../../services/agentService';
+import type { AgentTreeNode } from '../../services/agentService';
 
 interface TeamMember {
   id: string;
   name: string;
   email: string;
+  role: string;
+  depth: number;
 }
 
 interface AssignLeadDialogProps {
@@ -32,14 +36,24 @@ export const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({
 
   const fetchTeamMembers = async () => {
     try {
-      const { data, error: err } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('manager_id', profile?.id)
-        .order('name');
+      if (!profile?.id) {
+        setError('User not found');
+        return;
+      }
 
-      if (err) throw err;
-      setTeamMembers(data || []);
+      // Get full tree (all users who report to this manager, directly or indirectly)
+      const tree = await getAgentTree(profile.id);
+      
+      // Convert to team members list (include manager themselves and all reports)
+      const members: TeamMember[] = tree.map(node => ({
+        id: node.user_id,
+        name: node.user_name,
+        email: node.user_email,
+        role: node.user_role,
+        depth: node.depth,
+      }));
+
+      setTeamMembers(members);
     } catch (err) {
       console.error('Error fetching team members:', err);
       setError('Failed to load team members');
@@ -64,6 +78,14 @@ export const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({
 
       if (err) throw err;
 
+      // Get assignee name for confirmation message
+      const assignee = teamMembers.find(m => m.id === selectedMemberId);
+      const assigneeName = assignee?.name || 'team member';
+      const leadCount = leadIds.length;
+      
+      // Show success message
+      alert(`Successfully assigned ${leadCount} lead${leadCount > 1 ? 's' : ''} to ${assigneeName}!`);
+
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -85,6 +107,9 @@ export const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({
       });
 
       if (err) throw err;
+
+      const leadCount = leadIds.length;
+      alert(`Successfully unassigned ${leadCount} lead${leadCount > 1 ? 's' : ''}!`);
 
       onSuccess();
       onClose();
@@ -146,7 +171,7 @@ export const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({
               <option value="">Select team member...</option>
               {teamMembers.map((member) => (
                 <option key={member.id} value={member.id}>
-                  {member.name} ({member.email})
+                  {member.name} ({member.email}) {member.depth > 0 ? `- Level ${member.depth}` : '- You'}
                 </option>
               ))}
             </select>

@@ -163,12 +163,35 @@ export function useLeads() {
           }
         }
         
+        // Fetch owner and assigned_to profiles
+        const ownerIds = [...new Set((simpleData || []).map((l: any) => l.owner_id).filter(Boolean))];
+        const assignedToIds = [...new Set((simpleData || []).map((l: any) => l.assigned_to_id).filter(Boolean))];
+        const allUserIds = [...new Set([...ownerIds, ...assignedToIds])];
+        
+        let ownerProfilesMap: Record<string, { id: string; name: string }> = {};
+        if (allUserIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .in('id', allUserIds);
+          
+          if (!profilesError && profilesData) {
+            ownerProfilesMap = profilesData.reduce((acc, profile: any) => {
+              acc[profile.id] = {
+                id: profile.id,
+                name: profile.name || 'Unknown',
+              };
+              return acc;
+            }, {} as Record<string, { id: string; name: string }>);
+          }
+        }
+
         // Transform simple data with manually joined projects
         const transformedData = (simpleData || []).map((lead: any) => ({
           ...lead,
           project: lead.project_id ? (projectsMap[lead.project_id] || null) : null,
-          owner: null,
-          assigned_to: null,
+          owner: lead.owner_id && ownerProfilesMap[lead.owner_id] ? ownerProfilesMap[lead.owner_id] : null,
+          assigned_to: lead.assigned_to_id && ownerProfilesMap[lead.assigned_to_id] ? ownerProfilesMap[lead.assigned_to_id] : null,
           feedback_history: [],
         }));
 
@@ -235,13 +258,42 @@ export function useLeads() {
         return {
           ...lead,
           project: transformedProject,
-          owner: null, // Will be fetched separately if needed
-          assigned_to: null, // Will be fetched separately if needed
+          owner: null, // Will be set after fetching profiles
+          assigned_to: null, // Will be set after fetching profiles
           feedback_history: parsedHistory,
         };
       });
 
       const leadIds = transformedData.map((lead) => lead.id).filter(Boolean);
+
+      // Fetch owner and assigned_to profiles
+      const ownerIds = [...new Set(transformedData.map((lead: any) => lead.owner_id).filter(Boolean))];
+      const assignedToIds = [...new Set(transformedData.map((lead: any) => lead.assigned_to_id).filter(Boolean))];
+      const allUserIds = [...new Set([...ownerIds, ...assignedToIds])];
+      
+      let ownerProfilesMap: Record<string, { id: string; name: string }> = {};
+      if (allUserIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', allUserIds);
+        
+        if (!profilesError && profilesData) {
+          ownerProfilesMap = profilesData.reduce((acc, profile: any) => {
+            acc[profile.id] = {
+              id: profile.id,
+              name: profile.name || 'Unknown',
+            };
+            return acc;
+          }, {} as Record<string, { id: string; name: string }>);
+        }
+      }
+
+      // Update transformed data with owner and assigned_to
+      transformedData.forEach((lead: any) => {
+        lead.owner = lead.owner_id && ownerProfilesMap[lead.owner_id] ? ownerProfilesMap[lead.owner_id] : null;
+        lead.assigned_to = lead.assigned_to_id && ownerProfilesMap[lead.assigned_to_id] ? ownerProfilesMap[lead.assigned_to_id] : null;
+      });
 
       // Collect all user IDs from feedback_history in leads table
       const userIdsFromLeads = new Set<string>();

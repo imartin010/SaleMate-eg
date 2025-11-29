@@ -7,7 +7,7 @@ import {
   LayoutGrid, List, Phone, Mail, MessageCircle,
   X, Check, Eye, Edit, Briefcase,
   RefreshCw, BarChart3, Users, TrendingUp,
-  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload, Clock, ChevronDown, ChevronUp, Calendar
+  Sparkles, ChevronLeft, ChevronRight, Grid3x3, Building2, DollarSign, MessageSquare, Save, Upload, Clock, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useLeads, Lead, LeadStage } from '../../hooks/crm/useLeads';
 import { useLeadFilters } from '../../hooks/crm/useLeadFilters';
@@ -18,7 +18,6 @@ import { DuplicateLeadsModal } from '../../components/crm/DuplicateLeadsModal';
 import { SavedFiltersManager } from '../../components/crm/SavedFiltersManager';
 import { AdvancedSearch } from '../../components/crm/AdvancedSearch';
 import { CustomColumnsManager } from '../../components/crm/CustomColumnsManager';
-import { CalendarView } from '../../components/crm/CalendarView';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
@@ -36,13 +35,14 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { BottomSheet } from '../../components/common/BottomSheet';
 import { FloatingActionButton } from '../../components/common/FloatingActionButton';
 import { SkeletonList } from '../../components/common/SkeletonCard';
+import { AssignLeadDialog } from '../../components/crm/AssignLeadDialog';
 
 interface Project {
   id: string;
   name: string;
 }
 
-type ViewMode = 'table' | 'kanban' | 'cards' | 'calendar';
+type ViewMode = 'table' | 'kanban' | 'cards';
 
 const STAGES: LeadStage[] = [
   'New Lead',
@@ -86,7 +86,7 @@ function ModernCRMContent() {
   // Load view mode from localStorage or default to 'cards'
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem('crm_view_mode') as ViewMode;
-    return savedViewMode && ['table', 'kanban', 'cards', 'calendar'].includes(savedViewMode) 
+    return savedViewMode && ['table', 'kanban', 'cards'].includes(savedViewMode) 
       ? savedViewMode 
       : 'cards';
   });
@@ -113,6 +113,8 @@ function ModernCRMContent() {
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [selectedDuplicateLead, setSelectedDuplicateLead] = useState<Lead | null>(null);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const badgeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const leadsSectionRef = useRef<HTMLDivElement>(null);
 
@@ -971,6 +973,15 @@ function ModernCRMContent() {
                 >
                   <span className="text-xs md:text-sm text-gray-600">{selectedLeads.size} selected</span>
                   <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowAssignDialog(true)}
+                    className="rounded-xl h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <Users className="h-4 w-4 mr-1.5" />
+                    <span className="hidden sm:inline">Assign to:</span>
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setSelectedLeads(new Set())}
@@ -986,6 +997,23 @@ function ModernCRMContent() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
               >
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="md:whileHover={{ scale: 1.1 }}"
+                >
+                  <Button
+                    variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => {
+                      setViewMode('cards');
+                      localStorage.setItem('crm_view_mode', 'cards');
+                    }}
+                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                    <span className="hidden md:inline ml-2">Cards</span>
+                  </Button>
+                </motion.div>
                 <motion.div
                   whileTap={{ scale: 0.9 }}
                   className="md:whileHover={{ scale: 1.1 }}"
@@ -1030,40 +1058,6 @@ function ModernCRMContent() {
                     <span className="hidden md:inline ml-2">Kanban</span>
                   </Button>
                 </motion.div>
-                <motion.div
-                  whileTap={{ scale: 0.9 }}
-                  className="md:whileHover={{ scale: 1.1 }}"
-                >
-                  <Button
-                    variant={viewMode === 'cards' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => {
-                      setViewMode('cards');
-                      localStorage.setItem('crm_view_mode', 'cards');
-                    }}
-                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
-                  >
-                    <Grid3x3 className="h-4 w-4" />
-                    <span className="hidden md:inline ml-2">Cards</span>
-                  </Button>
-                </motion.div>
-                <motion.div
-                  whileTap={{ scale: 0.9 }}
-                  className="md:whileHover={{ scale: 1.1 }}"
-                >
-                  <Button
-                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => {
-                      setViewMode('calendar');
-                      localStorage.setItem('crm_view_mode', 'calendar');
-                    }}
-                    className="rounded-lg transition-all h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 touch-manipulation"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span className="hidden md:inline ml-2">Calendar</span>
-                  </Button>
-                </motion.div>
               </motion.div>
             </div>
           </div>
@@ -1094,14 +1088,18 @@ function ModernCRMContent() {
                       damping: 20
                     }}
                     whileTap={{ scale: 0.98 }}
-                    className="bg-white rounded-xl md:rounded-2xl border border-indigo-100 shadow-sm hover:shadow-lg transition-all relative overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300"
-                    onClick={(e) => {
-                      // Click on card goes to Case Manager (not detail modal)
+                    className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all relative overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300 ${
+                      selectedLeads.has(lead.id) 
+                        ? 'border-indigo-500 bg-indigo-50' 
+                        : 'border-indigo-100'
+                    }`}
+                    onDoubleClick={(e) => {
+                      // Double-click selects/deselects lead for assignment
                       const target = e.target as HTMLElement;
                       if (target.closest('button') || target.closest('a') || target.closest('select')) {
                         return;
                       }
-                      navigate(`/app/crm/case/${lead.id}`);
+                      toggleLeadSelection(lead.id);
                     }}
                     data-testid="lead-card"
                   >
@@ -1115,7 +1113,13 @@ function ModernCRMContent() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900 text-base md:text-lg truncate">
+                            <h3 
+                              className="font-semibold text-gray-900 text-base md:text-lg truncate cursor-pointer hover:text-indigo-600 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/app/crm/case/${lead.id}`);
+                              }}
+                            >
                               {lead.client_name}
                             </h3>
                             {isDuplicate(lead.id) && (
@@ -1305,16 +1309,22 @@ function ModernCRMContent() {
                               backgroundColor: "rgba(99, 102, 241, 0.05)",
                               transition: { duration: 0.2 }
                             }}
-                            className="active:bg-indigo-50/50 md:hover:bg-indigo-50/50 transition-colors relative group touch-manipulation"
+                            onDoubleClick={(e) => {
+                              // Double-click selects/deselects lead for assignment
+                              const target = e.target as HTMLElement;
+                              if (target.closest('button') || target.closest('a') || target.closest('select') || target.closest('input')) {
+                                return;
+                              }
+                              toggleLeadSelection(lead.id);
+                            }}
+                            className={`active:bg-indigo-50/50 md:hover:bg-indigo-50/50 transition-colors relative group touch-manipulation cursor-pointer ${
+                              selectedLeads.has(lead.id) 
+                                ? 'bg-indigo-50 border-l-4 border-indigo-500' 
+                                : ''
+                            }`}
                           >
-                          <td className="px-2 py-2 md:px-4 md:py-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedLeads.has(lead.id)}
-                              onChange={() => toggleLeadSelection(lead.id)}
-                              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 md:w-auto md:h-auto"
-                            />
-                          </td>
+                          {/* Empty cell for spacing (checkbox column removed) */}
+                          <td className="px-2 py-2 md:px-4 md:py-3 w-0"></td>
                           {/* Dynamic columns based on visibleColumns */}
                           {visibleColumns.map((column) => {
                             if (column.id === 'select') return null; // Skip select as it's always shown
@@ -1447,6 +1457,16 @@ function ModernCRMContent() {
                                     <Building2 className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0 hidden sm:inline" />
                                     <p className={`text-xs md:text-sm truncate max-w-[120px] lg:max-w-none ${lead.project ? 'text-gray-900 font-medium' : 'text-gray-400 italic'}`}>
                                       {lead.project?.name || 'No Project'}
+                                    </p>
+                                  </div>
+                                );
+                                break;
+                              case 'assigned_to':
+                                cellContent = (
+                                  <div className="flex items-center gap-1.5">
+                                    <Users className="h-3.5 w-3.5 text-indigo-600 flex-shrink-0 hidden sm:inline" />
+                                    <p className={`text-xs md:text-sm truncate max-w-[120px] lg:max-w-none ${lead.assigned_to ? 'text-gray-900 font-medium' : 'text-gray-400 italic'}`}>
+                                      {lead.assigned_to?.name || 'Not Assigned'}
                                     </p>
                                   </div>
                                 );
@@ -1692,6 +1712,33 @@ function ModernCRMContent() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: colIndex * 0.1 }}
                         className="flex-shrink-0 w-64 md:w-72 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl border border-indigo-100 shadow-lg p-3 md:p-4 relative overflow-hidden"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.add('ring-2', 'ring-indigo-400', 'ring-offset-2');
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2');
+                        }}
+                        onDrop={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2');
+                          
+                          const leadId = e.dataTransfer.getData('text/plain');
+                          if (leadId) {
+                            const lead = leads.find(l => l.id === leadId);
+                            if (lead && lead.stage !== stage) {
+                              try {
+                                await updateLead(leadId, { stage: stage as LeadStage });
+                                setDraggedLeadId(null);
+                              } catch (error) {
+                                console.error('Error updating lead stage:', error);
+                                setDraggedLeadId(null);
+                              }
+                            }
+                          }
+                        }}
                       >
                         {/* Column header with animated gradient */}
                         <motion.div
@@ -1741,7 +1788,25 @@ function ModernCRMContent() {
                                   y: -4,
                                   boxShadow: "0px 10px 25px rgba(99, 102, 241, 0.2)"
                                 }}
-                                className="bg-indigo-50 rounded-lg md:rounded-xl p-2.5 md:p-3 border border-indigo-100 active:border-indigo-300 md:hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden group touch-manipulation"
+                                draggable
+                                onDragStart={(e) => {
+                                  setDraggedLeadId(lead.id);
+                                  e.dataTransfer.effectAllowed = 'move';
+                                  e.dataTransfer.setData('text/plain', lead.id);
+                                  // Add visual feedback
+                                  if (e.currentTarget) {
+                                    e.currentTarget.style.opacity = '0.5';
+                                  }
+                                }}
+                                onDragEnd={(e) => {
+                                  setDraggedLeadId(null);
+                                  if (e.currentTarget) {
+                                    e.currentTarget.style.opacity = '1';
+                                  }
+                                }}
+                                className={`bg-indigo-50 rounded-lg md:rounded-xl p-2.5 md:p-3 border border-indigo-100 active:border-indigo-300 md:hover:border-indigo-300 transition-all cursor-grab active:cursor-grabbing relative overflow-hidden group touch-manipulation ${
+                                  draggedLeadId === lead.id ? 'opacity-50' : ''
+                                }`}
                                 onClick={(e) => {
                                   // Click on card goes to Case Manager (not detail modal)
                                   const target = e.target as HTMLElement;
@@ -1825,26 +1890,12 @@ function ModernCRMContent() {
                 </div>
           </motion.div>
         )}
-            {viewMode === 'calendar' && (
-              <motion.div
-                key="calendar"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-              >
-                <CalendarView
-                  leads={searchFilteredLeads}
-                  onLeadClick={(lead) => navigate(`/app/crm/case/${lead.id}`)}
-                />
-              </motion.div>
-            )}
       </AnimatePresence>
           </div>
 
           {/* Empty State */}
-          {/* Pagination Controls - Hide for calendar view */}
-          {viewMode !== 'calendar' && searchFilteredLeads.length > 0 && (
+          {/* Pagination Controls */}
+          {searchFilteredLeads.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2195,6 +2246,20 @@ function ModernCRMContent() {
           }}
           duplicates={getAllDuplicates(selectedDuplicateLead.id).filter(l => l.id !== selectedDuplicateLead.id)}
           currentLead={selectedDuplicateLead}
+        />
+      )}
+
+      {/* Assign Leads Dialog */}
+      {showAssignDialog && (
+        <AssignLeadDialog
+          leadIds={Array.from(selectedLeads)}
+          onClose={() => {
+            setShowAssignDialog(false);
+            setSelectedLeads(new Set());
+          }}
+          onSuccess={async () => {
+            await fetchLeads();
+          }}
         />
       )}
     </div>
