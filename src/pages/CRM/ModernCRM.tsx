@@ -1138,7 +1138,7 @@ function ModernCRMContent() {
                         }
                         toggleLeadSelection(lead.id);
                       }}
-                      style={{ transformStyle: 'preserve-3d' }}
+                      style={{ transformStyle: 'preserve-3d', minHeight: '200px' }}
                     >
                       {/* Front Face */}
                       <div className={`bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 h-full flex flex-col ${
@@ -1149,7 +1149,6 @@ function ModernCRMContent() {
                       style={{ 
                         backfaceVisibility: 'hidden', 
                         WebkitBackfaceVisibility: 'hidden',
-                        pointerEvents: flippedLeads.has(lead.id) ? 'none' : 'auto',
                         transform: flippedLeads.has(lead.id) ? 'rotateY(180deg)' : 'rotateY(0deg)'
                       }}
                       >
@@ -1369,12 +1368,11 @@ function ModernCRMContent() {
                         selectedLeads.has(lead.id) 
                           ? 'border-indigo-500' 
                           : 'border-indigo-100'
-                      } ${flippedLeads.has(lead.id) ? 'relative' : 'absolute inset-0 opacity-0 pointer-events-none'}`} 
+                      } ${flippedLeads.has(lead.id) ? 'relative pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}`} 
                       style={{ 
                         transform: flippedLeads.has(lead.id) ? 'rotateY(0deg)' : 'rotateY(180deg)', 
                         backfaceVisibility: 'hidden', 
-                        WebkitBackfaceVisibility: 'hidden',
-                        pointerEvents: flippedLeads.has(lead.id) ? 'auto' : 'none'
+                        WebkitBackfaceVisibility: 'hidden'
                       }}
                       >
                         {/* Flip Back Button - Desktop: shows on hover in corner */}
