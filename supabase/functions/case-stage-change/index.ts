@@ -15,6 +15,7 @@ interface StageChangePayload {
   downPayment?: number;
   monthlyInstallment?: number;
   meetingDate?: string;
+  propertyType?: string;
 }
 
 serve(async (req) => {
@@ -28,7 +29,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload: StageChangePayload = await req.json();
-    const { leadId, newStage, userId, feedback, budget, downPayment, monthlyInstallment, meetingDate } = payload;
+    const { leadId, newStage, userId, feedback, budget, downPayment, monthlyInstallment, meetingDate, propertyType } = payload;
 
     // Store inventory match result for Low Budget stage
     let inventoryMatchResult = null;
@@ -197,6 +198,7 @@ serve(async (req) => {
                 totalBudget: budget,
                 downPayment,
                 monthlyInstallment,
+                propertyType,
               }),
             });
 

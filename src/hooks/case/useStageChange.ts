@@ -35,6 +35,7 @@ interface UseStageChangeReturn {
     downPayment?: number;
     monthlyInstallment?: number;
     meetingDate?: string;
+    propertyType?: string;
   }) => Promise<{ success: boolean; inventoryMatch?: InventoryMatchResult | null }>;
   validateChange: (
     currentStage: CaseStage,
@@ -60,13 +61,14 @@ export function useStageChange(): UseStageChangeReturn {
     downPayment?: number;
     monthlyInstallment?: number;
     meetingDate?: string;
+    propertyType?: string;
   }): Promise<{ success: boolean; inventoryMatch?: InventoryMatchResult | null }> => {
     if (!user?.id) {
       setError('User not authenticated');
       return { success: false };
     }
 
-    const { leadId, newStage, currentStage, feedback, budget, downPayment, monthlyInstallment, meetingDate } = params;
+    const { leadId, newStage, currentStage, feedback, budget, downPayment, monthlyInstallment, meetingDate, propertyType } = params;
 
     try {
       setChanging(true);
@@ -96,6 +98,7 @@ export function useStageChange(): UseStageChangeReturn {
         downPayment,
         monthlyInstallment,
         meetingDate,
+        propertyType,
       };
 
       // Call API to change stage

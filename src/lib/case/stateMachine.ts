@@ -157,22 +157,22 @@ export function validateStageChange(
       }
     } else {
       // For other stages, check if any requirement is met
-      const hasRequired = requirements.some(req => {
-        if (req === 'feedback') return data?.feedback;
-        if (req === 'budget') return data?.budget || data?.totalBudget;
-        if (req === 'dp') return data?.downPayment;
-        if (req === 'installment') return data?.monthlyInstallment;
-        return false;
-      });
+    const hasRequired = requirements.some(req => {
+      if (req === 'feedback') return data?.feedback;
+      if (req === 'budget') return data?.budget || data?.totalBudget;
+      if (req === 'dp') return data?.downPayment;
+      if (req === 'installment') return data?.monthlyInstallment;
+      return false;
+    });
 
-      if (!hasRequired) {
-        const reqText = requirements.length > 1 
-          ? `one of: ${requirements.join(', ')}` 
-          : requirements[0];
-        return { 
-          valid: false, 
-          error: `Stage "${newStage}" requires ${reqText}` 
-        };
+    if (!hasRequired) {
+      const reqText = requirements.length > 1 
+        ? `one of: ${requirements.join(', ')}` 
+        : requirements[0];
+      return { 
+        valid: false, 
+        error: `Stage "${newStage}" requires ${reqText}` 
+      };
       }
     }
   }

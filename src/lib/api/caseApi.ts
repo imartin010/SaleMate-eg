@@ -334,6 +334,7 @@ export async function changeStage(payload: {
   downPayment?: number;
   monthlyInstallment?: number;
   meetingDate?: string;
+  propertyType?: string;
 }): Promise<{ 
   success: boolean; 
   message: string;

@@ -125,6 +125,7 @@ export interface StageChangePayload {
   downPayment?: number;
   monthlyInstallment?: number;
   meetingDate?: string;
+  propertyType?: string;
 }
 
 export interface FaceChangePayload {

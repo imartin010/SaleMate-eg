@@ -91,15 +91,15 @@ export function StageChangeModal({
 
     try {
       const result = await changeLeadStage({
-        leadId,
-        newStage,
-        currentStage,
-        feedback: feedback || undefined,
-        budget: budget ? parseFloat(budget) : undefined,
-        downPayment: downPayment ? parseFloat(downPayment) : undefined,
-        monthlyInstallment: monthlyInstallment ? parseFloat(monthlyInstallment) : undefined,
-        meetingDate: meetingDate || undefined,
-      });
+      leadId,
+      newStage,
+      currentStage,
+      feedback: feedback || undefined,
+      budget: budget ? parseFloat(budget) : undefined,
+      downPayment: downPayment ? parseFloat(downPayment) : undefined,
+      monthlyInstallment: monthlyInstallment ? parseFloat(monthlyInstallment) : undefined,
+      meetingDate: meetingDate || undefined,
+    });
 
       console.log('Stage change result:', result);
 
@@ -123,8 +123,8 @@ export function StageChangeModal({
           }
         } else {
           // For other stages, close immediately
-          onSuccess();
-        }
+      onSuccess();
+    }
       } else {
         console.error('Stage change failed:', result);
         alert('Failed to change stage. Please try again.');

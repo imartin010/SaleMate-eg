@@ -14,6 +14,7 @@ interface InventoryMatcherPayload {
   monthlyInstallment?: number;
   area?: string;
   minBedrooms?: number;
+  propertyType?: string;
 }
 
 serve(async (req) => {
@@ -28,7 +29,7 @@ serve(async (req) => {
     );
 
     const payload: InventoryMatcherPayload = await req.json();
-    const { leadId, userId, totalBudget, downPayment, monthlyInstallment, area, minBedrooms } = payload;
+    const { leadId, userId, totalBudget, downPayment, monthlyInstallment, area, minBedrooms, propertyType } = payload;
 
     if (!leadId || !userId) {
       return new Response(
@@ -60,14 +61,15 @@ serve(async (req) => {
     // Build query for salemate-inventory
     // Find units where price_in_egp is within budget (less than or equal to maxPrice)
     // Query more units to ensure we get 10 unique developers after filtering
+    // Prioritize units near the budget by ordering descending (highest prices first)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from('salemate-inventory')
       .select('id, unit_id, unit_number, compound, area, developer, property_type, number_of_bedrooms, unit_area, price_in_egp, currency')
       .lte('price_in_egp', maxPrice) // Units with price_in_egp <= maxPrice (within budget)
       .gte('price_in_egp', 500000) // Exclude units with price less than 500,000 EGP
-      .order('price_in_egp', { ascending: true }) // Order by price_in_egp ascending (cheapest first)
-      .limit(100); // Query more units to ensure we get 10 unique developers
+      .order('price_in_egp', { ascending: false }) // Order by price_in_egp descending (highest prices first - near budget)
+      .limit(200); // Query more units to ensure we get units near the budget
 
     // Apply additional filters if provided
     if (area) {
@@ -78,6 +80,13 @@ serve(async (req) => {
       query = query.gte('number_of_bedrooms', minBedrooms);
     }
 
+    // Filter by property type if provided
+    // property_type can be stored as JSON string like {"name": "Apartment"} or plain text
+    if (propertyType) {
+      // Use ilike to match property type in both JSON format and plain text
+      query = query.ilike('property_type', `%${propertyType}%`);
+    }
+
     const { data: units, error: queryError } = await query;
 
     if (queryError) throw queryError;
@@ -85,6 +94,21 @@ serve(async (req) => {
     // Prepare top units data - filter out units with price < 500,000 and ensure price_in_egp is used correctly
     const validUnits = (units || [])
       .filter((unit: Record<string, unknown>) => {
+        // Exclude units with ID or name as "none", null, or undefined
+        const unitId = String(unit.id || '').toLowerCase().trim();
+        const compoundName = typeof unit.compound === 'string' 
+          ? unit.compound.toLowerCase().trim()
+          : (unit.compound ? JSON.stringify(unit.compound).toLowerCase().trim() : '');
+        
+        if (unitId === 'none' || !unitId || unitId === 'null' || unitId === 'undefined') {
+          return false;
+        }
+        
+        if (compoundName === 'none' || compoundName === 'null' || compoundName === 'undefined' || 
+            compoundName === '""' || compoundName === "''") {
+          return false;
+        }
+        
         // Ensure we're using price_in_egp column and it's >= 500,000
         const price = typeof unit.price_in_egp === 'number' 
           ? unit.price_in_egp 
@@ -112,12 +136,13 @@ serve(async (req) => {
         };
       });
 
-    // Sort units by price (descending) to prioritize higher prices first
+    // Units are already sorted by price descending from the query
+    // No need to sort again, but ensure descending order
     validUnits.sort((a, b) => b.price - a.price);
 
     // Calculate budget threshold for "very near budget" 
-    // Use 70%+ as threshold to ensure we get units closer to budget
-    const veryNearBudgetThreshold = maxPrice * 0.7; // Units priced at 70%+ of budget
+    // Use 85%+ as threshold to ensure we get units very close to budget (e.g., 12M-13M for 14M budget)
+    const veryNearBudgetThreshold = maxPrice * 0.85; // Units priced at 85%+ of budget (very near budget)
 
     // Filter to show only one unit per developer, but create three groups:
     // 1. Very near budget units (at least 25% - 3 units, prioritized by highest price)
@@ -130,15 +155,16 @@ serve(async (req) => {
     const highPriceUnits: any[] = [];
     const lowPriceUnits: any[] = [];
     
-    // Target: At least 25% (3 units) very near budget
+    // Target: At least 25% (3 units) very near budget (85%+ of budget)
     const veryNearTarget = 3; // At least 25% of 10 units
     
-    // First pass: Collect units VERY near budget (70%+ of max budget)
+    // First pass: Collect units VERY near budget (85%+ of max budget, e.g., 12M-13M for 14M budget)
     // Since units are sorted by price descending, we iterate from start (highest prices)
     for (const unit of validUnits) {
       if (veryNearBudgetUnits.length >= veryNearTarget) break;
       
-      // Only include units that are close to budget (70%+ of maxPrice)
+      // Only include units that are very close to budget (85%+ of maxPrice)
+      // For 14M budget, this means units at 11.9M+ (ideally 12M-13M)
       if (unit.price < veryNearBudgetThreshold) continue;
       
       let developerName = '';
@@ -159,8 +185,8 @@ serve(async (req) => {
       }
     }
     
-    // If we don't have enough units at 70%+, get the highest available prices
-    // (prioritize highest prices regardless of threshold)
+    // If we don't have enough units at 85%+, get the highest available prices
+    // (prioritize highest prices regardless of threshold to ensure we show units near budget)
     if (veryNearBudgetUnits.length < veryNearTarget) {
       for (const unit of validUnits) {
         if (veryNearBudgetUnits.length >= veryNearTarget) break;
@@ -280,6 +306,7 @@ serve(async (req) => {
           maxPrice,
           area,
           minBedrooms,
+          propertyType,
         },
         result_count: resultCount,
         top_units: topUnits,

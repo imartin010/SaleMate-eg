@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Filter, Download, UserPlus, Shield, Ban, Trash2, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { Users, Search, Filter, Download, UserPlus, Shield, Ban, Trash2, Edit, CheckCircle, XCircle, Network, UserCog } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { DataTable, Column } from '../../components/admin/DataTable';
 import { EmptyState } from '../../components/admin/EmptyState';
 import { logAudit } from '../../lib/data/audit';
 import { useAuthStore } from '../../store/auth';
+import { AssignManagerDialog } from '../../components/crm/AssignManagerDialog';
+import { AgentTreeView } from '../../components/crm/AgentTreeView';
+import { getTeamTreeStats } from '../../services/agentService';
 
 interface Profile {
   id: string;
@@ -19,10 +22,15 @@ interface Profile {
   leads_count?: number;
   owned_leads_count?: number;
   assigned_leads_count?: number;
+  manager_id?: string | null;
+  manager_name?: string;
+  direct_reports_count?: number;
+  tree_size?: number;
 }
 
 export default function UserManagement() {
   const { profile: currentProfile } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'users' | 'tree'>('users');
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +42,11 @@ export default function UserManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showManagerDialog, setShowManagerDialog] = useState(false);
+  const [managerDialogUserIds, setManagerDialogUserIds] = useState<string[]>([]);
+  const [managerDialogCurrentManager, setManagerDialogCurrentManager] = useState<{ id: string | null; name: string } | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [treeRootUserId, setTreeRootUserId] = useState<string | undefined>(undefined);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -61,12 +74,32 @@ export default function UserManagement() {
   const loadUsers = async () => {
     try {
       setLoading(true);
+      // Fetch all profiles with manager_id
       const { data, error: err } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (err) throw err;
+
+      // Get manager names separately
+      const managerIds = (data || [])
+        .map(u => u.manager_id)
+        .filter((id): id is string => id !== null && id !== undefined);
+      
+      let managerMap: Record<string, { id: string; name: string }> = {};
+      if (managerIds.length > 0) {
+        const { data: managers } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', managerIds);
+        
+        if (managers) {
+          managers.forEach(m => {
+            managerMap[m.id] = { id: m.id, name: m.name };
+          });
+        }
+      }
       
       // Fetch lead counts for all users efficiently
       const userIds = (data || []).map(u => u.id);
@@ -88,6 +121,7 @@ export default function UserManagement() {
       const assignedCountsMap: Record<string, number> = {};
       const ownedIdsMap: Record<string, Set<string>> = {};
       const assignedIdsMap: Record<string, Set<string>> = {};
+      const directReportsMap: Record<string, number> = {};
       
       // Initialize maps
       userIds.forEach(id => {
@@ -95,6 +129,14 @@ export default function UserManagement() {
         assignedCountsMap[id] = 0;
         ownedIdsMap[id] = new Set();
         assignedIdsMap[id] = new Set();
+        directReportsMap[id] = 0;
+      });
+      
+      // Count direct reports
+      (data || []).forEach(user => {
+        if (user.manager_id) {
+          directReportsMap[user.manager_id] = (directReportsMap[user.manager_id] || 0) + 1;
+        }
       });
       
       // Count owned leads
@@ -113,17 +155,23 @@ export default function UserManagement() {
         }
       });
       
-      // Calculate totals for each user
+      // Calculate totals for each user and add manager info
       const usersWithLeads = (data || []).map(user => {
         const ownedIds = ownedIdsMap[user.id] || new Set();
         const assignedIds = assignedIdsMap[user.id] || new Set();
         const totalUnique = new Set([...ownedIds, ...assignedIds]).size;
+        
+        const manager = user.manager_id ? managerMap[user.manager_id] : null;
         
         return {
           ...user,
           leads_count: totalUnique,
           owned_leads_count: ownedCountsMap[user.id] || 0,
           assigned_leads_count: assignedCountsMap[user.id] || 0,
+          manager_id: user.manager_id || null,
+          manager_name: manager?.name || null,
+          direct_reports_count: directReportsMap[user.id] || 0,
+          tree_size: undefined, // Will be loaded separately if needed
         };
       });
       
@@ -317,7 +365,67 @@ export default function UserManagement() {
     );
   };
 
+  const handleAssignManager = (userIds: string[]) => {
+    const firstUser = users.find(u => u.id === userIds[0]);
+    setManagerDialogUserIds(userIds);
+    setManagerDialogCurrentManager(
+      firstUser?.manager_id && firstUser?.manager_name
+        ? { id: firstUser.manager_id, name: firstUser.manager_name }
+        : null
+    );
+    setShowManagerDialog(true);
+  };
+
+  const handleBulkAssignManager = () => {
+    if (selectedUserIds.size === 0) return;
+    handleAssignManager(Array.from(selectedUserIds));
+  };
+
+  const handleBulkRemoveManager = async () => {
+    if (selectedUserIds.size === 0 || !currentProfile) return;
+    
+    try {
+      const { bulkRemoveManager } = await import('../../services/agentService');
+      const result = await bulkRemoveManager(Array.from(selectedUserIds), currentProfile.id);
+      
+      if (result.success) {
+        alert(`Manager removed from ${result.updated_count} user(s)`);
+        await loadUsers();
+        setSelectedUserIds(new Set());
+      } else {
+        alert(result.error || 'Failed to remove managers');
+      }
+    } catch (err) {
+      console.error('Error removing managers:', err);
+      alert('Failed to remove managers');
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUserIds);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUserIds(newSelection);
+  };
+
   const columns: Column<Profile>[] = [
+    {
+      key: 'name',
+      label: '',
+      sortable: false,
+      render: (_, row) => (
+        <input
+          type="checkbox"
+          checked={selectedUserIds.has(row.id)}
+          onChange={() => toggleUserSelection(row.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded border-gray-300"
+        />
+      ),
+    },
     {
       key: 'name',
       label: 'Name',
@@ -335,6 +443,20 @@ export default function UserManagement() {
       ),
     },
     {
+      key: 'manager_name',
+      label: 'Manager',
+      sortable: true,
+      render: (value, row) => (
+        <div>
+          {value ? (
+            <span className="text-sm text-gray-900">{value}</span>
+          ) : (
+            <span className="text-sm text-gray-400 italic">No manager</span>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'phone',
       label: 'Phone',
       sortable: true,
@@ -344,6 +466,28 @@ export default function UserManagement() {
       label: 'Role',
       sortable: true,
       render: (value) => getRoleBadge(value as string),
+    },
+    {
+      key: 'tree_size',
+      label: 'Tree',
+      sortable: true,
+      render: (value, row) => {
+        if (row.role === 'manager' && row.direct_reports_count !== undefined) {
+          return (
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-blue-600">
+                {row.direct_reports_count} direct
+              </span>
+              {row.tree_size !== undefined && (
+                <span className="text-xs text-gray-500">
+                  {row.tree_size} total
+                </span>
+              )}
+            </div>
+          );
+        }
+        return <span className="text-gray-400">-</span>;
+      },
     },
     {
       key: 'wallet_balance',
@@ -399,6 +543,18 @@ export default function UserManagement() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-2">
+          {currentProfile?.role === 'admin' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAssignManager([row.id]);
+              }}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+              title="Assign Manager"
+            >
+              <UserCog className="h-4 w-4" />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -447,76 +603,161 @@ export default function UserManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-1">Manage users, roles, and permissions</p>
+          <p className="text-gray-600 mt-1">Manage users, roles, permissions, and agent hierarchy</p>
         </div>
         <div className="flex gap-2">
+          {activeTab === 'users' && (
+            <>
+              <button
+                onClick={() => setShowCreateDialog(true)}
+                className="btn-admin-primary flex items-center gap-2"
+                style={{ padding: '0.625rem 1.5rem', borderRadius: '0.75rem', fontWeight: 600, color: 'white', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s ease', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.25)';
+                }}
+              >
+                <UserPlus className="h-4 w-4" />
+                Add User
+              </button>
+              <button onClick={exportCSV} className="admin-btn admin-btn-secondary flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Export CSV
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
           <button
-            onClick={() => setShowCreateDialog(true)}
-            className="btn-admin-primary flex items-center gap-2"
-            style={{ padding: '0.625rem 1.5rem', borderRadius: '0.75rem', fontWeight: 600, color: 'white', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s ease', border: 'none', cursor: 'pointer' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.25)';
-            }}
+            onClick={() => setActiveTab('users')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'users'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
           >
-            <UserPlus className="h-4 w-4" />
-            Add User
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Users
+            </div>
           </button>
-          <button onClick={exportCSV} className="admin-btn admin-btn-secondary flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
+          <button
+            onClick={() => setActiveTab('tree')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'tree'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              Agent Tree
+            </div>
           </button>
-        </div>
+        </nav>
       </div>
 
-      {/* Filters */}
-      <div className="admin-card p-4 flex items-center gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" />
-          <input
-            type="text"
-            placeholder="Search by name, email, or phone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="admin-input w-full pl-10"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-gray-600" />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="admin-input"
-          >
-            <option value="all">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="support">Support</option>
-            <option value="user">User</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="admin-card p-4 bg-red-50 border border-red-200 text-red-800">
-          {error}
+      {/* Bulk Actions Toolbar */}
+      {activeTab === 'users' && selectedUserIds.size > 0 && (
+        <div className="admin-card p-4 bg-blue-50 border border-blue-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-900">
+              {selectedUserIds.size} user{selectedUserIds.size !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {currentProfile?.role === 'admin' && (
+              <>
+                <button
+                  onClick={handleBulkAssignManager}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Assign Manager
+                </button>
+                <button
+                  onClick={handleBulkRemoveManager}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                >
+                  Remove Manager
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setSelectedUserIds(new Set())}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+            >
+              Clear Selection
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={filteredUsers}
-        loading={loading}
-        emptyMessage="No users found"
-        pagination
-        pageSize={20}
-      />
+      {/* Tab Content */}
+      {activeTab === 'users' ? (
+        <>
+          {/* Filters */}
+          <div className="admin-card p-4 flex items-center gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="admin-input w-full pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-gray-600" />
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="admin-input"
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="support">Support</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="admin-card p-4 bg-red-50 border border-red-200 text-red-800">
+              {error}
+            </div>
+          )}
+
+          {/* Table */}
+          <DataTable
+            columns={columns}
+            data={filteredUsers}
+            loading={loading}
+            emptyMessage="No users found"
+            pagination
+            pageSize={20}
+          />
+        </>
+      ) : (
+        <div className="admin-card p-6">
+          <AgentTreeView
+            rootUserId={treeRootUserId}
+            onUserSelect={(userId) => {
+              setTreeRootUserId(userId);
+            }}
+          />
+        </div>
+      )}
 
       {/* Edit Role Dialog */}
       {editingUserId && (
@@ -735,6 +976,27 @@ export default function UserManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Assign Manager Dialog */}
+      {showManagerDialog && (
+        <AssignManagerDialog
+          userIds={managerDialogUserIds}
+          currentManagerId={managerDialogCurrentManager?.id || null}
+          currentManagerName={managerDialogCurrentManager?.name}
+          onClose={() => {
+            setShowManagerDialog(false);
+            setManagerDialogUserIds([]);
+            setManagerDialogCurrentManager(null);
+          }}
+          onSuccess={() => {
+            loadUsers();
+            setSelectedUserIds(new Set());
+            setShowManagerDialog(false);
+            setManagerDialogUserIds([]);
+            setManagerDialogCurrentManager(null);
+          }}
+        />
       )}
     </div>
   );

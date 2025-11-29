@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { formatCurrency } from '../../lib/format';
 import type { InventoryMatch } from '../../types/case';
 import { useState, useEffect, useCallback } from 'react';
@@ -28,6 +29,7 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [displayedUnitsCount, setDisplayedUnitsCount] = useState(3); // Start with 3 units displayed
   const [customBudget, setCustomBudget] = useState<string>(''); // User's custom budget input
+  const [customPropertyType, setCustomPropertyType] = useState<string>(''); // User's custom property type filter
   const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
   const { user } = useAuthStore();
 
@@ -60,8 +62,27 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
 
       console.log('🔵 Query result:', data);
       if (data) {
-        // Filter out units with price < 500,000
-        const validUnits = ((data.top_units as any[]) || []).filter((unit: any) => {
+        // Ensure top_units is an array - handle both top_units and topUnits field names
+        const topUnits = Array.isArray(data.top_units) ? data.top_units : 
+                        (Array.isArray((data as any).topUnits) ? (data as any).topUnits : []);
+        
+        // Filter out units with price < 500,000 and exclude units with ID or name as "none"
+        const validUnits = topUnits.filter((unit: any) => {
+          // Exclude units with ID or name as "none", null, or undefined
+          const unitId = String(unit.id || '').toLowerCase().trim();
+          const compoundName = typeof unit.compound === 'string' 
+            ? unit.compound.toLowerCase().trim()
+            : (unit.compound ? String(unit.compound).toLowerCase().trim() : '');
+          
+          if (unitId === 'none' || !unitId || unitId === 'null' || unitId === 'undefined') {
+            return false;
+          }
+          
+          if (compoundName === 'none' || compoundName === 'null' || compoundName === 'undefined' || 
+              compoundName === '""' || compoundName === "''") {
+            return false;
+          }
+          
           const price = typeof unit.price === 'number' ? unit.price : parseFloat(unit.price || '0');
           return price >= 500000;
         });
@@ -96,11 +117,11 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
         // Transform the event data into our match format
         const matchData: InventoryMatchData = {
           id: data.id,
-          resultCount: uniqueDeveloperUnits.length,
+          resultCount: data.result_count || uniqueDeveloperUnits.length || 0,
           topUnits: uniqueDeveloperUnits,
           recommendation: data.recommendation || 'No recommendation available.',
-          matchId: data.id,
-          filters: data.filters as any,
+          matchId: data.id || '',
+          filters: (data.filters || {}) as any,
           created_at: data.created_at,
         };
         console.log('🔵 Setting match data:', matchData);
@@ -214,6 +235,7 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
                   monthlyInstallment: typeof filters.monthlyInstallment === 'number' ? filters.monthlyInstallment : undefined,
                   area: typeof filters.area === 'string' ? filters.area : undefined,
                   minBedrooms: typeof filters.minBedrooms === 'number' ? filters.minBedrooms : undefined,
+                  propertyType: typeof filters.propertyType === 'string' ? filters.propertyType : undefined,
                 });
 
                 // After matching, fetch the latest results
@@ -240,6 +262,11 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
         </div>
       </Card>
     );
+  }
+
+  // Safety check - should never be null at this point due to early return above
+  if (!match) {
+    return null;
   }
 
   const latestMatch = match;
@@ -282,11 +309,13 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
         monthlyInstallment: filters.monthlyInstallment,
         area: filters.area,
         minBedrooms: filters.minBedrooms,
+        propertyType: customPropertyType || (typeof filters.propertyType === 'string' ? filters.propertyType : undefined),
       });
 
       // After matching, fetch the latest results
       await fetchLatestMatch();
       setCustomBudget(''); // Clear the input
+      // Keep property type selection for next update
     } catch (err) {
       console.error('Error updating budget match:', err);
       setError(err instanceof Error ? err.message : 'Failed to update budget matches');
@@ -301,7 +330,7 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
         <Home className="h-5 w-5 text-teal-600" />
         <h3 className="text-lg font-semibold text-gray-900">Inventory Matches</h3>
         <Badge variant="secondary" className="ml-auto">
-          {latestMatch.resultCount} units
+          {latestMatch.resultCount || (Array.isArray(latestMatch.topUnits) ? latestMatch.topUnits.length : 0)} units
         </Badge>
         <Button
           variant="outline"
@@ -328,6 +357,7 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
                 monthlyInstallment: filters.monthlyInstallment,
                 area: filters.area,
                 minBedrooms: filters.minBedrooms,
+                propertyType: filters.propertyType,
               });
 
               // After matching, fetch the latest results
@@ -349,54 +379,76 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
       {/* Budget Adjustment Section */}
       <div className="mb-4 p-4 bg-white rounded-lg border border-teal-200">
         <Label htmlFor="custom-budget" className="text-sm font-medium text-gray-700 mb-2 block">
-          Adjust Budget to See More Units
+          Adjust Budget & Property Type to See More Units
         </Label>
-        <div className="flex gap-2">
-          <Input
-            id="custom-budget"
-            type="number"
-            value={customBudget}
-            onChange={(e) => setCustomBudget(e.target.value)}
-            placeholder={`Current: ${latestMatch.filters?.totalBudget ? formatCurrency(latestMatch.filters.totalBudget as number, 'EGP') : 'N/A'}`}
-            min="500000"
-            step="100000"
-            className="flex-1"
-            disabled={isUpdatingBudget}
-          />
-          <Button
-            onClick={() => {
-              const budget = parseFloat(customBudget);
-              if (!isNaN(budget) && budget >= 500000) {
-                handleBudgetChange(budget);
-              }
-            }}
-            disabled={isUpdatingBudget || !customBudget || parseFloat(customBudget) < 500000}
-            size="sm"
-          >
-            {isUpdatingBudget ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              'Update'
-            )}
-          </Button>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              id="custom-budget"
+              type="number"
+              value={customBudget}
+              onChange={(e) => setCustomBudget(e.target.value)}
+              placeholder={`Current: ${latestMatch.filters?.totalBudget ? formatCurrency(latestMatch.filters.totalBudget as number, 'EGP') : 'N/A'}`}
+              min="500000"
+              step="100000"
+              className="flex-1"
+              disabled={isUpdatingBudget}
+            />
+            <Select 
+              value={customPropertyType || (typeof latestMatch.filters?.propertyType === 'string' && latestMatch.filters.propertyType ? latestMatch.filters.propertyType : 'all')} 
+              onValueChange={(value) => setCustomPropertyType(value === 'all' ? '' : value)}
+              disabled={isUpdatingBudget}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Property Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="Studio">Studio</SelectItem>
+                <SelectItem value="Apartment">Apartment</SelectItem>
+                <SelectItem value="Villa">Villa</SelectItem>
+                <SelectItem value="Twinhouse">Twinhouse</SelectItem>
+                <SelectItem value="Townhouse">Townhouse</SelectItem>
+                <SelectItem value="Office">Office</SelectItem>
+                <SelectItem value="Clinic">Clinic</SelectItem>
+                <SelectItem value="Retail">Retail</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => {
+                const budget = parseFloat(customBudget);
+                if (!isNaN(budget) && budget >= 500000) {
+                  handleBudgetChange(budget);
+                }
+              }}
+              disabled={isUpdatingBudget || (!customBudget && !customPropertyType) || (customBudget && parseFloat(customBudget) < 500000)}
+              size="sm"
+            >
+              {isUpdatingBudget ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update'
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Enter a new budget (minimum 500,000 EGP) and/or select a property type to filter matching units
+          </p>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Enter a new budget (minimum 500,000 EGP) to see matching units
-        </p>
       </div>
 
       {/* Recommendation */}
       {latestMatch.recommendation && (
         <div className={`rounded-lg p-3 mb-4 ${
-          latestMatch.resultCount > 0 
+          (latestMatch.resultCount || 0) > 0 
             ? 'bg-green-50 border border-green-200' 
             : 'bg-amber-50 border border-amber-200'
         }`} data-testid="inventory-recommendation">
           <p className={`text-sm ${
-            latestMatch.resultCount > 0 ? 'text-green-800' : 'text-amber-800'
+            (latestMatch.resultCount || 0) > 0 ? 'text-green-800' : 'text-amber-800'
           }`}>
             {latestMatch.recommendation}
           </p>
@@ -404,10 +456,10 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
       )}
 
       {/* Top Units */}
-      {latestMatch.topUnits && latestMatch.topUnits.length > 0 && (
+      {latestMatch.topUnits && Array.isArray(latestMatch.topUnits) && latestMatch.topUnits.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-gray-700">Top Matches:</h4>
-          {latestMatch.topUnits.slice(0, displayedUnitsCount).map((unit, index) => (
+          {latestMatch.topUnits.slice(0, displayedUnitsCount).map((unit: any, index: number) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 10 }}
@@ -455,58 +507,68 @@ export function InventoryMatchesCard({ leadId }: InventoryMatchesCardProps) {
             </motion.div>
           ))}
 
-          {latestMatch.topUnits.length > displayedUnitsCount && (
+          {latestMatch.topUnits && Array.isArray(latestMatch.topUnits) && latestMatch.topUnits.length > displayedUnitsCount && (
             <button
               onClick={() => {
                 // First batch: show next 7 units (from 3 to 10)
                 // Then show 10 more units at a time
-                const remaining = latestMatch.topUnits.length - displayedUnitsCount;
+                const remaining = (latestMatch.topUnits?.length || 0) - displayedUnitsCount;
                 if (displayedUnitsCount === 3) {
                   // First click: show next 7 units (total 10)
                   setDisplayedUnitsCount(10);
                 } else {
                   // Subsequent clicks: show 10 more units
-                  setDisplayedUnitsCount(Math.min(displayedUnitsCount + 10, latestMatch.topUnits.length));
+                  setDisplayedUnitsCount(Math.min(displayedUnitsCount + 10, latestMatch.topUnits?.length || displayedUnitsCount));
                 }
               }}
               className="text-xs text-teal-600 hover:text-teal-700 font-medium text-center w-full py-2 hover:underline transition-colors"
             >
-              + {latestMatch.topUnits.length - displayedUnitsCount} more units available
+              + {(latestMatch.topUnits?.length || 0) - displayedUnitsCount} more units available
             </button>
           )}
         </div>
       )}
 
       {/* Filters Used */}
-      <div className="mt-4 pt-4 border-t border-teal-200">
-        <h4 className="text-xs font-medium text-gray-700 mb-2">Search Criteria:</h4>
-        <div className="space-y-1 text-xs text-gray-600">
-          {latestMatch.filters.totalBudget && (
-            <div className="flex justify-between">
-              <span>Budget:</span>
-              <span className="font-medium">
-                EGP {(latestMatch.filters.totalBudget as number).toLocaleString()}
-              </span>
-            </div>
-          )}
-          {latestMatch.filters.downPayment && (
-            <div className="flex justify-between">
-              <span>Down Payment:</span>
-              <span className="font-medium">
-                EGP {(latestMatch.filters.downPayment as number).toLocaleString()}
-              </span>
-            </div>
-          )}
-          {latestMatch.filters.monthlyInstallment && (
-            <div className="flex justify-between">
-              <span>Monthly:</span>
-              <span className="font-medium">
-                EGP {(latestMatch.filters.monthlyInstallment as number).toLocaleString()}
-              </span>
-            </div>
-          )}
+      {latestMatch.filters && (
+        <div className="mt-4 pt-4 border-t border-teal-200">
+          <h4 className="text-xs font-medium text-gray-700 mb-2">Search Criteria:</h4>
+          <div className="space-y-1 text-xs text-gray-600">
+            {latestMatch.filters.totalBudget && (
+              <div className="flex justify-between">
+                <span>Budget:</span>
+                <span className="font-medium">
+                  EGP {(latestMatch.filters.totalBudget as number).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {latestMatch.filters.downPayment && (
+              <div className="flex justify-between">
+                <span>Down Payment:</span>
+                <span className="font-medium">
+                  EGP {(latestMatch.filters.downPayment as number).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {latestMatch.filters.monthlyInstallment && (
+              <div className="flex justify-between">
+                <span>Monthly:</span>
+                <span className="font-medium">
+                  EGP {(latestMatch.filters.monthlyInstallment as number).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {latestMatch.filters.propertyType && (
+              <div className="flex justify-between">
+                <span>Property Type:</span>
+                <span className="font-medium">
+                  {latestMatch.filters.propertyType as string}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </Card>
   );
 }

@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useStageChange } from '../../hooks/case/useStageChange';
 import type { CaseStage } from '../../types/case';
 
@@ -33,6 +34,7 @@ export function StageChangeModal({
   const [downPayment, setDownPayment] = useState('');
   const [monthlyInstallment, setMonthlyInstallment] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
+  const [propertyType, setPropertyType] = useState('');
   const [inventoryMatch, setInventoryMatch] = useState<{
     resultCount: number;
     topUnits: Array<{
@@ -112,6 +114,7 @@ export function StageChangeModal({
         downPayment: downPayment ? parseFloat(downPayment) : undefined,
         monthlyInstallment: monthlyInstallment ? parseFloat(monthlyInstallment) : undefined,
         meetingDate: meetingDate || undefined,
+        propertyType: propertyType && propertyType !== 'all' ? propertyType : undefined,
       });
 
       console.log('🔵 Stage change result:', result);
@@ -168,6 +171,7 @@ export function StageChangeModal({
     setDownPayment('');
     setMonthlyInstallment('');
     setMeetingDate('');
+    setPropertyType('');
     onClose();
   };
 
@@ -431,6 +435,29 @@ export function StageChangeModal({
                     className="mt-2"
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="propertyType">Property Type (Optional)</Label>
+                <Select value={propertyType ? propertyType : 'all'} onValueChange={(value) => setPropertyType(value === 'all' ? '' : value)}>
+                  <SelectTrigger id="propertyType" className="mt-2">
+                    <SelectValue placeholder="Select property type (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Studio">Studio</SelectItem>
+                    <SelectItem value="Apartment">Apartment</SelectItem>
+                    <SelectItem value="Villa">Villa</SelectItem>
+                    <SelectItem value="Twinhouse">Twinhouse</SelectItem>
+                    <SelectItem value="Townhouse">Townhouse</SelectItem>
+                    <SelectItem value="Office">Office</SelectItem>
+                    <SelectItem value="Clinic">Clinic</SelectItem>
+                    <SelectItem value="Retail">Retail</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Filter inventory by property type. Select "All Types" to show all property types.
+                </p>
               </div>
 
               <p className="text-xs text-gray-500">
