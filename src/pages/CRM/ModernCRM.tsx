@@ -302,7 +302,16 @@ function ModernCRMContent() {
     // Prevent flip if clicking on interactive elements
     if (e) {
       const target = e.target as HTMLElement;
-      if (target.closest('button') || target.closest('a') || target.closest('select') || target.closest('[data-stage-dropdown]')) {
+      // Don't flip if clicking on interactive elements
+      if (
+        target.closest('button') || 
+        target.closest('a') || 
+        target.closest('select') || 
+        target.closest('[data-stage-dropdown]') ||
+        target.closest('input') ||
+        target.closest('[role="button"]') ||
+        target.closest('.cursor-pointer') && target.closest('h3') // Name link
+      ) {
         return;
       }
     }
@@ -321,7 +330,7 @@ function ModernCRMContent() {
         } catch (error) {
           console.error('Error fetching AI summary:', error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          setAiSummaries(prev => new Map(prev).set(leadId, `Unable to load AI analysis: ${errorMessage}. Please try again or check if the lead has feedback data.`));
+          setAiSummaries(prev => new Map(prev).set(leadId, `مش قادرين نحمل التحليل: ${errorMessage}. جرب تاني أو تأكد إن اللييد عنده فيدباك.`));
         } finally {
           setLoadingSummaries(prev => {
             const newSet = new Set(prev);
@@ -1152,7 +1161,6 @@ function ModernCRMContent() {
                       className="relative w-full h-full"
                       animate={{ rotateY: flippedLeads.has(lead.id) ? 180 : 0 }}
                       transition={{ duration: 0.6, type: "spring", stiffness: 300, damping: 30 }}
-                      onClick={(e) => handleFlip(lead.id, e)}
                       onDoubleClick={(e) => {
                         // Double-click selects/deselects lead for assignment
                         const target = e.target as HTMLElement;
@@ -1164,19 +1172,48 @@ function ModernCRMContent() {
                       style={{ transformStyle: 'preserve-3d' }}
                     >
                       {/* Front Face */}
-                      <div className={`absolute inset-0 bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation cursor-pointer active:border-indigo-300 ${
+                      <div className={`absolute inset-0 bg-white rounded-xl md:rounded-2xl border shadow-sm hover:shadow-lg transition-all overflow-hidden group touch-manipulation active:border-indigo-300 ${
                         selectedLeads.has(lead.id) 
                           ? 'border-indigo-500 bg-indigo-50' 
                           : 'border-indigo-100'
-                      }`}
-                      style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                      } ${flippedLeads.has(lead.id) ? 'pointer-events-none' : ''}`}
+                      style={{ 
+                        backfaceVisibility: 'hidden', 
+                        WebkitBackfaceVisibility: 'hidden',
+                        pointerEvents: flippedLeads.has(lead.id) ? 'none' : 'auto'
+                      }}
                       >
                     {/* Shimmer effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-50/50 to-transparent -translate-x-full group-active:translate-x-full md:group-hover:translate-x-full transition-transform duration-1000"
                     />
                     
-                    <div className="p-4 md:p-5 relative z-10">
+                    {/* Flip Button - Desktop: shows on hover in corner, Mobile: in quick actions */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFlip(lead.id);
+                      }}
+                      className={`absolute top-2 right-2 z-20 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all hidden md:block md:opacity-0 md:group-hover:opacity-100 ${
+                        flippedLeads.has(lead.id) 
+                          ? 'opacity-0 pointer-events-none' 
+                          : ''
+                      }`}
+                      title="View AI Analysis"
+                    >
+                      <Brain className="h-4 w-4" />
+                    </button>
+                    
+                    <div 
+                      className="p-4 md:p-5 relative z-10"
+                      onClick={(e) => {
+                        // Prevent all clicks on front face when flipped
+                        if (flippedLeads.has(lead.id)) {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }
+                      }}
+                    >
                       {/* Header with Stage Badge */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
@@ -1184,6 +1221,11 @@ function ModernCRMContent() {
                             <h3 
                               className="font-semibold text-gray-900 text-base md:text-lg truncate cursor-pointer hover:text-indigo-600 transition-colors"
                               onClick={(e) => {
+                                if (flippedLeads.has(lead.id)) {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  return;
+                                }
                                 e.stopPropagation();
                                 navigate(`/app/crm/case/${lead.id}`);
                               }}
@@ -1194,6 +1236,11 @@ function ModernCRMContent() {
                               <Badge
                                 className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-2 py-0.5 cursor-pointer hover:bg-orange-200 transition-colors"
                                 onClick={(e) => {
+                                  if (flippedLeads.has(lead.id)) {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    return;
+                                  }
                                   e.stopPropagation();
                                   setSelectedDuplicateLead(lead);
                                   setShowDuplicateModal(true);
@@ -1223,7 +1270,10 @@ function ModernCRMContent() {
                         >
                           <Badge 
                             className={`${getStageColor(lead.stage)} text-xs px-2 py-0.5 ml-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap`}
-                            onClick={() => setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id)}
+                            onClick={() => {
+                              if (flippedLeads.has(lead.id)) return;
+                              setOpenStageDropdown(openStageDropdown === lead.id ? null : lead.id);
+                            }}
                           >
                             {lead.stage}
                           </Badge>
@@ -1247,7 +1297,10 @@ function ModernCRMContent() {
                               phone={lead.client_phone} 
                               leadId={lead.id}
                               isRevealed={revealedPhoneId === lead.id}
-                              onToggle={(id) => setRevealedPhoneId(id === revealedPhoneId ? null : id)}
+                              onToggle={(id) => {
+                                if (flippedLeads.has(lead.id)) return;
+                                setRevealedPhoneId(id === revealedPhoneId ? null : id);
+                              }}
                             />
                           </div>
                         )}
@@ -1272,14 +1325,37 @@ function ModernCRMContent() {
                       {/* Quick Actions */}
                       <div className="pt-3 border-t border-gray-100">
                         <div className="flex items-center gap-2 mb-2">
+                          {/* Mobile Only: Flip Button - Completely hidden on desktop */}
+                          {!flippedLeads.has(lead.id) && (
+                            <div className="block md:hidden">
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleFlip(lead.id);
+                                }}
+                                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors text-xs font-medium touch-manipulation"
+                                title="View AI Analysis"
+                              >
+                                <Brain className="h-3.5 w-3.5" />
+                                <span>AI</span>
+                              </motion.button>
+                            </div>
+                          )}
                           {lead.client_phone && (
                             <motion.button
                               whileTap={{ scale: 0.9 }}
                               onClick={(e) => {
+                                if (flippedLeads.has(lead.id)) {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  return;
+                                }
                                 e.stopPropagation();
                                 handleCall(lead.client_phone!);
                               }}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
+                              disabled={flippedLeads.has(lead.id)}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs md:text-sm font-medium touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Phone className="h-3.5 w-3.5" />
                               <span>Call</span>
@@ -1289,10 +1365,16 @@ function ModernCRMContent() {
                             <motion.button
                               whileTap={{ scale: 0.9 }}
                               onClick={(e) => {
+                                if (flippedLeads.has(lead.id)) {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  return;
+                                }
                                 e.stopPropagation();
                                 handleWhatsApp(lead.client_phone!);
                               }}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-xs md:text-sm font-medium touch-manipulation"
+                              disabled={flippedLeads.has(lead.id)}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-xs md:text-sm font-medium touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <MessageCircle className="h-3.5 w-3.5" />
                               <span>WhatsApp</span>
@@ -1301,7 +1383,7 @@ function ModernCRMContent() {
                         </div>
                         {/* Assigned To */}
                         {lead.assigned_to && (
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <div className="flex items-center gap-2 text-xs text-gray-600 mt-2 pt-2 border-t border-gray-100">
                             <Users className="h-3.5 w-3.5 text-purple-600 flex-shrink-0" />
                             <span className="truncate">
                               Assigned to: <span className="font-medium text-gray-900">{lead.assigned_to.name}</span>
@@ -1318,14 +1400,48 @@ function ModernCRMContent() {
                           ? 'border-indigo-500' 
                           : 'border-indigo-100'
                       }`} 
-                      style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                      style={{ 
+                        transform: 'rotateY(180deg)', 
+                        backfaceVisibility: 'hidden', 
+                        WebkitBackfaceVisibility: 'hidden',
+                        pointerEvents: flippedLeads.has(lead.id) ? 'auto' : 'none'
+                      }}
                       >
+                        {/* Flip Back Button - Desktop: shows on hover in corner */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFlip(lead.id);
+                          }}
+                          className={`absolute top-2 right-2 z-20 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all hidden md:block md:opacity-0 md:group-hover:opacity-100 ${
+                            flippedLeads.has(lead.id) 
+                              ? 'md:opacity-0 md:group-hover:opacity-100' 
+                              : 'opacity-0 pointer-events-none'
+                          }`}
+                          title="Back to Lead Info"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        
                         <div className="p-4 md:p-5 h-full flex flex-col">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Brain className="h-5 w-5 text-indigo-600" />
-                            <h3 className="font-semibold text-gray-900 text-base md:text-lg">
-                              AI Analysis
-                            </h3>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Brain className="h-5 w-5 text-indigo-600" />
+                              <h3 className="font-semibold text-gray-900 text-base md:text-lg">
+                                AI Analysis
+                              </h3>
+                            </div>
+                            {/* Mobile: Flip Back Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFlip(lead.id);
+                              }}
+                              className="md:hidden p-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                              title="Back to Lead Info"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
                           
                           <div className="flex-1 overflow-y-auto">
@@ -1342,16 +1458,25 @@ function ModernCRMContent() {
                                   </p>
                                 ) : (
                                   <p className="text-gray-500 italic">
-                                    Click to load AI analysis based on feedback and coach conversations.
+                                    اضغط عشان تحمل التحليل AI بناءً على الفيدباك والمحادثات.
                                   </p>
                                 )}
                               </div>
                             )}
                           </div>
 
-                          <div className="mt-3 pt-3 border-t border-indigo-200">
+                          <div className="mt-3 pt-3 border-t border-indigo-200 space-y-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/app/crm/case/${lead.id}`);
+                              }}
+                              className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              ممكن تتكلم معايا اكتر
+                            </button>
                             <p className="text-xs text-gray-500 text-center">
-                              Click anywhere to flip back
+                              اضغط في أي حتة عشان ترجع
                             </p>
                           </div>
                         </div>
@@ -1843,20 +1968,31 @@ function ModernCRMContent() {
                                         </p>
                                       ) : (
                                         <p className="text-sm text-gray-500 italic">
-                                          Click to load AI analysis based on feedback and coach conversations.
+                                          اضغط عشان تحمل التحليل AI بناءً على الفيدباك والمحادثات.
                                         </p>
                                       )}
                                     </div>
                                   )}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleFlip(lead.id);
-                                    }}
-                                    className="mt-3 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                                  >
-                                    Click to close
-                                  </button>
+                                  <div className="mt-3 space-y-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/app/crm/case/${lead.id}`);
+                                      }}
+                                      className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                      ممكن تتكلم معايا اكتر
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFlip(lead.id);
+                                      }}
+                                      className="w-full text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                    >
+                                      اضغط عشان تقفل
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </td>
